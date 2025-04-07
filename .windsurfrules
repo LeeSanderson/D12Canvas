@@ -1,0 +1,11 @@
+When writing code, follow a test-driven development (TDD) approach:
+
+1. Write a test that fails
+2. Write the minimum amount of code to make the test pass
+3. Refactor the code to make it better
+4. Repeat
+
+Once tests are passing and the changes are complete, commit the changes 
+using the prompt as the commit message.
+
+Allways the the demo app in hot reload mode so changes can be visually verified.
