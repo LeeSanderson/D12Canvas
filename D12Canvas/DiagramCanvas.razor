@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components
+@using D12Canvas
 
 <div class="diagram-container" @ref="ContainerElement">
     <div class="diagram-canvas" 
@@ -44,8 +45,8 @@
     }
     
     .canvas-content {
-        width: 300vw;
-        height: 300vh;
+        width: 3000px;
+        height: 3000px;
         position: absolute;
         top: 0;
         left: 0;
@@ -63,15 +64,9 @@
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
     
-    private double _scale = 1.0;
-    private const double MIN_SCALE = 0.1;
-    private const double MAX_SCALE = 4.0;
-    private double _panX = 0;
-    private double _panY = 0;
+    private ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
     private bool _isPanning = false;
     private MouseEventArgs? _panStart;
-    private double _containerWidth = 0;
-    private double _containerHeight = 0;
     private ElementReference ContainerElement;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -81,13 +76,13 @@
             var dimensions = await JS.InvokeAsync<Dictionary<string, double>>(
                 "DiagramCanvas.getContainerDimensions", ContainerElement);
             
-            _containerWidth = dimensions["width"];
-            _containerHeight = dimensions["height"];
+            _zoomPanTracker.SetContainerSize(dimensions["width"], dimensions["height"]);
+            _zoomPanTracker.SetCanvasSize(3000, 3000);
             StateHasChanged();
         }
     }
 
-    private string ContentStyle => $"transform: translate({_panX}px, {_panY}px) scale({_scale});";
+    private string ContentStyle => $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
 
     private void HandleMouseDown(MouseEventArgs e)
     {
@@ -100,56 +95,31 @@
 
     private void HandleMouseMove(MouseEventArgs e)
     {
-        if (!_isPanning || _panStart == null)
-            return;
-
-        var newPanX = _panX + (e.ClientX - _panStart.ClientX);
-        var newPanY = _panY + (e.ClientY - _panStart.ClientY);
-
-        var contentWidth = _containerWidth * 3;
-        var contentHeight = _containerHeight * 3;
-
-        var maxPanX = _containerWidth - (contentWidth * _scale);
-        var maxPanY = _containerHeight - (contentHeight * _scale);
-
-        if (newPanX > 0) newPanX = 0;
-        if (newPanY > 0) newPanY = 0;
-        if (newPanX < maxPanX) newPanX = maxPanX;
-        if (newPanY < maxPanY) newPanY = maxPanY;
-
-        _panX = newPanX;
-        _panY = newPanY;
-        _panStart = e;
+        if (_isPanning && _panStart != null)
+        {
+            var deltaX = e.ClientX - _panStart.ClientX;
+            var deltaY = e.ClientY - _panStart.ClientY;
+            
+            _zoomPanTracker.Pan(deltaX, deltaY);
+            
+            _panStart = e;
+            StateHasChanged();
+        }
     }
 
     private void HandleMouseUp(MouseEventArgs e)
     {
-        if (e.Button == 0) // Left mouse button
-        {
-            _isPanning = false;
-            _panStart = null;
-        }
+        _isPanning = false;
+        _panStart = null;
     }
 
     private void HandleMouseWheel(WheelEventArgs e)
     {
-        var delta = e.DeltaY;
-        var oldScale = _scale;
-        
-        if (delta > 0)
-            _scale = Math.Max(MIN_SCALE, _scale - 0.1);
-        else
-            _scale = Math.Min(MAX_SCALE, _scale + 0.1);
-
-        var contentWidth = _containerWidth * 3;
-        var contentHeight = _containerHeight * 3;
-
-        var maxPanX = _containerWidth - (contentWidth * _scale);
-        var maxPanY = _containerHeight - (contentHeight * _scale);
-
-        if (_panX > 0) _panX = 0;
-        if (_panY > 0) _panY = 0;
-        if (_panX < maxPanX) _panX = maxPanX;
-        if (_panY < maxPanY) _panY = maxPanY;
+        var zoomIn = e.DeltaY < 0;  
+        var zoomed = _zoomPanTracker.Zoom(zoomIn);
+        if (zoomed)
+        {
+            StateHasChanged();
+        }
     }
 }
