@@ -1,9 +1,155 @@
 @namespace D12Canvas
 
-<div class="diagram-canvas">
-    Canvas
+@page "/diagram"
+
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components
+
+<div class="diagram-container" @ref="ContainerElement">
+    <div class="diagram-canvas" 
+         @onmousedown="@HandleMouseDown"
+         @onmousemove="@HandleMouseMove"
+         @onmouseup="@HandleMouseUp"
+         @onwheel="@HandleMouseWheel">
+        <div class="canvas-content" style="@ContentStyle">
+            @ChildContent
+        </div>
+    </div>
 </div>
 
-@code {
+@inject IJSRuntime JS
+
+<style>
+    .diagram-container {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-template-rows: minmax(400px, auto) minmax(400px, 100%);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #ccc;
+    }
     
+    .diagram-canvas {
+        width: 100%;
+        height: 100%;
+        grid-row: 1;
+        position: relative;
+        cursor: grab;
+    }
+    
+    .diagram-canvas:active {
+        cursor: grabbing;
+    }
+    
+    .canvas-content {
+        width: 300vw;
+        height: 300vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: center center;
+        transition: transform 0.1s ease-out;
+        background: #f0f0f0;
+        background-image: 
+            linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        background-position: 0 0;
+    }
+</style>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    private double _scale = 1.0;
+    private const double MIN_SCALE = 0.1;
+    private const double MAX_SCALE = 4.0;
+    private double _panX = 0;
+    private double _panY = 0;
+    private bool _isPanning = false;
+    private MouseEventArgs? _panStart;
+    private double _containerWidth = 0;
+    private double _containerHeight = 0;
+    private ElementReference ContainerElement;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var dimensions = await JS.InvokeAsync<Dictionary<string, double>>(
+                "DiagramCanvas.getContainerDimensions", ContainerElement);
+            
+            _containerWidth = dimensions["width"];
+            _containerHeight = dimensions["height"];
+            StateHasChanged();
+        }
+    }
+
+    private string ContentStyle => $"transform: translate({_panX}px, {_panY}px) scale({_scale});";
+
+    private void HandleMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == 0) // Left mouse button
+        {
+            _isPanning = true;
+            _panStart = e;
+        }
+    }
+
+    private void HandleMouseMove(MouseEventArgs e)
+    {
+        if (!_isPanning || _panStart == null)
+            return;
+
+        var newPanX = _panX + (e.ClientX - _panStart.ClientX);
+        var newPanY = _panY + (e.ClientY - _panStart.ClientY);
+
+        var contentWidth = _containerWidth * 3;
+        var contentHeight = _containerHeight * 3;
+
+        var maxPanX = _containerWidth - (contentWidth * _scale);
+        var maxPanY = _containerHeight - (contentHeight * _scale);
+
+        if (newPanX > 0) newPanX = 0;
+        if (newPanY > 0) newPanY = 0;
+        if (newPanX < maxPanX) newPanX = maxPanX;
+        if (newPanY < maxPanY) newPanY = maxPanY;
+
+        _panX = newPanX;
+        _panY = newPanY;
+        _panStart = e;
+    }
+
+    private void HandleMouseUp(MouseEventArgs e)
+    {
+        if (e.Button == 0) // Left mouse button
+        {
+            _isPanning = false;
+            _panStart = null;
+        }
+    }
+
+    private void HandleMouseWheel(WheelEventArgs e)
+    {
+        var delta = e.DeltaY;
+        var oldScale = _scale;
+        
+        if (delta > 0)
+            _scale = Math.Max(MIN_SCALE, _scale - 0.1);
+        else
+            _scale = Math.Min(MAX_SCALE, _scale + 0.1);
+
+        var contentWidth = _containerWidth * 3;
+        var contentHeight = _containerHeight * 3;
+
+        var maxPanX = _containerWidth - (contentWidth * _scale);
+        var maxPanY = _containerHeight - (contentHeight * _scale);
+
+        if (_panX > 0) _panX = 0;
+        if (_panY > 0) _panY = 0;
+        if (_panX < maxPanX) _panX = maxPanX;
+        if (_panY < maxPanY) _panY = maxPanY;
+    }
 }
