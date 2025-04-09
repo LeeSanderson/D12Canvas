@@ -45,8 +45,6 @@
     }
     
     .canvas-content {
-        width: 3000px;
-        height: 3000px;
         position: absolute;
         top: 0;
         left: 0;
@@ -82,7 +80,7 @@
         }
     }
 
-    private string ContentStyle => $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
+    private string ContentStyle => $"width: {_zoomPanTracker.CanvasWidth}px; height: {_zoomPanTracker.CanvasHeight}px; transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
 
     private void HandleMouseDown(MouseEventArgs e)
     {

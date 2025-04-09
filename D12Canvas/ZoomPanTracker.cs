@@ -1,3 +1,5 @@
+namespace D12Canvas;
+
 public class ZoomPanTracker
 {
     private const double MIN_SCALE = 0.6;
@@ -10,6 +12,21 @@ public class ZoomPanTracker
     private double _containerHeight = 0;
     private double _canvasWidth = 3000;
     private double _canvasHeight = 3000;
+
+    public event EventHandler<ZoomPanChangedEventArgs>? Changed;
+
+    public double Scale
+    {
+        get { return _scale; }
+        set { SetScale(value); }
+    }
+
+    public double PanX => _panX;
+    public double PanY => _panY;
+    public double CanvasWidth => _canvasWidth;
+    public double CanvasHeight => _canvasHeight;
+    public double ContainerWidth => _containerWidth;
+    public double ContainerHeight => _containerHeight;
 
     public void SetContainerSize(double width, double height)
     {
@@ -33,24 +50,23 @@ public class ZoomPanTracker
         ApplyPanPositionConstaints();
     }
 
-    public double Scale
-    {
-        get { return _scale; }
-    }
-    public double PanX
-    {
-        get { return _panX; }
-    }
-    public double PanY
-    {
-        get { return _panY; }
-    }
-
     public bool Pan(double deltaX, double deltaY)
     {
         _panX += deltaX;
         _panY += deltaY;
         return ApplyPanPositionConstaints();
+    }
+
+    public bool SetPanPosition(double panX, double panY)
+    {
+        if (panX != _panX || panY != _panY)
+        {
+            _panX = panX;
+            _panY = panY;
+            return ApplyPanPositionConstaints();
+        }
+
+        return false;
     }
 
     public bool Zoom(bool zoomIn) => zoomIn ? ZoomIn() : ZoomOut();
@@ -65,6 +81,7 @@ public class ZoomPanTracker
         {
             _scale = newScale;
             ApplyPanPositionConstaints();
+            OnChanged();
             return true;
         }
 
@@ -83,9 +100,15 @@ public class ZoomPanTracker
         {
             _panX = newPanX;
             _panY = newPanY;
+            OnChanged();
             return true;
         }
 
         return false;
+    }
+
+    private void OnChanged()
+    {
+        Changed?.Invoke(this, new ZoomPanChangedEventArgs(_scale, _panX, _panY));
     }
 }
