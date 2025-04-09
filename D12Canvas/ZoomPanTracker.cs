@@ -50,12 +50,7 @@ public class ZoomPanTracker
         ApplyPanPositionConstaints();
     }
 
-    public bool Pan(double deltaX, double deltaY)
-    {
-        _panX += deltaX;
-        _panY += deltaY;
-        return ApplyPanPositionConstaints();
-    }
+    public bool Pan(double deltaX, double deltaY) => SetPanPosition(_panX + deltaX, _panY + deltaY);
 
     public bool SetPanPosition(double panX, double panY)
     {
@@ -63,7 +58,9 @@ public class ZoomPanTracker
         {
             _panX = panX;
             _panY = panY;
-            return ApplyPanPositionConstaints();
+            ApplyPanPositionConstaints();
+            OnChanged();
+            return true;
         }
 
         return false;
@@ -88,7 +85,7 @@ public class ZoomPanTracker
         return false;
     }
 
-    private bool ApplyPanPositionConstaints()
+    private void ApplyPanPositionConstaints()
     {
         var maxPanX = _containerWidth - (_canvasWidth * _scale);
         var maxPanY = _containerHeight - (_canvasHeight * _scale);
@@ -101,10 +98,7 @@ public class ZoomPanTracker
             _panX = newPanX;
             _panY = newPanY;
             OnChanged();
-            return true;
         }
-
-        return false;
     }
 
     private void OnChanged()

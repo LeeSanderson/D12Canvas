@@ -61,11 +61,17 @@
 
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback<ZoomPanChangedEventArgs> Changed { get; set; }
     
     private ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
     private bool _isPanning = false;
     private MouseEventArgs? _panStart;
     private ElementReference ContainerElement;
+
+    protected override void OnInitialized()
+    {
+        _zoomPanTracker.Changed += OnZoomPanChanged;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -119,5 +125,15 @@
         {
             StateHasChanged();
         }
+    }
+
+    private void OnZoomPanChanged(object? sender, ZoomPanChangedEventArgs e)
+    {
+        Changed.InvokeAsync(e);
+    }
+
+    public void Dispose()
+    {
+        _zoomPanTracker.Changed -= OnZoomPanChanged;
     }
 }

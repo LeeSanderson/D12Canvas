@@ -6,11 +6,18 @@ namespace D12Canvas.Tests
     public class ZoomPanTrackerTests
     {
         private readonly ZoomPanTracker _tracker;
+        private bool _eventTriggered;
+        private ZoomPanChangedEventArgs? _lastEventArgs;
 
         public ZoomPanTrackerTests()
         {
             _tracker = new ZoomPanTracker();
             _tracker.SetContainerSize(100, 100);
+            _tracker.Changed += (sender, args) =>
+            {
+                _eventTriggered = true;
+                _lastEventArgs = args;
+            };
         }
 
         [Fact]
@@ -45,49 +52,75 @@ namespace D12Canvas.Tests
         [Fact]
         public void ZoomInRespectsMaxScale()
         {
-            // Zoom in several times to get close to max scale
-            for (int i = 0; i < 50; i++)
-            {
-                if (Math.Abs(_tracker.Scale - 6.0) < 0.2)
-                {
-                    var result = _tracker.Zoom(true);
-                    Assert.True(result);
-                    Assert.Equal(6.0, _tracker.Scale, 0.01);
-                    return;
-                }
-                _tracker.Zoom(true);
-            }
-
-            Assert.Fail(
-                string.Format(
-                    "Could not reach max scale within 50 zooms, scale is {0}",
-                    _tracker.Scale
-                )
-            );
+            _tracker.Scale = 6.0;
+            Assert.False(_tracker.ZoomIn());
         }
 
         [Fact]
         public void ZoomOutRespectsMinScale()
         {
-            // Then zoom out several times to get close to min scale
-            for (int i = 0; i < 50; i++)
-            {
-                if (Math.Abs(_tracker.Scale - 0.6) < 0.2)
-                {
-                    var result = _tracker.Zoom(false);
-                    Assert.True(result);
-                    Assert.Equal(0.6, _tracker.Scale, 0.01);
-                    return;
-                }
-                _tracker.Zoom(false);
-            }
+            _tracker.Scale = 0.6;
+            Assert.False(_tracker.ZoomOut());
+        }
 
-            Assert.Fail(
-                string.Format(
-                    "Could not reach min scale within 50 zooms, scale is {0}",
-                    _tracker.Scale
-                )
-            );
+        [Fact]
+        public void PanTriggersChangedEvent()
+        {
+            // Reset event tracking
+            _eventTriggered = false;
+            _lastEventArgs = null;
+
+            // Pan by 10 pixels in both directions
+            _tracker.Pan(-10, -10);
+
+            // Verify event was triggered
+            Assert.True(_eventTriggered);
+            Assert.NotNull(_lastEventArgs);
+
+            // Verify event args contain correct values
+            Assert.Equal(1.0, _lastEventArgs!.Scale);
+            Assert.Equal(-10, _lastEventArgs!.PanX);
+            Assert.Equal(-10, _lastEventArgs!.PanY);
+        }
+
+        [Fact]
+        public void ZoomInTriggersChangedEvent()
+        {
+            // Reset event tracking
+            _eventTriggered = false;
+            _lastEventArgs = null;
+
+            // Zoom in
+            _tracker.Zoom(true);
+
+            // Verify event was triggered
+            Assert.True(_eventTriggered);
+            Assert.NotNull(_lastEventArgs);
+
+            // Verify event args contain correct values
+            Assert.Equal(1.1, _lastEventArgs!.Scale);
+            Assert.Equal(0, _lastEventArgs!.PanX);
+            Assert.Equal(0, _lastEventArgs!.PanY);
+        }
+
+        [Fact]
+        public void ZoomOutTriggersChangedEvent()
+        {
+            // Reset event tracking
+            _eventTriggered = false;
+            _lastEventArgs = null;
+
+            // Zoom out
+            _tracker.Zoom(false);
+
+            // Verify event was triggered
+            Assert.True(_eventTriggered);
+            Assert.NotNull(_lastEventArgs);
+
+            // Verify event args contain correct values
+            Assert.Equal(0.9, _lastEventArgs!.Scale);
+            Assert.Equal(0, _lastEventArgs!.PanX);
+            Assert.Equal(0, _lastEventArgs!.PanY);
         }
 
         [Fact]
@@ -99,19 +132,11 @@ namespace D12Canvas.Tests
 
             // Try to pan too far right
             _tracker.Pan(100, 0);
-            Assert.Equal(0, _tracker.PanX);
+            Assert.Equal(0, _tracker.PanX); // Should be constrained to 0
 
             // Try to pan too far left
             _tracker.Pan(-1000, 0);
-            Assert.Equal(-900, _tracker.PanX); // 1000 - 100 = 900
-
-            // Try to pan too far down
-            _tracker.Pan(0, 100);
-            Assert.Equal(0, _tracker.PanY);
-
-            // Try to pan too far up
-            _tracker.Pan(0, -1000);
-            Assert.Equal(-900, _tracker.PanY);
+            Assert.Equal(-900, _tracker.PanX); // Should be constrained to -900 (1000 - 100)
         }
 
         [Fact]

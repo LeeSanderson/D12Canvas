@@ -2,13 +2,43 @@
 
 <PageTitle>D12Canvas Demo</PageTitle>
 
-<DiagramCanvas>
+<div class="status-bar">
+    <div class="status-item">Zoom: @zoomLevel.ToString("F2")x</div>
+    <div class="status-item">Pan X: @panX.ToString("F0")px</div>
+    <div class="status-item">Pan Y: @panY.ToString("F0")px</div>
+</div>
+
+<DiagramCanvas Changed="OnZoomPanChanged">
     <div style="width: 20px; height: 20px; position:relative; top: 10px; left: 10px; background-color: #f00;"/>
     <div style="width: 20px; height: 20px; position:relative; top: 2950px; left: 10px; background-color: #f00;"/>
     <div style="width: 20px; height: 20px; position:relative; top: 10px; left: 2970px; background-color: #f00;"/>
     <div style="width: 20px; height: 20px; position:relative; top: 2970px; left: 2970px; background-color: #f00;"/>
 </DiagramCanvas>
 
-@code {
+<style>
+    .status-bar {
+        display: flex;
+        gap: 20px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
     
+    .status-item {
+        font-family: monospace;
+    }
+</style>
+
+@code {
+    private double zoomLevel = 1.0;
+    private double panX = 0;
+    private double panY = 0;
+
+    private void OnZoomPanChanged(ZoomPanChangedEventArgs args)
+    {
+        zoomLevel = args.Scale;
+        panX = args.PanX;
+        panY = args.PanY;
+        StateHasChanged();
+    }
 }
