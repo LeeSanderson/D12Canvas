@@ -74,7 +74,7 @@
             var dimensions = await JS.InvokeAsync<Dictionary<string, double>>(
                 "DiagramCanvas.getContainerDimensions", ContainerElement);
             
-            _zoomPanTracker.SetContainerSize(dimensions["width"], dimensions["height"]);
+            _zoomPanTracker.SetContainerSize((int)dimensions["width"], (int)dimensions["height"]);
             _zoomPanTracker.SetCanvasSize(3000, 3000);
             StateHasChanged();
         }

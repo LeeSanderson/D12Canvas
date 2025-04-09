@@ -8,10 +8,10 @@ public class ZoomPanTracker
     private double _scale = 1.0;
     private double _panX = 0;
     private double _panY = 0;
-    private double _containerWidth = 0;
-    private double _containerHeight = 0;
-    private double _canvasWidth = 3000;
-    private double _canvasHeight = 3000;
+    private int _containerWidth = 0;
+    private int _containerHeight = 0;
+    private int _canvasWidth = 3000;
+    private int _canvasHeight = 3000;
 
     public event EventHandler<ZoomPanChangedEventArgs>? Changed;
 
@@ -28,7 +28,7 @@ public class ZoomPanTracker
     public double ContainerWidth => _containerWidth;
     public double ContainerHeight => _containerHeight;
 
-    public void SetContainerSize(double width, double height)
+    public void SetContainerSize(int width, int height)
     {
         if (width < 0)
             throw new ArgumentException(nameof(width));
@@ -39,7 +39,7 @@ public class ZoomPanTracker
         ApplyPanPositionConstaints();
     }
 
-    public void SetCanvasSize(double width, double height)
+    public void SetCanvasSize(int width, int height)
     {
         if (width < 0)
             throw new ArgumentException(nameof(width));
