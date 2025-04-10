@@ -40,8 +40,8 @@
         zoomLevel = args.Scale;
         top = -args.PanY;
         left = -args.PanX;
-        bottom = top + args.ContainerHeight * zoomLevel;
-        right = left + args.ContainerWidth * zoomLevel;
+        bottom = top + args.ContainerHeight / zoomLevel;
+        right = left + args.ContainerWidth / zoomLevel;
         StateHasChanged();
     }
 }
