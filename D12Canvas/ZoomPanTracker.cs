@@ -103,6 +103,9 @@ public class ZoomPanTracker
 
     private void OnChanged()
     {
-        Changed?.Invoke(this, new ZoomPanChangedEventArgs(_scale, _panX, _panY));
+        Changed?.Invoke(
+            this,
+            new ZoomPanChangedEventArgs(_scale, _panX, _panY, _containerWidth, _containerHeight)
+        );
     }
 }

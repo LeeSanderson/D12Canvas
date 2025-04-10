@@ -176,5 +176,27 @@ namespace D12Canvas.Tests
             Assert.Throws<ArgumentException>(() => _tracker.SetCanvasSize(-100, 100));
             Assert.Throws<ArgumentException>(() => _tracker.SetCanvasSize(100, -100));
         }
+
+        [Fact]
+        public void SetContainerSizeUpdatesEventArgs()
+        {
+            // Set initial container size
+            _tracker.SetContainerSize(800, 600);
+
+            // Reset event tracking
+            _eventTriggered = false;
+            _lastEventArgs = null;
+
+            // Update container size
+            _tracker.SetContainerSize(1200, 800);
+
+            // Verify event was triggered
+            Assert.True(_eventTriggered);
+            Assert.NotNull(_lastEventArgs);
+
+            // Verify event args contain correct container dimensions
+            Assert.Equal(1200, _lastEventArgs!.ContainerWidth);
+            Assert.Equal(800, _lastEventArgs!.ContainerHeight);
+        }
     }
 }

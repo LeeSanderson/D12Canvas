@@ -4,15 +4,14 @@
 
 <div class="status-bar">
     <div class="status-item">Zoom: @zoomLevel.ToString("F2")x</div>
-    <div class="status-item">Pan X: @panX.ToString("F0")px</div>
-    <div class="status-item">Pan Y: @panY.ToString("F0")px</div>
+    <div class="status-item">Viewport: (@top.ToString("F0")px, @left.ToString("F0")px) - (@bottom.ToString("F0")px, @right.ToString("F0")px)</div>
 </div>
 
 <DiagramCanvas Changed="OnZoomPanChanged">
     <div style="width: 20px; height: 20px; position:relative; top: 10px; left: 10px; background-color: #f00;"/>
     <div style="width: 20px; height: 20px; position:relative; top: 2950px; left: 10px; background-color: #f00;"/>
     <div style="width: 20px; height: 20px; position:relative; top: 10px; left: 2970px; background-color: #f00;"/>
-    <div style="width: 20px; height: 20px; position:relative; top: 2970px; left: 2970px; background-color: #f00;"/>
+    <div style="width: 20px; height: 20px; position:relative; top: 2950px; left: 2950px; background-color: #f00;"/>
 </DiagramCanvas>
 
 <style>
@@ -31,14 +30,18 @@
 
 @code {
     private double zoomLevel = 1.0;
-    private double panX = 0;
-    private double panY = 0;
+    private double top = 0;
+    private double left = 0;
+    private double bottom = 0;
+    private double right = 0;
 
     private void OnZoomPanChanged(ZoomPanChangedEventArgs args)
     {
         zoomLevel = args.Scale;
-        panX = args.PanX;
-        panY = args.PanY;
+        top = -args.PanY;
+        left = -args.PanX;
+        bottom = top + args.ContainerHeight * zoomLevel;
+        right = left + args.ContainerWidth * zoomLevel;
         StateHasChanged();
     }
 }
