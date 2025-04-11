@@ -8,6 +8,9 @@ namespace D12Canvas;
 
 public partial class DiagramCanvas
 {
+    [Inject]
+    private IJSRuntime JS { get; set; } = null!;
+
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
