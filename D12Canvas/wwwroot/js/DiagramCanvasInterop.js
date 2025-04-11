@@ -12,6 +12,24 @@ window.DiagramCanvas = {
         };
     },
 
+    // Add resize event listener
+    addResizeListener: async (element, dotnetRef) => {
+        const handleResize = () => {
+            const rect = element.getBoundingClientRect();
+            dotnetRef.invokeMethodAsync("OnContainerResized", rect.width, rect.height);
+        };
+
+        // Initial call
+        handleResize();
+        const resizeObserver = new ResizeObserver(handleResize);
+        resizeObserver.observe(element);
+
+        // Return cleanup function
+        return () => {
+            resizeObserver.disconnect();
+        };
+    },
+
     // Get element position relative to container
     getElementPosition: async (element, container) => {
         const containerRect = container.getBoundingClientRect();
