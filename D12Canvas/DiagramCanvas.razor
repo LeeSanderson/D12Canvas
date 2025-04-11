@@ -6,6 +6,7 @@
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components
 @using D12Canvas
+@using System.Collections.Generic;
 
 <div class="diagram-container" @ref="ContainerElement">
     <div class="diagram-canvas" 
@@ -68,7 +69,7 @@
     private MouseEventArgs? _panStart;
     private ElementReference ContainerElement;
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
-    private Action? _resizeCleanup;
+    private List<Action> _cleanupFunctions = new List<Action>();
 
     protected override void OnInitialized()
     {
@@ -87,11 +88,22 @@
             _zoomPanTracker.SetCanvasSize(3000, 3000);
             
             // Set up resize listener
-            _resizeCleanup = await JS.InvokeAsync<Action>(
+            var resizeCleanup = await JS.InvokeAsync<Action>(
                 "DiagramCanvas.addResizeListener", 
                 ContainerElement, 
                 _dotNetObjectRef
             );
+
+            // Set up keyboard listener
+            var keyboardCleanup = await JS.InvokeAsync<Action>(
+                "DiagramCanvas.addKeyboardListener", 
+                ContainerElement, 
+                _dotNetObjectRef
+            );
+
+            // Store cleanup functions for disposal
+            _cleanupFunctions.Add(resizeCleanup);
+            _cleanupFunctions.Add(keyboardCleanup);
             
             StateHasChanged();
         }
@@ -101,6 +113,20 @@
     public void OnContainerResized(double width, double height)
     {
         _zoomPanTracker.SetContainerSize((int)width, (int)height);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnZoomIn()
+    {
+        _zoomPanTracker.ZoomIn();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnZoomOut()
+    {
+        _zoomPanTracker.ZoomOut();
         StateHasChanged();
     }
 
@@ -154,6 +180,9 @@
     {
         _zoomPanTracker.Changed -= OnZoomPanChanged;
         _dotNetObjectRef?.Dispose();
-        _resizeCleanup?.Invoke();
+        foreach (var cleanup in _cleanupFunctions)
+        {
+            cleanup?.Invoke();
+        }
     }
 }

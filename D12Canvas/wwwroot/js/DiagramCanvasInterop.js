@@ -47,5 +47,26 @@ window.DiagramCanvas = {
             width: rect.width,
             height: rect.height
         };
-    }
+    },
+
+    // Add keyboard event listener
+    addKeyboardListener: async (element, dotnetRef) => {
+        const handleKeyDown = (event) => {
+            if (event.code === "PageUp") {
+                dotnetRef.invokeMethodAsync("OnZoomIn");
+                event.preventDefault();
+            } else if (event.code === "PageDown") {
+                dotnetRef.invokeMethodAsync("OnZoomOut");
+                event.preventDefault();
+            }
+        };
+
+        // Add event listener
+        window.addEventListener('keydown', handleKeyDown);
+
+        // Return cleanup function
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    },
 };
