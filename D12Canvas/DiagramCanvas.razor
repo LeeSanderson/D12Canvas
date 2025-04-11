@@ -130,6 +130,34 @@
         StateHasChanged();
     }
 
+    [JSInvokable]
+    public void OnPanLeft()
+    {
+        _zoomPanTracker.Pan(50, 0);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnPanRight()
+    {
+        _zoomPanTracker.Pan(-50, 0);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnPanUp()
+    {
+        _zoomPanTracker.Pan(0, 50);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnPanDown()
+    {
+        _zoomPanTracker.Pan(0, -50);
+        StateHasChanged();
+    }
+
     private string ContentStyle => $"width: {_zoomPanTracker.CanvasWidth}px; height: {_zoomPanTracker.CanvasHeight}px; transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
 
     private void HandleMouseDown(MouseEventArgs e)

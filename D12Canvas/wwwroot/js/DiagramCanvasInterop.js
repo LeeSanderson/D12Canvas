@@ -52,13 +52,27 @@ window.DiagramCanvas = {
     // Add keyboard event listener
     addKeyboardListener: async (element, dotnetRef) => {
         const handleKeyDown = (event) => {
-            if (event.code === "PageUp") {
-                dotnetRef.invokeMethodAsync("OnZoomIn");
-                event.preventDefault();
-            } else if (event.code === "PageDown") {
-                dotnetRef.invokeMethodAsync("OnZoomOut");
-                event.preventDefault();
+            switch (event.code) {
+                case "PageUp":
+                    dotnetRef.invokeMethodAsync("OnZoomIn");
+                    break;
+                case "PageDown":
+                    dotnetRef.invokeMethodAsync("OnZoomOut");
+                    break;
+                case "ArrowLeft":
+                    dotnetRef.invokeMethodAsync("OnPanLeft");
+                    break;
+                case "ArrowRight":
+                    dotnetRef.invokeMethodAsync("OnPanRight");
+                    break;
+                case "ArrowUp":
+                    dotnetRef.invokeMethodAsync("OnPanUp");
+                    break;
+                case "ArrowDown":
+                    dotnetRef.invokeMethodAsync("OnPanDown");
+                    break;
             }
+            event.preventDefault();
         };
 
         // Add event listener
