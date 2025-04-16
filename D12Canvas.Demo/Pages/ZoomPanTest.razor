@@ -1,13 +1,13 @@
 @page "/ZoomPanTest"
 
-<PageTitle>D12Canvas Demo</PageTitle>
+<PageTitle>D12Canvas ZoomPanTest</PageTitle>
 
 <div class="status-bar">
     <div class="status-item">Zoom: @zoomLevel.ToString("F2")x</div>
     <div class="status-item">Viewport: (@top.ToString("F0")px, @left.ToString("F0")px) - (@bottom.ToString("F0")px, @right.ToString("F0")px)</div>
 </div>
 
-<DiagramCanvas Changed="OnZoomPanChanged">
+<DiagramCanvas OnZoomOrPanChanged="OnZoomPanChanged">
     <div style="width: 20px; height: 20px; position:absolute; top: 10px; left: 10px; background-color: #f00;"/>
     <div style="width: 20px; height: 20px; position:absolute; top: 2970px; left: 10px; background-color: #0f0;"/>
     <div style="width: 20px; height: 20px; position:absolute; top: 10px; left: 2970px; background-color: #00f;"/>

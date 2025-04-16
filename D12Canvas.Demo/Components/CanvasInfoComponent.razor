@@ -1,0 +1,39 @@
+
+<div style="width: 200px; height: 200px; position:absolute; top: @(Top)px; left: @(Left)px; background-color: #f00;">
+    <div>Zoom: @zoomLevel.ToString("F2")x</div>
+    <div>Viewport:</div>
+    <div> (@canvasTop px, @canvasLeft px) </div>
+    <div>(@canvasBottom px, @canvasRight px)</div>
+</div>
+
+@code {
+    [CascadingParameter(Name = "ParentCanvas")] 
+    public DiagramCanvas? ParentCanvas { get; set; }
+
+    [Parameter] public int Top { get; set; }
+    [Parameter] public int Left { get; set; }
+
+    private double zoomLevel = 1.0;
+    private int canvasTop = 0;
+    private int canvasLeft = 0;
+    private int canvasBottom = 0;
+    private int canvasRight = 0;
+
+    protected override void OnInitialized()
+    {
+        if (ParentCanvas != null) 
+        {
+            ParentCanvas.ZoomOrPanChanged += OnZoomPanChanged;
+        }
+    }
+
+    private void OnZoomPanChanged(object? sender, ZoomPanChangedEventArgs args)
+    {
+        zoomLevel = args.Scale;
+        canvasTop = (int)-args.PanY;
+        canvasLeft = (int)-args.PanX;
+        canvasBottom = (int)(canvasTop + args.ContainerHeight / zoomLevel);
+        canvasRight = (int)(canvasLeft + args.ContainerWidth / zoomLevel);
+        StateHasChanged();
+    }
+}

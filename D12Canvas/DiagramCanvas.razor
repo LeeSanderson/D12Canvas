@@ -15,7 +15,9 @@
          @onmouseup="@HandleMouseUp"
          @onwheel="@HandleMouseWheel">
         <div class="canvas-content" style="@ContentStyle">
+            <CascadingValue Value="this" Name="ParentCanvas">
             @ChildContent
+            </CascadingValue>
         </div>
     </div>
 </div>

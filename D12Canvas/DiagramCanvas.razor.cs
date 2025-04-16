@@ -15,7 +15,8 @@ public partial class DiagramCanvas
     public RenderFragment? ChildContent { get; set; }
 
     [Parameter]
-    public EventCallback<ZoomPanChangedEventArgs> Changed { get; set; }
+    public EventCallback<ZoomPanChangedEventArgs> OnZoomOrPanChanged { get; set; }
+    public event EventHandler<ZoomPanChangedEventArgs>? ZoomOrPanChanged;
 
     private ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
     private bool _isPanning = false;
@@ -157,7 +158,8 @@ public partial class DiagramCanvas
 
     private void OnZoomPanChanged(object? sender, ZoomPanChangedEventArgs e)
     {
-        Changed.InvokeAsync(e);
+        OnZoomOrPanChanged.InvokeAsync(e);
+        ZoomOrPanChanged?.Invoke(this, e);
     }
 
     public void Dispose()
