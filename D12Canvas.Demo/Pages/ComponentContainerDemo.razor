@@ -1,0 +1,89 @@
+@page "/componentcontainer-demo"
+@using D12Canvas
+
+<PageTitle>Component Container Demo</PageTitle>
+
+<div class="demo-container">
+    <div class="canvas-container">
+        <DiagramCanvas>
+            <ComponentContainer 
+                X="100" 
+                Y="100" 
+                Width="300" 
+                Height="200" 
+                InitialEditMode="true"
+                OnStateChanged="HandleContainerStateChanged">
+                <div class="demo-content">
+                    <h3>Container 1</h3>
+                    <p>This is a movable, resizable container</p>
+                </div>
+            </ComponentContainer>
+            
+            <ComponentContainer 
+                X="500" 
+                Y="200" 
+                Width="250" 
+                Height="150" 
+                InitialEditMode="false"
+                OnStateChanged="HandleContainerStateChanged">
+                <div class="demo-content">
+                    <h3>Container 2</h3>
+                    <p>Click the "Edit" button to make it editable</p>
+                </div>
+            </ComponentContainer>
+        </DiagramCanvas>
+    </div>
+    
+    <div class="status-panel">
+        <h3>Container State</h3>
+        <pre>@_stateJson</pre>
+    </div>
+</div>
+
+<style>
+    .demo-container {
+        display: flex;
+        height: 100%;
+    }
+    
+    .canvas-container {
+        flex: 1;
+        height: 600px;
+        border: 1px solid #ccc;
+    }
+    
+    .status-panel {
+        width: 300px;
+        padding: 10px;
+        border-left: 1px solid #ccc;
+        overflow-y: auto;
+    }
+    
+    .demo-content {
+        padding: 10px;
+        height: 100%;
+        box-sizing: border-box;
+        background-color: #f8f9fa;
+    }
+    
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        background-color: #f5f5f5;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+</style>
+
+@code {
+    private string _stateJson = "No updates yet";
+
+    private void HandleContainerStateChanged(ComponentContainerStateChangedEventArgs args)
+    {
+        _stateJson = System.Text.Json.JsonSerializer.Serialize(args, new System.Text.Json.JsonSerializerOptions { 
+            WriteIndented = true 
+        });
+        StateHasChanged();
+    }
+}

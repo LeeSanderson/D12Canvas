@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -18,7 +16,10 @@ public partial class DiagramCanvas
     public EventCallback<ZoomPanChangedEventArgs> OnZoomOrPanChanged { get; set; }
     public event EventHandler<ZoomPanChangedEventArgs>? ZoomOrPanChanged;
 
-    private ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
+    private readonly ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
+
+    // Make ZoomPanTracker accessible to child components
+    public ZoomPanTracker ZoomPanTracker => _zoomPanTracker;
     private bool _isPanning = false;
     private MouseEventArgs? _panStart;
     private ElementReference ContainerElement;

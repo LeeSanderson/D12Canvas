@@ -1,0 +1,106 @@
+@namespace D12Canvas
+
+<div @ref="_containerRef"
+     class="component-container @(_editMode ? "edit-mode" : "view-mode")"
+     style="@ContainerStyle"
+     @onmousedown="HandleMouseDown"
+     @onmousemove="HandleMouseMove"
+     @onmouseup="HandleMouseUp"
+     @onclick:stopPropagation
+     @ondblclick="SwitchToEditMode">
+
+    <div class="container-content">
+        @ChildContent
+    </div>
+
+    <div class="resize-handle top-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopLeft))"></div>
+    <div class="resize-handle top" @onmousedown="@((e) => StartResize(e, ResizeDirection.Top))"></div>
+    <div class="resize-handle top-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopRight))"></div>
+    <div class="resize-handle right" @onmousedown="@((e) => StartResize(e, ResizeDirection.Right))"></div>
+    <div class="resize-handle bottom-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomRight))"></div>
+    <div class="resize-handle bottom" @onmousedown="@((e) => StartResize(e, ResizeDirection.Bottom))"></div>
+    <div class="resize-handle bottom-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomLeft))"></div>
+    <div class="resize-handle left" @onmousedown="@((e) => StartResize(e, ResizeDirection.Left))"></div>
+</div>
+
+<style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style>
