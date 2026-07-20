@@ -19,6 +19,7 @@ A written spec (PRD) for the next version of D12Canvas, backed by a set of locke
 
 - [Blazor/bUnit visual & render-verification tooling options](issues/03-visual-testing-tooling-research.md) — bUnit stays for logic/markup; add Playwright for .NET as a small, curated screenshot-diff layer against the real Demo app. Skip Percy/Chromatic. No comparable Blazor OSS library does this today.
 - [DOM-rendering performance ceiling for Blazor components](issues/01-performance-ceiling-research.md) — reasoned ceiling of ~200–500 concurrently-interactive elements without mitigation; design the state model's viewport-query *surface* now (à la Blazor.Diagrams' linear scan), defer the spatial-index *implementation* until profiling demands it.
+- [Virtualization/windowing mitigation stress test](issues/02-virtualization-prototype.md) — windowing (recomputed on pan/zoom/resize, not per frame) confirmed decisive at scale (12x–8x fps gains measured); real bottleneck was Blazor re-rendering every mounted child regardless of its own state, fixed directly (`ShouldRender` skip-if-unchanged + throttled pan `StateHasChanged`, commit `c3d8b19`). State/data model needs a viewport query surface with a *tunable overscan margin*, and the component contract should expect skip-if-unchanged rendering as standard, not optional. Stress-test kept as a permanent dev tool (`/virtualization-stress-test`), not a throwaway.
 
 ## Not yet specified
 
