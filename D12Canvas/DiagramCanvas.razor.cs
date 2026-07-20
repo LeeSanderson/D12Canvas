@@ -22,6 +22,8 @@ public partial class DiagramCanvas
     public ZoomPanTracker ZoomPanTracker => _zoomPanTracker;
     private bool _isPanning = false;
     private MouseEventArgs? _panStart;
+    private DateTime _lastPanRender = DateTime.MinValue;
+    private static readonly TimeSpan PanRenderInterval = TimeSpan.FromMilliseconds(16); // ~60fps cap
     private ElementReference ContainerElement;
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
     private List<Action> _cleanupFunctions = new List<Action>();
@@ -134,10 +136,17 @@ public partial class DiagramCanvas
             var deltaX = e.ClientX - _panStart.ClientX;
             var deltaY = e.ClientY - _panStart.ClientY;
 
+            // Pan state updates every tick so no motion is lost; the render itself is
+            // throttled since it's what cascades into re-rendering every mounted child.
             _zoomPanTracker.Pan(deltaX, deltaY);
-
             _panStart = e;
-            StateHasChanged();
+
+            var now = DateTime.UtcNow;
+            if (now - _lastPanRender >= PanRenderInterval)
+            {
+                _lastPanRender = now;
+                StateHasChanged();
+            }
         }
     }
 
@@ -145,6 +154,8 @@ public partial class DiagramCanvas
     {
         _isPanning = false;
         _panStart = null;
+        // Flush so the view can't be left visually behind a throttled final tick.
+        StateHasChanged();
     }
 
     private void HandleMouseWheel(WheelEventArgs e)

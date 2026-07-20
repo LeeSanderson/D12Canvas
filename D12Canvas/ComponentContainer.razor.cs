@@ -46,6 +46,12 @@ public partial class ComponentContainer : IAsyncDisposable
     private DotNetObjectReference<ComponentContainer>? _dotNetRef;
     private IJSObjectReference? _jsModule;
 
+    private double _lastRenderedX;
+    private double _lastRenderedY;
+    private double _lastRenderedWidth;
+    private double _lastRenderedHeight;
+    private bool _lastRenderedEditMode;
+
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px;";
 
@@ -54,8 +60,26 @@ public partial class ComponentContainer : IAsyncDisposable
         _editMode = InitialEditMode;
     }
 
+    protected override bool ShouldRender()
+    {
+        // Blazor re-invokes every child on the parent's own StateHasChanged (e.g. the
+        // canvas panning) regardless of whether this instance's own state changed. Skip
+        // the re-render when nothing this component owns has actually changed.
+        return X != _lastRenderedX
+            || Y != _lastRenderedY
+            || Width != _lastRenderedWidth
+            || Height != _lastRenderedHeight
+            || _editMode != _lastRenderedEditMode;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        _lastRenderedX = X;
+        _lastRenderedY = Y;
+        _lastRenderedWidth = Width;
+        _lastRenderedHeight = Height;
+        _lastRenderedEditMode = _editMode;
+
         if (firstRender)
         {
             _jsModule = await JavaScriptRuntime.InvokeAsync<IJSObjectReference>(
