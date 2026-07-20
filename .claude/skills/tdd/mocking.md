@@ -21,35 +21,39 @@ At system boundaries, design interfaces that are easy to mock:
 
 Pass external dependencies in rather than creating them internally:
 
-```typescript
+```csharp
 // Easy to mock
-function processPayment(order, paymentClient) {
-  return paymentClient.charge(order.total);
+decimal ProcessPayment(Order order, IPaymentClient paymentClient)
+{
+    return paymentClient.Charge(order.Total);
 }
 
 // Hard to mock
-function processPayment(order) {
-  const client = new StripeClient(process.env.STRIPE_KEY);
-  return client.charge(order.total);
+decimal ProcessPayment(Order order)
+{
+    var client = new StripeClient(Configuration["Stripe:ApiKey"]);
+    return client.Charge(order.Total);
 }
 ```
 
-**2. Prefer SDK-style interfaces over generic fetchers**
+**2. Prefer SDK-style interfaces over generic HTTP clients**
 
-Create specific functions for each external operation instead of one generic function with conditional logic:
+Create specific methods for each external operation instead of one generic method with conditional logic:
 
-```typescript
-// GOOD: Each function is independently mockable
-const api = {
-  getUser: (id) => fetch(`/users/${id}`),
-  getOrders: (userId) => fetch(`/users/${userId}/orders`),
-  createOrder: (data) => fetch('/orders', { method: 'POST', body: data }),
-};
+```csharp
+// GOOD: Each method is independently mockable
+public interface IOrdersApi
+{
+    Task<User> GetUser(int id);
+    Task<IReadOnlyList<Order>> GetOrders(int userId);
+    Task<Order> CreateOrder(CreateOrderRequest request);
+}
 
 // BAD: Mocking requires conditional logic inside the mock
-const api = {
-  fetch: (endpoint, options) => fetch(endpoint, options),
-};
+public interface IApiClient
+{
+    Task<HttpResponseMessage> Send(string endpoint, HttpMethod method, object? body = null);
+}
 ```
 
 The SDK approach means:

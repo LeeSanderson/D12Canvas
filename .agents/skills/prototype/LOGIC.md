@@ -34,13 +34,13 @@ The right shape depends on the question:
 - **A small set of pure functions** over a plain data type. Good when there's no implicit current state — just transformations.
 - **A class or module with a clear method surface** when the logic genuinely owns ongoing internal state.
 
-Pick whichever shape best fits the question being asked, *not* whichever is easiest to wire to a TUI. Keep it pure: no I/O, no terminal code, no `console.log` for control flow. The TUI imports it and calls into it; nothing flows the other direction.
+Pick whichever shape best fits the question being asked, *not* whichever is easiest to wire to a TUI. Keep it pure: no I/O, no terminal code, no `Console.WriteLine`/`console.log` for control flow. The TUI imports it and calls into it; nothing flows the other direction.
 
 This is what makes the prototype useful past its own lifetime: when the question's been answered, the validated reducer / machine / function set can be lifted into the real module on its own.
 
 ### 4. Build the smallest TUI that exposes the state
 
-Build it as a **lightweight TUI** — on every tick, clear the screen (`console.clear()` / `print("\033[2J\033[H")` / equivalent) and re-render the whole frame. The user should always see one stable view, not an ever-growing scrollback.
+Build it as a **lightweight TUI** — on every tick, clear the screen (`Console.Clear()` / `console.clear()` / `print("\033[2J\033[H")` / equivalent) and re-render the whole frame. The user should always see one stable view, not an ever-growing scrollback.
 
 Each frame has two parts, in this order:
 
@@ -58,7 +58,7 @@ The whole frame should fit on one screen.
 
 ### 5. Make it runnable in one command
 
-Add a script to the project's existing task runner (`package.json` scripts, `Makefile`, `justfile`, `pyproject.toml`). The user should run `pnpm run <prototype-name>` or equivalent — never need to remember a path.
+Add a script to the project's existing task runner (`package.json` scripts, a `Makefile`, a `justfile`, `pyproject.toml`, or a `dotnet run --project` shortcut). The user should run `dotnet run --project tools/<prototype-name>`, `pnpm run <prototype-name>`, or equivalent — never need to remember a path.
 
 If the host project has no task runner, just put the command at the top of the prototype's README.
 
