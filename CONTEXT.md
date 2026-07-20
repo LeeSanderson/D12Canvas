@@ -4,6 +4,9 @@ A Blazor Razor-component library for an embeddable, local-first diagramming canv
 
 ## Language
 
+**Board**:
+The full set of a canvas's persisted content — its component instances, groups, and (future) edges — modeled as flat, independently-addressable entities rather than an owned tree. Distinct from canvas chrome (not board content) and from transient view state like zoom/pan (not persisted).
+
 **Component type**:
 A registered kind of canvas content (e.g. "sticky note"), identified by a stable key and defined by a rendered component plus a props type.
 _Avoid_: shape, node — not used anywhere in this codebase; "component" is the established term.
@@ -21,6 +24,13 @@ _Avoid_: parameters — Blazor's own term for a broader concept (includes callba
 
 **Bounds**:
 A component instance's position and size, tracked uniformly across every component type independent of its props — what lets the canvas query "what's on screen" without knowing any specific component type's shape.
+
+**Entity**:
+Any board-content item addressable by a stable GUID assigned at creation — a component instance, a group, or (future) an edge. Entities reference each other only by ID, never by direct ownership, so board content stays flat and independently mergeable.
+_Avoid_: node, object — ambiguous with terms already avoided for component instance.
+
+**Group**:
+A named collection of component instances and/or nested groups, treated as one movable/resizable unit. Membership is a reference list (`MemberIds`) held by the group, not a back-pointer on each member; a group's bounds are computed from its members on demand, not stored.
 
 **Canvas chrome**:
 UI anchored to a canvas's viewport rather than its pannable/zoomable board surface — it doesn't move when the board pans and isn't part of persisted board content. The palette is the first example; a minimap would be another.

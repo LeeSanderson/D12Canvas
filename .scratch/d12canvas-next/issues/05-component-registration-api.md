@@ -18,3 +18,7 @@ The default palette (`CanvasPalette`) and any future canvas-level UI (e.g. a min
 Deferred to other tickets: connector anchor points ("Connectors/edges model"); the click/drag verb for placing a palette entry onto the board (tracked as "Tool modes & interaction details" fog).
 
 Full glossary and architectural rationale: `CONTEXT.md` (Component type, Component instance, Key, Props, Bounds, Canvas chrome, Palette) and `docs/adr/0001-component-registration-contract.md`, `docs/adr/0002-canvas-chrome-separate-from-board-content.md`.
+
+## Comments
+
+While resolving [State/data model](06-state-data-model.md), a gap surfaced: this ADR never specified what happens if two `RegisterComponent` calls reuse the same key for different `TComponent`/`TProps` pairs. Addressed as an addendum to `docs/adr/0001-component-registration-contract.md` — registration must validate key uniqueness and throw on collision.
