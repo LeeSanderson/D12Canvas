@@ -30,7 +30,7 @@ Any board-content item addressable by a stable GUID assigned at creation — a c
 _Avoid_: node, object — ambiguous with terms already avoided for component instance.
 
 **Group**:
-A named collection of component instances and/or nested groups, treated as one movable/resizable unit. Membership is a reference list (`MemberIds`) held by the group, not a back-pointer on each member; a group's bounds are computed from its members on demand, not stored.
+A named collection of component instances and/or nested groups, treated as one movable/resizable unit. Membership is a reference list (`MemberIds`) held by the group, not a back-pointer on each member; a group's bounds are computed from its members on demand, not stored. Layering commands (ADR 0008) applied to a group are bulk writes across member `ZIndex` values, preserving members' relative order — a group has no z-position field of its own.
 
 **Selection**:
 The transient, unpersisted set of component instances (and/or groups) currently chosen by the user. Distinct from `Group`: selecting 2+ instances and invoking an explicit "group" action promotes that selection into a `Group`, but selection itself is never serialized, tracked in undo/redo, or part of `Board`.
@@ -49,6 +49,15 @@ _Avoid_: overlay, widget.
 
 **Palette**:
 The default canvas chrome component that lists registered component types for the user to pick from.
+
+**Property panel**:
+The canvas-chrome component that surfaces editable `TProps` fields for the current selection, built generically from each component type's declared editable properties rather than one bespoke panel per type. A component's `Text`-type content is excluded — edited inline/WYSIWYG on the canvas instead.
+
+**Editable property**:
+A `TProps` field exposed through the property panel, declared by default via an attribute on the `TProps` record and optionally overridden by the registration builder. Carries an `EditorKind` describing which panel control renders it.
+
+**EditorKind**:
+The kind of control an editable property renders as in the property panel — a closed built-in set (Text, Color, Number, Checkbox, Dropdown, …) plus `Custom`, which takes an author-supplied `RenderFragment<TProps>` for anything the built-ins can't express.
 
 **Gesture**:
 One completed user-facing action on the board — a drag from press to release, a resize, a prop edit committed on blur, a create, a delete, a group, an ungroup. The unit undo/redo operates on: a gesture becomes exactly one history entry, never one per intermediate frame.
