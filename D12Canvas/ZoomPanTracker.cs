@@ -36,7 +36,7 @@ public class ZoomPanTracker
             throw new ArgumentException(nameof(height));
         _containerWidth = width;
         _containerHeight = height;
-        ApplyPanPositionConstaints();
+        ApplyPanPositionConstraints();
     }
 
     public void SetCanvasSize(int width, int height)
@@ -47,7 +47,7 @@ public class ZoomPanTracker
             throw new ArgumentException(nameof(height));
         _canvasWidth = width;
         _canvasHeight = height;
-        ApplyPanPositionConstaints();
+        ApplyPanPositionConstraints();
     }
 
     public bool Pan(double deltaX, double deltaY) => SetPanPosition(_panX + deltaX, _panY + deltaY);
@@ -58,7 +58,7 @@ public class ZoomPanTracker
         {
             _panX = panX;
             _panY = panY;
-            ApplyPanPositionConstaints();
+            ApplyPanPositionConstraints();
             OnChanged();
             return true;
         }
@@ -77,7 +77,7 @@ public class ZoomPanTracker
         if (newScale != _scale)
         {
             _scale = newScale;
-            ApplyPanPositionConstaints();
+            ApplyPanPositionConstraints();
             OnChanged();
             return true;
         }
@@ -85,7 +85,7 @@ public class ZoomPanTracker
         return false;
     }
 
-    private void ApplyPanPositionConstaints()
+    private void ApplyPanPositionConstraints()
     {
         var maxPanX = _containerWidth - (_canvasWidth * _scale);
         var maxPanY = _containerHeight - (_canvasHeight * _scale);
