@@ -1,0 +1,14 @@
+# Selection is transient view state; ad-hoc multi-select supports move and resize; grouping promotes a selection into a persistent Group entity
+
+Selection — which component instance(s) are currently chosen — is transient UI state, not part of `Board` (ADR 0003). It is never persisted, never serialized, and never tracked by undo/redo; it lives alongside other ephemeral view state like zoom/pan, scoped to the running app instance.
+
+**Ad-hoc multi-select** (shift-click and/or marquee/rubber-band drag) is a transient set of selected component instance IDs. Marquee selection uses **intersection** semantics: a component is selected if the drag rectangle overlaps it at all, not only when fully contained. Shift-click **toggles** membership — clicking an already-selected instance again removes it from the selection — and clicking empty canvas clears the selection entirely. An ad-hoc multi-select supports both **move** and **resize** as a single bounding-box unit, computed on the fly from its members' current `Bounds` — the same interaction surface a `Group` gets, without backing it with a persisted entity.
+
+**Grouping** is a separate, explicit action: given an ad-hoc selection of 2+ component instances, it creates a persisted `Group` entity (`MemberIds`, computed bounds — ADR 0003) from the current selection. Once a `Group` exists, clicking any one of its members selects the whole group as a unit, so selection and group membership converge at that point. How a user "enters" an existing group to select/edit an individual member (e.g. double-click-to-enter vs. requiring ungroup first) is left open, to be decided at implementation time once the interaction can be felt hands-on.
+
+**Accessibility baseline:** selected `ComponentContainer`(s) get `aria-selected` applied now, consistent with ADR 0001's pattern of `ComponentContainer` auto-applying ARIA state. Full keyboard-driven selection (tab order, arrow-key nudge, keyboard-triggered marquee) remains deferred to the broader "full keyboard-accessibility interaction" work, not decided here.
+
+**Considered and rejected:**
+- **Full-containment marquee** (a component must be entirely inside the drag rectangle to be selected) — rejected in favor of intersection; matches common whiteboard-tool defaults and is far less fiddly to draw precisely around small or densely-packed components.
+- **Persisting selection on `Board`** (e.g. a `SelectedIds` field) — rejected; selection is ephemeral view state with no meaning to a second collaborator or a reloaded session, and giving it board-entity status would need undo/redo and serialization concerns for no benefit.
+- **Shift-click as purely additive** (never removes) — rejected in favor of toggle; a toggle lets the user correct an accidental shift-click without starting the selection over.

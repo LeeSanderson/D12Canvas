@@ -32,6 +32,10 @@ _Avoid_: node, object — ambiguous with terms already avoided for component ins
 **Group**:
 A named collection of component instances and/or nested groups, treated as one movable/resizable unit. Membership is a reference list (`MemberIds`) held by the group, not a back-pointer on each member; a group's bounds are computed from its members on demand, not stored.
 
+**Selection**:
+The transient, unpersisted set of component instances (and/or groups) currently chosen by the user. Distinct from `Group`: selecting 2+ instances and invoking an explicit "group" action promotes that selection into a `Group`, but selection itself is never serialized, tracked in undo/redo, or part of `Board`.
+_Avoid_: conflating with Group — a selection is ephemeral view state, a Group is persisted board content.
+
 **Edge**:
 A connection between two ports (or a floating point), rendered per its own routing style and arrow settings. An entity in its own right (`Board.Edges`), but its label — when present — is embedded on the edge rather than a separate entity, since a label has no existence independent of the edge that owns it.
 _Avoid_: connector, link — "edge" is the established term (already anticipated in `Board`'s and `Entity`'s definitions before it had content of its own).
