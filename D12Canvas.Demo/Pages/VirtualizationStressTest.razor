@@ -1,0 +1,245 @@
+@* Dev tool, not a demoed feature (same role as ZoomPanTest/ChildComponentTest) — kept
+   permanently to manually verify that future changes don't regress render performance
+   against a large synthetic component set. Originated from the wayfinder ticket
+   "Virtualization/windowing mitigation stress test", which used it to validate viewport
+   windowing plus ShouldRender/throttling against the real ComponentContainer/DiagramCanvas.
+   Pan (drag) and zoom (wheel) the canvas and watch the HUD. Switch variants at the bottom. *@
+@page "/virtualization-stress-test"
+@using D12Canvas
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>Virtualization Stress Test</PageTitle>
+
+<div class="stress-controls">
+    <label>
+        Components:
+        <select value="@NodeCount" @onchange="OnNodeCountChanged">
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+            <option value="2000">2000</option>
+            <option value="5000">5000</option>
+            <option value="10000">10000</option>
+        </select>
+    </label>
+    <span class="stress-hud" @ref="_hudRef">starting HUD…</span>
+    <span class="stress-total">total: @AllNodes.Count | rendered: @RenderedNodes.Count</span>
+</div>
+
+<div class="canvas-container">
+    <DiagramCanvas OnZoomOrPanChanged="HandleZoomPanChanged">
+        @foreach (var node in RenderedNodes)
+        {
+            <ComponentContainer @key="node.Id" X="node.X" Y="node.Y" Width="node.Width" Height="node.Height">
+                <div class="stress-node" style="background:@node.Color;">@node.Id</div>
+            </ComponentContainer>
+        }
+    </DiagramCanvas>
+</div>
+
+<div class="variant-bar">
+    <button @onclick="() => CycleVariant(-1)">◀</button>
+    <span class="variant-label">@CurrentVariantLabel</span>
+    <button @onclick="() => CycleVariant(1)">▶</button>
+</div>
+
+<style>
+    .stress-controls {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-family: monospace;
+        font-size: 13px;
+    }
+
+    .canvas-container {
+        height: 75vh;
+        border: 1px solid #ccc;
+    }
+
+    .stress-node {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-family: monospace;
+        font-size: 12px;
+    }
+
+    .variant-bar {
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 16px;
+        background: #212529;
+        color: #fff;
+        border-radius: 999px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        font-family: monospace;
+        z-index: 1000;
+    }
+
+    .variant-bar button {
+        background: none;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        font-size: 16px;
+    }
+</style>
+
+@code {
+    private const int CanvasSize = 3000; // matches DiagramCanvas's hardcoded canvas size
+
+    private record StressNode(int Id, double X, double Y, double Width, double Height, string Color);
+
+    private static readonly (string Key, string Label)[] VariantList =
+    {
+        ("none", "A — None (baseline, all mounted)"),
+        ("tight", "B — Windowed (tight, viewport only)"),
+        ("buffered", "C — Windowed (buffered, 50% overscan)"),
+    };
+
+    [SupplyParameterFromQuery(Name = "variant")]
+    private string? VariantParam { get; set; }
+
+    private string Variant => VariantParam ?? "none";
+
+    private string CurrentVariantLabel =>
+        VariantList.FirstOrDefault(v => v.Key == Variant).Label ?? Variant;
+
+    private int NodeCount { get; set; } = 1000;
+    private List<StressNode> AllNodes { get; set; } = new();
+    private List<StressNode> RenderedNodes { get; set; } = new();
+
+    private double _viewLeft, _viewTop, _viewRight, _viewBottom;
+    private string? _lastVariant;
+    private ElementReference _hudRef;
+    private IJSObjectReference? _jsModule;
+
+    protected override void OnInitialized()
+    {
+        // No pan/zoom event has fired yet, so assume the full canvas is visible
+        // until the first real viewport update arrives.
+        _viewLeft = 0;
+        _viewTop = 0;
+        _viewRight = CanvasSize;
+        _viewBottom = CanvasSize;
+
+        AllNodes = GenerateNodes(NodeCount);
+        RecomputeRenderedNodes();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_lastVariant != Variant)
+        {
+            _lastVariant = Variant;
+            RecomputeRenderedNodes();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _jsModule = await JS.InvokeAsync<IJSObjectReference>(
+                "import",
+                "./js/virtualizationStressTest.js"
+            );
+            await _jsModule.InvokeVoidAsync("startMonitor", _hudRef, "component-container");
+        }
+    }
+
+    private static List<StressNode> GenerateNodes(int count)
+    {
+        var rnd = new Random(42); // fixed seed — reproducible layout across variant switches
+        var palette = new[] { "#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c" };
+        const double width = 140;
+        const double height = 90;
+
+        var nodes = new List<StressNode>(count);
+        for (var i = 0; i < count; i++)
+        {
+            var x = rnd.NextDouble() * (CanvasSize - width);
+            var y = rnd.NextDouble() * (CanvasSize - height);
+            nodes.Add(new StressNode(i, x, y, width, height, palette[i % palette.Length]));
+        }
+        return nodes;
+    }
+
+    private void OnNodeCountChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var count))
+        {
+            NodeCount = count;
+            AllNodes = GenerateNodes(NodeCount);
+            RecomputeRenderedNodes();
+        }
+    }
+
+    private void HandleZoomPanChanged(ZoomPanChangedEventArgs args)
+    {
+        // Same recompute trigger Blazor.Diagrams uses: pan/zoom/resize events, not a per-frame tick.
+        _viewLeft = -args.PanX / args.Scale;
+        _viewTop = -args.PanY / args.Scale;
+        _viewRight = _viewLeft + args.ContainerWidth / args.Scale;
+        _viewBottom = _viewTop + args.ContainerHeight / args.Scale;
+
+        RecomputeRenderedNodes();
+        StateHasChanged();
+    }
+
+    private void RecomputeRenderedNodes()
+    {
+        if (Variant == "none")
+        {
+            RenderedNodes = AllNodes;
+            return;
+        }
+
+        var viewWidth = _viewRight - _viewLeft;
+        var viewHeight = _viewBottom - _viewTop;
+        var marginX = Variant == "buffered" ? viewWidth * 0.5 : 0;
+        var marginY = Variant == "buffered" ? viewHeight * 0.5 : 0;
+
+        var left = _viewLeft - marginX;
+        var top = _viewTop - marginY;
+        var right = _viewRight + marginX;
+        var bottom = _viewBottom + marginY;
+
+        // Plain O(n) linear bounding-box scan — no spatial index — per the mitigation
+        // ticket 01 validated (Blazor.Diagrams' approach, sub-millisecond at this scale).
+        RenderedNodes = AllNodes
+            .Where(n => n.X < right && n.X + n.Width > left && n.Y < bottom && n.Y + n.Height > top)
+            .ToList();
+    }
+
+    private void CycleVariant(int direction)
+    {
+        var keys = VariantList.Select(v => v.Key).ToArray();
+        var idx = Array.IndexOf(keys, Variant);
+        var next = keys[(idx + direction + keys.Length) % keys.Length];
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameter("variant", next), replace: true);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule != null)
+        {
+            await _jsModule.InvokeVoidAsync("stopMonitor");
+            await _jsModule.DisposeAsync();
+        }
+    }
+}
