@@ -22,6 +22,7 @@ Both use the component type's registered `DefaultSize` (ADR 0001). The **default
 | Ctrl+G / Ctrl+Shift+G | Group / Ungroup | ADR 0006 |
 | Ctrl+] / Ctrl+[ | Bring forward / send backward | ADR 0008 |
 | Ctrl+Shift+] / Ctrl+Shift+[ | Bring to front / send to back | ADR 0008 |
+| Ctrl+' | Toggle snap-to-grid | ADR 0011 |
 
 **Context menu** (right-click): on a selection, the menu offers the same action set as the shortcut table — Delete; Group (2+ ad-hoc selected) or Ungroup (a `Group` selected); and the four z-index commands. Right-click on empty canvas opens no menu at all — there is no decided action that would belong there.
 
@@ -32,3 +33,5 @@ Both use the component type's registered `DefaultSize` (ADR 0001). The **default
 - **A dedicated connector tool mode** — rejected; contradicts the momentary-gesture model, and ADR 0005's always-on ports already make direct-drag-from-port the natural gesture.
 - **Fixed board-space origin as the click-to-add default position** — rejected; can place the new instance off-screen once the user has panned away from the origin.
 - **Copy/paste, duplicate, select-all shortcuts** — out of scope here; none has an underlying model decided yet (clipboard format, duplicate-position semantics, "select all" semantics under grouping), so binding a shortcut now would be speccing ahead of a decision that doesn't exist.
+
+**Addendum (surfaced while resolving the canvas scale and size limits ticket):** `Ctrl+'` toggles snap-to-grid (ADR 0011) — added to the baseline shortcut table above, host-disable-able independent of the `SnapToGrid` bindable parameter.

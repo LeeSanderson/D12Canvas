@@ -31,3 +31,7 @@ No persistent tool-mode state machine — select is the only persistent state; p
 **Context menu** on a selection offers the same action set as the shortcuts (Delete, Group/Ungroup, the four z-index commands); right-click on empty canvas opens no menu — there's no decided action to put there.
 
 Seeded ADR [0009](../../../docs/adr/0009-tool-modes-and-interaction-model.md). No new `CONTEXT.md` terms — everything here composes existing vocabulary (Gesture, Palette, Port, Edge). Graduates the "Full keyboard-accessibility interaction" fog item into a new ticket, now that a baseline shortcut set and placement/connector model exist to build on top of.
+
+## Comments
+
+While resolving [Canvas scale and size limits](17-canvas-scale-size-limits.md), a new baseline shortcut was added: `Ctrl+'` toggles snap-to-grid. Addressed as an addendum to `docs/adr/0009-tool-modes-and-interaction-model.md`.

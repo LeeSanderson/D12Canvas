@@ -68,3 +68,12 @@ _Avoid_: inventing a new command type per feature — a generic primitive (espec
 
 **History**:
 The local, in-memory, session-scoped stack of `Command`s backing undo/redo for the current `Board` — capped at a fixed depth (a circular buffer), never persisted, and never tracked across a reload. Distinct from `Selection`, which is also transient view state but isn't tracked here at all.
+
+**Grid**:
+The canvas's visual position/scale reference — concurrent layers stepping by 10x spacing, crossfading in and out as zoom crosses each layer's legibility threshold to simulate infinite depth in either zoom direction. Purely a `DiagramCanvas` rendering concern; not part of `Board`, not persisted.
+
+**Snap-to-grid**:
+An optional, off-by-default toggle causing placement/move to snap to the currently-dominant `Grid` layer's spacing. Ephemeral view state, like `Selection` — never part of `Board`, never persisted, regardless of the grid layer it currently tracks.
+
+**LOD placeholder**:
+The generic, non-interactive stand-in rendered for a component instance once its on-screen size (`Bounds` × current zoom scale) drops below a configurable threshold — swaps out the full Razor component tree for a plain box built from data the registration contract already requires (`DisplayName`/`Icon`), rather than mounting every instance at full cost regardless of how small it renders.
