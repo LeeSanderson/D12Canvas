@@ -77,3 +77,7 @@ An optional, off-by-default toggle causing placement/move to snap to the current
 
 **LOD placeholder**:
 The generic, non-interactive stand-in rendered for a component instance once its on-screen size (`Bounds` × current zoom scale) drops below a configurable threshold — swaps out the full Razor component tree for a plain box built from data the registration contract already requires (`DisplayName`/`Icon`), rather than mounting every instance at full cost regardless of how small it renders.
+
+**Theme token**:
+A named CSS custom property in the shared set every canvas-chrome element (`Grid`, `LOD placeholder`, `Palette`, selection marquee, connector drag-preview, context menu) reads for its default visual values (surface, border, accent, muted text, …), rather than each element declaring one-off properties. Declared independently on each chrome component's own root — not a single global `:root` — so every component works standalone and two canvas instances can carry different themes; a host overriding tokens on a shared ancestor gets one consistent theme across both via ordinary CSS inheritance.
+_Avoid_: conflating with `TProps`/editable-property styling (ADR 0008) — theme tokens style library-owned chrome; per-instance visual fields are ordinary business-data props with no separate theming model.

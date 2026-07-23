@@ -34,10 +34,11 @@ A written spec (PRD) for the next version of D12Canvas, backed by a set of locke
 - [Edge attachment to whole Group](issues/15-edge-group-attachment.md) — edges never attach to a `Group`, only to individual `ComponentInstance` ports or floating; no schema change, no orphaning risk on ungroup, and no conflict with group-click-select since port-drag is a distinct gesture. Narrows ticket 08's scope boundary rather than extending it.
 - [Full keyboard-accessibility interaction](issues/16-full-keyboard-accessibility-interaction.md) — reading-order tab stops (Groups collapse to one stop), focus-follows-selection, zoom-relative arrow-key move/resize (`Alt+Arrow` per-axis grow/shrink anchoring), `Ctrl+Tab`+`Space` keyboard multi-select, and mouse-free placement/connector attachment via existing focus/nudge mechanics. Seeded ADR 0010.
 - [Canvas scale and size limits](issues/17-canvas-scale-size-limits.md) — `Board` extent and `DiagramCanvas` zoom (min and max) are all unbounded by default, replacing today's fixed 3000x3000/0.6x-6x constants; a host-configurable level-of-detail cutoff swaps distant components for a generic placeholder since windowing alone can't bound a dense, zoomed-out board. The old fixed grid is replaced by an adaptive multi-layer grid (10x spacing steps, crossfading as zoom crosses each layer's threshold), with an optional ephemeral snap-to-grid toggle (`SnapToGrid` parameter + `Ctrl+'`) that snaps to whichever layer is currently dominant. Seeded ADR 0011; amends ADR 0009's shortcut table.
+- [Canvas-chrome-level visual theming](issues/18-canvas-chrome-theming.md) — all library-owned chrome (grid, LOD placeholder, palette, marquee, connector drag-preview, context menu) themed via a shared CSS custom-property token layer, no C# API; ships default light + dark themes (`prefers-color-scheme` default, `data-d12-theme` host override); `DiagramCanvas` and `Palette` each declare their own token defaults on their own root, not a global `:root`. Seeded ADR 0012 and a new `CONTEXT.md` term (Theme token).
 
 ## Not yet specified
 
-- Canvas-chrome-level visual theming (grid line color/style, LOD placeholder appearance, palette appearance) — ticket 12 only covered per-component-instance visual props via `TProps`, not the visual appearance of chrome/rendering the library itself owns. Surfaced while resolving [Canvas scale and size limits](issues/17-canvas-scale-size-limits.md), not yet sharp enough to ticket.
+(none — the frontier is clear)
 
 ## Out of scope
 
