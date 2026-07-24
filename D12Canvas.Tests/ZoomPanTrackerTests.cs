@@ -198,5 +198,24 @@ namespace D12Canvas.Tests
             Assert.Equal(1200, _lastEventArgs!.ContainerWidth);
             Assert.Equal(800, _lastEventArgs!.ContainerHeight);
         }
+
+        [Fact]
+        public void SetCanvasSizeTriggersChangedEvent()
+        {
+            // Set initial canvas size
+            _tracker.SetCanvasSize(1000, 1000);
+
+            // Reset event tracking
+            _eventTriggered = false;
+            _lastEventArgs = null;
+
+            // Update canvas size (container/scale stay put, so the pan position
+            // itself never needs clamping - this must still notify)
+            _tracker.SetCanvasSize(2000, 2000);
+
+            // Verify event was triggered
+            Assert.True(_eventTriggered);
+            Assert.NotNull(_lastEventArgs);
+        }
     }
 }

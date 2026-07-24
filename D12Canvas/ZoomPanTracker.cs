@@ -37,6 +37,7 @@ public class ZoomPanTracker
         _containerWidth = width;
         _containerHeight = height;
         ApplyPanPositionConstraints();
+        OnChanged();
     }
 
     public void SetCanvasSize(int width, int height)
@@ -48,6 +49,7 @@ public class ZoomPanTracker
         _canvasWidth = width;
         _canvasHeight = height;
         ApplyPanPositionConstraints();
+        OnChanged();
     }
 
     public bool Pan(double deltaX, double deltaY) => SetPanPosition(_panX + deltaX, _panY + deltaY);
@@ -90,15 +92,8 @@ public class ZoomPanTracker
         var maxPanX = _containerWidth - (_canvasWidth * _scale);
         var maxPanY = _containerHeight - (_canvasHeight * _scale);
 
-        var newPanX = Math.Clamp(_panX, maxPanX, 0);
-        var newPanY = Math.Clamp(_panY, maxPanY, 0);
-
-        if (newPanX != _panX || newPanY != _panY)
-        {
-            _panX = newPanX;
-            _panY = newPanY;
-            OnChanged();
-        }
+        _panX = Math.Clamp(_panX, maxPanX, 0);
+        _panY = Math.Clamp(_panY, maxPanY, 0);
     }
 
     private void OnChanged()
