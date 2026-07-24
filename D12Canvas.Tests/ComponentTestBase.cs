@@ -5,7 +5,7 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-public abstract class ComponentTestBase : TestContext
+public abstract class ComponentTestBase : BunitContext
 {
     protected ComponentTestBase()
     {

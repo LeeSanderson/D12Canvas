@@ -54,9 +54,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
             )
         );
 
-        var canvas = RenderComponent<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board)
-        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         Assert.Equal("hello", canvas.Find(".test-props-component").TextContent);
     }
@@ -73,9 +71,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
             new ComponentInstance(ComponentTypeKey, new TestProps("b"), new Bounds(20, 20, 10, 10))
         );
 
-        var canvas = RenderComponent<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board)
-        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         Assert.Equal(2, canvas.FindAll(".component-container").Count);
     }
@@ -89,9 +85,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
             new ComponentInstance(ComponentTypeKey, new TestProps(), new Bounds(0, 0, 100, 50))
         );
 
-        var canvas = RenderComponent<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board)
-        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var container = canvas.Find(".component-container");
         Assert.Equal("figure", container.GetAttribute("role"));
@@ -120,9 +114,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
             )
         );
 
-        var canvas = RenderComponent<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board)
-        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
         var atZeroLeft = containers.Single(c => c.GetAttribute("style")!.Contains("left: 0px"));
@@ -144,7 +136,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
         );
 
         Assert.Throws<UnknownComponentKeyException>(
-            () => RenderComponent<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board))
+            () => Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board))
         );
     }
 
@@ -157,9 +149,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
             new ComponentInstance(ComponentTypeKey, new TestProps(), new Bounds(10, 20, 100, 50))
         );
 
-        var canvas = RenderComponent<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board)
-        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas
             .Find(".diagram-canvas")
@@ -192,9 +182,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
             new ComponentInstance(ComponentTypeKey, new TestProps(), new Bounds(10, 20, 100, 50))
         );
 
-        var canvas = RenderComponent<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board)
-        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 });
 

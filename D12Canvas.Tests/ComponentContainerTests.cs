@@ -15,7 +15,7 @@ public class ComponentContainerTests : ComponentTestBase
     [Fact]
     public void ComponentContainer_ImportsColocatedJsModule()
     {
-        var container = RenderComponent<ComponentContainer>();
+        var container = Render<ComponentContainer>();
 
         Assert.Contains("view-mode", container.Find(".component-container").ClassList);
     }
@@ -23,7 +23,7 @@ public class ComponentContainerTests : ComponentTestBase
     [Fact]
     public void ComponentContainer_ClickOutside_ExitsEditMode()
     {
-        var container = RenderComponent<ComponentContainer>(parameters =>
+        var container = Render<ComponentContainer>(parameters =>
             parameters.Add(p => p.InitialEditMode, true)
         );
 

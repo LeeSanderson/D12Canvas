@@ -1,0 +1,409 @@
+﻿<!DOCTYPE html><html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <base href="/">
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link href="D12Canvas.Demo.styles.css" rel="stylesheet">
+<!--!--><!--!--><!--!--><title>Board Demo</title><!--!--><!--!--><!--!--></head>
+
+<body>
+    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
+        <button title="Navigation menu" class="navbar-toggler" b-91fadkni91=""><!--!--><span class="navbar-toggler-icon" b-91fadkni91=""></span></button></div></div><!--!-->
+
+<div class="collapse nav-scrollable" b-91fadkni91=""><nav class="nav flex-column" b-91fadkni91=""><div class="nav-item px-3" b-91fadkni91=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
+                Zoom and Pan Test
+            </a><!--!-->
+            <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
+                Child Component Test
+            </a><!--!-->
+            <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
+                Component Container Demo
+            </a><!--!-->
+            <!--!--><a href="board-demo" class="nav-link active" aria-current="page"><!--!-->
+                Board Demo
+            </a><!--!-->
+            <!--!--><a href="virtualization-stress-test" class="nav-link"><!--!-->
+                Virtualization Stress Test
+            </a></div></nav></div></div><!--!-->
+
+    <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
+
+<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(-300px, -200px) scale(1.5000000000000004);"><!--!--><!--!--><div class="component-container view-mode" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" role="group" aria-label="Demo note" _bl_3=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>Welcome to D12Canvas</p></div><!--!-->
+
+<!--!--><style>
+    .demo-note {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .demo-note p {
+        margin: 0;
+    }
+</style></div><!--!-->
+
+    <div class="resize-handle top-left"></div><!--!-->
+    <div class="resize-handle top"></div><!--!-->
+    <div class="resize-handle top-right"></div><!--!-->
+    <div class="resize-handle right"></div><!--!-->
+    <div class="resize-handle bottom-right"></div><!--!-->
+    <div class="resize-handle bottom"></div><!--!-->
+    <div class="resize-handle bottom-left"></div><!--!-->
+    <div class="resize-handle left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><!--!--><div class="component-container view-mode" style="left: 420px; top: 220px; width: 220px; height: 140px; z-index: 2;" role="group" aria-label="Demo note" _bl_4=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #a3d9a5;"><p>Rendered from a seeded Board</p></div><!--!-->
+
+<!--!--><style>
+    .demo-note {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .demo-note p {
+        margin: 0;
+    }
+</style></div><!--!-->
+
+    <div class="resize-handle top-left"></div><!--!-->
+    <div class="resize-handle top"></div><!--!-->
+    <div class="resize-handle top-right"></div><!--!-->
+    <div class="resize-handle right"></div><!--!-->
+    <div class="resize-handle bottom-right"></div><!--!-->
+    <div class="resize-handle bottom"></div><!--!-->
+    <div class="resize-handle bottom-left"></div><!--!-->
+    <div class="resize-handle left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><!--!--><div class="component-container view-mode" style="left: 220px; top: 340px; width: 240px; height: 140px; z-index: 0;" role="group" aria-label="Demo note" _bl_5=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #9ec5fe;"><p>Resolved through the component registry</p></div><!--!-->
+
+<!--!--><style>
+    .demo-note {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .demo-note p {
+        margin: 0;
+    }
+</style></div><!--!-->
+
+    <div class="resize-handle top-left"></div><!--!-->
+    <div class="resize-handle top"></div><!--!-->
+    <div class="resize-handle top-right"></div><!--!-->
+    <div class="resize-handle right"></div><!--!-->
+    <div class="resize-handle bottom-right"></div><!--!-->
+    <div class="resize-handle bottom"></div><!--!-->
+    <div class="resize-handle bottom-left"></div><!--!-->
+    <div class="resize-handle left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style></div></div></div><!--!-->
+
+<!--!--><style>
+    .diagram-container {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-template-rows: minmax(400px, auto) minmax(400px, 100%);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #ccc;
+    }
+    
+    .diagram-canvas {
+        width: 100%;
+        height: 100%;
+        grid-row: 1;
+        position: relative;
+        cursor: grab;
+    }
+    
+    .diagram-canvas:active {
+        cursor: grabbing;
+    }
+    
+    .canvas-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: top left;
+        transition: transform 0.1s ease-out;
+        background: #f0f0f0;
+        background-image: 
+            linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        background-position: 0 0;
+    }
+</style></div><!--!-->
+
+<!--!--><style>
+    .canvas-container {
+        height: 600px;
+        border: 1px solid #ccc;
+    }
+</style></article></main></div><!--!-->
+        <!--!--></div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+
+
+
+</body></html>

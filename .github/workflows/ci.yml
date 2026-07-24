@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    name: bUnit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Restore dotnet tools
+        run: dotnet tool restore
+      - name: Check formatting
+        run: dotnet csharpier --check .
+      - name: Run bUnit tests
+        run: dotnet test --project D12Canvas.Tests/D12Canvas.Tests.csproj
+
+  visual-tests:
+    name: Playwright visual tests
+    runs-on: ubuntu-latest
+    # Same image used for local baseline generation (see README) - this is what neutralizes
+    # cross-platform font/rendering drift in the screenshot diffs.
+    container:
+      image: mcr.microsoft.com/playwright/dotnet:v1.61.0-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore dotnet tools
+        run: dotnet tool restore
+      - name: Run Playwright visual tests
+        run: dotnet test --project D12Canvas.VisualTests/D12Canvas.VisualTests.csproj
+      - name: Upload screenshot diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-diffs
+          path: D12Canvas.VisualTests/**/*.received.*
+          retention-days: 7

@@ -120,3 +120,7 @@ orleans.codegen.cs
 
 # Node.js Tools for Visual Studio
 node_modules/
+
+# Verify (Verify.Playwright screenshot-diff output) - *.verified.* baselines are committed,
+# *.received.* is transient failure output regenerated on every run.
+*.received.*

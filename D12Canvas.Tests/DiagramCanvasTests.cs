@@ -9,7 +9,7 @@ public class DiagramCanvasTests : ComponentTestBase
     public void DiagramCanvas_ShouldRender()
     {
         // Arrange
-        var canvas = RenderComponent<DiagramCanvas>();
+        var canvas = Render<DiagramCanvas>();
 
         // Assert
         canvas.MarkupMatches("<div class=\"diagram-canvas\">Canvas</div>");
@@ -20,7 +20,7 @@ public class DiagramCanvasTests : ComponentTestBase
     {
         SetupDiagramCanvasJsModule();
 
-        var canvas = RenderComponent<DiagramCanvas>();
+        var canvas = Render<DiagramCanvas>();
 
         Assert.NotNull(canvas.Find(".diagram-canvas"));
     }
