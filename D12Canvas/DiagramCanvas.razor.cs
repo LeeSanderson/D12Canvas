@@ -1,3 +1,5 @@
+using D12Canvas.Model;
+using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -8,6 +10,12 @@ public partial class DiagramCanvas : IAsyncDisposable
 {
     [Inject]
     private IJSRuntime JS { get; set; } = null!;
+
+    [Inject]
+    private IComponentRegistry Registry { get; set; } = null!;
+
+    [Parameter]
+    public Board? Board { get; set; }
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
@@ -122,6 +130,13 @@ public partial class DiagramCanvas : IAsyncDisposable
         _zoomPanTracker.Pan(0, -50);
         StateHasChanged();
     }
+
+    // The registered TComponent's props parameter is a fixed contract (ADR 0001 addendum):
+    // [Parameter] public TProps Props { get; set; }
+    private const string PropsParameterName = "Props";
+
+    private static IDictionary<string, object> GetComponentParameters(ComponentInstance instance) =>
+        new Dictionary<string, object> { [PropsParameterName] = instance.Props };
 
     private string ContentStyle =>
         $"width: {_zoomPanTracker.CanvasWidth}px; height: {_zoomPanTracker.CanvasHeight}px; transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";

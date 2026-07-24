@@ -28,6 +28,15 @@ public partial class ComponentContainer : IAsyncDisposable
     public bool InitialEditMode { get; set; }
 
     [Parameter]
+    public int ZIndex { get; set; }
+
+    [Parameter]
+    public string? AccessibleName { get; set; }
+
+    [Parameter]
+    public string? Role { get; set; }
+
+    [Parameter]
     public EventCallback<ComponentContainerStateChangedEventArgs> OnStateChanged { get; set; }
 
     [CascadingParameter(Name = "ParentCanvas")]
@@ -53,7 +62,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private bool _lastRenderedEditMode;
 
     private string ContainerStyle =>
-        $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px;";
+        $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
 
     protected override void OnInitialized()
     {

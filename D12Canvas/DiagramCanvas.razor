@@ -6,6 +6,8 @@
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components
 @using D12Canvas
+@using D12Canvas.Model
+@using D12Canvas.Registration
 @using System.Collections.Generic;
 
 <div class="diagram-container" @ref="ContainerElement">
@@ -16,6 +18,23 @@
          @onwheel="@HandleMouseWheel">
         <div class="canvas-content" style="@ContentStyle">
             <CascadingValue Value="this" Name="ParentCanvas">
+            @if (Board is not null)
+            {
+                @foreach (var instance in Board.Components)
+                {
+                    var registration = Registry.Resolve(instance.ComponentTypeKey);
+                    <ComponentContainer @key="instance.Id"
+                                        X="instance.Bounds.X"
+                                        Y="instance.Bounds.Y"
+                                        Width="instance.Bounds.Width"
+                                        Height="instance.Bounds.Height"
+                                        ZIndex="instance.ZIndex"
+                                        AccessibleName="@registration.AccessibleName"
+                                        Role="@registration.Role">
+                        <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
+                    </ComponentContainer>
+                }
+            }
             @ChildContent
             </CascadingValue>
         </div>

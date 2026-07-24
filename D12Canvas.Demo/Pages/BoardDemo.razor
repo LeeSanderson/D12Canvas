@@ -1,0 +1,51 @@
+@page "/board-demo"
+@using D12Canvas
+@using D12Canvas.Model
+@using D12Canvas.Demo.Components
+
+<PageTitle>Board Demo</PageTitle>
+
+<div class="canvas-container">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .canvas-container {
+        height: 600px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private readonly Board _board = SeedBoard();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(
+                "demo-note",
+                new DemoNoteProps("Welcome to D12Canvas", "#ffd966"),
+                new Bounds(120, 80, 220, 140),
+                zIndex: 1
+            )
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "demo-note",
+                new DemoNoteProps("Rendered from a seeded Board", "#a3d9a5"),
+                new Bounds(420, 220, 220, 140),
+                zIndex: 2
+            )
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "demo-note",
+                new DemoNoteProps("Resolved through the component registry", "#9ec5fe"),
+                new Bounds(220, 340, 240, 140),
+                zIndex: 0
+            )
+        );
+        return board;
+    }
+}

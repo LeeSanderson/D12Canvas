@@ -3,6 +3,8 @@
 <div @ref="_containerRef"
      class="component-container @(_editMode ? "edit-mode" : "view-mode")"
      style="@ContainerStyle"
+     role="@Role"
+     aria-label="@AccessibleName"
      @onmousedown="HandleMouseDown"
      @onmousemove="HandleMouseMove"
      @onmouseup="HandleMouseUp"

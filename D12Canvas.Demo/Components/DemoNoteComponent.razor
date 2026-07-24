@@ -1,0 +1,25 @@
+@namespace D12Canvas.Demo.Components
+
+<div class="demo-note" style="background-color: @Props.Color;">
+    <p>@Props.Text</p>
+</div>
+
+<style>
+    .demo-note {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .demo-note p {
+        margin: 0;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public DemoNoteProps Props { get; set; } = new("", "#ffd966");
+}
