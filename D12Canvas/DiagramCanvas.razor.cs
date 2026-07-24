@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-public partial class DiagramCanvas
+public partial class DiagramCanvas : IAsyncDisposable
 {
     [Inject]
     private IJSRuntime JS { get; set; } = null!;
@@ -27,6 +27,7 @@ public partial class DiagramCanvas
     private ElementReference ContainerElement;
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
     private List<Action> _cleanupFunctions = new List<Action>();
+    private IJSObjectReference? _jsModule;
 
     protected override void OnInitialized()
     {
@@ -38,8 +39,13 @@ public partial class DiagramCanvas
     {
         if (firstRender)
         {
-            var dimensions = await JS.InvokeAsync<Dictionary<string, double>>(
-                "DiagramCanvas.getContainerDimensions",
+            _jsModule = await JS.InvokeAsync<IJSObjectReference>(
+                "import",
+                "./_content/D12Canvas/DiagramCanvas.razor.js"
+            );
+
+            var dimensions = await _jsModule.InvokeAsync<Dictionary<string, double>>(
+                "getContainerDimensions",
                 ContainerElement
             );
 
@@ -47,15 +53,15 @@ public partial class DiagramCanvas
             _zoomPanTracker.SetCanvasSize(3000, 3000);
 
             // Set up resize listener
-            var resizeCleanup = await JS.InvokeAsync<Action>(
-                "DiagramCanvas.addResizeListener",
+            var resizeCleanup = await _jsModule.InvokeAsync<Action>(
+                "addResizeListener",
                 ContainerElement,
                 _dotNetObjectRef
             );
 
             // Set up keyboard listener
-            var keyboardCleanup = await JS.InvokeAsync<Action>(
-                "DiagramCanvas.addKeyboardListener",
+            var keyboardCleanup = await _jsModule.InvokeAsync<Action>(
+                "addKeyboardListener",
                 ContainerElement,
                 _dotNetObjectRef
             );
@@ -174,12 +180,17 @@ public partial class DiagramCanvas
         ZoomOrPanChanged?.Invoke(this, e);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _cleanupFunctions.ForEach(f => f());
         _cleanupFunctions.Clear();
 
         _zoomPanTracker.Changed -= OnZoomPanChanged;
         _dotNetObjectRef?.Dispose();
+
+        if (_jsModule != null)
+        {
+            await _jsModule.DisposeAsync();
+        }
     }
 }

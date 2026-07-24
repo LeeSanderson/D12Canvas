@@ -84,7 +84,7 @@ public partial class ComponentContainer : IAsyncDisposable
         {
             _jsModule = await JavaScriptRuntime.InvokeAsync<IJSObjectReference>(
                 "import",
-                "./js/componentContainer.js"
+                "./_content/D12Canvas/ComponentContainer.razor.js"
             );
             _dotNetRef = DotNetObjectReference.Create(this);
         }
