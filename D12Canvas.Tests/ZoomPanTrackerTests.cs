@@ -1,4 +1,5 @@
 using D12Canvas;
+using D12Canvas.Model;
 using Xunit;
 
 namespace D12Canvas.Tests
@@ -216,6 +217,33 @@ namespace D12Canvas.Tests
             // Verify event was triggered
             Assert.True(_eventTriggered);
             Assert.NotNull(_lastEventArgs);
+        }
+
+        [Fact]
+        public void ViewportIsTheFullContainerAtDefaultPanAndScale()
+        {
+            _tracker.SetContainerSize(800, 600);
+
+            Assert.Equal(new Bounds(0, 0, 800, 600), _tracker.Viewport);
+        }
+
+        [Fact]
+        public void ViewportShiftsOppositeThePanOffset()
+        {
+            _tracker.SetContainerSize(800, 600);
+            _tracker.SetCanvasSize(3000, 3000);
+            _tracker.Pan(-50, -60);
+
+            Assert.Equal(new Bounds(50, 60, 800, 600), _tracker.Viewport);
+        }
+
+        [Fact]
+        public void ViewportShrinksAsScaleIncreases()
+        {
+            _tracker.SetContainerSize(800, 600);
+            _tracker.Zoom(true); // scale -> 1.1
+
+            Assert.Equal(new Bounds(0, 0, 800 / 1.1, 600 / 1.1), _tracker.Viewport);
         }
     }
 }

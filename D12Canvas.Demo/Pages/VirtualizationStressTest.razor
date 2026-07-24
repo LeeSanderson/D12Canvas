@@ -1,11 +1,15 @@
 @* Dev tool, not a demoed feature (same role as ZoomPanTest/ChildComponentTest) — kept
    permanently to manually verify that future changes don't regress render performance
    against a large synthetic component set. Originated from the wayfinder ticket
-   "Virtualization/windowing mitigation stress test", which used it to validate viewport
-   windowing plus ShouldRender/throttling against the real ComponentContainer/DiagramCanvas.
+   "Virtualization/windowing mitigation stress test", which validated viewport windowing
+   plus ShouldRender/throttling against the real ComponentContainer/DiagramCanvas. The
+   "windowed" variant now exercises DiagramCanvas's own built-in Board windowing (ticket
+   25) rather than a standalone prototype of it.
    Pan (drag) and zoom (wheel) the canvas and watch the HUD. Switch variants at the bottom. *@
 @page "/virtualization-stress-test"
 @using D12Canvas
+@using D12Canvas.Model
+@using D12Canvas.Demo.Components
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @implements IAsyncDisposable
@@ -25,24 +29,42 @@
         </select>
     </label>
     <span class="stress-hud" @ref="_hudRef">starting HUD…</span>
-    <span class="stress-total">total: @AllNodes.Count | rendered: @RenderedNodes.Count</span>
+    <span class="stress-total">total: @AllNodes.Count | rendered: @RenderedCount</span>
 </div>
 
 <div class="canvas-container">
-    <DiagramCanvas OnZoomOrPanChanged="HandleZoomPanChanged">
-        @foreach (var node in RenderedNodes)
-        {
-            <ComponentContainer @key="node.Id" X="node.X" Y="node.Y" Width="node.Width" Height="node.Height">
-                <div class="stress-node" style="background:@node.Color;">@node.Id</div>
-            </ComponentContainer>
-        }
-    </DiagramCanvas>
+    @if (Variant == "windowed")
+    {
+        <DiagramCanvas
+            @ref="_diagramCanvas"
+            Board="_board"
+            Overscan="_overscan"
+            OnZoomOrPanChanged="HandleZoomPanChanged" />
+    }
+    else
+    {
+        <DiagramCanvas @ref="_diagramCanvas" OnZoomOrPanChanged="HandleZoomPanChanged">
+            @foreach (var node in AllNodes)
+            {
+                <ComponentContainer @key="node.Id" X="node.X" Y="node.Y" Width="node.Width" Height="node.Height">
+                    <div class="stress-item" style="background:@node.Color;">@node.Id</div>
+                </ComponentContainer>
+            }
+        </DiagramCanvas>
+    }
 </div>
 
 <div class="variant-bar">
     <button @onclick="() => CycleVariant(-1)">◀</button>
     <span class="variant-label">@CurrentVariantLabel</span>
     <button @onclick="() => CycleVariant(1)">▶</button>
+    @if (Variant == "windowed")
+    {
+        <label class="overscan-control">
+            Overscan:
+            <input type="number" min="0" step="50" @bind="_overscan" />
+        </label>
+    }
 </div>
 
 <style>
@@ -62,7 +84,7 @@
         border: 1px solid #ccc;
     }
 
-    .stress-node {
+    .stress-item {
         width: 100%;
         height: 100%;
         display: flex;
@@ -97,6 +119,16 @@
         cursor: pointer;
         font-size: 16px;
     }
+
+    .overscan-control {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .overscan-control input {
+        width: 70px;
+    }
 </style>
 
 @code {
@@ -107,8 +139,7 @@
     private static readonly (string Key, string Label)[] VariantList =
     {
         ("none", "A — None (baseline, all mounted)"),
-        ("tight", "B — Windowed (tight, viewport only)"),
-        ("buffered", "C — Windowed (buffered, 50% overscan)"),
+        ("windowed", "B — Windowed (DiagramCanvas's built-in Board windowing)"),
     };
 
     [SupplyParameterFromQuery(Name = "variant")]
@@ -121,33 +152,26 @@
 
     private int NodeCount { get; set; } = 1000;
     private List<StressNode> AllNodes { get; set; } = new();
-    private List<StressNode> RenderedNodes { get; set; } = new();
-
-    private double _viewLeft, _viewTop, _viewRight, _viewBottom;
-    private string? _lastVariant;
+    private Board _board = new();
+    private double _overscan = DiagramCanvas.DefaultOverscan;
+    private DiagramCanvas? _diagramCanvas;
     private ElementReference _hudRef;
     private IJSObjectReference? _jsModule;
 
+    // Deliberately recomputes GetVisible here rather than reading a DiagramCanvas-side
+    // equivalent: _board/_overscan are this page's own fields, already current the instant
+    // NodeCount/Overscan change, whereas DiagramCanvas's Board/Overscan [Parameter]s only
+    // update one render later (after Blazor propagates them down) - reading from here avoids
+    // a stale-by-one-render label right after switching NodeCount.
+    private int RenderedCount =>
+        Variant == "windowed" && _diagramCanvas is not null
+            ? _board.GetVisible(_diagramCanvas.ZoomPanTracker.Viewport, _overscan).Count
+            : AllNodes.Count;
+
     protected override void OnInitialized()
     {
-        // No pan/zoom event has fired yet, so assume the full canvas is visible
-        // until the first real viewport update arrives.
-        _viewLeft = 0;
-        _viewTop = 0;
-        _viewRight = CanvasSize;
-        _viewBottom = CanvasSize;
-
         AllNodes = GenerateNodes(NodeCount);
-        RecomputeRenderedNodes();
-    }
-
-    protected override void OnParametersSet()
-    {
-        if (_lastVariant != Variant)
-        {
-            _lastVariant = Variant;
-            RecomputeRenderedNodes();
-        }
+        RebuildBoard();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -159,6 +183,10 @@
                 "./js/virtualizationStressTest.js"
             );
             await _jsModule.InvokeVoidAsync("startMonitor", _hudRef, "component-container");
+
+            // _diagramCanvas's @ref only becomes non-null after this first render pass -
+            // re-render once more so RenderedCount picks it up immediately.
+            StateHasChanged();
         }
     }
 
@@ -179,51 +207,37 @@
         return nodes;
     }
 
+    private void RebuildBoard()
+    {
+        var board = new Board();
+        foreach (var node in AllNodes)
+        {
+            board.AddComponent(
+                new ComponentInstance(
+                    "stress-item",
+                    new StressItemProps(node.Id, node.Color),
+                    new Bounds(node.X, node.Y, node.Width, node.Height)
+                )
+            );
+        }
+        _board = board;
+    }
+
     private void OnNodeCountChanged(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var count))
         {
             NodeCount = count;
             AllNodes = GenerateNodes(NodeCount);
-            RecomputeRenderedNodes();
+            RebuildBoard();
         }
     }
 
     private void HandleZoomPanChanged(ZoomPanChangedEventArgs args)
     {
-        // Same recompute trigger Blazor.Diagrams uses: pan/zoom/resize events, not a per-frame tick.
-        _viewLeft = -args.PanX / args.Scale;
-        _viewTop = -args.PanY / args.Scale;
-        _viewRight = _viewLeft + args.ContainerWidth / args.Scale;
-        _viewBottom = _viewTop + args.ContainerHeight / args.Scale;
-
-        RecomputeRenderedNodes();
+        // Same recompute trigger DiagramCanvas itself uses: pan/zoom/resize events, not a
+        // per-frame tick.
         StateHasChanged();
-    }
-
-    private void RecomputeRenderedNodes()
-    {
-        if (Variant == "none")
-        {
-            RenderedNodes = AllNodes;
-            return;
-        }
-
-        var viewWidth = _viewRight - _viewLeft;
-        var viewHeight = _viewBottom - _viewTop;
-        var marginX = Variant == "buffered" ? viewWidth * 0.5 : 0;
-        var marginY = Variant == "buffered" ? viewHeight * 0.5 : 0;
-
-        var left = _viewLeft - marginX;
-        var top = _viewTop - marginY;
-        var right = _viewRight + marginX;
-        var bottom = _viewBottom + marginY;
-
-        // Plain O(n) linear bounding-box scan — no spatial index — per the mitigation
-        // ticket 01 validated (Blazor.Diagrams' approach, sub-millisecond at this scale).
-        RenderedNodes = AllNodes
-            .Where(n => n.X < right && n.X + n.Width > left && n.Y < bottom && n.Y + n.Height > top)
-            .ToList();
     }
 
     private void CycleVariant(int direction)

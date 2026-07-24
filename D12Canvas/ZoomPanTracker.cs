@@ -1,3 +1,5 @@
+using D12Canvas.Model;
+
 namespace D12Canvas;
 
 public class ZoomPanTracker
@@ -27,6 +29,11 @@ public class ZoomPanTracker
     public double CanvasHeight => _canvasHeight;
     public double ContainerWidth => _containerWidth;
     public double ContainerHeight => _containerHeight;
+
+    // Canvas-space rect currently visible in the container - the inverse of the
+    // pan/scale transform CSS applies to .canvas-content.
+    public Bounds Viewport =>
+        new(-_panX / _scale, -_panY / _scale, _containerWidth / _scale, _containerHeight / _scale);
 
     public void SetContainerSize(int width, int height)
     {

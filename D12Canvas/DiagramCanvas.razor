@@ -20,7 +20,7 @@
             <CascadingValue Value="this" Name="ParentCanvas">
             @if (Board is not null)
             {
-                @foreach (var instance in Board.Components)
+                @foreach (var instance in VisibleComponents)
                 {
                     var registration = Registry.Resolve(instance.ComponentTypeKey);
                     <ComponentContainer @key="instance.Id"

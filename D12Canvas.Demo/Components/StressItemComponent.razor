@@ -1,0 +1,21 @@
+@namespace D12Canvas.Demo.Components
+
+<div class="stress-item" style="background:@Props.Color;">@Props.Id</div>
+
+<style>
+    .stress-item {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-family: monospace;
+        font-size: 12px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public StressItemProps Props { get; set; } = new(0, "#000");
+}

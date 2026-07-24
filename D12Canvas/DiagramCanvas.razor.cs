@@ -14,8 +14,16 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Inject]
     private IComponentRegistry Registry { get; set; } = null!;
 
+    // Sized to absorb the pan-render throttle's worst case: at PanRenderInterval (16ms) and a
+    // fast drag, the pointer can move well past this before the next windowed re-render lands,
+    // but a much larger margin just inflates mount/unmount cost for no visible benefit.
+    public const double DefaultOverscan = 200;
+
     [Parameter]
     public Board? Board { get; set; }
+
+    [Parameter]
+    public double Overscan { get; set; } = DefaultOverscan;
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
@@ -137,6 +145,12 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private static IDictionary<string, object> GetComponentParameters(ComponentInstance instance) =>
         new Dictionary<string, object> { [PropsParameterName] = instance.Props };
+
+    // Recomputed whenever DiagramCanvas re-renders. That's driven entirely by the pan/zoom/
+    // resize events that already call StateHasChanged (throttled for pan, see HandleMouseMove) -
+    // never by a per-frame timer - so the mounted window follows the same cadence.
+    private IReadOnlyCollection<ComponentInstance> VisibleComponents =>
+        Board?.GetVisible(_zoomPanTracker.Viewport, Overscan) ?? Array.Empty<ComponentInstance>();
 
     private string ContentStyle =>
         $"width: {_zoomPanTracker.CanvasWidth}px; height: {_zoomPanTracker.CanvasHeight}px; transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";

@@ -174,6 +174,91 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
     }
 
     [Fact]
+    public void OnlyInstancesWithinTheWindowedViewportAreMounted()
+    {
+        RegisterTestComponent();
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(ComponentTypeKey, new TestProps("in"), new Bounds(10, 10, 50, 50))
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                ComponentTypeKey,
+                new TestProps("far"),
+                new Bounds(5000, 5000, 50, 50)
+            )
+        );
+
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        Assert.Single(canvas.FindAll(".component-container"));
+    }
+
+    [Fact]
+    public void AnInstanceMountsOncePanBringsItIntoTheWindowedViewport()
+    {
+        RegisterTestComponent();
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(
+                ComponentTypeKey,
+                new TestProps("far"),
+                new Bounds(2000, 0, 50, 50)
+            )
+        );
+
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        Assert.Empty(canvas.FindAll(".component-container"));
+
+        canvas
+            .Find(".diagram-canvas")
+            .MouseDown(
+                new MouseEventArgs
+                {
+                    Button = 0,
+                    ClientX = 0,
+                    ClientY = 0,
+                }
+            );
+        canvas
+            .Find(".diagram-canvas")
+            .MouseMove(new MouseEventArgs { ClientX = -1300, ClientY = 0 });
+
+        Assert.Single(canvas.FindAll(".component-container"));
+    }
+
+    [Fact]
+    public void AnInstanceUnmountsOncePanMovesItOutOfTheWindowedViewport()
+    {
+        RegisterTestComponent();
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(ComponentTypeKey, new TestProps("in"), new Bounds(10, 10, 50, 50))
+        );
+
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        Assert.Single(canvas.FindAll(".component-container"));
+
+        canvas
+            .Find(".diagram-canvas")
+            .MouseDown(
+                new MouseEventArgs
+                {
+                    Button = 0,
+                    ClientX = 0,
+                    ClientY = 0,
+                }
+            );
+        canvas
+            .Find(".diagram-canvas")
+            .MouseMove(new MouseEventArgs { ClientX = -3000, ClientY = 0 });
+
+        Assert.Empty(canvas.FindAll(".component-container"));
+    }
+
+    [Fact]
     public void InstanceBoundsStayFixedInCanvasSpaceWhileZoomScalesTheSharedSurface()
     {
         RegisterTestComponent();

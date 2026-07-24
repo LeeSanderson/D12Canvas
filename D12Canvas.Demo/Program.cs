@@ -25,6 +25,15 @@ builder.Services.AddD12Canvas(options =>
             b.DefaultSize = new ComponentSize(200, 150);
         }
     );
+    options.RegisterComponent<StressItemComponent, StressItemProps>(
+        "stress-item",
+        b =>
+        {
+            b.DisplayName = "Stress Item";
+            b.AccessibleName = "Stress item";
+            b.DefaultProps = new StressItemProps(0, "#e74c3c");
+        }
+    );
 });
 
 await builder.Build().RunAsync();
