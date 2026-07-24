@@ -80,4 +80,202 @@ public class BoardTests
 
         Assert.Equal(new[] { first, second }, board.Components, ReferenceEqualityComparer.Instance);
     }
+
+    [Fact]
+    public void GetVisibleOnAnEmptyBoardReturnsNoInstances()
+    {
+        var board = new Board();
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Empty(visible);
+    }
+
+    [Fact]
+    public void GetVisibleReturnsAnInstanceFullyInsideTheViewport()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(10, 10, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Same(instance, Assert.Single(visible));
+    }
+
+    [Fact]
+    public void GetVisibleExcludesAnInstanceFullyOutsideTheViewport()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(200, 200, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Empty(visible);
+    }
+
+    [Fact]
+    public void GetVisibleIncludesAnInstanceThatOnlyTouchesTheViewportsRightEdge()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 10, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Same(instance, Assert.Single(visible));
+    }
+
+    [Fact]
+    public void GetVisibleIncludesAnInstanceThatOnlyTouchesTheViewportsBottomEdge()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(10, 100, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Same(instance, Assert.Single(visible));
+    }
+
+    [Fact]
+    public void GetVisibleIncludesAnInstanceThatOnlyTouchesTheViewportsLeftEdge()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(-20, 10, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Same(instance, Assert.Single(visible));
+    }
+
+    [Fact]
+    public void GetVisibleIncludesAnInstanceThatOnlyTouchesTheViewportsTopEdge()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(10, -20, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Same(instance, Assert.Single(visible));
+    }
+
+    [Fact]
+    public void GetVisibleIncludesAnInstanceThatOnlyTouchesTheExpandedViewportsEdge()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(150, 10, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100), overscan: 50);
+
+        Assert.Same(instance, Assert.Single(visible));
+    }
+
+    [Fact]
+    public void GetVisibleReturnsExactlyTheIntersectingInstancesFromAMixedBoard()
+    {
+        var board = new Board();
+        var inside = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(10, 10, 20, 20)
+        );
+        var touchingEdge = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 10, 20, 20)
+        );
+        var outside = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(200, 200, 20, 20)
+        );
+        board.AddComponent(inside);
+        board.AddComponent(touchingEdge);
+        board.AddComponent(outside);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Equal(new[] { inside, touchingEdge }, visible, ReferenceEqualityComparer.Instance);
+    }
+
+    [Fact]
+    public void GetVisibleDefaultsToNoOverscan()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(120, 10, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100));
+
+        Assert.Empty(visible);
+    }
+
+    [Fact]
+    public void GetVisibleIncludesAnInstanceOutsideTheViewportButInsideTheOverscanMargin()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(120, 10, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100), overscan: 50);
+
+        Assert.Same(instance, Assert.Single(visible));
+    }
+
+    [Fact]
+    public void GetVisibleExcludesAnInstanceOutsideTheViewportAndTheOverscanMargin()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(1000, 1000, 20, 20)
+        );
+        board.AddComponent(instance);
+
+        var visible = board.GetVisible(new Bounds(0, 0, 100, 100), overscan: 50);
+
+        Assert.Empty(visible);
+    }
 }

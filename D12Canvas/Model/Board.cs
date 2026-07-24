@@ -12,4 +12,13 @@ public sealed class Board
 
     public ComponentInstance? GetComponent(Guid id) =>
         _components.TryGetValue(id, out var instance) ? instance : null;
+
+    public IReadOnlyCollection<ComponentInstance> GetVisible(Bounds viewport, double overscan = 0)
+    {
+        var expandedViewport = viewport.ExpandedBy(overscan);
+
+        return _components
+            .Values.Where(instance => expandedViewport.Intersects(instance.Bounds))
+            .ToList();
+    }
 }
