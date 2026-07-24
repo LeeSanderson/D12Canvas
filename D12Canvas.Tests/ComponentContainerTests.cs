@@ -15,22 +15,22 @@ public class ComponentContainerTests : ComponentTestBase
     [Fact]
     public void ComponentContainer_ImportsColocatedJsModule()
     {
-        var cut = RenderComponent<ComponentContainer>();
+        var container = RenderComponent<ComponentContainer>();
 
-        Assert.Contains("view-mode", cut.Find(".component-container").ClassList);
+        Assert.Contains("view-mode", container.Find(".component-container").ClassList);
     }
 
     [Fact]
     public void ComponentContainer_ClickOutside_ExitsEditMode()
     {
-        var cut = RenderComponent<ComponentContainer>(parameters =>
+        var container = RenderComponent<ComponentContainer>(parameters =>
             parameters.Add(p => p.InitialEditMode, true)
         );
 
-        Assert.Contains("edit-mode", cut.Find(".component-container").ClassList);
+        Assert.Contains("edit-mode", container.Find(".component-container").ClassList);
 
-        cut.InvokeAsync(() => cut.Instance.OnClickOutside());
+        container.InvokeAsync(() => container.Instance.OnClickOutside());
 
-        Assert.Contains("view-mode", cut.Find(".component-container").ClassList);
+        Assert.Contains("view-mode", container.Find(".component-container").ClassList);
     }
 }

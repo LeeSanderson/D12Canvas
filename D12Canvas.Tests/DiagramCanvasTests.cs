@@ -9,10 +9,10 @@ public class DiagramCanvasTests : ComponentTestBase
     public void DiagramCanvas_ShouldRender()
     {
         // Arrange
-        var cut = RenderComponent<DiagramCanvas>();
+        var canvas = RenderComponent<DiagramCanvas>();
 
         // Assert
-        cut.MarkupMatches("<div class=\"diagram-canvas\">Canvas</div>");
+        canvas.MarkupMatches("<div class=\"diagram-canvas\">Canvas</div>");
     }
 
     [Fact]
@@ -25,8 +25,8 @@ public class DiagramCanvasTests : ComponentTestBase
         module.Setup<Action>("addResizeListener", _ => true).SetResult(() => { });
         module.Setup<Action>("addKeyboardListener", _ => true).SetResult(() => { });
 
-        var cut = RenderComponent<DiagramCanvas>();
+        var canvas = RenderComponent<DiagramCanvas>();
 
-        Assert.NotNull(cut.Find(".diagram-canvas"));
+        Assert.NotNull(canvas.Find(".diagram-canvas"));
     }
 }

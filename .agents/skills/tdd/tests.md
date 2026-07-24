@@ -24,6 +24,22 @@ Characteristics:
 - Describes WHAT, not HOW
 - One logical assertion per test
 
+## Naming the subject under test
+
+Name the variable holding a rendered component or result after what it *is*, not after generic testing jargon. bUnit's own docs use `cut` ("component under test") as a placeholder name, but that forces every reader to learn the abbreviation before they can follow the test.
+
+```csharp
+// BAD: generic jargon — forces the reader to know bUnit's abbreviation
+var cut = RenderComponent<ComponentContainer>();
+Assert.Contains("view-mode", cut.Find(".component-container").ClassList);
+
+// GOOD: names what's actually rendered
+var container = RenderComponent<ComponentContainer>();
+Assert.Contains("view-mode", container.Find(".component-container").ClassList);
+```
+
+Applies beyond bUnit: prefer a name describing the concrete thing (`result`, `response`, `container`, `canvas`) over a generic stand-in (`sut`, `subject`, `cut`, `obj`) whenever a more specific name is available.
+
 ## Bad Tests
 
 **Implementation-detail tests**: Coupled to internal structure.
