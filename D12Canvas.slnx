@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="D12Canvas.Demo/D12Canvas.Demo.csproj" />
+  <Project Path="D12Canvas.Tests/D12Canvas.Tests.csproj" />
+  <Project Path="D12Canvas.VisualTests/D12Canvas.VisualTests.csproj" />
+  <Project Path="D12Canvas/D12Canvas.csproj" />
+</Solution>

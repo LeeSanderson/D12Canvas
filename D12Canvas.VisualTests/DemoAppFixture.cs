@@ -54,7 +54,8 @@ public sealed class DemoAppFixture : IAsyncLifetime
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (
-            directory is not null && !File.Exists(Path.Combine(directory.FullName, "D12Canvas.sln"))
+            directory is not null
+            && !File.Exists(Path.Combine(directory.FullName, "D12Canvas.slnx"))
         )
         {
             directory = directory.Parent;
@@ -63,7 +64,7 @@ public sealed class DemoAppFixture : IAsyncLifetime
         if (directory is null)
         {
             throw new InvalidOperationException(
-                "Could not locate the repository root (D12Canvas.sln) above "
+                "Could not locate the repository root (D12Canvas.slnx) above "
                     + AppContext.BaseDirectory
             );
         }
