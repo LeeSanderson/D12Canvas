@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/app.css">
     <link rel="icon" type="image/png" href="favicon.png">
     <link href="D12Canvas.Demo.styles.css" rel="stylesheet">
-<!--!--><!--!--><!--!--><title>Board Demo</title><!--!--><!--!--><!--!--></head>
+<!--!--><!--!--><!--!--><title>Placement Demo</title><!--!--><!--!--><!--!--></head>
 
 <body>
     <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
@@ -22,13 +22,13 @@
             <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
                 Component Container Demo
             </a><!--!-->
-            <!--!--><a href="board-demo" class="nav-link active" aria-current="page"><!--!-->
+            <!--!--><a href="board-demo" class="nav-link"><!--!-->
                 Board Demo
             </a><!--!-->
             <!--!--><a href="palette-demo" class="nav-link"><!--!-->
                 Palette Demo
             </a><!--!-->
-            <!--!--><a href="placement-demo" class="nav-link"><!--!-->
+            <!--!--><a href="placement-demo" class="nav-link active" aria-current="page"><!--!-->
                 Placement Demo
             </a><!--!-->
             <!--!--><a href="virtualization-stress-test" class="nav-link"><!--!-->
@@ -37,219 +37,75 @@
 
     <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><!--!--><div class="component-container view-mode" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" role="group" aria-label="Demo note" _bl_3=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>Welcome to D12Canvas</p></div><!--!-->
+<div class="placement-demo-layout"><div class="palette-slot"><!--!--><div class="d12-palette" role="region" aria-label="Component palette"><div class="d12-palette-category"><h3 class="d12-palette-category-title">Notes</h3><!--!-->
+            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Demo note" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">📝</span><span class="d12-palette-entry-name">Demo Note</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Stress Test</h3><!--!-->
+            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Stress item" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">▦</span><span class="d12-palette-entry-name">Stress Item</span></button></li></ul></div></div><!--!-->
 
 <!--!--><style>
-    .demo-note {
-        width: 100%;
-        height: 100%;
+    .d12-palette {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 12px;
         box-sizing: border-box;
-        padding: 10px;
-        border-radius: 4px;
-        font-size: 14px;
     }
 
-    .demo-note p {
+    .d12-palette-category-title {
+        margin: 0 0 6px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #666;
+    }
+
+    .d12-palette-entries {
+        list-style: none;
         margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .d12-palette-entry-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+    }
+
+    .d12-palette-entry-button:hover {
+        background: #f0f0f0;
+        border-color: #ccc;
+    }
+
+    .d12-palette-entry-icon {
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .d12-palette-entry-name {
+        font-size: 13px;
     }
 </style></div><!--!-->
-
-    <div class="resize-handle top-left"></div><!--!-->
-    <div class="resize-handle top"></div><!--!-->
-    <div class="resize-handle top-right"></div><!--!-->
-    <div class="resize-handle right"></div><!--!-->
-    <div class="resize-handle bottom-right"></div><!--!-->
-    <div class="resize-handle bottom"></div><!--!-->
-    <div class="resize-handle bottom-left"></div><!--!-->
-    <div class="resize-handle left"></div></div><!--!-->
-
-<!--!--><style>
-    .component-container {
-        position: absolute;
-        min-width: 100px;
-        min-height: 100px;
-        box-sizing: border-box;
-        cursor: move;
-    }
-
-    .container-content {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
-    }
-
-    .resize-handle {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: #3498db;
-        border-radius: 50%;
-    }
-
-    .top-left {
-        top: -5px;
-        left: -5px;
-        cursor: nwse-resize;
-    }
-
-    .top {
-        top: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .top-right {
-        top: -5px;
-        right: -5px;
-        cursor: nesw-resize;
-    }
-
-    .right {
-        top: calc(50% - 5px);
-        right: -5px;
-        cursor: ew-resize;
-    }
-
-    .bottom-right {
-        bottom: -5px;
-        right: -5px;
-        cursor: nwse-resize;
-    }
-
-    .bottom {
-        bottom: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .bottom-left {
-        bottom: -5px;
-        left: -5px;
-        cursor: nesw-resize;
-    }
-
-    .left {
-        top: calc(50% - 5px);
-        left: -5px;
-        cursor: ew-resize;
-    }
-</style><!--!--><div class="component-container view-mode" style="left: 420px; top: 220px; width: 220px; height: 140px; z-index: 2;" role="group" aria-label="Demo note" _bl_4=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #a3d9a5;"><p>Rendered from a seeded Board</p></div><!--!-->
-
-<!--!--><style>
-    .demo-note {
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
-        padding: 10px;
-        border-radius: 4px;
-        font-size: 14px;
-    }
-
-    .demo-note p {
-        margin: 0;
-    }
-</style></div><!--!-->
-
-    <div class="resize-handle top-left"></div><!--!-->
-    <div class="resize-handle top"></div><!--!-->
-    <div class="resize-handle top-right"></div><!--!-->
-    <div class="resize-handle right"></div><!--!-->
-    <div class="resize-handle bottom-right"></div><!--!-->
-    <div class="resize-handle bottom"></div><!--!-->
-    <div class="resize-handle bottom-left"></div><!--!-->
-    <div class="resize-handle left"></div></div><!--!-->
-
-<!--!--><style>
-    .component-container {
-        position: absolute;
-        min-width: 100px;
-        min-height: 100px;
-        box-sizing: border-box;
-        cursor: move;
-    }
-
-    .container-content {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
-    }
-
-    .resize-handle {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: #3498db;
-        border-radius: 50%;
-    }
-
-    .top-left {
-        top: -5px;
-        left: -5px;
-        cursor: nwse-resize;
-    }
-
-    .top {
-        top: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .top-right {
-        top: -5px;
-        right: -5px;
-        cursor: nesw-resize;
-    }
-
-    .right {
-        top: calc(50% - 5px);
-        right: -5px;
-        cursor: ew-resize;
-    }
-
-    .bottom-right {
-        bottom: -5px;
-        right: -5px;
-        cursor: nwse-resize;
-    }
-
-    .bottom {
-        bottom: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .bottom-left {
-        bottom: -5px;
-        left: -5px;
-        cursor: nesw-resize;
-    }
-
-    .left {
-        top: calc(50% - 5px);
-        left: -5px;
-        cursor: ew-resize;
-    }
-</style><!--!--><div class="component-container view-mode" style="left: 220px; top: 340px; width: 240px; height: 140px; z-index: 0;" role="group" aria-label="Demo note" _bl_5=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #9ec5fe;"><p>Resolved through the component registry</p></div><!--!-->
+    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><!--!--><div class="component-container view-mode" style="left: 301px; top: 225.40625px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" _bl_3=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
 
 <!--!--><style>
     .demo-note {
@@ -409,10 +265,21 @@
         background-size: 20px 20px;
         background-position: 0 0;
     }
-</style></div><!--!-->
+</style></div></div><!--!-->
 
 <!--!--><style>
+    .placement-demo-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .palette-slot {
+        width: 260px;
+        padding: 16px;
+    }
+
     .canvas-container {
+        flex: 1;
         height: 600px;
         border: 1px solid #ccc;
     }

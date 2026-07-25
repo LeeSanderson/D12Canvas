@@ -10,6 +10,15 @@ public partial class Palette
     [Inject]
     private IComponentRegistry Registry { get; set; } = null!;
 
+    // Palette is a sibling of DiagramCanvas in host markup (ADR 0002 - chrome isn't nested inside
+    // the canvas), so it can't reach it via the cascading "ParentCanvas" value ComponentContainer
+    // uses; wiring is this explicit reference instead, set by the host.
+    [Parameter]
+    public DiagramCanvas? Canvas { get; set; }
+
+    private void HandleDragStart(string componentTypeKey) =>
+        Canvas?.BeginPaletteDrag(componentTypeKey);
+
     private IEnumerable<PaletteCategory> Categories =>
         Registry
             .All.GroupBy(registration => registration.Category ?? UncategorizedLabel)

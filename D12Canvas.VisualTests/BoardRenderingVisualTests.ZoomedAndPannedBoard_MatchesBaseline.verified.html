@@ -28,6 +28,9 @@
             <!--!--><a href="palette-demo" class="nav-link"><!--!-->
                 Palette Demo
             </a><!--!-->
+            <!--!--><a href="placement-demo" class="nav-link"><!--!-->
+                Placement Demo
+            </a><!--!-->
             <!--!--><a href="virtualization-stress-test" class="nav-link"><!--!-->
                 Virtualization Stress Test
             </a></div></nav></div></div><!--!-->
@@ -376,7 +379,23 @@
     .diagram-canvas:active {
         cursor: grabbing;
     }
-    
+
+    /* A styled sibling element - not a box-shadow/outline on .diagram-canvas itself, and not
+       nested inside it either. .canvas-content is an opaque, oversized (3000x3000)
+       absolutely-positioned child that paints over any decoration on .diagram-canvas's own box,
+       so a decoration there never reads. Placed instead as a sibling of .diagram-canvas directly
+       in .diagram-container (the grid container): as an absolutely-positioned grid item with no
+       explicit grid-row/column, it sizes against the container's full padding box rather than
+       .diagram-canvas's own row track (whose CSS Grid "auto" sizing collapses toward the 400px
+       minimum, since .diagram-canvas has no in-flow content of its own to size the track by). */
+    .drag-over-affordance {
+        position: absolute;
+        inset: 0;
+        box-shadow: inset 0 0 0 3px #4a90d9;
+        background-color: rgba(74, 144, 217, 0.08);
+        pointer-events: none;
+    }
+
     .canvas-content {
         position: absolute;
         top: 0;

@@ -15,6 +15,8 @@
                             type="button"
                             class="d12-palette-entry-button"
                             aria-label="@entry.AccessibleName"
+                            draggable="true"
+                            @ondragstart="() => HandleDragStart(entry.Key)"
                         >
                             @if (!string.IsNullOrEmpty(entry.Icon))
                             {

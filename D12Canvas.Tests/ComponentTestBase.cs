@@ -19,7 +19,15 @@ public abstract class ComponentTestBase : BunitContext
         var module = JSInterop.SetupModule("./_content/D12Canvas/DiagramCanvas.razor.js");
         module
             .Setup<Dictionary<string, double>>("getContainerDimensions", _ => true)
-            .SetResult(new Dictionary<string, double> { ["width"] = 800, ["height"] = 600 });
+            .SetResult(
+                new Dictionary<string, double>
+                {
+                    ["width"] = 800,
+                    ["height"] = 600,
+                    ["left"] = 0,
+                    ["top"] = 0,
+                }
+            );
         module.Setup<Action>("addResizeListener", _ => true).SetResult(() => { });
         module.Setup<Action>("addKeyboardListener", _ => true).SetResult(() => { });
     }

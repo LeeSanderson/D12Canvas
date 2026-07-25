@@ -1,6 +1,8 @@
 using System.Linq;
 using Bunit;
+using D12Canvas.Model;
 using D12Canvas.Registration;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -147,5 +149,46 @@ public class PaletteTests : ComponentTestBase
         var palette = Render<Palette>();
 
         Assert.Empty(palette.FindAll(".d12-palette-category"));
+    }
+
+    [Fact]
+    public void EntryButtonsAreDraggable()
+    {
+        RegisterComponent("rectangle", "Rectangle", "Rectangle");
+
+        var palette = Render<Palette>();
+
+        Assert.Equal("true", palette.Find(".d12-palette-entry-button").GetAttribute("draggable"));
+    }
+
+    [Fact]
+    public void DragStartOnAnEntryBeginsAPaletteDragOnTheWiredCanvas()
+    {
+        RegisterComponent("rectangle", "Rectangle", "Rectangle");
+        SetupDiagramCanvasJsModule();
+        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
+
+        palette.Find(".d12-palette-entry-button").DragStart(new DragEventArgs());
+        canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
+
+        var instance = Assert.Single(board.Components);
+        Assert.Equal("rectangle", instance.ComponentTypeKey);
+    }
+
+    [Fact]
+    public void DragStartIsANoOpWhenNoCanvasIsWired()
+    {
+        RegisterComponent("rectangle", "Rectangle", "Rectangle");
+
+        var palette = Render<Palette>();
+
+        var exception = Record.Exception(
+            () => palette.Find(".d12-palette-entry-button").DragStart(new DragEventArgs())
+        );
+        Assert.Null(exception);
     }
 }

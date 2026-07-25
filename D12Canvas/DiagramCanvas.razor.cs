@@ -32,6 +32,16 @@ public partial class DiagramCanvas : IAsyncDisposable
     public EventCallback<ZoomPanChangedEventArgs> OnZoomOrPanChanged { get; set; }
     public event EventHandler<ZoomPanChangedEventArgs>? ZoomOrPanChanged;
 
+    // A palette entry has no compile-time-typed payload it can hand across the native HTML5 drag
+    // session (Blazor's DragEventArgs.DataTransfer exposes no SetData/GetData) - Palette instead
+    // calls this directly (via its explicit Canvas reference, ADR 0002) to stash which type is
+    // being dragged, for HandleDrop to read back once the gesture completes.
+    private string? _pendingPaletteDragKey;
+    private bool _isDragOverBoard;
+
+    public void BeginPaletteDrag(string componentTypeKey) =>
+        _pendingPaletteDragKey = componentTypeKey;
+
     private readonly ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
 
     // Make ZoomPanTracker accessible to child components
@@ -152,6 +162,14 @@ public partial class DiagramCanvas : IAsyncDisposable
     private IReadOnlyCollection<ComponentInstance> VisibleComponents =>
         Board?.GetVisible(_zoomPanTracker.Viewport, Overscan) ?? Array.Empty<ComponentInstance>();
 
+    private string CanvasCssClass =>
+        _isDragOverBoard ? "diagram-canvas drag-over" : "diagram-canvas";
+
+    // Same handler for both events - dragenter and dragover mark the same "still hovering" state.
+    private void HandleDragEnterOrOver(DragEventArgs e) => _isDragOverBoard = true;
+
+    private void HandleDragLeave(DragEventArgs e) => _isDragOverBoard = false;
+
     private string ContentStyle =>
         $"width: {_zoomPanTracker.CanvasWidth}px; height: {_zoomPanTracker.CanvasHeight}px; transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
 
@@ -190,6 +208,56 @@ public partial class DiagramCanvas : IAsyncDisposable
         _isPanning = false;
         _panStart = null;
         // Flush so the view can't be left visually behind a throttled final tick.
+        StateHasChanged();
+    }
+
+    // Matches ComponentContainer's own default Width/Height parameter values - used only when a
+    // registration was declared without a DefaultSize (ComponentSize? is optional).
+    private const double FallbackWidth = 200;
+    private const double FallbackHeight = 150;
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        var componentTypeKey = _pendingPaletteDragKey;
+        _pendingPaletteDragKey = null;
+        _isDragOverBoard = false;
+
+        if (componentTypeKey is null || Board is null)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        var registration = Registry.Resolve(componentTypeKey);
+        var size = registration.DefaultSize ?? new ComponentSize(FallbackWidth, FallbackHeight);
+
+        // Fetched fresh rather than reused from first render: the container can move on the page
+        // (scroll, sibling layout changes) without firing the resize listener that only tracks size.
+        var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
+            "getContainerDimensions",
+            ContainerElement
+        );
+
+        var boardX =
+            (e.ClientX - containerRect["left"] - _zoomPanTracker.PanX) / _zoomPanTracker.Scale;
+        var boardY =
+            (e.ClientY - containerRect["top"] - _zoomPanTracker.PanY) / _zoomPanTracker.Scale;
+
+        // The drop point is the center of the placed instance, not its top-left corner - matching
+        // where the user's cursor (and the browser's default drag ghost) actually is on release.
+        Board.AddComponent(
+            new ComponentInstance(
+                registration.Key,
+                registration.DefaultProps,
+                new Bounds(
+                    boardX - size.Width / 2,
+                    boardY - size.Height / 2,
+                    size.Width,
+                    size.Height
+                )
+            )
+        );
+
         StateHasChanged();
     }
 
