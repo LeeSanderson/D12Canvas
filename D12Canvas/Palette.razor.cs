@@ -19,6 +19,8 @@ public partial class Palette
     private void HandleDragStart(string componentTypeKey) =>
         Canvas?.BeginPaletteDrag(componentTypeKey);
 
+    private void HandleClick(string componentTypeKey) => Canvas?.ClickToAdd(componentTypeKey);
+
     private IEnumerable<PaletteCategory> Categories =>
         Registry
             .All.GroupBy(registration => registration.Category ?? UncategorizedLabel)

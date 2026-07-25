@@ -17,6 +17,7 @@
                             aria-label="@entry.AccessibleName"
                             draggable="true"
                             @ondragstart="() => HandleDragStart(entry.Key)"
+                            @onclick="() => HandleClick(entry.Key)"
                         >
                             @if (!string.IsNullOrEmpty(entry.Icon))
                             {

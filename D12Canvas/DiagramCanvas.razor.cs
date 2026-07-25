@@ -42,6 +42,15 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void BeginPaletteDrag(string componentTypeKey) =>
         _pendingPaletteDragKey = componentTypeKey;
 
+    // ADR 0009: click-to-add's default position is the viewport center (not a fixed board-space
+    // origin, which could land off-screen once the user has panned), with a small cascading
+    // offset per successive click so repeated adds don't stack in a perfectly overlapping pile.
+    // The counter is global (not per component type) - it only needs to keep successive placements
+    // visually apart, and never resets, matching this app's momentary-gesture-only model (there's
+    // no "start a new placement session" event to reset it on).
+    private const double ClickToAddCascadeStep = 20;
+    private int _clickToAddCascadeCount;
+
     private readonly ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
 
     // Make ZoomPanTracker accessible to child components
@@ -228,9 +237,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var registration = Registry.Resolve(componentTypeKey);
-        var size = registration.DefaultSize ?? new ComponentSize(FallbackWidth, FallbackHeight);
-
         // Fetched fresh rather than reused from first render: the container can move on the page
         // (scroll, sibling layout changes) without firing the resize listener that only tracks size.
         var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
@@ -245,20 +251,51 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         // The drop point is the center of the placed instance, not its top-left corner - matching
         // where the user's cursor (and the browser's default drag ghost) actually is on release.
-        Board.AddComponent(
+        PlaceComponent(componentTypeKey, boardX, boardY);
+
+        StateHasChanged();
+    }
+
+    public void ClickToAdd(string componentTypeKey)
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        var offset = _clickToAddCascadeCount * ClickToAddCascadeStep;
+        _clickToAddCascadeCount++;
+
+        var viewport = _zoomPanTracker.Viewport;
+        PlaceComponent(
+            componentTypeKey,
+            viewport.X + viewport.Width / 2 + offset,
+            viewport.Y + viewport.Height / 2 + offset
+        );
+
+        StateHasChanged();
+    }
+
+    // Shared by HandleDrop and ClickToAdd - both place a new instance centered on a board-space
+    // point, differing only in how that point is derived. Callers are trusted to have already
+    // checked Board is non-null (both do, before computing their center point).
+    private void PlaceComponent(string componentTypeKey, double centerX, double centerY)
+    {
+        var registration = Registry.Resolve(componentTypeKey);
+        var size = registration.DefaultSize ?? new ComponentSize(FallbackWidth, FallbackHeight);
+
+        Board!.AddComponent(
             new ComponentInstance(
                 registration.Key,
                 registration.DefaultProps,
                 new Bounds(
-                    boardX - size.Width / 2,
-                    boardY - size.Height / 2,
+                    centerX - size.Width / 2,
+                    centerY - size.Height / 2,
                     size.Width,
                     size.Height
                 )
             )
         );
-
-        StateHasChanged();
     }
 
     private void HandleMouseWheel(WheelEventArgs e)

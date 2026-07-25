@@ -191,4 +191,32 @@ public class PaletteTests : ComponentTestBase
         );
         Assert.Null(exception);
     }
+
+    [Fact]
+    public void ClickingAnEntryPlacesANewInstanceOnTheWiredCanvas()
+    {
+        RegisterComponent("rectangle", "Rectangle", "Rectangle");
+        SetupDiagramCanvasJsModule();
+        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
+
+        palette.Find(".d12-palette-entry-button").Click();
+
+        var instance = Assert.Single(board.Components);
+        Assert.Equal("rectangle", instance.ComponentTypeKey);
+    }
+
+    [Fact]
+    public void ClickIsANoOpWhenNoCanvasIsWired()
+    {
+        RegisterComponent("rectangle", "Rectangle", "Rectangle");
+
+        var palette = Render<Palette>();
+
+        var exception = Record.Exception(() => palette.Find(".d12-palette-entry-button").Click());
+        Assert.Null(exception);
+    }
 }
