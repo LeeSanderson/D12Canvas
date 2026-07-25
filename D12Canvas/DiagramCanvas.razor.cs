@@ -52,23 +52,32 @@ public partial class DiagramCanvas : IAsyncDisposable
     private int _clickToAddCascadeCount;
 
     // Selection is transient view state (ADR 0006) - it lives here, never on Board, and is never
-    // serialized or tracked by undo/redo. Single-select only for now; ad-hoc multi-select is a
-    // later ticket.
-    private Guid? _selectedInstanceId;
+    // serialized or tracked by undo/redo. Ticket 32: ad-hoc multi-select via marquee/shift-click.
+    private readonly HashSet<Guid> _selectedInstanceIds = new();
 
     private readonly ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
 
     // Make ZoomPanTracker accessible to child components
     public ZoomPanTracker ZoomPanTracker => _zoomPanTracker;
-    private bool _isPanning = false;
 
-    // A pan drag starts and ends with mousedown/mouseup on the same element (the canvas
-    // background), so the browser's native click event fires right after it - without this guard
-    // that click would immediately clear whatever was selected before the pan.
-    private bool _panMoved;
+    // Ticket 32: a plain drag on empty canvas still pans (pre-existing behaviour, unchanged);
+    // Shift+drag draws an intersection-based marquee instead, pairing with Shift-click's existing
+    // "multi-select gesture" meaning. A drag starting inside the current selection's own combined
+    // bounding box does neither - reserved for ticket 33's group-move-as-a-unit, so for now it's
+    // deliberately inert. Whichever of the three a gesture turns out to be, it starts and ends with
+    // mousedown/mouseup on the same element, so the browser's native click fires right after it -
+    // without the _dragMoved guard that click would immediately clear the selection the drag just
+    // established (or leave alone), the same wrinkle ticket 29's original pan guard existed to solve.
+    private bool _isPanning;
+    private bool _isMarqueeSelecting;
+    private bool _isWithinSelectionDrag;
+    private bool _dragMoved;
     private MouseEventArgs? _panStart;
     private DateTime _lastPanRender = DateTime.MinValue;
     private static readonly TimeSpan PanRenderInterval = TimeSpan.FromMilliseconds(16); // ~60fps cap
+    private (double Left, double Top) _marqueeContainerOrigin;
+    private (double X, double Y) _marqueeAnchor;
+    private (double X, double Y) _marqueeCurrent;
     private ElementReference ContainerElement;
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
     private List<Action> _cleanupFunctions = new List<Action>();
@@ -173,13 +182,28 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnEscapePressed()
     {
-        _selectedInstanceId = null;
+        _selectedInstanceIds.Clear();
         StateHasChanged();
     }
 
-    private bool IsSelected(Guid instanceId) => instanceId == _selectedInstanceId;
+    private bool IsSelected(Guid instanceId) => _selectedInstanceIds.Contains(instanceId);
 
-    private void SelectComponent(Guid instanceId) => _selectedInstanceId = instanceId;
+    // Ticket 32: a shift-click toggles the clicked instance's membership without disturbing the
+    // rest of the selection; a plain click always collapses the selection down to just this one.
+    private void SelectComponent(Guid instanceId, bool addToSelection)
+    {
+        if (addToSelection)
+        {
+            if (!_selectedInstanceIds.Remove(instanceId))
+            {
+                _selectedInstanceIds.Add(instanceId);
+            }
+            return;
+        }
+
+        _selectedInstanceIds.Clear();
+        _selectedInstanceIds.Add(instanceId);
+    }
 
     // Ticket 30: fired once by ComponentContainer's OnMoved, on release - the whole
     // press-to-release drag is one gesture, so Board is only ever mutated with the final Bounds,
@@ -213,13 +237,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     // landed on a ComponentContainer (that element stops the click from propagating here).
     private void HandleCanvasClick()
     {
-        if (_panMoved)
+        if (_dragMoved)
         {
-            _panMoved = false;
+            _dragMoved = false;
             return;
         }
 
-        _selectedInstanceId = null;
+        _selectedInstanceIds.Clear();
     }
 
     // The registered TComponent's props parameter is a fixed contract (ADR 0001 addendum):
@@ -246,18 +270,63 @@ public partial class DiagramCanvas : IAsyncDisposable
     private string ContentStyle =>
         $"width: {_zoomPanTracker.CanvasWidth}px; height: {_zoomPanTracker.CanvasHeight}px; transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
 
-    private void HandleMouseDown(MouseEventArgs e)
+    private async Task HandleMouseDown(MouseEventArgs e)
     {
-        if (e.Button == 0) // Left mouse button
+        if (e.Button != 0) // Left mouse button only
         {
-            _isPanning = true;
-            _panMoved = false;
-            _panStart = e;
+            return;
         }
+
+        _dragMoved = false;
+
+        // Fetched fresh rather than reused from first render - same reasoning as HandleDrop: the
+        // container can move on the page (scroll, sibling layout changes) between renders.
+        var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
+            "getContainerDimensions",
+            ContainerElement
+        );
+        _marqueeContainerOrigin = (containerRect["left"], containerRect["top"]);
+        var boardPoint = ToBoardPoint(e, _marqueeContainerOrigin);
+
+        if (e.ShiftKey)
+        {
+            _isMarqueeSelecting = true;
+            _marqueeAnchor = boardPoint;
+            _marqueeCurrent = boardPoint;
+            return;
+        }
+
+        if (PointIsWithinSelectionBounds(boardPoint))
+        {
+            // Reserved for ticket 33 (multi-selection moves and resizes as one unit) - left
+            // deliberately inert for now: no pan underneath the selection, no new marquee. Tracked
+            // separately (rather than just returning) so HandleMouseMove can still mark the
+            // gesture as having moved, keeping the trailing click from clearing the selection.
+            _isWithinSelectionDrag = true;
+            return;
+        }
+
+        _isPanning = true;
+        _panStart = e;
     }
 
     private void HandleMouseMove(MouseEventArgs e)
     {
+        if (_isMarqueeSelecting)
+        {
+            _marqueeCurrent = ToBoardPoint(e, _marqueeContainerOrigin);
+            _dragMoved = true;
+            UpdateMarqueeSelection();
+            StateHasChanged();
+            return;
+        }
+
+        if (_isWithinSelectionDrag)
+        {
+            _dragMoved = true;
+            return;
+        }
+
         if (_isPanning && _panStart != null)
         {
             var deltaX = e.ClientX - _panStart.ClientX;
@@ -266,7 +335,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             // Pan state updates every tick so no motion is lost; the render itself is
             // throttled since it's what cascades into re-rendering every mounted child.
             _zoomPanTracker.Pan(deltaX, deltaY);
-            _panMoved = true;
+            _dragMoved = true;
             _panStart = e;
 
             var now = DateTime.UtcNow;
@@ -281,9 +350,89 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void HandleMouseUp(MouseEventArgs e)
     {
         _isPanning = false;
+        _isMarqueeSelecting = false;
+        _isWithinSelectionDrag = false;
         _panStart = null;
-        // Flush so the view can't be left visually behind a throttled final tick.
+        // Flush so the view can't be left visually behind a throttled final pan tick.
         StateHasChanged();
+    }
+
+    // Screen (client) coordinates to board space, given the container's own page position -
+    // shared by the marquee gesture and HandleDrop below.
+    private (double X, double Y) ToBoardPoint(
+        MouseEventArgs e,
+        (double Left, double Top) containerOrigin
+    ) =>
+        (
+            (e.ClientX - containerOrigin.Left - _zoomPanTracker.PanX) / _zoomPanTracker.Scale,
+            (e.ClientY - containerOrigin.Top - _zoomPanTracker.PanY) / _zoomPanTracker.Scale
+        );
+
+    private static Bounds MarqueeBoundsFrom((double X, double Y) a, (double X, double Y) b) =>
+        new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
+
+    // Replaces the selection outright with whatever the marquee currently intersects (ADR 0006:
+    // intersection semantics, not full-containment) - not additive, so a marquee drag that ends up
+    // over nothing empties the selection, the same as clicking empty canvas.
+    private void UpdateMarqueeSelection()
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        var marquee = MarqueeBoundsFrom(_marqueeAnchor, _marqueeCurrent);
+        _selectedInstanceIds.Clear();
+        foreach (var instance in Board.Components)
+        {
+            if (instance.Bounds.Intersects(marquee))
+            {
+                _selectedInstanceIds.Add(instance.Id);
+            }
+        }
+    }
+
+    // The combined bounding box of the current selection, or null when nothing is selected - used
+    // to keep a plain drag starting there from panning underneath it (reserved for ticket 33).
+    private Bounds? SelectedInstancesBounds()
+    {
+        if (Board is null)
+        {
+            return null;
+        }
+
+        double minX = 0,
+            minY = 0,
+            maxX = 0,
+            maxY = 0;
+        var any = false;
+        foreach (var instance in Board.Components)
+        {
+            if (!_selectedInstanceIds.Contains(instance.Id))
+            {
+                continue;
+            }
+
+            minX = any ? Math.Min(minX, instance.Bounds.X) : instance.Bounds.X;
+            minY = any ? Math.Min(minY, instance.Bounds.Y) : instance.Bounds.Y;
+            maxX = any ? Math.Max(maxX, instance.Bounds.Right) : instance.Bounds.Right;
+            maxY = any ? Math.Max(maxY, instance.Bounds.Bottom) : instance.Bounds.Bottom;
+            any = true;
+        }
+
+        return any ? new Bounds(minX, minY, maxX - minX, maxY - minY) : null;
+    }
+
+    private bool PointIsWithinSelectionBounds((double X, double Y) point) =>
+        SelectedInstancesBounds()?.Intersects(new Bounds(point.X, point.Y, 0, 0)) ?? false;
+
+    private string MarqueeStyle
+    {
+        get
+        {
+            var bounds = MarqueeBoundsFrom(_marqueeAnchor, _marqueeCurrent);
+            return $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";
+        }
     }
 
     // Matches ComponentContainer's own default Width/Height parameter values - used only when a
@@ -310,10 +459,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             ContainerElement
         );
 
-        var boardX =
-            (e.ClientX - containerRect["left"] - _zoomPanTracker.PanX) / _zoomPanTracker.Scale;
-        var boardY =
-            (e.ClientY - containerRect["top"] - _zoomPanTracker.PanY) / _zoomPanTracker.Scale;
+        var (boardX, boardY) = ToBoardPoint(e, (containerRect["left"], containerRect["top"]));
 
         // The drop point is the center of the placed instance, not its top-left corner - matching
         // where the user's cursor (and the browser's default drag ghost) actually is on release.

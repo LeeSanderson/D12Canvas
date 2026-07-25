@@ -40,8 +40,10 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public bool IsSelected { get; set; }
 
+    // Ticket 32: carries the click's shift-key state so DiagramCanvas can toggle this instance's
+    // membership in a multi-selection instead of always collapsing to single-select.
     [Parameter]
-    public EventCallback OnSelect { get; set; }
+    public EventCallback<bool> OnSelect { get; set; }
 
     // Ticket 30: fired once, on release, with the instance's final Bounds - a drag-move is one
     // gesture (ADR 0007's "recorded once on gesture commit, never per intermediate frame"), so
@@ -135,7 +137,7 @@ public partial class ComponentContainer : IAsyncDisposable
         }
     }
 
-    private void HandleClick(MouseEventArgs e) => OnSelect.InvokeAsync();
+    private void HandleClick(MouseEventArgs e) => OnSelect.InvokeAsync(e.ShiftKey);
 
     private void HandleMouseDown(MouseEventArgs e)
     {

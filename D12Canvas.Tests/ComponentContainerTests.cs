@@ -63,12 +63,38 @@ public class ComponentContainerTests : ComponentTestBase
     {
         var selectCount = 0;
         var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.OnSelect, () => selectCount++)
+            parameters.Add(p => p.OnSelect, (bool _) => selectCount++)
         );
 
         container.Find(".component-container").Click();
 
         Assert.Equal(1, selectCount);
+    }
+
+    [Fact]
+    public void ClickingTheContainerWithShiftHeldInvokesOnSelectWithTrue()
+    {
+        bool? shiftKeyReceived = null;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.OnSelect, (bool shiftKey) => shiftKeyReceived = shiftKey)
+        );
+
+        container.Find(".component-container").Click(new MouseEventArgs { ShiftKey = true });
+
+        Assert.True(shiftKeyReceived);
+    }
+
+    [Fact]
+    public void ClickingTheContainerWithoutShiftInvokesOnSelectWithFalse()
+    {
+        bool? shiftKeyReceived = null;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.OnSelect, (bool shiftKey) => shiftKeyReceived = shiftKey)
+        );
+
+        container.Find(".component-container").Click();
+
+        Assert.False(shiftKeyReceived);
     }
 
     [Fact]
