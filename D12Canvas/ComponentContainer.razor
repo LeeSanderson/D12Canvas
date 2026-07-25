@@ -7,8 +7,11 @@
      aria-label="@AccessibleName"
      aria-selected="@(IsSelected ? "true" : null)"
      @onmousedown="HandleMouseDown"
+     @onmousedown:stopPropagation
      @onmousemove="HandleMouseMove"
+     @onmousemove:stopPropagation
      @onmouseup="HandleMouseUp"
+     @onmouseup:stopPropagation
      @onclick="HandleClick"
      @onclick:stopPropagation
      @ondblclick="SwitchToEditMode">

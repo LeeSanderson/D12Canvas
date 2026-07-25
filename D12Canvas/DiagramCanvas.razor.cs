@@ -181,6 +181,21 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void SelectComponent(Guid instanceId) => _selectedInstanceId = instanceId;
 
+    // Ticket 30: fired once by ComponentContainer's OnMoved, on release - the whole
+    // press-to-release drag is one gesture, so Board is only ever mutated with the final Bounds,
+    // never per intermediate mousemove tick.
+    private void MoveComponent(Guid instanceId, Bounds bounds)
+    {
+        var instance = Board?.GetComponent(instanceId);
+        if (instance is null)
+        {
+            return;
+        }
+
+        instance.Bounds = bounds;
+        StateHasChanged();
+    }
+
     // Bound directly to the canvas background's own click, so it never fires for a click that
     // landed on a ComponentContainer (that element stops the click from propagating here).
     private void HandleCanvasClick()

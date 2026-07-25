@@ -1,3 +1,4 @@
+using D12Canvas.Model;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -42,6 +43,12 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public EventCallback OnSelect { get; set; }
 
+    // Ticket 30: fired once, on release, with the instance's final Bounds - a drag-move is one
+    // gesture (ADR 0007's "recorded once on gesture commit, never per intermediate frame"), so
+    // Board only needs to hear about the end state, not every intermediate mousemove tick.
+    [Parameter]
+    public EventCallback<Bounds> OnMoved { get; set; }
+
     [Parameter]
     public EventCallback<ComponentContainerStateChangedEventArgs> OnStateChanged { get; set; }
 
@@ -57,6 +64,16 @@ public partial class ComponentContainer : IAsyncDisposable
     private double _startY;
     private double _startWidth;
     private double _startHeight;
+
+    // A separate gesture from the _editMode-gated _isDragging/_isResizing pair above (legacy,
+    // predates the Board-backed canvas - still used standalone by ComponentContainerDemo.razor).
+    // This one triggers on a selected instance without needing edit mode at all, and its own
+    // state never interacts with the legacy fields - moving a selected instance shouldn't require
+    // first entering an editing mode.
+    private bool _isMoving;
+    private MouseEventArgs? _moveStart;
+    private double _moveStartX;
+    private double _moveStartY;
     private ElementReference _containerRef;
     private DotNetObjectReference<ComponentContainer>? _dotNetRef;
     private IJSObjectReference? _jsModule;
@@ -117,6 +134,17 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseDown(MouseEventArgs e)
     {
+        // Only armed when selected-and-not-editing, and only from the container's own body, not a
+        // resize handle: a resize handle's mousedown already set _isResizing (it bubbles here
+        // afterwards), and !_isResizing keeps this gesture from also engaging on top of that one.
+        if (IsSelected && !_editMode && !_isResizing)
+        {
+            _isMoving = true;
+            _moveStart = e;
+            _moveStartX = X;
+            _moveStartY = Y;
+        }
+
         if (!_editMode)
             return;
 
@@ -131,20 +159,21 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseMove(MouseEventArgs e)
     {
+        if (_isMoving && _moveStart != null)
+        {
+            var (deltaX, deltaY) = ScaledDelta(_moveStart, e);
+
+            X = _moveStartX + deltaX;
+            Y = _moveStartY + deltaY;
+            return;
+        }
+
         if (!_editMode)
             return;
 
         if (_isDragging && _dragStart != null)
         {
-            double deltaX = e.ClientX - _dragStart.ClientX;
-            double deltaY = e.ClientY - _dragStart.ClientY;
-
-            if (ParentCanvas != null)
-            {
-                // Apply canvas zoom scale
-                deltaX /= ParentCanvas.ZoomPanTracker.Scale;
-                deltaY /= ParentCanvas.ZoomPanTracker.Scale;
-            }
+            var (deltaX, deltaY) = ScaledDelta(_dragStart, e);
 
             X = _startX + deltaX;
             Y = _startY + deltaY;
@@ -153,23 +182,43 @@ public partial class ComponentContainer : IAsyncDisposable
         }
         else if (_isResizing && _dragStart != null)
         {
-            double deltaX = e.ClientX - _dragStart.ClientX;
-            double deltaY = e.ClientY - _dragStart.ClientY;
-
-            if (ParentCanvas != null)
-            {
-                // Apply canvas zoom scale
-                deltaX /= ParentCanvas.ZoomPanTracker.Scale;
-                deltaY /= ParentCanvas.ZoomPanTracker.Scale;
-            }
+            var (deltaX, deltaY) = ScaledDelta(_dragStart, e);
 
             ApplyResize(deltaX, deltaY);
             NotifyStateChanged();
         }
     }
 
+    // Pan cancels out of a screen-space delta - only the canvas's current zoom scale matters.
+    private (double DeltaX, double DeltaY) ScaledDelta(MouseEventArgs from, MouseEventArgs to)
+    {
+        double deltaX = to.ClientX - from.ClientX;
+        double deltaY = to.ClientY - from.ClientY;
+
+        if (ParentCanvas != null)
+        {
+            deltaX /= ParentCanvas.ZoomPanTracker.Scale;
+            deltaY /= ParentCanvas.ZoomPanTracker.Scale;
+        }
+
+        return (deltaX, deltaY);
+    }
+
     private void HandleMouseUp(MouseEventArgs e)
     {
+        if (_isMoving)
+        {
+            _isMoving = false;
+            _moveStart = null;
+
+            // Skip the callback entirely for a plain click (mousedown+mouseup with no movement
+            // in between) on an already-selected instance - nothing actually moved.
+            if (X != _moveStartX || Y != _moveStartY)
+            {
+                OnMoved.InvokeAsync(new Bounds(X, Y, Width, Height));
+            }
+        }
+
         _isDragging = false;
         _isResizing = false;
         _dragStart = null;

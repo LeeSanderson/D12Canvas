@@ -37,7 +37,8 @@
                                         AccessibleName="@registration.AccessibleName"
                                         Role="@registration.Role"
                                         IsSelected="@IsSelected(instance.Id)"
-                                        OnSelect="@(() => SelectComponent(instance.Id))">
+                                        OnSelect="@(() => SelectComponent(instance.Id))"
+                                        OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))">
                         <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
                     </ComponentContainer>
                 }

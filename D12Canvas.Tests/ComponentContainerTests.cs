@@ -1,4 +1,6 @@
 using Bunit;
+using D12Canvas.Model;
+using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
 namespace D12Canvas.Tests;
@@ -67,5 +69,43 @@ public class ComponentContainerTests : ComponentTestBase
         container.Find(".component-container").Click();
 
         Assert.Equal(1, selectCount);
+    }
+
+    [Fact]
+    public void DraggingASelectedContainerInvokesOnMovedWithTheFinalBounds()
+    {
+        Bounds? movedTo = null;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters
+                .Add(p => p.IsSelected, true)
+                .Add(p => p.X, 100)
+                .Add(p => p.Y, 100)
+                .Add(p => p.Width, 50)
+                .Add(p => p.Height, 50)
+                .Add(p => p.OnMoved, (Bounds bounds) => movedTo = bounds)
+        );
+
+        var element = container.Find(".component-container");
+        element.MouseDown(new MouseEventArgs { ClientX = 0, ClientY = 0 });
+        element.MouseMove(new MouseEventArgs { ClientX = 30, ClientY = 10 });
+        element.MouseUp(new MouseEventArgs { ClientX = 30, ClientY = 10 });
+
+        Assert.Equal(new Bounds(130, 110, 50, 50), movedTo);
+    }
+
+    [Fact]
+    public void DraggingAnUnselectedContainerDoesNotInvokeOnMoved()
+    {
+        var invoked = false;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.OnMoved, (Bounds _) => invoked = true)
+        );
+
+        var element = container.Find(".component-container");
+        element.MouseDown(new MouseEventArgs { ClientX = 0, ClientY = 0 });
+        element.MouseMove(new MouseEventArgs { ClientX = 30, ClientY = 10 });
+        element.MouseUp(new MouseEventArgs { ClientX = 30, ClientY = 10 });
+
+        Assert.False(invoked);
     }
 }
