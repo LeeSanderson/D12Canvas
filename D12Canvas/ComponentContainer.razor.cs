@@ -71,6 +71,11 @@ public partial class ComponentContainer : IAsyncDisposable
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
 
+    private string ContainerCssClass =>
+        IsSelected
+            ? $"component-container {(_editMode ? "edit-mode" : "view-mode")} selected"
+            : $"component-container {(_editMode ? "edit-mode" : "view-mode")}";
+
     protected override void OnInitialized()
     {
         _editMode = InitialEditMode;

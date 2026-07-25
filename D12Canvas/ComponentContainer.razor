@@ -1,7 +1,7 @@
 @namespace D12Canvas
 
 <div @ref="_containerRef"
-     class="component-container @(_editMode ? "edit-mode" : "view-mode") @(IsSelected ? "selected" : "")"
+     class="@ContainerCssClass"
      style="@ContainerStyle"
      role="@Role"
      aria-label="@AccessibleName"

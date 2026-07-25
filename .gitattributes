@@ -1,0 +1,5 @@
+# Verify.NET baselines are compared byte-for-byte inside a Linux container (CI's pinned
+# Playwright image) and rejects \r in *.verified.html - without this, Windows checkouts
+# (core.autocrlf=true) silently corrupt the baseline with CRLF line endings.
+*.verified.html text eol=lf working-tree-encoding=UTF-8
+*.verified.png binary
