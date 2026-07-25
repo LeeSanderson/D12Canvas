@@ -16,6 +16,7 @@
          @onmousemove="@HandleMouseMove"
          @onmouseup="@HandleMouseUp"
          @onwheel="@HandleMouseWheel"
+         @onclick="@HandleCanvasClick"
          @ondragenter="@HandleDragEnterOrOver" @ondragenter:preventDefault="true"
          @ondragover="@HandleDragEnterOrOver" @ondragover:preventDefault="true"
          @ondragleave="@HandleDragLeave"
@@ -34,7 +35,9 @@
                                         Height="instance.Bounds.Height"
                                         ZIndex="instance.ZIndex"
                                         AccessibleName="@registration.AccessibleName"
-                                        Role="@registration.Role">
+                                        Role="@registration.Role"
+                                        IsSelected="@IsSelected(instance.Id)"
+                                        OnSelect="@(() => SelectComponent(instance.Id))">
                         <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
                     </ComponentContainer>
                 }

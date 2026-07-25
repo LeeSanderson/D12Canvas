@@ -51,11 +51,21 @@ public partial class DiagramCanvas : IAsyncDisposable
     private const double ClickToAddCascadeStep = 20;
     private int _clickToAddCascadeCount;
 
+    // Selection is transient view state (ADR 0006) - it lives here, never on Board, and is never
+    // serialized or tracked by undo/redo. Single-select only for now; ad-hoc multi-select is a
+    // later ticket.
+    private Guid? _selectedInstanceId;
+
     private readonly ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
 
     // Make ZoomPanTracker accessible to child components
     public ZoomPanTracker ZoomPanTracker => _zoomPanTracker;
     private bool _isPanning = false;
+
+    // A pan drag starts and ends with mousedown/mouseup on the same element (the canvas
+    // background), so the browser's native click event fires right after it - without this guard
+    // that click would immediately clear whatever was selected before the pan.
+    private bool _panMoved;
     private MouseEventArgs? _panStart;
     private DateTime _lastPanRender = DateTime.MinValue;
     private static readonly TimeSpan PanRenderInterval = TimeSpan.FromMilliseconds(16); // ~60fps cap
@@ -158,6 +168,32 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // ADR 0009: Escape clears the selection (later, it will also cancel an in-progress connector
+    // drag - no such gesture exists yet, so clearing selection is its whole job today).
+    [JSInvokable]
+    public void OnEscapePressed()
+    {
+        _selectedInstanceId = null;
+        StateHasChanged();
+    }
+
+    private bool IsSelected(Guid instanceId) => instanceId == _selectedInstanceId;
+
+    private void SelectComponent(Guid instanceId) => _selectedInstanceId = instanceId;
+
+    // Bound directly to the canvas background's own click, so it never fires for a click that
+    // landed on a ComponentContainer (that element stops the click from propagating here).
+    private void HandleCanvasClick()
+    {
+        if (_panMoved)
+        {
+            _panMoved = false;
+            return;
+        }
+
+        _selectedInstanceId = null;
+    }
+
     // The registered TComponent's props parameter is a fixed contract (ADR 0001 addendum):
     // [Parameter] public TProps Props { get; set; }
     private const string PropsParameterName = "Props";
@@ -187,6 +223,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (e.Button == 0) // Left mouse button
         {
             _isPanning = true;
+            _panMoved = false;
             _panStart = e;
         }
     }
@@ -201,6 +238,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             // Pan state updates every tick so no motion is lost; the render itself is
             // throttled since it's what cascades into re-rendering every mounted child.
             _zoomPanTracker.Pan(deltaX, deltaY);
+            _panMoved = true;
             _panStart = e;
 
             var now = DateTime.UtcNow;

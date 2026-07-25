@@ -65,6 +65,9 @@ export async function addKeyboardListener(element, dotnetRef) {
             case "ArrowDown":
                 dotnetRef.invokeMethodAsync("OnPanDown");
                 break;
+            case "Escape":
+                dotnetRef.invokeMethodAsync("OnEscapePressed");
+                break;
         }
         event.preventDefault();
     };

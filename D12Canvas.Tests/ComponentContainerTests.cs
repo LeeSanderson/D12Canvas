@@ -33,4 +33,39 @@ public class ComponentContainerTests : ComponentTestBase
 
         Assert.Contains("view-mode", container.Find(".component-container").ClassList);
     }
+
+    [Fact]
+    public void SelectedInstanceRendersAriaSelectedAndTheSelectedClass()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.IsSelected, true)
+        );
+
+        var element = container.Find(".component-container");
+        Assert.Equal("true", element.GetAttribute("aria-selected"));
+        Assert.Contains("selected", element.ClassList);
+    }
+
+    [Fact]
+    public void UnselectedInstanceOmitsAriaSelectedAndTheSelectedClass()
+    {
+        var container = Render<ComponentContainer>();
+
+        var element = container.Find(".component-container");
+        Assert.Null(element.GetAttribute("aria-selected"));
+        Assert.DoesNotContain("selected", element.ClassList);
+    }
+
+    [Fact]
+    public void ClickingTheContainerInvokesOnSelect()
+    {
+        var selectCount = 0;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.OnSelect, () => selectCount++)
+        );
+
+        container.Find(".component-container").Click();
+
+        Assert.Equal(1, selectCount);
+    }
 }

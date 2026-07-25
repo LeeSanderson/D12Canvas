@@ -37,6 +37,12 @@ public partial class ComponentContainer : IAsyncDisposable
     public string? Role { get; set; }
 
     [Parameter]
+    public bool IsSelected { get; set; }
+
+    [Parameter]
+    public EventCallback OnSelect { get; set; }
+
+    [Parameter]
     public EventCallback<ComponentContainerStateChangedEventArgs> OnStateChanged { get; set; }
 
     [CascadingParameter(Name = "ParentCanvas")]
@@ -60,6 +66,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private double _lastRenderedWidth;
     private double _lastRenderedHeight;
     private bool _lastRenderedEditMode;
+    private bool _lastRenderedIsSelected;
 
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
@@ -78,7 +85,8 @@ public partial class ComponentContainer : IAsyncDisposable
             || Y != _lastRenderedY
             || Width != _lastRenderedWidth
             || Height != _lastRenderedHeight
-            || _editMode != _lastRenderedEditMode;
+            || _editMode != _lastRenderedEditMode
+            || IsSelected != _lastRenderedIsSelected;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -88,6 +96,7 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedWidth = Width;
         _lastRenderedHeight = Height;
         _lastRenderedEditMode = _editMode;
+        _lastRenderedIsSelected = IsSelected;
 
         if (firstRender)
         {
@@ -98,6 +107,8 @@ public partial class ComponentContainer : IAsyncDisposable
             _dotNetRef = DotNetObjectReference.Create(this);
         }
     }
+
+    private void HandleClick(MouseEventArgs e) => OnSelect.InvokeAsync();
 
     private void HandleMouseDown(MouseEventArgs e)
     {

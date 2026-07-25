@@ -1,13 +1,15 @@
 @namespace D12Canvas
 
 <div @ref="_containerRef"
-     class="component-container @(_editMode ? "edit-mode" : "view-mode")"
+     class="component-container @(_editMode ? "edit-mode" : "view-mode") @(IsSelected ? "selected" : "")"
      style="@ContainerStyle"
      role="@Role"
      aria-label="@AccessibleName"
+     aria-selected="@(IsSelected ? "true" : null)"
      @onmousedown="HandleMouseDown"
      @onmousemove="HandleMouseMove"
      @onmouseup="HandleMouseUp"
+     @onclick="HandleClick"
      @onclick:stopPropagation
      @ondblclick="SwitchToEditMode">
 
@@ -48,6 +50,11 @@
 
     .component-container.view-mode {
         border: 1px solid transparent;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
     }
 
     .resize-handle {
