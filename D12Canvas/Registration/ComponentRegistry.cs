@@ -3,6 +3,7 @@ namespace D12Canvas.Registration;
 public sealed class ComponentRegistry : IComponentRegistry
 {
     private readonly Dictionary<string, ComponentRegistration> _registrations = new();
+    private readonly List<ComponentRegistration> _registrationOrder = new();
 
     public void Register(ComponentRegistration registration)
     {
@@ -10,6 +11,8 @@ public sealed class ComponentRegistry : IComponentRegistry
         {
             throw new DuplicateComponentKeyException(registration.Key);
         }
+
+        _registrationOrder.Add(registration);
     }
 
     public ComponentRegistration Resolve(string key)
@@ -21,4 +24,6 @@ public sealed class ComponentRegistry : IComponentRegistry
 
         return registration;
     }
+
+    public IReadOnlyList<ComponentRegistration> All => _registrationOrder;
 }

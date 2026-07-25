@@ -64,4 +64,35 @@ public class ComponentRegistryTests
 
         Assert.Equal("sticky-note", exception.Key);
     }
+
+    [Fact]
+    public void AllIsEmptyWhenNothingIsRegistered()
+    {
+        var registry = new ComponentRegistry();
+
+        Assert.Empty(registry.All);
+    }
+
+    [Fact]
+    public void AllReturnsEveryRegistrationInRegistrationOrder()
+    {
+        var registry = new ComponentRegistry();
+        var stickyNote = new ComponentRegistration(
+            Key: "sticky-note",
+            ComponentType: typeof(TestComponentDouble),
+            PropsType: typeof(TestProps),
+            DisplayName: "Sticky Note",
+            AccessibleName: "Sticky note",
+            DefaultProps: new TestProps(),
+            Icon: null,
+            Role: "group",
+            DefaultSize: null,
+            Category: null
+        );
+        var rectangle = stickyNote with { Key = "rectangle", DisplayName = "Rectangle" };
+        registry.Register(stickyNote);
+        registry.Register(rectangle);
+
+        Assert.Equal([stickyNote, rectangle], registry.All);
+    }
 }

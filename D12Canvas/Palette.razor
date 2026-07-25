@@ -1,0 +1,95 @@
+@namespace D12Canvas
+
+@using D12Canvas.Registration
+
+<div class="d12-palette" role="region" aria-label="Component palette">
+    @foreach (var category in Categories)
+    {
+        <div class="d12-palette-category">
+            <h3 class="d12-palette-category-title">@category.Name</h3>
+            <ul class="d12-palette-entries">
+                @foreach (var entry in category.Entries)
+                {
+                    <li class="d12-palette-entry">
+                        <button
+                            type="button"
+                            class="d12-palette-entry-button"
+                            aria-label="@entry.AccessibleName"
+                        >
+                            @if (!string.IsNullOrEmpty(entry.Icon))
+                            {
+                                <span class="d12-palette-entry-icon" aria-hidden="true">@entry.Icon</span>
+                            }
+                            <span class="d12-palette-entry-name">@entry.DisplayName</span>
+                        </button>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>
+
+<style>
+    .d12-palette {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    .d12-palette-category-title {
+        margin: 0 0 6px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #666;
+    }
+
+    .d12-palette-entries {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .d12-palette-entry-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+    }
+
+    .d12-palette-entry-button:hover {
+        background: #f0f0f0;
+        border-color: #ccc;
+    }
+
+    .d12-palette-entry-icon {
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .d12-palette-entry-name {
+        font-size: 13px;
+    }
+</style>

@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html><html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <base href="/">
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link href="D12Canvas.Demo.styles.css" rel="stylesheet">
+<!--!--><!--!--><!--!--><title>Palette Demo</title><!--!--><!--!--><!--!--></head>
+
+<body>
+    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
+        <button title="Navigation menu" class="navbar-toggler" b-91fadkni91=""><!--!--><span class="navbar-toggler-icon" b-91fadkni91=""></span></button></div></div><!--!-->
+
+<div class="collapse nav-scrollable" b-91fadkni91=""><nav class="nav flex-column" b-91fadkni91=""><div class="nav-item px-3" b-91fadkni91=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
+                Zoom and Pan Test
+            </a><!--!-->
+            <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
+                Child Component Test
+            </a><!--!-->
+            <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
+                Component Container Demo
+            </a><!--!-->
+            <!--!--><a href="board-demo" class="nav-link"><!--!-->
+                Board Demo
+            </a><!--!-->
+            <!--!--><a href="palette-demo" class="nav-link active" aria-current="page"><!--!-->
+                Palette Demo
+            </a><!--!-->
+            <!--!--><a href="virtualization-stress-test" class="nav-link"><!--!-->
+                Virtualization Stress Test
+            </a></div></nav></div></div><!--!-->
+
+    <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
+
+<div class="palette-slot"><!--!--><div class="d12-palette" role="region" aria-label="Component palette"><div class="d12-palette-category"><h3 class="d12-palette-category-title">Notes</h3><!--!-->
+            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Demo note"><span class="d12-palette-entry-icon" aria-hidden="true">📝</span><span class="d12-palette-entry-name">Demo Note</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Stress Test</h3><!--!-->
+            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Stress item"><span class="d12-palette-entry-icon" aria-hidden="true">▦</span><span class="d12-palette-entry-name">Stress Item</span></button></li></ul></div></div><!--!-->
+
+<!--!--><style>
+    .d12-palette {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    .d12-palette-category-title {
+        margin: 0 0 6px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #666;
+    }
+
+    .d12-palette-entries {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .d12-palette-entry-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+    }
+
+    .d12-palette-entry-button:hover {
+        background: #f0f0f0;
+        border-color: #ccc;
+    }
+
+    .d12-palette-entry-icon {
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .d12-palette-entry-name {
+        font-size: 13px;
+    }
+</style></div><!--!-->
+
+<!--!--><style>
+    .palette-slot {
+        width: 260px;
+        padding: 16px;
+    }
+</style></article></main></div><!--!-->
+        <!--!--></div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+
+
+
+</body></html>

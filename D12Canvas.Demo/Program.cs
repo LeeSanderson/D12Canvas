@@ -23,6 +23,8 @@ builder.Services.AddD12Canvas(options =>
             b.AccessibleName = "Demo note";
             b.DefaultProps = new DemoNoteProps("New note", "#ffd966");
             b.DefaultSize = new ComponentSize(200, 150);
+            b.Icon = "📝";
+            b.Category = "Notes";
         }
     );
     options.RegisterComponent<StressItemComponent, StressItemProps>(
@@ -32,6 +34,8 @@ builder.Services.AddD12Canvas(options =>
             b.DisplayName = "Stress Item";
             b.AccessibleName = "Stress item";
             b.DefaultProps = new StressItemProps(0, "#e74c3c");
+            b.Icon = "▦";
+            b.Category = "Stress Test";
         }
     );
 });
