@@ -40,6 +40,13 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public bool IsSelected { get; set; }
 
+    // Ticket 33: true when this instance is one of 2+ currently selected together. Its own resize
+    // handles are suppressed in that case - the multi-selection's combined bounding box (rendered
+    // by DiagramCanvas) grows its own handles instead, so a group resize doesn't collide with 8
+    // more handles per member underneath it.
+    [Parameter]
+    public bool IsMultiSelected { get; set; }
+
     // Ticket 32: carries the click's shift-key state so DiagramCanvas can toggle this instance's
     // membership in a multi-selection instead of always collapsing to single-select.
     [Parameter]
@@ -91,6 +98,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private double _lastRenderedHeight;
     private bool _lastRenderedEditMode;
     private bool _lastRenderedIsSelected;
+    private bool _lastRenderedIsMultiSelected;
 
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
@@ -115,7 +123,8 @@ public partial class ComponentContainer : IAsyncDisposable
             || Width != _lastRenderedWidth
             || Height != _lastRenderedHeight
             || _editMode != _lastRenderedEditMode
-            || IsSelected != _lastRenderedIsSelected;
+            || IsSelected != _lastRenderedIsSelected
+            || IsMultiSelected != _lastRenderedIsMultiSelected;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -126,6 +135,7 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedHeight = Height;
         _lastRenderedEditMode = _editMode;
         _lastRenderedIsSelected = IsSelected;
+        _lastRenderedIsMultiSelected = IsMultiSelected;
 
         if (firstRender)
         {
@@ -262,59 +272,19 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void ApplyResize(double deltaX, double deltaY)
     {
-        const double minWidth = 50;
-        const double minHeight = 50;
+        var resized = ResizeMath.Apply(
+            new Bounds(_startX, _startY, _startWidth, _startHeight),
+            _currentResizeDirection,
+            deltaX,
+            deltaY,
+            ResizeMath.DefaultMinWidth,
+            ResizeMath.DefaultMinHeight
+        );
 
-        switch (_currentResizeDirection)
-        {
-            case ResizeDirection.TopLeft:
-                double newWidthTL = Math.Max(_startWidth - deltaX, minWidth);
-                double newHeightTL = Math.Max(_startHeight - deltaY, minHeight);
-                X = _startX + (_startWidth - newWidthTL);
-                Y = _startY + (_startHeight - newHeightTL);
-                Width = newWidthTL;
-                Height = newHeightTL;
-                break;
-
-            case ResizeDirection.Top:
-                double newHeightT = Math.Max(_startHeight - deltaY, minHeight);
-                Y = _startY + (_startHeight - newHeightT);
-                Height = newHeightT;
-                break;
-
-            case ResizeDirection.TopRight:
-                Width = Math.Max(_startWidth + deltaX, minWidth);
-                double newHeightTR = Math.Max(_startHeight - deltaY, minHeight);
-                Y = _startY + (_startHeight - newHeightTR);
-                Height = newHeightTR;
-                break;
-
-            case ResizeDirection.Right:
-                Width = Math.Max(_startWidth + deltaX, minWidth);
-                break;
-
-            case ResizeDirection.BottomRight:
-                Width = Math.Max(_startWidth + deltaX, minWidth);
-                Height = Math.Max(_startHeight + deltaY, minHeight);
-                break;
-
-            case ResizeDirection.Bottom:
-                Height = Math.Max(_startHeight + deltaY, minHeight);
-                break;
-
-            case ResizeDirection.BottomLeft:
-                double newWidthBL = Math.Max(_startWidth - deltaX, minWidth);
-                X = _startX + (_startWidth - newWidthBL);
-                Width = newWidthBL;
-                Height = Math.Max(_startHeight + deltaY, minHeight);
-                break;
-
-            case ResizeDirection.Left:
-                double newWidthL = Math.Max(_startWidth - deltaX, minWidth);
-                X = _startX + (_startWidth - newWidthL);
-                Width = newWidthL;
-                break;
-        }
+        X = resized.X;
+        Y = resized.Y;
+        Width = resized.Width;
+        Height = resized.Height;
     }
 
     private void SwitchToEditMode()

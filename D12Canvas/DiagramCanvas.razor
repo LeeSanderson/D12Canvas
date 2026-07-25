@@ -28,15 +28,17 @@
                 @foreach (var instance in VisibleComponents)
                 {
                     var registration = Registry.Resolve(instance.ComponentTypeKey);
+                    var effectiveBounds = EffectiveBounds(instance);
                     <ComponentContainer @key="instance.Id"
-                                        X="instance.Bounds.X"
-                                        Y="instance.Bounds.Y"
-                                        Width="instance.Bounds.Width"
-                                        Height="instance.Bounds.Height"
+                                        X="effectiveBounds.X"
+                                        Y="effectiveBounds.Y"
+                                        Width="effectiveBounds.Width"
+                                        Height="effectiveBounds.Height"
                                         ZIndex="instance.ZIndex"
                                         AccessibleName="@registration.AccessibleName"
                                         Role="@registration.Role"
                                         IsSelected="@IsSelected(instance.Id)"
+                                        IsMultiSelected="@IsMultiSelected(instance.Id)"
                                         OnSelect="@((shiftKey) => SelectComponent(instance.Id, shiftKey))"
                                         OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
                                         OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))">
@@ -47,6 +49,23 @@
             @if (_isMarqueeSelecting)
             {
                 <div class="marquee-select" style="@MarqueeStyle"></div>
+            }
+            @if (_selectedInstanceIds.Count > 1)
+            {
+                <div class="selection-bounding-box" style="@SelectionBoundingBoxStyle">
+                    @* Each handle stops both mousedown (so it arms this gesture instead of the
+                       canvas's own pan/marquee/group-move) and click (so a stationary press-release
+                       with no movement in between - which never sets _dragMoved - doesn't bubble to
+                       HandleCanvasClick and wipe the very selection this box belongs to). *@
+                    <div class="group-resize-handle top-left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.TopLeft))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                    <div class="group-resize-handle top" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Top))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                    <div class="group-resize-handle top-right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.TopRight))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                    <div class="group-resize-handle right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Right))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                    <div class="group-resize-handle bottom-right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.BottomRight))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                    <div class="group-resize-handle bottom" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Bottom))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                    <div class="group-resize-handle bottom-left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.BottomLeft))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                    <div class="group-resize-handle left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Left))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                </div>
             }
             @ChildContent
             </CascadingValue>
@@ -102,6 +121,72 @@
         border: 1px dashed #2f80ed;
         background-color: rgba(47, 128, 237, 0.08);
         pointer-events: none;
+    }
+
+    /* Ticket 33: the multi-selection's combined bounding box. The box itself lets clicks/drags
+       pass through to whatever's underneath (a member's own body, or empty canvas) - only its own
+       8 handles (each individually re-enabling pointer-events) are directly interactive. */
+    .selection-bounding-box {
+        position: absolute;
+        border: 1px solid #2f80ed;
+        pointer-events: none;
+    }
+
+    .group-resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #2f80ed;
+        border-radius: 50%;
+        pointer-events: auto;
+    }
+
+    .group-resize-handle.top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .group-resize-handle.top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .group-resize-handle.top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .group-resize-handle.right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .group-resize-handle.bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .group-resize-handle.bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .group-resize-handle.bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .group-resize-handle.left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
     }
 
     .canvas-content {

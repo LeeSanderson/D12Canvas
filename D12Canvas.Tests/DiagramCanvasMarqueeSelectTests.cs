@@ -276,48 +276,17 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
     }
 
-    // Reserved for ticket 33 (multi-selection moves and resizes as one unit): a drag starting
-    // inside the selection's own combined bounding box - but on empty space, not on either
-    // instance itself - must not pan the board out from under it, and must not start a new
-    // marquee either. The actual group-move mechanics are ticket 33's job; for now this is a no-op.
-    [Fact]
-    public void ADragStartingWithinTheSelectionBoundsNeitherPansNorDrawsAMarqueeNorClearsTheSelection()
-    {
-        var board = new Board();
-        AddInstance(board, 0, 0);
-        AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-
-        var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
-
-        // (150, 25) sits inside the combined bounding box (0,0)-(350,50) of both selected
-        // instances, but isn't on top of either one - empty space "within the marquee".
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 400 });
-
-        Assert.Empty(canvas.FindAll(".marquee-select"));
-        Assert.Contains(
-            "translate(0px, 0px)",
-            canvas.Find(".canvas-content").GetAttribute("style")
-        );
-
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 400 });
-        canvas.Find(".diagram-canvas").Click();
-
-        containers = canvas.FindAll(".component-container");
-        Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
-        Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
-    }
+    // A drag starting inside the selection's own combined bounding box - but on empty space, not
+    // on either instance itself - used to be deliberately inert (reserved for ticket 33), and this
+    // test asserted exactly that: no pan, no marquee, selection undisturbed. Ticket 33 gave that
+    // drag a real job (moving the whole selection as one unit) - see
+    // DiagramCanvasMultiSelectionMoveResizeTests.DraggingEmptySpaceWithinTheBoundingBoxMoves...
+    // and ...TheBoardIsUnchangedMidGroupMoveAndOnlyUpdatesOnRelease, which cover the same gesture
+    // (still no pan, still no marquee, still doesn't clear the selection) plus its new effect.
 
     // A stationary click (no movement) on empty space still clears the selection per ADR 0006,
     // even when that point happens to fall within the selection's combined bounding box - only a
-    // real drag from there is reserved/inert (see the test above).
+    // real drag from there does something else now (ticket 33's group move).
     [Fact]
     public void AStationaryClickWithinTheSelectionBoundsStillClearsTheSelection()
     {

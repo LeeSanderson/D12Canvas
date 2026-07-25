@@ -20,7 +20,7 @@
         @ChildContent
     </div>
 
-    @if (IsSelected || _editMode)
+    @if ((IsSelected && !IsMultiSelected) || _editMode)
     {
         <div class="resize-handle top-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopLeft))"></div>
         <div class="resize-handle top" @onmousedown="@((e) => StartResize(e, ResizeDirection.Top))"></div>

@@ -63,14 +63,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Ticket 32: a plain drag on empty canvas still pans (pre-existing behaviour, unchanged);
     // Shift+drag draws an intersection-based marquee instead, pairing with Shift-click's existing
     // "multi-select gesture" meaning. A drag starting inside the current selection's own combined
-    // bounding box does neither - reserved for ticket 33's group-move-as-a-unit, so for now it's
-    // deliberately inert. Whichever of the three a gesture turns out to be, it starts and ends with
-    // mousedown/mouseup on the same element, so the browser's native click fires right after it -
-    // without the _dragMoved guard that click would immediately clear the selection the drag just
-    // established (or leave alone), the same wrinkle ticket 29's original pan guard existed to solve.
+    // bounding box does neither of those - it's ticket 33's group-move instead (see _isGroupMoving
+    // below). Whichever of these a gesture turns out to be, it starts and ends with mousedown/
+    // mouseup on the same element, so the browser's native click fires right after it - without the
+    // _dragMoved guard that click would immediately clear the selection the drag just established
+    // (or leave alone), the same wrinkle ticket 29's original pan guard existed to solve.
     private bool _isPanning;
     private bool _isMarqueeSelecting;
-    private bool _isWithinSelectionDrag;
     private bool _dragMoved;
     private MouseEventArgs? _panStart;
     private DateTime _lastPanRender = DateTime.MinValue;
@@ -78,6 +77,32 @@ public partial class DiagramCanvas : IAsyncDisposable
     private (double Left, double Top) _marqueeContainerOrigin;
     private (double X, double Y) _marqueeAnchor;
     private (double X, double Y) _marqueeCurrent;
+
+    // Ticket 33: a multi-selection (2+) moves and resizes as a single bounding-box unit (ADR 0006).
+    // Move can start two ways - dragging empty space inside the combined bounding box (tracked here,
+    // live-previewed every tick since DiagramCanvas owns the whole gesture) or dragging one of the
+    // selected members directly (ComponentContainer's own existing _isMoving already tracks that
+    // member smoothly; MoveComponent below turns its single OnMoved delta into a one-shot update of
+    // every other member once the gesture commits, rather than routing it through here). Either way
+    // Board is only ever written once, on release, matching every other gesture's discipline.
+    private bool _isGroupMoving;
+    private (double X, double Y) _groupMoveAnchor;
+    private double _groupMoveDeltaX;
+    private double _groupMoveDeltaY;
+
+    // Group resize is driven entirely by the selection bounding box's own handles (rendered by
+    // DiagramCanvas, not any individual ComponentContainer - see IsMultiSelected). Members' bounds
+    // are scaled proportionally relative to the bbox they started at, previewed live via
+    // EffectiveBounds and committed once, on release.
+    private bool _isGroupResizing;
+    private ResizeDirection _groupResizeDirection;
+    private MouseEventArgs? _groupResizeAnchor;
+    private Bounds _groupResizeStartBounds;
+    private Bounds _groupResizeCurrentBounds;
+    private Dictionary<Guid, Bounds> _groupResizeMemberStartBounds = new();
+    private double _groupResizeMinBboxWidth;
+    private double _groupResizeMinBboxHeight;
+
     private ElementReference ContainerElement;
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
     private List<Action> _cleanupFunctions = new List<Action>();
@@ -188,6 +213,11 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private bool IsSelected(Guid instanceId) => _selectedInstanceIds.Contains(instanceId);
 
+    // Ticket 33: distinguishes "selected" from "selected as part of a group of 2+" - only the
+    // latter suppresses a ComponentContainer's own resize handles in favour of the shared overlay's.
+    private bool IsMultiSelected(Guid instanceId) =>
+        _selectedInstanceIds.Count > 1 && _selectedInstanceIds.Contains(instanceId);
+
     // Ticket 32: a shift-click toggles the clicked instance's membership without disturbing the
     // rest of the selection; a plain click always collapses the selection down to just this one.
     private void SelectComponent(Guid instanceId, bool addToSelection)
@@ -208,6 +238,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Ticket 30: fired once by ComponentContainer's OnMoved, on release - the whole
     // press-to-release drag is one gesture, so Board is only ever mutated with the final Bounds,
     // never per intermediate mousemove tick.
+    // Ticket 33: when the dragged instance is part of a 2+ multi-selection, the delta between its
+    // own before/after Bounds is applied to every selected member instead of just this one -
+    // preserving relative offsets without needing ComponentContainer itself to know anything about
+    // multi-selection (its own local drag-tracking is unchanged; only this receiving end differs).
     private void MoveComponent(Guid instanceId, Bounds bounds)
     {
         var instance = Board?.GetComponent(instanceId);
@@ -216,11 +250,47 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        instance.Bounds = bounds;
+        if (IsMultiSelected(instanceId))
+        {
+            CommitGroupMove(bounds.X - instance.Bounds.X, bounds.Y - instance.Bounds.Y);
+        }
+        else
+        {
+            instance.Bounds = bounds;
+        }
+
         StateHasChanged();
     }
 
-    // Ticket 31: same shape as MoveComponent, fired once by ComponentContainer's OnResized.
+    // Shared by MoveComponent (member-drag trigger) and HandleMouseUp (empty-space-in-bbox
+    // trigger) - applies the same board-space delta to every selected member in one write.
+    private void CommitGroupMove(double deltaX, double deltaY)
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        foreach (var id in _selectedInstanceIds)
+        {
+            var member = Board.GetComponent(id);
+            if (member is null)
+            {
+                continue;
+            }
+
+            member.Bounds = new Bounds(
+                member.Bounds.X + deltaX,
+                member.Bounds.Y + deltaY,
+                member.Bounds.Width,
+                member.Bounds.Height
+            );
+        }
+    }
+
+    // Ticket 31: same shape as MoveComponent, fired once by ComponentContainer's OnResized. A
+    // multi-selected instance never reaches here for resize (its own handles are suppressed while
+    // IsMultiSelected - see ComponentContainer), so unlike MoveComponent this needs no group branch.
     private void ResizeComponent(Guid instanceId, Bounds bounds)
     {
         var instance = Board?.GetComponent(instanceId);
@@ -232,6 +302,119 @@ public partial class DiagramCanvas : IAsyncDisposable
         instance.Bounds = bounds;
         StateHasChanged();
     }
+
+    // Ticket 33: armed by one of the group bounding-box overlay's own 8 handles (never an
+    // individual instance's handles - those are suppressed while multi-selected). Snapshots each
+    // member's own Bounds plus the bbox they currently form, both taken before this gesture flips
+    // _isGroupResizing on, so EffectiveBounds still reads raw Board state for that one snapshot.
+    private void StartGroupResize(MouseEventArgs e, ResizeDirection direction)
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        var bbox = SelectedInstancesBounds();
+        if (bbox is null)
+        {
+            return;
+        }
+
+        _groupResizeMemberStartBounds = _selectedInstanceIds.ToDictionary(
+            id => id,
+            id => Board.GetComponent(id)!.Bounds
+        );
+        _groupResizeStartBounds = bbox.Value;
+        _groupResizeCurrentBounds = bbox.Value;
+        _groupResizeDirection = direction;
+        _groupResizeAnchor = e;
+        (_groupResizeMinBboxWidth, _groupResizeMinBboxHeight) = MinBoundingBoxSizeFor(
+            bbox.Value,
+            _groupResizeMemberStartBounds.Values
+        );
+        _isGroupResizing = true;
+    }
+
+    // The smallest the bbox's width/height can shrink to while every member's own proportionally-
+    // scaled size stays at or above ResizeMath's per-instance floor - so a group resize can never
+    // shrink an individual member smaller than that same member's own handles ever could (ticket
+    // 31's invariant, extended to the group case). Derived per member (width/height independently,
+    // since they scale independently) and taken as the most restrictive (largest) requirement
+    // across the whole selection.
+    private static (double MinWidth, double MinHeight) MinBoundingBoxSizeFor(
+        Bounds bbox,
+        IEnumerable<Bounds> members
+    )
+    {
+        var minWidth = ResizeMath.DefaultMinWidth;
+        var minHeight = ResizeMath.DefaultMinHeight;
+
+        foreach (var member in members)
+        {
+            if (member.Width > 0)
+            {
+                minWidth = Math.Max(
+                    minWidth,
+                    ResizeMath.DefaultMinWidth * bbox.Width / member.Width
+                );
+            }
+
+            if (member.Height > 0)
+            {
+                minHeight = Math.Max(
+                    minHeight,
+                    ResizeMath.DefaultMinHeight * bbox.Height / member.Height
+                );
+            }
+        }
+
+        return (minWidth, minHeight);
+    }
+
+    private void ApplyGroupResize(MouseEventArgs e)
+    {
+        var (deltaX, deltaY) = ScaledDelta(_groupResizeAnchor!, e);
+        _groupResizeCurrentBounds = ResizeMath.Apply(
+            _groupResizeStartBounds,
+            _groupResizeDirection,
+            deltaX,
+            deltaY,
+            _groupResizeMinBboxWidth,
+            _groupResizeMinBboxHeight
+        );
+    }
+
+    private void CommitGroupResize()
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        foreach (var (id, startBounds) in _groupResizeMemberStartBounds)
+        {
+            var member = Board.GetComponent(id);
+            if (member is null)
+            {
+                continue;
+            }
+
+            member.Bounds = ScaleWithinBoundingBox(
+                startBounds,
+                _groupResizeStartBounds,
+                _groupResizeCurrentBounds
+            );
+        }
+    }
+
+    // Pan cancels out of a screen-space delta - only the canvas's current zoom scale matters.
+    // Same reasoning as ComponentContainer's own ScaledDelta, duplicated rather than shared since
+    // that one also accounts for a ParentCanvas cascading parameter DiagramCanvas doesn't need.
+    private (double DeltaX, double DeltaY) ScaledDelta(MouseEventArgs from, MouseEventArgs to) =>
+        (
+            (to.ClientX - from.ClientX) / _zoomPanTracker.Scale,
+            (to.ClientY - from.ClientY) / _zoomPanTracker.Scale
+        );
 
     // Bound directly to the canvas background's own click, so it never fires for a click that
     // landed on a ComponentContainer (that element stops the click from propagating here).
@@ -298,11 +481,12 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         if (PointIsWithinSelectionBounds(boardPoint))
         {
-            // Reserved for ticket 33 (multi-selection moves and resizes as one unit) - left
-            // deliberately inert for now: no pan underneath the selection, no new marquee. Tracked
-            // separately (rather than just returning) so HandleMouseMove can still mark the
-            // gesture as having moved, keeping the trailing click from clearing the selection.
-            _isWithinSelectionDrag = true;
+            // Ticket 33: a drag starting on empty space inside the multi-selection's own combined
+            // bounding box moves the whole selection - no pan underneath it, no new marquee.
+            _isGroupMoving = true;
+            _groupMoveAnchor = boardPoint;
+            _groupMoveDeltaX = 0;
+            _groupMoveDeltaY = 0;
             return;
         }
 
@@ -321,9 +505,21 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        if (_isWithinSelectionDrag)
+        if (_isGroupResizing)
         {
+            ApplyGroupResize(e);
             _dragMoved = true;
+            StateHasChanged();
+            return;
+        }
+
+        if (_isGroupMoving)
+        {
+            var current = ToBoardPoint(e, _marqueeContainerOrigin);
+            _groupMoveDeltaX = current.X - _groupMoveAnchor.X;
+            _groupMoveDeltaY = current.Y - _groupMoveAnchor.Y;
+            _dragMoved = true;
+            StateHasChanged();
             return;
         }
 
@@ -349,10 +545,27 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void HandleMouseUp(MouseEventArgs e)
     {
+        // Single-commit gestures (ticket 33): only write to Board once, here, and only if the
+        // drag actually moved anything - a plain click that happened to land inside the bbox or on
+        // a handle is a no-op, matching every other gesture's press-release-with-no-movement rule.
+        if (_isGroupMoving && (_groupMoveDeltaX != 0 || _groupMoveDeltaY != 0))
+        {
+            CommitGroupMove(_groupMoveDeltaX, _groupMoveDeltaY);
+        }
+
+        if (_isGroupResizing && !_groupResizeCurrentBounds.Equals(_groupResizeStartBounds))
+        {
+            CommitGroupResize();
+        }
+
         _isPanning = false;
         _isMarqueeSelecting = false;
-        _isWithinSelectionDrag = false;
+        _isGroupMoving = false;
+        _isGroupResizing = false;
         _panStart = null;
+        _groupResizeAnchor = null;
+        _groupMoveDeltaX = 0;
+        _groupMoveDeltaY = 0;
         // Flush so the view can't be left visually behind a throttled final pan tick.
         StateHasChanged();
     }
@@ -393,7 +606,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // The combined bounding box of the current selection, or null when nothing is selected - used
-    // to keep a plain drag starting there from panning underneath it (reserved for ticket 33).
+    // both to keep a plain drag starting there from panning underneath it, and (ticket 33) to
+    // position the group bounding-box overlay. Reads through EffectiveBounds rather than each
+    // instance's raw Bounds, so it live-tracks during an active group move/resize instead of only
+    // updating once the gesture commits.
     private Bounds? SelectedInstancesBounds()
     {
         if (Board is null)
@@ -413,24 +629,93 @@ public partial class DiagramCanvas : IAsyncDisposable
                 continue;
             }
 
-            minX = any ? Math.Min(minX, instance.Bounds.X) : instance.Bounds.X;
-            minY = any ? Math.Min(minY, instance.Bounds.Y) : instance.Bounds.Y;
-            maxX = any ? Math.Max(maxX, instance.Bounds.Right) : instance.Bounds.Right;
-            maxY = any ? Math.Max(maxY, instance.Bounds.Bottom) : instance.Bounds.Bottom;
+            var bounds = EffectiveBounds(instance);
+            minX = any ? Math.Min(minX, bounds.X) : bounds.X;
+            minY = any ? Math.Min(minY, bounds.Y) : bounds.Y;
+            maxX = any ? Math.Max(maxX, bounds.Right) : bounds.Right;
+            maxY = any ? Math.Max(maxY, bounds.Bottom) : bounds.Bottom;
             any = true;
         }
 
         return any ? new Bounds(minX, minY, maxX - minX, maxY - minY) : null;
     }
 
+    // Ticket 33: an instance's Bounds as they should currently render - offset by the live
+    // in-progress group-move delta, or scaled proportionally within an in-progress group-resize.
+    // Board itself is never touched until the gesture commits (single-write discipline, matching
+    // every other drag), so this is the only place mid-gesture visual feedback comes from.
+    private Bounds EffectiveBounds(ComponentInstance instance)
+    {
+        if (_isGroupMoving && _selectedInstanceIds.Contains(instance.Id))
+        {
+            return new Bounds(
+                instance.Bounds.X + _groupMoveDeltaX,
+                instance.Bounds.Y + _groupMoveDeltaY,
+                instance.Bounds.Width,
+                instance.Bounds.Height
+            );
+        }
+
+        if (
+            _isGroupResizing
+            && _groupResizeMemberStartBounds.TryGetValue(instance.Id, out var startBounds)
+        )
+        {
+            return ScaleWithinBoundingBox(
+                startBounds,
+                _groupResizeStartBounds,
+                _groupResizeCurrentBounds
+            );
+        }
+
+        return instance.Bounds;
+    }
+
+    // A member's start-of-gesture Bounds, re-expressed as the same relative position/size within
+    // the bbox's current (possibly live-preview) extent - the core of "resize handles on the
+    // selection's bounding box scale all members proportionally".
+    private static Bounds ScaleWithinBoundingBox(
+        Bounds memberStart,
+        Bounds bboxStart,
+        Bounds bboxCurrent
+    )
+    {
+        var scaleX = bboxStart.Width > 0 ? bboxCurrent.Width / bboxStart.Width : 1;
+        var scaleY = bboxStart.Height > 0 ? bboxCurrent.Height / bboxStart.Height : 1;
+        var relativeX = memberStart.X - bboxStart.X;
+        var relativeY = memberStart.Y - bboxStart.Y;
+
+        return new Bounds(
+            bboxCurrent.X + relativeX * scaleX,
+            bboxCurrent.Y + relativeY * scaleY,
+            memberStart.Width * scaleX,
+            memberStart.Height * scaleY
+        );
+    }
+
+    // Ticket 33's group-move-as-a-unit only applies once 2+ instances are selected - a lone
+    // selected instance's own bounds already are its bounding box, so a drag just outside it (if
+    // reachable at all) should pan like before, not move "a group of one".
     private bool PointIsWithinSelectionBounds((double X, double Y) point) =>
-        SelectedInstancesBounds()?.Intersects(new Bounds(point.X, point.Y, 0, 0)) ?? false;
+        _selectedInstanceIds.Count > 1
+        && (SelectedInstancesBounds()?.Intersects(new Bounds(point.X, point.Y, 0, 0)) ?? false);
 
     private string MarqueeStyle
     {
         get
         {
             var bounds = MarqueeBoundsFrom(_marqueeAnchor, _marqueeCurrent);
+            return $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";
+        }
+    }
+
+    // Ticket 33: positions the group bounding-box overlay - reads through SelectedInstancesBounds,
+    // so it live-tracks an in-progress group move/resize the same way the members themselves do.
+    private string SelectionBoundingBoxStyle
+    {
+        get
+        {
+            var bounds = SelectedInstancesBounds() ?? default;
             return $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";
         }
     }

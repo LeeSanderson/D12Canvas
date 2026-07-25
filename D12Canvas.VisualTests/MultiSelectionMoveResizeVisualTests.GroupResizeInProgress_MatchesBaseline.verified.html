@@ -105,7 +105,7 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><!--!--><div class="component-container view-mode" style="left: 301px; top: 225.40625px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" _bl_3=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
+    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 224px; width: 272.7272727272727px; height: 185.29411764705884px; z-index: 0;" role="group" aria-label="Demo note" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
 
 <!--!--><style>
     .demo-note {
@@ -207,7 +207,114 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style></div></div></div><!--!-->
+</style><!--!--><div class="component-container view-mode selected" style="left: 135.27272727272728px; top: 248.7058823529412px; width: 272.7272727272727px; height: 185.29411764705884px; z-index: 0;" role="group" aria-label="Stress item" _bl_4="" aria-selected="true"><div class="container-content"><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
+
+<!--!--><style>
+    .stress-item {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-family: monospace;
+        font-size: 12px;
+    }
+</style></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><div class="selection-bounding-box" style="left: 108px; top: 224px; width: 300px; height: 210px;"><div class="group-resize-handle top-left"></div><!--!-->
+                    <div class="group-resize-handle top"></div><!--!-->
+                    <div class="group-resize-handle top-right"></div><!--!-->
+                    <div class="group-resize-handle right"></div><!--!-->
+                    <div class="group-resize-handle bottom-right"></div><!--!-->
+                    <div class="group-resize-handle bottom"></div><!--!-->
+                    <div class="group-resize-handle bottom-left"></div><!--!-->
+                    <div class="group-resize-handle left"></div></div></div></div></div><!--!-->
 
 <!--!--><style>
     .diagram-container {
