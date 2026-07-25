@@ -49,6 +49,11 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public EventCallback<Bounds> OnMoved { get; set; }
 
+    // Ticket 31: same contract as OnMoved but for a handle-drag resize - fired once, on release,
+    // with the instance's final Bounds.
+    [Parameter]
+    public EventCallback<Bounds> OnResized { get; set; }
+
     [Parameter]
     public EventCallback<ComponentContainerStateChangedEventArgs> OnStateChanged { get; set; }
 
@@ -168,6 +173,18 @@ public partial class ComponentContainer : IAsyncDisposable
             return;
         }
 
+        // Resizing isn't gated by _editMode: a resize-handle mousedown only ever arms _isResizing
+        // when its handle actually rendered (IsSelected || _editMode, see the .razor markup), so
+        // this branch already can't fire for an instance that's neither selected nor editing.
+        if (_isResizing && _dragStart != null)
+        {
+            var (deltaX, deltaY) = ScaledDelta(_dragStart, e);
+
+            ApplyResize(deltaX, deltaY);
+            NotifyStateChanged();
+            return;
+        }
+
         if (!_editMode)
             return;
 
@@ -178,13 +195,6 @@ public partial class ComponentContainer : IAsyncDisposable
             X = _startX + deltaX;
             Y = _startY + deltaY;
 
-            NotifyStateChanged();
-        }
-        else if (_isResizing && _dragStart != null)
-        {
-            var (deltaX, deltaY) = ScaledDelta(_dragStart, e);
-
-            ApplyResize(deltaX, deltaY);
             NotifyStateChanged();
         }
     }
@@ -219,8 +229,18 @@ public partial class ComponentContainer : IAsyncDisposable
             }
         }
 
+        if (_isResizing)
+        {
+            _isResizing = false;
+
+            // Same no-op-on-no-movement guard as OnMoved above.
+            if (X != _startX || Y != _startY || Width != _startWidth || Height != _startHeight)
+            {
+                OnResized.InvokeAsync(new Bounds(X, Y, Width, Height));
+            }
+        }
+
         _isDragging = false;
-        _isResizing = false;
         _dragStart = null;
     }
 

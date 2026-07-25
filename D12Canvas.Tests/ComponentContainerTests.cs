@@ -108,4 +108,123 @@ public class ComponentContainerTests : ComponentTestBase
 
         Assert.False(invoked);
     }
+
+    [Fact]
+    public void SelectedInstanceRendersResizeHandles()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.IsSelected, true)
+        );
+
+        Assert.Equal(8, container.FindAll(".resize-handle").Count);
+    }
+
+    [Fact]
+    public void UnselectedInstanceOutsideEditModeOmitsResizeHandles()
+    {
+        var container = Render<ComponentContainer>();
+
+        Assert.Empty(container.FindAll(".resize-handle"));
+    }
+
+    [Fact]
+    public void EditModeInstanceRendersResizeHandlesEvenWhenUnselected()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.InitialEditMode, true)
+        );
+
+        Assert.Equal(8, container.FindAll(".resize-handle").Count);
+    }
+
+    [Fact]
+    public void DraggingTheBottomRightHandleInvokesOnResizedWithTheGrownBounds()
+    {
+        Bounds? resizedTo = null;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters
+                .Add(p => p.IsSelected, true)
+                .Add(p => p.X, 100)
+                .Add(p => p.Y, 100)
+                .Add(p => p.Width, 50)
+                .Add(p => p.Height, 50)
+                .Add(p => p.OnResized, (Bounds bounds) => resizedTo = bounds)
+        );
+
+        var handle = container.Find(".resize-handle.bottom-right");
+        handle.MouseDown(new MouseEventArgs { ClientX = 0, ClientY = 0 });
+        handle.MouseMove(new MouseEventArgs { ClientX = 30, ClientY = 10 });
+        handle.MouseUp(new MouseEventArgs { ClientX = 30, ClientY = 10 });
+
+        // Bottom-right handle grows Width/Height directly; X/Y (the opposite/top-left corner)
+        // stay anchored in place.
+        Assert.Equal(new Bounds(100, 100, 80, 60), resizedTo);
+    }
+
+    [Fact]
+    public void DraggingTheTopLeftHandleKeepsTheOppositeCornerAnchored()
+    {
+        Bounds? resizedTo = null;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters
+                .Add(p => p.IsSelected, true)
+                .Add(p => p.X, 100)
+                .Add(p => p.Y, 100)
+                .Add(p => p.Width, 100)
+                .Add(p => p.Height, 100)
+                .Add(p => p.OnResized, (Bounds bounds) => resizedTo = bounds)
+        );
+
+        var handle = container.Find(".resize-handle.top-left");
+        handle.MouseDown(new MouseEventArgs { ClientX = 0, ClientY = 0 });
+        handle.MouseMove(new MouseEventArgs { ClientX = 10, ClientY = 20 });
+        handle.MouseUp(new MouseEventArgs { ClientX = 10, ClientY = 20 });
+
+        Assert.NotNull(resizedTo);
+        // The bottom-right corner (Right/Bottom) is the anchor for a top-left drag - it must
+        // land exactly where the un-resized instance's own bottom-right corner was.
+        Assert.Equal(200, resizedTo!.Value.Right, precision: 10);
+        Assert.Equal(200, resizedTo!.Value.Bottom, precision: 10);
+        Assert.Equal(new Bounds(110, 120, 90, 80), resizedTo);
+    }
+
+    [Fact]
+    public void ResizingCannotShrinkBelowTheMinimumSizeOrInvertBounds()
+    {
+        Bounds? resizedTo = null;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters
+                .Add(p => p.IsSelected, true)
+                .Add(p => p.X, 100)
+                .Add(p => p.Y, 100)
+                .Add(p => p.Width, 200)
+                .Add(p => p.Height, 200)
+                .Add(p => p.OnResized, (Bounds bounds) => resizedTo = bounds)
+        );
+
+        var handle = container.Find(".resize-handle.bottom-right");
+        handle.MouseDown(new MouseEventArgs { ClientX = 0, ClientY = 0 });
+        // A huge inward drag would otherwise invert Width/Height into negative territory.
+        handle.MouseMove(new MouseEventArgs { ClientX = -1000, ClientY = -1000 });
+        handle.MouseUp(new MouseEventArgs { ClientX = -1000, ClientY = -1000 });
+
+        Assert.Equal(new Bounds(100, 100, 50, 50), resizedTo);
+    }
+
+    [Fact]
+    public void APressAndReleaseOfAResizeHandleWithNoMovementDoesNotInvokeOnResized()
+    {
+        var invoked = false;
+        var container = Render<ComponentContainer>(parameters =>
+            parameters
+                .Add(p => p.IsSelected, true)
+                .Add(p => p.OnResized, (Bounds _) => invoked = true)
+        );
+
+        var handle = container.Find(".resize-handle.bottom-right");
+        handle.MouseDown(new MouseEventArgs { ClientX = 50, ClientY = 50 });
+        handle.MouseUp(new MouseEventArgs { ClientX = 50, ClientY = 50 });
+
+        Assert.False(invoked);
+    }
 }

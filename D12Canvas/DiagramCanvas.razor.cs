@@ -196,6 +196,19 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // Ticket 31: same shape as MoveComponent, fired once by ComponentContainer's OnResized.
+    private void ResizeComponent(Guid instanceId, Bounds bounds)
+    {
+        var instance = Board?.GetComponent(instanceId);
+        if (instance is null)
+        {
+            return;
+        }
+
+        instance.Bounds = bounds;
+        StateHasChanged();
+    }
+
     // Bound directly to the canvas background's own click, so it never fires for a click that
     // landed on a ComponentContainer (that element stops the click from propagating here).
     private void HandleCanvasClick()

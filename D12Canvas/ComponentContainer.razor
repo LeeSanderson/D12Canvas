@@ -20,14 +20,17 @@
         @ChildContent
     </div>
 
-    <div class="resize-handle top-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopLeft))"></div>
-    <div class="resize-handle top" @onmousedown="@((e) => StartResize(e, ResizeDirection.Top))"></div>
-    <div class="resize-handle top-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopRight))"></div>
-    <div class="resize-handle right" @onmousedown="@((e) => StartResize(e, ResizeDirection.Right))"></div>
-    <div class="resize-handle bottom-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomRight))"></div>
-    <div class="resize-handle bottom" @onmousedown="@((e) => StartResize(e, ResizeDirection.Bottom))"></div>
-    <div class="resize-handle bottom-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomLeft))"></div>
-    <div class="resize-handle left" @onmousedown="@((e) => StartResize(e, ResizeDirection.Left))"></div>
+    @if (IsSelected || _editMode)
+    {
+        <div class="resize-handle top-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopLeft))"></div>
+        <div class="resize-handle top" @onmousedown="@((e) => StartResize(e, ResizeDirection.Top))"></div>
+        <div class="resize-handle top-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopRight))"></div>
+        <div class="resize-handle right" @onmousedown="@((e) => StartResize(e, ResizeDirection.Right))"></div>
+        <div class="resize-handle bottom-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomRight))"></div>
+        <div class="resize-handle bottom" @onmousedown="@((e) => StartResize(e, ResizeDirection.Bottom))"></div>
+        <div class="resize-handle bottom-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomLeft))"></div>
+        <div class="resize-handle left" @onmousedown="@((e) => StartResize(e, ResizeDirection.Left))"></div>
+    }
 </div>
 
 <style>

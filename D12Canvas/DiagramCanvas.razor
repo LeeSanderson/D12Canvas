@@ -38,7 +38,8 @@
                                         Role="@registration.Role"
                                         IsSelected="@IsSelected(instance.Id)"
                                         OnSelect="@(() => SelectComponent(instance.Id))"
-                                        OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))">
+                                        OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
+                                        OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))">
                         <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
                     </ComponentContainer>
                 }
