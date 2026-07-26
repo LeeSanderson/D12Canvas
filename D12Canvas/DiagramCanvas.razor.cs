@@ -211,6 +211,22 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // ADR 0009: Delete/Backspace removes every currently selected instance from Board and clears
+    // the selection - single and multi-selection are the same code path here, since (unlike
+    // move/resize) deletion has no "move as one unit" delta to apply, just N independent removals.
+    // Undo-wrapping this as one CompositeCommand is ticket 38's job (no history stack exists yet).
+    [JSInvokable]
+    public void OnDeletePressed()
+    {
+        foreach (var id in _selectedInstanceIds)
+        {
+            Board?.RemoveComponent(id);
+        }
+
+        _selectedInstanceIds.Clear();
+        StateHasChanged();
+    }
+
     private bool IsSelected(Guid instanceId) => _selectedInstanceIds.Contains(instanceId);
 
     // Ticket 33: distinguishes "selected" from "selected as part of a group of 2+" - only the

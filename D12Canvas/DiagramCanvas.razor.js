@@ -44,6 +44,18 @@ export async function getElementDimensions(element) {
     };
 }
 
+// Backspace/Delete double as the browser's own text-editing keys, so unlike this listener's other
+// codes they must not fire while focus is on an editable host-page element (an <input>/<textarea>
+// elsewhere on the embedding page, or a future in-canvas editable field) - otherwise typing
+// Backspace there would silently wipe the canvas selection instead of deleting a character.
+function isEditableTarget(target) {
+    return (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable
+    );
+}
+
 export async function addKeyboardListener(element, dotnetRef) {
     const handleKeyDown = (event) => {
         switch (event.code) {
@@ -67,6 +79,12 @@ export async function addKeyboardListener(element, dotnetRef) {
                 break;
             case "Escape":
                 dotnetRef.invokeMethodAsync("OnEscapePressed");
+                break;
+            case "Delete":
+            case "Backspace":
+                if (!isEditableTarget(event.target)) {
+                    dotnetRef.invokeMethodAsync("OnDeletePressed");
+                }
                 break;
         }
         event.preventDefault();
