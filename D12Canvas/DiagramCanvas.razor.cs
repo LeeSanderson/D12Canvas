@@ -219,14 +219,28 @@ public partial class DiagramCanvas : IAsyncDisposable
     // ADR 0009: Delete/Backspace removes every currently selected instance from Board and clears
     // the selection - single and multi-selection are the same code path here, since (unlike
     // move/resize) deletion has no "move as one unit" delta to apply, just N independent removals.
-    // Undo-wrapping this as one CompositeCommand is ticket 38's job (AddEntity/RemoveEntity aren't
-    // built yet).
+    // Ticket 38: wrapped in one CompositeCommand of RemoveEntityCommands (ADR 0007), so a
+    // multi-selection delete undoes as a single atomic entry and every deleted instance is
+    // restored with its identity, bounds, and props intact.
     [JSInvokable]
     public void OnDeletePressed()
     {
-        foreach (var id in _selectedInstanceIds)
+        if (Board is not null)
         {
-            Board?.RemoveComponent(id);
+            var commands = new List<ICommand>();
+            foreach (var id in _selectedInstanceIds)
+            {
+                var instance = Board.GetComponent(id);
+                if (instance is not null)
+                {
+                    commands.Add(new RemoveEntityCommand(Board, instance));
+                }
+            }
+
+            if (commands.Count > 0)
+            {
+                _history.Do(new CompositeCommand(commands));
+            }
         }
 
         _selectedInstanceIds.Clear();
@@ -832,23 +846,20 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Shared by HandleDrop and ClickToAdd - both place a new instance centered on a board-space
     // point, differing only in how that point is derived. Callers are trusted to have already
     // checked Board is non-null (both do, before computing their center point).
+    // Ticket 38: routed through AddEntityCommand (ADR 0007) rather than a direct Board.AddComponent
+    // call, so undo removes the placed instance and redo restores it with the same Id.
     private void PlaceComponent(string componentTypeKey, double centerX, double centerY)
     {
         var registration = Registry.Resolve(componentTypeKey);
         var size = registration.DefaultSize ?? new ComponentSize(FallbackWidth, FallbackHeight);
 
-        Board!.AddComponent(
-            new ComponentInstance(
-                registration.Key,
-                registration.DefaultProps,
-                new Bounds(
-                    centerX - size.Width / 2,
-                    centerY - size.Height / 2,
-                    size.Width,
-                    size.Height
-                )
-            )
+        var instance = new ComponentInstance(
+            registration.Key,
+            registration.DefaultProps,
+            new Bounds(centerX - size.Width / 2, centerY - size.Height / 2, size.Width, size.Height)
         );
+
+        _history.Do(new AddEntityCommand(Board!, instance));
     }
 
     private void HandleMouseWheel(WheelEventArgs e)

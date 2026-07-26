@@ -230,4 +230,140 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
 
         Assert.Equal(new Bounds(100, 100, 50, 50), instance.Bounds);
     }
+
+    // Ticket 38: click-to-add and drag-drop placement both route through PlaceComponent's
+    // AddEntityCommand (ADR 0007) - undo removes the placed instance, redo restores it under the
+    // same Id.
+    [Fact]
+    public async Task UndoAfterAClickToAddRemovesThePlacedInstance()
+    {
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
+        Assert.Single(board.Components);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Empty(board.Components);
+    }
+
+    [Fact]
+    public async Task RedoAfterUndoingAClickToAddRestoresTheInstanceUnderTheSameId()
+    {
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
+        var placedId = Assert.Single(board.Components).Id;
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
+
+        Assert.Equal(placedId, Assert.Single(board.Components).Id);
+    }
+
+    [Fact]
+    public async Task UndoAfterADragDropPlacementRemovesThePlacedInstance()
+    {
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
+        canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
+        Assert.Single(board.Components);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Empty(board.Components);
+    }
+
+    [Fact]
+    public async Task RedoAfterUndoingADragDropPlacementRestoresTheInstanceUnderTheSameId()
+    {
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
+        canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
+        var placedId = Assert.Single(board.Components).Id;
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
+
+        Assert.Equal(placedId, Assert.Single(board.Components).Id);
+    }
+
+    // Ticket 38: OnDeletePressed wraps every selected instance's RemoveEntityCommand in one
+    // CompositeCommand (ADR 0007) - single and multi-selection deletes both undo as one atomic
+    // entry, restoring each instance's identity, bounds, and props intact.
+    [Fact]
+    public async Task UndoAfterASingleSelectionDeleteRestoresTheInstance()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 100, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.Find(".component-container").Click();
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+        Assert.Empty(board.Components);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        var restored = Assert.Single(board.Components);
+        Assert.Equal(instance.Id, restored.Id);
+        Assert.Equal(new Bounds(100, 100, 50, 50), restored.Bounds);
+    }
+
+    [Fact]
+    public async Task RedoAfterUndoingASingleSelectionDeleteRemovesItAgain()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.Find(".component-container").Click();
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
+
+        Assert.Empty(board.Components);
+    }
+
+    [Fact]
+    public async Task UndoAfterAMultiSelectionDeleteRestoresEveryInstanceInOneStep()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 0, 0);
+        var second = AddInstance(board, 100, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+        Assert.Empty(board.Components);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal(2, board.Components.Count);
+        Assert.Equal(new Bounds(0, 0, 50, 50), board.GetComponent(first.Id)?.Bounds);
+        Assert.Equal(new Bounds(100, 0, 50, 50), board.GetComponent(second.Id)?.Bounds);
+    }
+
+    [Fact]
+    public async Task RedoAfterUndoingAMultiSelectionDeleteRemovesEveryInstanceAgain()
+    {
+        var board = new Board();
+        AddInstance(board, 0, 0);
+        AddInstance(board, 100, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
+
+        Assert.Empty(board.Components);
+    }
 }
