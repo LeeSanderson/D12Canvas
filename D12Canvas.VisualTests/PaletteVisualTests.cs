@@ -38,7 +38,7 @@ public sealed class PaletteVisualTests : IAsyncLifetime
         );
         _page = await _context.NewPageAsync();
         await _page.GotoAsync("/palette-demo");
-        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(2);
+        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(3);
     }
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();

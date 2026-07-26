@@ -39,7 +39,7 @@ public sealed class ResizeVisualTests : IAsyncLifetime
         );
         _page = await _context.NewPageAsync();
         await _page.GotoAsync("/placement-demo");
-        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(2);
+        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(3);
     }
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();

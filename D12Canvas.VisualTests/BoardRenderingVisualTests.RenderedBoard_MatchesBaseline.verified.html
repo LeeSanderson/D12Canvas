@@ -10,10 +10,10 @@
 <!--!--><!--!--><!--!--><title>Board Demo</title><!--!--><!--!--><!--!--></head>
 
 <body>
-    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
-        <button title="Navigation menu" class="navbar-toggler" b-91fadkni91=""><!--!--><span class="navbar-toggler-icon" b-91fadkni91=""></span></button></div></div><!--!-->
+    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-52l6hnzelf=""><div class="sidebar" b-52l6hnzelf=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-v5d2xmpyhr=""><div class="container-fluid" b-v5d2xmpyhr=""><!--!--><a class="navbar-brand" href="" b-v5d2xmpyhr="">D12Canvas.Demo</a>
+        <button title="Navigation menu" class="navbar-toggler" b-v5d2xmpyhr=""><!--!--><span class="navbar-toggler-icon" b-v5d2xmpyhr=""></span></button></div></div><!--!-->
 
-<div class="collapse nav-scrollable" b-91fadkni91=""><nav class="nav flex-column" b-91fadkni91=""><div class="nav-item px-3" b-91fadkni91=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
+<div class="collapse nav-scrollable" b-v5d2xmpyhr=""><nav class="nav flex-column" b-v5d2xmpyhr=""><div class="nav-item px-3" b-v5d2xmpyhr=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
                 Zoom and Pan Test
             </a><!--!-->
             <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
@@ -31,11 +31,14 @@
             <!--!--><a href="placement-demo" class="nav-link"><!--!-->
                 Placement Demo
             </a><!--!-->
+            <!--!--><a href="save-load-demo" class="nav-link"><!--!-->
+                Save/Load Demo
+            </a><!--!-->
             <!--!--><a href="virtualization-stress-test" class="nav-link"><!--!-->
                 Virtualization Stress Test
             </a></div></nav></div></div><!--!-->
 
-    <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
+    <main b-52l6hnzelf=""><article class="content" style="height: 92vh;" b-52l6hnzelf=""><!--!--><!--!--><!--!--><!--!-->
 
 <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><!--!--><div class="component-container view-mode" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" role="group" aria-label="Demo note" _bl_3=""><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>Welcome to D12Canvas</p></div><!--!-->
 
@@ -255,6 +258,101 @@
 
     .demo-note p {
         margin: 0;
+    }
+</style></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><!--!--><div class="component-container view-mode" style="left: 700px; top: 120px; width: 160px; height: 100px; z-index: 3;" role="group" aria-label="Rectangle" _bl_6=""><div class="container-content"><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
+
+<!--!--><style>
+    .d12-rectangle {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
     }
 </style></div></div><!--!-->
 

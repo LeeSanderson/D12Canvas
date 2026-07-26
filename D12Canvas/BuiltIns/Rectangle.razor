@@ -1,0 +1,19 @@
+@namespace D12Canvas.BuiltIns
+
+<div class="d12-rectangle" style="@Style"></div>
+
+<style>
+    .d12-rectangle {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public RectangleProps Props { get; set; } = new("#FFFFFF", "#333333", 2);
+
+    private string Style =>
+        $"background-color: {Props.FillColor}; border: {Props.StrokeWidth}px solid {Props.StrokeColor};";
+}

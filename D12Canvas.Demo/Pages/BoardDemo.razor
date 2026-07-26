@@ -1,5 +1,6 @@
 @page "/board-demo"
 @using D12Canvas
+@using D12Canvas.BuiltIns
 @using D12Canvas.Model
 @using D12Canvas.Demo.Components
 
@@ -44,6 +45,14 @@
                 new DemoNoteProps("Resolved through the component registry", "#9ec5fe"),
                 new Bounds(220, 340, 240, 140),
                 zIndex: 0
+            )
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "rectangle",
+                new RectangleProps("#e3f2fd", "#1565c0", 3),
+                new Bounds(700, 120, 160, 100),
+                zIndex: 3
             )
         );
         return board;
