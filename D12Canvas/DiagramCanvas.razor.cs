@@ -1,3 +1,4 @@
+using D12Canvas.History;
 using D12Canvas.Model;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components;
@@ -54,6 +55,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Selection is transient view state (ADR 0006) - it lives here, never on Board, and is never
     // serialized or tracked by undo/redo. Ticket 32: ad-hoc multi-select via marquee/shift-click.
     private readonly HashSet<Guid> _selectedInstanceIds = new();
+
+    // Ticket 37: session-scoped, in-memory undo/redo (ADR 0007) - lives here, not on Board, for
+    // the same reason selection does; never serialized, never survives a reload.
+    private readonly CommandHistory _history = new();
 
     private readonly ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
 
@@ -214,7 +219,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     // ADR 0009: Delete/Backspace removes every currently selected instance from Board and clears
     // the selection - single and multi-selection are the same code path here, since (unlike
     // move/resize) deletion has no "move as one unit" delta to apply, just N independent removals.
-    // Undo-wrapping this as one CompositeCommand is ticket 38's job (no history stack exists yet).
+    // Undo-wrapping this as one CompositeCommand is ticket 38's job (AddEntity/RemoveEntity aren't
+    // built yet).
     [JSInvokable]
     public void OnDeletePressed()
     {
@@ -224,6 +230,22 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _selectedInstanceIds.Clear();
+        StateHasChanged();
+    }
+
+    // ADR 0007/0009: Ctrl+Z / Ctrl+Shift+Z. Selection is untouched either way - it's not tracked
+    // by History (ADR 0006).
+    [JSInvokable]
+    public void OnUndoPressed()
+    {
+        _history.Undo();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnRedoPressed()
+    {
+        _history.Redo();
         StateHasChanged();
     }
 
@@ -272,7 +294,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
         else
         {
-            instance.Bounds = bounds;
+            _history.Do(new ChangeBoundsCommand(instance, instance.Bounds, bounds));
         }
 
         StateHasChanged();
@@ -280,6 +302,8 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // Shared by MoveComponent (member-drag trigger) and HandleMouseUp (empty-space-in-bbox
     // trigger) - applies the same board-space delta to every selected member in one write.
+    // Ticket 37: the whole gesture is one CompositeCommand (ADR 0007), so a single undo reverts
+    // every member together rather than one at a time.
     private void CommitGroupMove(double deltaX, double deltaY)
     {
         if (Board is null)
@@ -287,6 +311,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
+        var commands = new List<ICommand>();
         foreach (var id in _selectedInstanceIds)
         {
             var member = Board.GetComponent(id);
@@ -295,12 +320,19 @@ public partial class DiagramCanvas : IAsyncDisposable
                 continue;
             }
 
-            member.Bounds = new Bounds(
-                member.Bounds.X + deltaX,
-                member.Bounds.Y + deltaY,
-                member.Bounds.Width,
-                member.Bounds.Height
+            var before = member.Bounds;
+            var after = new Bounds(
+                before.X + deltaX,
+                before.Y + deltaY,
+                before.Width,
+                before.Height
             );
+            commands.Add(new ChangeBoundsCommand(member, before, after));
+        }
+
+        if (commands.Count > 0)
+        {
+            _history.Do(new CompositeCommand(commands));
         }
     }
 
@@ -315,7 +347,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        instance.Bounds = bounds;
+        _history.Do(new ChangeBoundsCommand(instance, instance.Bounds, bounds));
         StateHasChanged();
     }
 
@@ -400,6 +432,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
+    // Ticket 37: same one-CompositeCommand-per-gesture treatment as CommitGroupMove.
     private void CommitGroupResize()
     {
         if (Board is null)
@@ -407,6 +440,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
+        var commands = new List<ICommand>();
         foreach (var (id, startBounds) in _groupResizeMemberStartBounds)
         {
             var member = Board.GetComponent(id);
@@ -415,11 +449,17 @@ public partial class DiagramCanvas : IAsyncDisposable
                 continue;
             }
 
-            member.Bounds = ScaleWithinBoundingBox(
+            var after = ScaleWithinBoundingBox(
                 startBounds,
                 _groupResizeStartBounds,
                 _groupResizeCurrentBounds
             );
+            commands.Add(new ChangeBoundsCommand(member, startBounds, after));
+        }
+
+        if (commands.Count > 0)
+        {
+            _history.Do(new CompositeCommand(commands));
         }
     }
 

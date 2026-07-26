@@ -86,6 +86,18 @@ export async function addKeyboardListener(element, dotnetRef) {
                     dotnetRef.invokeMethodAsync("OnDeletePressed");
                 }
                 break;
+            case "KeyZ":
+                // Ctrl+Z (undo) doubles as the OS/browser's own text-editing undo, so this
+                // guards against hijacking it while focus is on an editable host-page element -
+                // same reasoning as Delete/Backspace above (ADR 0009's Ctrl+Z/Ctrl+Shift+Z).
+                if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    if (event.shiftKey) {
+                        dotnetRef.invokeMethodAsync("OnRedoPressed");
+                    } else {
+                        dotnetRef.invokeMethodAsync("OnUndoPressed");
+                    }
+                }
+                break;
         }
         event.preventDefault();
     };
