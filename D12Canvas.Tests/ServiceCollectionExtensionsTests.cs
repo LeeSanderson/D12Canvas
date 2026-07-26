@@ -1,3 +1,4 @@
+using D12Canvas.Persistence;
 using D12Canvas.Registration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -63,5 +64,27 @@ public class ServiceCollectionExtensionsTests
 
         Assert.Equal("Widget", registry.Resolve("widget").DisplayName);
         Assert.Equal("Gadget", registry.Resolve("gadget").DisplayName);
+    }
+
+    [Fact]
+    public void AddD12CanvasRegistersAResolvableBoardSerializer()
+    {
+        var services = new ServiceCollection();
+
+        services.AddD12Canvas(options =>
+            options.RegisterComponent<TestComponentDouble, TestProps>(
+                "widget",
+                builder =>
+                {
+                    builder.DisplayName = "Widget";
+                    builder.AccessibleName = "Widget";
+                    builder.DefaultProps = new TestProps();
+                }
+            )
+        );
+
+        var provider = services.BuildServiceProvider();
+
+        Assert.IsType<BoardJsonSerializer>(provider.GetRequiredService<IBoardSerializer>());
     }
 }

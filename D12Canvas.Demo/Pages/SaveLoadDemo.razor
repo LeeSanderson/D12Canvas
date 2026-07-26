@@ -1,0 +1,103 @@
+@page "/save-load-demo"
+@using D12Canvas
+@using D12Canvas.Model
+@using D12Canvas.Demo.Components
+@using D12Canvas.Persistence
+@inject IBoardSerializer BoardSerializer
+
+<PageTitle>Save/Load Demo</PageTitle>
+
+<div class="save-load-demo-layout">
+    <div class="canvas-container">
+        <DiagramCanvas Board="_board" />
+    </div>
+    <div class="json-panel">
+        <div class="json-panel-buttons">
+            <button @onclick="Save">Save</button>
+            <button @onclick="Load">Load</button>
+        </div>
+        <textarea @bind="_json" @bind:event="oninput"></textarea>
+        @if (_loadError is not null)
+        {
+            <p class="load-error">@_loadError</p>
+        }
+    </div>
+</div>
+
+<style>
+    .save-load-demo-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .canvas-container {
+        flex: 1;
+        height: 600px;
+        border: 1px solid #ccc;
+    }
+
+    .json-panel {
+        width: 360px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .json-panel textarea {
+        flex: 1;
+        min-height: 500px;
+        font-family: monospace;
+        font-size: 12px;
+    }
+
+    .load-error {
+        color: #b00020;
+    }
+</style>
+
+@code {
+    private Board _board = SeedBoard();
+    private string _json = "";
+    private string? _loadError;
+
+    private void Save()
+    {
+        _json = BoardSerializer.Serialize(_board);
+        _loadError = null;
+    }
+
+    private void Load()
+    {
+        try
+        {
+            _board = BoardSerializer.Deserialize(_json);
+            _loadError = null;
+        }
+        catch (Exception ex)
+        {
+            _loadError = $"Could not load board: {ex.Message}";
+        }
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(
+                "demo-note",
+                new DemoNoteProps("Click Save to serialize this board to JSON", "#ffd966"),
+                new Bounds(120, 80, 240, 140),
+                zIndex: 1
+            )
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "demo-note",
+                new DemoNoteProps("Then edit the JSON and click Load to deserialize it back", "#a3d9a5"),
+                new Bounds(420, 220, 240, 140),
+                zIndex: 2
+            )
+        );
+        return board;
+    }
+}

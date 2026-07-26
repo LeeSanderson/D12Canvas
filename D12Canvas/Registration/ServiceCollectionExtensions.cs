@@ -1,4 +1,5 @@
 using System.Linq;
+using D12Canvas.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace D12Canvas.Registration;
@@ -23,6 +24,7 @@ public static class ServiceCollectionExtensions
         if (existingRegistry is null)
         {
             services.AddSingleton(options.Registry);
+            services.AddSingleton<IBoardSerializer, BoardJsonSerializer>();
         }
 
         return services;
