@@ -6,4 +6,5 @@ public interface IBoardSerializer
 {
     string Serialize(Board board);
     Board Deserialize(string json);
+    PartialBoardDeserializeResult DeserializePartial(string json);
 }

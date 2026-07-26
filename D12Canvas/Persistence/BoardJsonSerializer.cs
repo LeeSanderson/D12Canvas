@@ -33,13 +33,7 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             JsonSerializer.Deserialize<BoardEnvelope>(json, Options)
             ?? throw new JsonException("The board envelope is empty.");
 
-        if (envelope.SchemaVersion != CurrentSchemaVersion)
-        {
-            throw new UnsupportedSchemaVersionException(
-                CurrentSchemaVersion,
-                envelope.SchemaVersion
-            );
-        }
+        EnsureSupportedSchemaVersion(envelope.SchemaVersion);
 
         var board = new Board();
 
@@ -49,6 +43,78 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         }
 
         return board;
+    }
+
+    public PartialBoardDeserializeResult DeserializePartial(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        var schemaVersion = root.GetProperty(nameof(BoardEnvelope.SchemaVersion)).GetInt32();
+        EnsureSupportedSchemaVersion(schemaVersion);
+
+        var board = new Board();
+        var warnings = new List<BoardDeserializeWarning>();
+
+        var index = 0;
+        foreach (
+            var componentElement in root.GetProperty(nameof(BoardEnvelope.Components))
+                .EnumerateArray()
+        )
+        {
+            var entity = DescribeEntity(componentElement, index);
+            index++;
+
+            try
+            {
+                var componentEnvelope =
+                    componentElement.Deserialize<ComponentInstanceEnvelope>(Options)
+                    ?? throw new JsonException("The component entry is empty.");
+
+                board.AddComponent(FromEnvelope(componentEnvelope));
+            }
+            catch (UnknownComponentKeyException ex)
+            {
+                warnings.Add(
+                    new BoardDeserializeWarning(entity, $"Unknown component type '{ex.Key}'.")
+                );
+            }
+            catch (Exception ex)
+            {
+                // Deliberately broad: any failure to parse or bind one entity must never
+                // abort the rest of the load, so it's reported as a warning instead.
+                warnings.Add(
+                    new BoardDeserializeWarning(entity, $"Malformed entity: {ex.Message}")
+                );
+            }
+        }
+
+        return new PartialBoardDeserializeResult(board, warnings);
+    }
+
+    private static void EnsureSupportedSchemaVersion(int schemaVersion)
+    {
+        if (schemaVersion != CurrentSchemaVersion)
+        {
+            throw new UnsupportedSchemaVersionException(CurrentSchemaVersion, schemaVersion);
+        }
+    }
+
+    private static string DescribeEntity(JsonElement componentElement, int index)
+    {
+        if (
+            componentElement.ValueKind == JsonValueKind.Object
+            && componentElement.TryGetProperty(
+                nameof(ComponentInstanceEnvelope.Id),
+                out var idProperty
+            )
+            && idProperty.ValueKind == JsonValueKind.String
+        )
+        {
+            return idProperty.GetString()!;
+        }
+
+        return $"{nameof(BoardEnvelope.Components)}[{index}]";
     }
 
     private static ComponentInstanceEnvelope ToEnvelope(ComponentInstance instance) =>
