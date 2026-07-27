@@ -1,6 +1,21 @@
 @namespace D12Canvas.BuiltIns
 
-<p class="d12-text" style="@Style">@Props.Text</p>
+@if (_isEditing)
+{
+    <textarea class="d12-text d12-text-editor"
+              style="@Style"
+              @ref="_editorRef"
+              @bind="_editBuffer" @bind:event="oninput"
+              @onblur="CommitEdit"
+              @onkeydown="HandleEditorKeyDown" @onkeydown:stopPropagation
+              @onmousedown:stopPropagation
+              @onclick:stopPropagation
+              @ondblclick:stopPropagation></textarea>
+}
+else
+{
+    <p class="d12-text" style="@Style" @ondblclick="BeginEdit" @ondblclick:stopPropagation>@Props.Text</p>
+}
 
 <style>
     .d12-text {
@@ -9,12 +24,89 @@
         box-sizing: border-box;
         margin: 0;
     }
+
+    .d12-text-editor {
+        display: block;
+        font-family: inherit;
+        border: none;
+        outline: 1px dashed rgba(0, 0, 0, 0.4);
+        resize: none;
+        background: transparent;
+        padding: 0;
+    }
 </style>
 
 @code {
     [Parameter]
     public TextProps Props { get; set; } = new("", "#000000", 16, "normal", "left");
 
+    // Ticket 43: the editing built-in's own route back to Board/History - both are supplied by
+    // DiagramCanvas via cascading parameters every built-in has access to (ParentCanvas already
+    // did for ComponentContainer; InstanceId is new, added alongside it).
+    [CascadingParameter(Name = "ParentCanvas")]
+    private DiagramCanvas? ParentCanvas { get; set; }
+
+    [CascadingParameter(Name = "InstanceId")]
+    private Guid InstanceId { get; set; }
+
+    private bool _isEditing;
+    private bool _focusPending;
+    private bool _suppressNextBlurCommit;
+    private string _editBuffer = "";
+    private ElementReference _editorRef;
+
     private string Style =>
         $"color: {Props.Color}; font-size: {Props.FontSize}px; font-weight: {Props.FontWeight}; text-align: {Props.TextAlign};";
+
+    // ADR 0008: a Text-type field is edited inline/WYSIWYG on the canvas, never through the
+    // property panel. stopPropagation keeps this double-click from also reaching
+    // ComponentContainer's own unrelated legacy edit mode (drag/resize without prior selection).
+    private void BeginEdit()
+    {
+        _editBuffer = Props.Text;
+        _isEditing = true;
+        _focusPending = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusPending)
+        {
+            _focusPending = false;
+            await _editorRef.FocusAsync();
+        }
+    }
+
+    // ADR 0007: Escape cancels without touching history at all - not even a no-op Do/Undo pair.
+    // Removing the textarea from the DOM (by flipping _isEditing back off) fires a native blur
+    // right after this, so the flag tells CommitEdit to skip its own commit for that blur.
+    private void HandleEditorKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            _suppressNextBlurCommit = true;
+            _isEditing = false;
+        }
+    }
+
+    // Committing on blur is exactly one MutateEntityCommand (ADR 0007), routed through
+    // ParentCanvas.CommitPropsChange - a no-op edit (blur with no change) records nothing,
+    // matching ComponentContainer's own no-movement guard for OnMoved/OnResized.
+    private void CommitEdit()
+    {
+        _isEditing = false;
+
+        if (_suppressNextBlurCommit)
+        {
+            _suppressNextBlurCommit = false;
+            return;
+        }
+
+        if (_editBuffer == Props.Text)
+        {
+            return;
+        }
+
+        ParentCanvas?.CommitPropsChange(InstanceId, Props, Props with { Text = _editBuffer });
+    }
 }

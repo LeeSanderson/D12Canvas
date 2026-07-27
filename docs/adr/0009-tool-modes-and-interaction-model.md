@@ -35,3 +35,5 @@ Both use the component type's registered `DefaultSize` (ADR 0001). The **default
 - **Copy/paste, duplicate, select-all shortcuts** — out of scope here; none has an underlying model decided yet (clipboard format, duplicate-position semantics, "select all" semantics under grouping), so binding a shortcut now would be speccing ahead of a decision that doesn't exist.
 
 **Addendum (surfaced while resolving the canvas scale and size limits ticket):** `Ctrl+'` toggles snap-to-grid (ADR 0011) — added to the baseline shortcut table above, host-disable-able independent of the `SnapToGrid` bindable parameter.
+
+**Addendum (surfaced while resolving the inline WYSIWYG text editing ticket):** while an inline text edit is in progress (ADR 0008), Escape's meaning there — cancel the edit, discard the buffer, no history entry — is handled entirely locally by the editing built-in itself. The keydown never reaches this table's global Escape handler at all: the editing surface stops the event from propagating before the window-level listener sees it, rather than the global handler needing to special-case "editing in progress."

@@ -365,6 +365,23 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // Ticket 43: generic commit point for a built-in's own inline WYSIWYG text edit (or any future
+    // opaque Props edit) - Sticky Note and Text call this from their own editor on blur, via the
+    // ParentCanvas cascading parameter every built-in already has access to. MutateEntityCommand
+    // treats Props as opaque (ADR 0007), so this works without DiagramCanvas knowing any TProps
+    // shape. The caller is trusted to have already skipped a no-op (unchanged) edit.
+    public void CommitPropsChange(Guid instanceId, object before, object after)
+    {
+        var instance = Board?.GetComponent(instanceId);
+        if (instance is null)
+        {
+            return;
+        }
+
+        _history.Do(new MutateEntityCommand(instance, before, after));
+        StateHasChanged();
+    }
+
     // Ticket 33: armed by one of the group bounding-box overlay's own 8 handles (never an
     // individual instance's handles - those are suppressed while multi-selected). Snapshots each
     // member's own Bounds plus the bbox they currently form, both taken before this gesture flips

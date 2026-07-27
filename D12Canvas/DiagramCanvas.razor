@@ -39,10 +39,16 @@
                                         Role="@registration.Role"
                                         IsSelected="@IsSelected(instance.Id)"
                                         IsMultiSelected="@IsMultiSelected(instance.Id)"
+                                        Props="instance.Props"
                                         OnSelect="@((shiftKey) => SelectComponent(instance.Id, shiftKey))"
                                         OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
                                         OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))">
-                        <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
+                        @* Ticket 43: lets a text-carrying built-in (Sticky Note, Text) identify
+                           itself back to ParentCanvas when committing its own inline WYSIWYG edit -
+                           see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
+                        <CascadingValue Value="instance.Id" Name="InstanceId">
+                            <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
+                        </CascadingValue>
                     </ComponentContainer>
                 }
             }

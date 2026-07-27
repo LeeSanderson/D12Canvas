@@ -40,6 +40,12 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public bool IsSelected { get; set; }
 
+    // Ticket 43/75: never rendered directly by ComponentContainer itself (ChildContent stays an
+    // opaque RenderFragment) - carried purely so ShouldRender can detect an in-place Props edit at
+    // otherwise-unchanged Bounds/selection, which none of its other compared fields would catch.
+    [Parameter]
+    public object? Props { get; set; }
+
     // Ticket 33: true when this instance is one of 2+ currently selected together. Its own resize
     // handles are suppressed in that case - the multi-selection's combined bounding box (rendered
     // by DiagramCanvas) grows its own handles instead, so a group resize doesn't collide with 8
@@ -99,6 +105,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private bool _lastRenderedEditMode;
     private bool _lastRenderedIsSelected;
     private bool _lastRenderedIsMultiSelected;
+    private object? _lastRenderedProps;
 
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
@@ -124,7 +131,11 @@ public partial class ComponentContainer : IAsyncDisposable
             || Height != _lastRenderedHeight
             || _editMode != _lastRenderedEditMode
             || IsSelected != _lastRenderedIsSelected
-            || IsMultiSelected != _lastRenderedIsMultiSelected;
+            || IsMultiSelected != _lastRenderedIsMultiSelected
+            // Ticket 75: an in-place Props edit (ticket 43's inline text editing, or any future
+            // property-panel edit) at unchanged Bounds/selection would otherwise never reach
+            // ChildContent - Props types are records, so this is a cheap structural comparison.
+            || !Equals(Props, _lastRenderedProps);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -136,6 +147,7 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedEditMode = _editMode;
         _lastRenderedIsSelected = IsSelected;
         _lastRenderedIsMultiSelected = IsMultiSelected;
+        _lastRenderedProps = Props;
 
         if (firstRender)
         {
