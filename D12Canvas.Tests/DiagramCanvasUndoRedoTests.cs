@@ -181,6 +181,60 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 0, 100, 50), second.Bounds);
     }
 
+    // Ticket 45: a persisted Group (Ctrl+G, not just an ad-hoc selection) moves/resizes through
+    // the exact same CompositeCommand-per-gesture path - one undo must revert every member here too.
+    [Fact]
+    public async Task UndoAfterAPersistedGroupMoveRevertsEveryMemberInOneStep()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 100, 100);
+        var second = AddInstance(board, 300, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
+
+        containers = canvas.FindAll(".component-container");
+        containers[0].MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
+        containers[0].MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        containers[0].MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        Assert.Equal(new Bounds(140, 75, 50, 50), first.Bounds);
+        Assert.Equal(new Bounds(340, 75, 50, 50), second.Bounds);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal(new Bounds(100, 100, 50, 50), first.Bounds);
+        Assert.Equal(new Bounds(300, 100, 50, 50), second.Bounds);
+    }
+
+    [Fact]
+    public async Task UndoAfterAPersistedGroupResizeRevertsEveryMemberInOneStep()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
+        var second = AddInstance(board, 100, 0, 100, 50); // (100,0)-(200,50)
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
+
+        var handle = canvas.Find(".group-resize-handle.bottom-right");
+        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
+        handle.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 250 });
+        handle.MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 250 });
+        Assert.Equal(new Bounds(0, 0, 75, 100), first.Bounds);
+        Assert.Equal(new Bounds(150, 0, 150, 100), second.Bounds);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal(new Bounds(0, 0, 50, 50), first.Bounds);
+        Assert.Equal(new Bounds(100, 0, 100, 50), second.Bounds);
+    }
+
     [Fact]
     public async Task ANewGestureAfterUndoClearsRedo()
     {

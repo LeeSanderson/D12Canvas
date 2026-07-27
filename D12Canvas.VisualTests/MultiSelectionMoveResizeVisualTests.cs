@@ -92,6 +92,24 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }
 
+    // Ticket 45: a persisted Group's bounding box (computed on demand from its members, never
+    // stored - ADR 0006/0007) renders identically to an ad-hoc multi-selection's, since Ctrl+G
+    // only promotes the existing selection into a Group entity without changing how it's drawn.
+    // Pinned as its own baseline since it's driven by a real Ctrl+G keypress rather than the
+    // marquee/shift-click SelectBothInstances itself already covers.
+    [Fact]
+    public async Task PersistedGroupBoundingBoxVisible_MatchesBaseline()
+    {
+        await SelectBothInstances();
+
+        await _page.Keyboard.PressAsync("Control+g");
+
+        await Expect(_page.Locator(".selection-bounding-box")).ToBeVisibleAsync();
+        await Expect(_page.Locator(".group-resize-handle")).ToHaveCountAsync(8);
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
     [Fact]
     public async Task GroupResizeInProgress_MatchesBaseline()
     {
