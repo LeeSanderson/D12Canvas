@@ -35,5 +35,18 @@ internal static class BuiltInComponents
                 builder.DefaultSize = new ComponentSize(200, 200);
             }
         );
+
+        options.RegisterComponent<Text, TextProps>(
+            "text",
+            builder =>
+            {
+                builder.DisplayName = "Text";
+                builder.AccessibleName = "Text";
+                builder.DefaultProps = new TextProps("", "#000000", 16, "normal", "left");
+                builder.Icon = "🔤";
+                builder.Category = "Basic Shapes";
+                builder.DefaultSize = new ComponentSize(200, 40);
+            }
+        );
     }
 }

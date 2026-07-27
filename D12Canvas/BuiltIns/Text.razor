@@ -1,0 +1,20 @@
+@namespace D12Canvas.BuiltIns
+
+<p class="d12-text" style="@Style">@Props.Text</p>
+
+<style>
+    .d12-text {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        margin: 0;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public TextProps Props { get; set; } = new("", "#000000", 16, "normal", "left");
+
+    private string Style =>
+        $"color: {Props.Color}; font-size: {Props.FontSize}px; font-weight: {Props.FontWeight}; text-align: {Props.TextAlign};";
+}

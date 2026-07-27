@@ -51,6 +51,27 @@ public class BuiltInComponentsTests
     }
 
     [Fact]
+    public void AddD12CanvasRegistersTextWithoutAnyHostRegistration()
+    {
+        var services = new ServiceCollection();
+
+        services.AddD12Canvas(_ => { });
+
+        var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<IComponentRegistry>();
+
+        var registration = registry.Resolve("text");
+        Assert.Equal(typeof(Text), registration.ComponentType);
+        Assert.Equal(typeof(TextProps), registration.PropsType);
+        Assert.Equal("Text", registration.DisplayName);
+        Assert.Equal("Text", registration.AccessibleName);
+        Assert.Equal("Basic Shapes", registration.Category);
+        Assert.Equal(new ComponentSize(200, 40), registration.DefaultSize);
+        Assert.Equal(new TextProps("", "#000000", 16, "normal", "left"), registration.DefaultProps);
+        Assert.False(string.IsNullOrEmpty(registration.Icon));
+    }
+
+    [Fact]
     public void CallingAddD12CanvasMoreThanOnceDoesNotDuplicateTheRectangleRegistration()
     {
         var services = new ServiceCollection();
@@ -81,6 +102,9 @@ public class BuiltInComponentsTests
         var provider = services.BuildServiceProvider();
         var registry = provider.GetRequiredService<IComponentRegistry>();
 
-        Assert.Equal(["widget", "rectangle", "sticky-note"], registry.All.Select(r => r.Key));
+        Assert.Equal(
+            ["widget", "rectangle", "sticky-note", "text"],
+            registry.All.Select(r => r.Key)
+        );
     }
 }

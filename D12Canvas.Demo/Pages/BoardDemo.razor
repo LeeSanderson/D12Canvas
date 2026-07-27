@@ -63,6 +63,14 @@
                 zIndex: 4
             )
         );
+        board.AddComponent(
+            new ComponentInstance(
+                "text",
+                new TextProps("Text built-in", "#1565c0", 20, "bold", "center"),
+                new Bounds(700, 480, 200, 40),
+                zIndex: 5
+            )
+        );
         return board;
     }
 }
