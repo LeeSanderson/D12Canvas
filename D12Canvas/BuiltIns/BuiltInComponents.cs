@@ -22,5 +22,18 @@ internal static class BuiltInComponents
                 builder.DefaultSize = new ComponentSize(160, 100);
             }
         );
+
+        options.RegisterComponent<StickyNote, StickyNoteProps>(
+            "sticky-note",
+            builder =>
+            {
+                builder.DisplayName = "Sticky Note";
+                builder.AccessibleName = "Sticky Note";
+                builder.DefaultProps = new StickyNoteProps("", "#FFEB3B", "#000000", 14);
+                builder.Icon = "🗒️";
+                builder.Category = "Basic Shapes";
+                builder.DefaultSize = new ComponentSize(200, 200);
+            }
+        );
     }
 }

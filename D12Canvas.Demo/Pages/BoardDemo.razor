@@ -55,6 +55,14 @@
                 zIndex: 3
             )
         );
+        board.AddComponent(
+            new ComponentInstance(
+                "sticky-note",
+                new StickyNoteProps("Sticky note built-in", "#FFEB3B", "#000000", 14),
+                new Bounds(700, 260, 200, 200),
+                zIndex: 4
+            )
+        );
         return board;
     }
 }

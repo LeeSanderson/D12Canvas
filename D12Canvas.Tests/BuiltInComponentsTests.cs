@@ -30,6 +30,27 @@ public class BuiltInComponentsTests
     }
 
     [Fact]
+    public void AddD12CanvasRegistersStickyNoteWithoutAnyHostRegistration()
+    {
+        var services = new ServiceCollection();
+
+        services.AddD12Canvas(_ => { });
+
+        var provider = services.BuildServiceProvider();
+        var registry = provider.GetRequiredService<IComponentRegistry>();
+
+        var registration = registry.Resolve("sticky-note");
+        Assert.Equal(typeof(StickyNote), registration.ComponentType);
+        Assert.Equal(typeof(StickyNoteProps), registration.PropsType);
+        Assert.Equal("Sticky Note", registration.DisplayName);
+        Assert.Equal("Sticky Note", registration.AccessibleName);
+        Assert.Equal("Basic Shapes", registration.Category);
+        Assert.Equal(new ComponentSize(200, 200), registration.DefaultSize);
+        Assert.Equal(new StickyNoteProps("", "#FFEB3B", "#000000", 14), registration.DefaultProps);
+        Assert.False(string.IsNullOrEmpty(registration.Icon));
+    }
+
+    [Fact]
     public void CallingAddD12CanvasMoreThanOnceDoesNotDuplicateTheRectangleRegistration()
     {
         var services = new ServiceCollection();
@@ -41,7 +62,7 @@ public class BuiltInComponentsTests
     }
 
     [Fact]
-    public void HostRegisteredComponentsPrecedeRectangleInPaletteOrder()
+    public void HostRegisteredComponentsPrecedeBuiltInsInPaletteOrder()
     {
         var services = new ServiceCollection();
 
@@ -60,6 +81,6 @@ public class BuiltInComponentsTests
         var provider = services.BuildServiceProvider();
         var registry = provider.GetRequiredService<IComponentRegistry>();
 
-        Assert.Equal(["widget", "rectangle"], registry.All.Select(r => r.Key));
+        Assert.Equal(["widget", "rectangle", "sticky-note"], registry.All.Select(r => r.Key));
     }
 }

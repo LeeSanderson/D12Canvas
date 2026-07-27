@@ -40,7 +40,7 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         );
         _page = await _context.NewPageAsync();
         await _page.GotoAsync("/placement-demo");
-        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(3);
+        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(4);
     }
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();

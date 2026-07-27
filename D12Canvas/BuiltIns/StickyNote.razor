@@ -1,0 +1,27 @@
+@namespace D12Canvas.BuiltIns
+
+<div class="d12-sticky-note" style="@Style">
+    <p class="d12-sticky-note-text" style="@TextStyle">@Props.Text</p>
+</div>
+
+<style>
+    .d12-sticky-note {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+    }
+
+    .d12-sticky-note-text {
+        margin: 0;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public StickyNoteProps Props { get; set; } = new("", "#FFEB3B", "#000000", 14);
+
+    private string Style => $"background-color: {Props.Color};";
+
+    private string TextStyle => $"color: {Props.TextColor}; font-size: {Props.FontSize}px;";
+}
