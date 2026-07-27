@@ -222,13 +222,16 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Ticket 38: wrapped in one CompositeCommand of RemoveEntityCommands (ADR 0007), so a
     // multi-selection delete undoes as a single atomic entry and every deleted instance is
     // restored with its identity, bounds, and props intact.
+    // Ticket 44: reads through ExpandedSelection so a selected Group's members are what actually
+    // get deleted (the Group entity itself, now referencing missing members, is left for a future
+    // ticket to decide how to handle - not exercised by this one).
     [JSInvokable]
     public void OnDeletePressed()
     {
         if (Board is not null)
         {
             var commands = new List<ICommand>();
-            foreach (var id in _selectedInstanceIds)
+            foreach (var id in ExpandedSelection())
             {
                 var instance = Board.GetComponent(id);
                 if (instance is not null)
@@ -244,6 +247,64 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _selectedInstanceIds.Clear();
+        StateHasChanged();
+    }
+
+    // ADR 0006/0007: Ctrl+G promotes the current 2+ top-level selection into a persistent Group
+    // entity - the group becomes the new selection. A selection entry that is already a Group's
+    // own id (from a prior grouping) is carried over by reference rather than flattened to its
+    // members, so grouping a selection that already contains a group nests it.
+    [JSInvokable]
+    public void OnGroupPressed()
+    {
+        if (Board is null || _selectedInstanceIds.Count < 2)
+        {
+            return;
+        }
+
+        var group = new Group(_selectedInstanceIds.ToList());
+        _history.Do(new GroupCommand(Board, group));
+
+        _selectedInstanceIds.Clear();
+        _selectedInstanceIds.Add(group.Id);
+        StateHasChanged();
+    }
+
+    // ADR 0006/0007: Ctrl+Shift+G dissolves every currently-selected Group back into its
+    // immediate members, which become independently selectable again - a member that is itself a
+    // nested Group stays grouped (only the outer group is dissolved). Non-group entries already in
+    // the selection are left untouched.
+    [JSInvokable]
+    public void OnUngroupPressed()
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        var groups = _selectedInstanceIds
+            .Select(id => Board.GetGroup(id))
+            .Where(group => group is not null)
+            .Cast<Group>()
+            .ToList();
+
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        var commands = groups.Select(group => (ICommand)new UngroupCommand(Board, group)).ToList();
+        _history.Do(new CompositeCommand(commands));
+
+        foreach (var group in groups)
+        {
+            _selectedInstanceIds.Remove(group.Id);
+            foreach (var memberId in group.MemberIds)
+            {
+                _selectedInstanceIds.Add(memberId);
+            }
+        }
+
         StateHasChanged();
     }
 
@@ -263,28 +324,77 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    private bool IsSelected(Guid instanceId) => _selectedInstanceIds.Contains(instanceId);
+    // Ticket 44: a top-level entry in _selectedInstanceIds can be either a component instance id
+    // or a Group id (grouping/clicking a member collapses selection onto the Group - ADR 0006).
+    // This recursively flattens every entry down to the underlying component instance ids, so the
+    // rest of DiagramCanvas's existing ad-hoc multi-select machinery (bounds/move/resize/delete)
+    // handles a selected Group exactly like any other 2+ multi-selection, with no separate code
+    // path needed.
+    private HashSet<Guid> ExpandedSelection()
+    {
+        var result = new HashSet<Guid>();
+        foreach (var id in _selectedInstanceIds)
+        {
+            ExpandInto(id, result);
+        }
+        return result;
+    }
+
+    private void ExpandInto(Guid id, HashSet<Guid> result)
+    {
+        var group = Board?.GetGroup(id);
+        if (group is null)
+        {
+            result.Add(id);
+            return;
+        }
+
+        foreach (var memberId in group.MemberIds)
+        {
+            ExpandInto(memberId, result);
+        }
+    }
+
+    private bool IsSelected(Guid instanceId) => ExpandedSelection().Contains(instanceId);
 
     // Ticket 33: distinguishes "selected" from "selected as part of a group of 2+" - only the
     // latter suppresses a ComponentContainer's own resize handles in favour of the shared overlay's.
-    private bool IsMultiSelected(Guid instanceId) =>
-        _selectedInstanceIds.Count > 1 && _selectedInstanceIds.Contains(instanceId);
+    // Ticket 44: reads the expanded (flattened) selection, so a single selected Group of 2+
+    // members counts the same as an ad-hoc 2+ multi-selection.
+    private bool IsMultiSelected(Guid instanceId)
+    {
+        var expanded = ExpandedSelection();
+        return expanded.Count > 1 && expanded.Contains(instanceId);
+    }
+
+    // Ticket 44: the shared bounding-box overlay (and its resize handles) must show for a
+    // selected Group of 2+ members too, not only an ad-hoc multi-selection.
+    private bool HasMultiMemberSelection => ExpandedSelection().Count > 1;
+
+    // Ticket 44: an entity id's outermost containing group id, if it has one, else the id itself -
+    // shared by SelectComponent (a click) and UpdateMarqueeSelection (a marquee drag), so
+    // whichever gesture picks an entity up, selection converges onto its group the same way.
+    private Guid EffectiveSelectionId(Guid id) => Board?.FindContainingGroup(id)?.Id ?? id;
 
     // Ticket 32: a shift-click toggles the clicked instance's membership without disturbing the
     // rest of the selection; a plain click always collapses the selection down to just this one.
+    // Ticket 44: clicking any member of a Group selects the whole group instead of just that one
+    // instance - selection and group membership converge (ADR 0006).
     private void SelectComponent(Guid instanceId, bool addToSelection)
     {
+        var effectiveId = EffectiveSelectionId(instanceId);
+
         if (addToSelection)
         {
-            if (!_selectedInstanceIds.Remove(instanceId))
+            if (!_selectedInstanceIds.Remove(effectiveId))
             {
-                _selectedInstanceIds.Add(instanceId);
+                _selectedInstanceIds.Add(effectiveId);
             }
             return;
         }
 
         _selectedInstanceIds.Clear();
-        _selectedInstanceIds.Add(instanceId);
+        _selectedInstanceIds.Add(effectiveId);
     }
 
     // Ticket 30: fired once by ComponentContainer's OnMoved, on release - the whole
@@ -326,7 +436,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         var commands = new List<ICommand>();
-        foreach (var id in _selectedInstanceIds)
+        foreach (var id in ExpandedSelection())
         {
             var member = Board.GetComponent(id);
             if (member is null)
@@ -399,10 +509,8 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        _groupResizeMemberStartBounds = _selectedInstanceIds.ToDictionary(
-            id => id,
-            id => Board.GetComponent(id)!.Bounds
-        );
+        _groupResizeMemberStartBounds = ExpandedSelection()
+            .ToDictionary(id => id, id => Board.GetComponent(id)!.Bounds);
         _groupResizeStartBounds = bbox.Value;
         _groupResizeCurrentBounds = bbox.Value;
         _groupResizeDirection = direction;
@@ -674,6 +782,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Replaces the selection outright with whatever the marquee currently intersects (ADR 0006:
     // intersection semantics, not full-containment) - not additive, so a marquee drag that ends up
     // over nothing empties the selection, the same as clicking empty canvas.
+    // Ticket 44: an intersected instance that belongs to a Group is added by that group's id, not
+    // its own - same convergence as a plain click - so _selectedInstanceIds never ends up holding
+    // a "naked" grouped member id (which would let a later Ctrl+G create a second, overlapping
+    // group over members already grouped).
     private void UpdateMarqueeSelection()
     {
         if (Board is null)
@@ -687,7 +799,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         {
             if (instance.Bounds.Intersects(marquee))
             {
-                _selectedInstanceIds.Add(instance.Id);
+                _selectedInstanceIds.Add(EffectiveSelectionId(instance.Id));
             }
         }
     }
@@ -704,27 +816,12 @@ public partial class DiagramCanvas : IAsyncDisposable
             return null;
         }
 
-        double minX = 0,
-            minY = 0,
-            maxX = 0,
-            maxY = 0;
-        var any = false;
-        foreach (var instance in Board.Components)
-        {
-            if (!_selectedInstanceIds.Contains(instance.Id))
-            {
-                continue;
-            }
-
-            var bounds = EffectiveBounds(instance);
-            minX = any ? Math.Min(minX, bounds.X) : bounds.X;
-            minY = any ? Math.Min(minY, bounds.Y) : bounds.Y;
-            maxX = any ? Math.Max(maxX, bounds.Right) : bounds.Right;
-            maxY = any ? Math.Max(maxY, bounds.Bottom) : bounds.Bottom;
-            any = true;
-        }
-
-        return any ? new Bounds(minX, minY, maxX - minX, maxY - minY) : null;
+        var expanded = ExpandedSelection();
+        return Bounds.Union(
+            Board
+                .Components.Where(instance => expanded.Contains(instance.Id))
+                .Select(EffectiveBounds)
+        );
     }
 
     // Ticket 33: an instance's Bounds as they should currently render - offset by the live
@@ -733,7 +830,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // every other drag), so this is the only place mid-gesture visual feedback comes from.
     private Bounds EffectiveBounds(ComponentInstance instance)
     {
-        if (_isGroupMoving && _selectedInstanceIds.Contains(instance.Id))
+        if (_isGroupMoving && ExpandedSelection().Contains(instance.Id))
         {
             return new Bounds(
                 instance.Bounds.X + _groupMoveDeltaX,
@@ -784,7 +881,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // selected instance's own bounds already are its bounding box, so a drag just outside it (if
     // reachable at all) should pan like before, not move "a group of one".
     private bool PointIsWithinSelectionBounds((double X, double Y) point) =>
-        _selectedInstanceIds.Count > 1
+        HasMultiMemberSelection
         && (SelectedInstancesBounds()?.Intersects(new Bounds(point.X, point.Y, 0, 0)) ?? false);
 
     private string MarqueeStyle

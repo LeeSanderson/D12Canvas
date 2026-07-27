@@ -278,4 +278,172 @@ public class BoardTests
 
         Assert.Empty(visible);
     }
+
+    // Ticket 44: Group/ungroup lifecycle - Board stores Group entities alongside components,
+    // resolves a group's bounds from its members on demand (never stored), and can find the
+    // outermost group containing a given member id.
+    [Fact]
+    public void AddedGroupIsRetrievableByItsId()
+    {
+        var board = new Board();
+        var group = new Group(new[] { Guid.NewGuid(), Guid.NewGuid() });
+
+        board.AddGroup(group);
+
+        Assert.Same(group, board.GetGroup(group.Id));
+    }
+
+    [Fact]
+    public void GetGroupForAnUnknownIdReturnsNull()
+    {
+        var board = new Board();
+
+        Assert.Null(board.GetGroup(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void RemovedGroupIsNoLongerRetrievable()
+    {
+        var board = new Board();
+        var group = new Group(new[] { Guid.NewGuid(), Guid.NewGuid() });
+        board.AddGroup(group);
+
+        board.RemoveGroup(group.Id);
+
+        Assert.Null(board.GetGroup(group.Id));
+    }
+
+    [Fact]
+    public void GroupsExposesEveryAddedGroup()
+    {
+        var board = new Board();
+        var first = new Group(new[] { Guid.NewGuid(), Guid.NewGuid() });
+        var second = new Group(new[] { Guid.NewGuid(), Guid.NewGuid() });
+
+        board.AddGroup(first);
+        board.AddGroup(second);
+
+        Assert.Equal(new[] { first, second }, board.Groups, ReferenceEqualityComparer.Instance);
+    }
+
+    [Fact]
+    public void GetBoundsComputesTheUnionOfMemberComponentBounds()
+    {
+        var board = new Board();
+        var first = new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 50, 50));
+        var second = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(300, 100, 50, 50)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var group = new Group(new[] { first.Id, second.Id });
+
+        var bounds = board.GetBounds(group);
+
+        Assert.Equal(new Bounds(0, 0, 350, 150), bounds);
+    }
+
+    [Fact]
+    public void GetBoundsResolvesNestedGroupsRecursively()
+    {
+        var board = new Board();
+        var first = new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 50, 50));
+        var second = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(300, 100, 50, 50)
+        );
+        var third = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(-20, -20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        board.AddComponent(third);
+        var inner = new Group(new[] { first.Id, second.Id });
+        board.AddGroup(inner);
+        var outer = new Group(new[] { inner.Id, third.Id });
+
+        var bounds = board.GetBounds(outer);
+
+        Assert.Equal(new Bounds(-20, -20, 370, 170), bounds);
+    }
+
+    [Fact]
+    public void GetBoundsSkipsAMemberIdThatNoLongerResolvesToAnything()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(10, 10, 20, 20)
+        );
+        board.AddComponent(instance);
+        var group = new Group(new[] { instance.Id, Guid.NewGuid() });
+
+        var bounds = board.GetBounds(group);
+
+        Assert.Equal(new Bounds(10, 10, 20, 20), bounds);
+    }
+
+    [Fact]
+    public void GetBoundsForAGroupWithNoResolvableMembersReturnsNull()
+    {
+        var board = new Board();
+        var group = new Group(new[] { Guid.NewGuid() });
+
+        Assert.Null(board.GetBounds(group));
+    }
+
+    [Fact]
+    public void FindContainingGroupReturnsTheGroupDirectlyContainingAMember()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 50, 50)
+        );
+        board.AddComponent(instance);
+        var group = new Group(new[] { instance.Id });
+        board.AddGroup(group);
+
+        Assert.Same(group, board.FindContainingGroup(instance.Id));
+    }
+
+    [Fact]
+    public void FindContainingGroupWalksUpThroughNesting()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 50, 50)
+        );
+        board.AddComponent(instance);
+        var inner = new Group(new[] { instance.Id });
+        board.AddGroup(inner);
+        var outer = new Group(new[] { inner.Id });
+        board.AddGroup(outer);
+
+        Assert.Same(outer, board.FindContainingGroup(instance.Id));
+        Assert.Same(outer, board.FindContainingGroup(inner.Id));
+    }
+
+    [Fact]
+    public void FindContainingGroupReturnsNullWhenNotGrouped()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 50, 50)
+        );
+        board.AddComponent(instance);
+
+        Assert.Null(board.FindContainingGroup(instance.Id));
+    }
 }

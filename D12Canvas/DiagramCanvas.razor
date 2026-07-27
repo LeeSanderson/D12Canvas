@@ -56,7 +56,7 @@
             {
                 <div class="marquee-select" style="@MarqueeStyle"></div>
             }
-            @if (_selectedInstanceIds.Count > 1)
+            @if (HasMultiMemberSelection)
             {
                 <div class="selection-bounding-box" style="@SelectionBoundingBoxStyle">
                     @* Each handle stops both mousedown (so it arms this gesture instead of the

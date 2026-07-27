@@ -98,6 +98,18 @@ export async function addKeyboardListener(element, dotnetRef) {
                     }
                 }
                 break;
+            case "KeyG":
+                // Ctrl+G (group) / Ctrl+Shift+G (ungroup) - ticket 44. Guarded the same way as
+                // Ctrl+Z above: while focus is on an editable host-page element (e.g. mid inline
+                // WYSIWYG text edit, ticket 43), this must not hijack the keystroke.
+                if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    if (event.shiftKey) {
+                        dotnetRef.invokeMethodAsync("OnUngroupPressed");
+                    } else {
+                        dotnetRef.invokeMethodAsync("OnGroupPressed");
+                    }
+                }
+                break;
         }
         event.preventDefault();
     };
