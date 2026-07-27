@@ -21,7 +21,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
     {
         var envelope = new BoardEnvelope(
             CurrentSchemaVersion,
-            board.Components.Select(ToEnvelope).ToList()
+            board.Components.Select(ToComponentEnvelope).ToList(),
+            board.Groups.Select(ToGroupEnvelope).ToList()
         );
 
         return JsonSerializer.Serialize(envelope, Options);
@@ -39,7 +40,12 @@ public sealed class BoardJsonSerializer : IBoardSerializer
 
         foreach (var componentEnvelope in envelope.Components)
         {
-            board.AddComponent(FromEnvelope(componentEnvelope));
+            board.AddComponent(FromComponentEnvelope(componentEnvelope));
+        }
+
+        foreach (var groupEnvelope in envelope.Groups ?? [])
+        {
+            board.AddGroup(FromGroupEnvelope(groupEnvelope));
         }
 
         return board;
@@ -62,7 +68,12 @@ public sealed class BoardJsonSerializer : IBoardSerializer
                 .EnumerateArray()
         )
         {
-            var entity = DescribeEntity(componentElement, index);
+            var entity = DescribeEntity(
+                componentElement,
+                nameof(ComponentInstanceEnvelope.Id),
+                nameof(BoardEnvelope.Components),
+                index
+            );
             index++;
 
             try
@@ -71,7 +82,7 @@ public sealed class BoardJsonSerializer : IBoardSerializer
                     componentElement.Deserialize<ComponentInstanceEnvelope>(Options)
                     ?? throw new JsonException("The component entry is empty.");
 
-                board.AddComponent(FromEnvelope(componentEnvelope));
+                board.AddComponent(FromComponentEnvelope(componentEnvelope));
             }
             catch (UnknownComponentKeyException ex)
             {
@@ -89,7 +100,79 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             }
         }
 
+        if (root.TryGetProperty(nameof(BoardEnvelope.Groups), out var groupsElement))
+        {
+            DeserializeGroupsPartial(groupsElement, board, warnings);
+        }
+
         return new PartialBoardDeserializeResult(board, warnings);
+    }
+
+    // A group referencing a member (component or nested group) that doesn't exist is tolerated,
+    // not fatal - Board.GetBounds already tolerates a dangling member id at read time (Model/Board.cs),
+    // so a warning is recorded but the group still loads with whatever members do resolve.
+    // Membership is checked against every successfully-parsed group in the same batch regardless of
+    // array order, since nesting may reference a group declared later in the Groups array.
+    private static void DeserializeGroupsPartial(
+        JsonElement groupsElement,
+        Board board,
+        List<BoardDeserializeWarning> warnings
+    )
+    {
+        var parsedGroups = new List<(string Entity, GroupEnvelope Envelope)>();
+
+        var index = 0;
+        foreach (var groupElement in groupsElement.EnumerateArray())
+        {
+            var entity = DescribeEntity(
+                groupElement,
+                nameof(GroupEnvelope.Id),
+                nameof(BoardEnvelope.Groups),
+                index
+            );
+            index++;
+
+            try
+            {
+                var groupEnvelope =
+                    groupElement.Deserialize<GroupEnvelope>(Options)
+                    ?? throw new JsonException("The group entry is empty.");
+
+                parsedGroups.Add((entity, groupEnvelope));
+            }
+            catch (Exception ex)
+            {
+                warnings.Add(
+                    new BoardDeserializeWarning(entity, $"Malformed entity: {ex.Message}")
+                );
+            }
+        }
+
+        var knownIds = new HashSet<Guid>(board.Components.Select(c => c.Id));
+        knownIds.UnionWith(parsedGroups.Select(g => g.Envelope.Id));
+
+        foreach (var (entity, groupEnvelope) in parsedGroups)
+        {
+            foreach (var memberId in groupEnvelope.MemberIds.Where(id => !knownIds.Contains(id)))
+            {
+                warnings.Add(
+                    new BoardDeserializeWarning(entity, $"References missing member '{memberId}'.")
+                );
+            }
+
+            try
+            {
+                board.AddGroup(FromGroupEnvelope(groupEnvelope));
+            }
+            catch (Exception ex)
+            {
+                // Mirrors the Components loop above: a duplicate Id (e.g. two Groups entries
+                // sharing an Id) must never abort the rest of the load either.
+                warnings.Add(
+                    new BoardDeserializeWarning(entity, $"Malformed entity: {ex.Message}")
+                );
+            }
+        }
     }
 
     private static void EnsureSupportedSchemaVersion(int schemaVersion)
@@ -100,24 +183,31 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         }
     }
 
-    private static string DescribeEntity(JsonElement componentElement, int index)
+    private static string DescribeEntity(
+        JsonElement element,
+        string idPropertyName,
+        string arrayPropertyName,
+        int index
+    )
     {
         if (
-            componentElement.ValueKind == JsonValueKind.Object
-            && componentElement.TryGetProperty(
-                nameof(ComponentInstanceEnvelope.Id),
-                out var idProperty
-            )
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(idPropertyName, out var idProperty)
             && idProperty.ValueKind == JsonValueKind.String
         )
         {
             return idProperty.GetString()!;
         }
 
-        return $"{nameof(BoardEnvelope.Components)}[{index}]";
+        return $"{arrayPropertyName}[{index}]";
     }
 
-    private static ComponentInstanceEnvelope ToEnvelope(ComponentInstance instance) =>
+    private static GroupEnvelope ToGroupEnvelope(Group group) => new(group.Id, group.MemberIds);
+
+    private static Group FromGroupEnvelope(GroupEnvelope envelope) =>
+        new(envelope.MemberIds, envelope.Id);
+
+    private static ComponentInstanceEnvelope ToComponentEnvelope(ComponentInstance instance) =>
         new(
             instance.Id,
             instance.ComponentTypeKey,
@@ -131,7 +221,7 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             instance.ZIndex
         );
 
-    private ComponentInstance FromEnvelope(ComponentInstanceEnvelope envelope)
+    private ComponentInstance FromComponentEnvelope(ComponentInstanceEnvelope envelope)
     {
         var registration = _registry.Resolve(envelope.ComponentTypeKey);
         var propsElement = (JsonElement)envelope.Props!;

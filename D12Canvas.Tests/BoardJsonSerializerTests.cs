@@ -158,6 +158,150 @@ public class BoardJsonSerializerTests
         );
     }
 
+    // Ticket 46: Groups join the envelope alongside Components, round-tripping identity and
+    // MemberIds - including membership that nests one Group inside another.
+    [Fact]
+    public void SerializeProducesAnEnvelopeWithAGroupsArray()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var group = new Group(new[] { first.Id, second.Id });
+        board.AddGroup(group);
+
+        var json = serializer.Serialize(board);
+
+        using var document = JsonDocument.Parse(json);
+        var groupsElement = document.RootElement.GetProperty("Groups");
+        Assert.Equal(1, groupsElement.GetArrayLength());
+        var groupElement = groupsElement[0];
+        Assert.Equal(group.Id, groupElement.GetProperty("Id").GetGuid());
+        Assert.Equal(2, groupElement.GetProperty("MemberIds").GetArrayLength());
+    }
+
+    [Fact]
+    public void DeserializeRebuildsAGroupWithIdentityAndMemberIdsIntact()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var group = new Group(new[] { first.Id, second.Id });
+        board.AddGroup(group);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredGroup = restored.GetGroup(group.Id);
+        Assert.NotNull(restoredGroup);
+        Assert.Equal(group.MemberIds, restoredGroup!.MemberIds);
+    }
+
+    [Fact]
+    public void DeserializeRebuildsNestedGroupMembership()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var instance = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        board.AddComponent(instance);
+        var inner = new Group(new[] { instance.Id });
+        board.AddGroup(inner);
+        var outer = new Group(new[] { inner.Id });
+        board.AddGroup(outer);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredOuter = restored.GetGroup(outer.Id);
+        Assert.NotNull(restoredOuter);
+        Assert.Equal(new[] { inner.Id }, restoredOuter!.MemberIds);
+        Assert.NotNull(restored.GetGroup(inner.Id));
+        Assert.Same(restoredOuter, restored.FindContainingGroup(instance.Id));
+    }
+
+    [Fact]
+    public void ReloadedGroupsBehaveAsGroupsSelectingAnyMemberFindsTheSameGroup()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var group = new Group(new[] { first.Id, second.Id });
+        board.AddGroup(group);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var foundViaFirst = restored.FindContainingGroup(first.Id);
+        var foundViaSecond = restored.FindContainingGroup(second.Id);
+        Assert.NotNull(foundViaFirst);
+        Assert.Equal(group.Id, foundViaFirst!.Id);
+        Assert.Same(foundViaFirst, foundViaSecond);
+    }
+
+    // Strict deserialize does no referential-integrity checking for Groups, same as it already
+    // does none for Components (e.g. no check that a ComponentTypeKey's props shape is sane beyond
+    // registry resolution) - a dangling member id is loaded as-is, never a throw. Only the tolerant
+    // partial path (BoardJsonSerializerPartialDeserializeTests) turns this into a warning.
+    [Fact]
+    public void StrictDeserializeLoadsAGroupWithAMissingMemberWithoutThrowing()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Groups": [
+                {
+                  "Id": "55555555-5555-5555-5555-555555555555",
+                  "MemberIds": [ "66666666-6666-6666-6666-666666666666" ]
+                }
+              ]
+            }
+            """;
+
+        var restored = serializer.Deserialize(json);
+
+        var restoredGroup = restored.GetGroup(Guid.Parse("55555555-5555-5555-5555-555555555555"));
+        Assert.NotNull(restoredGroup);
+        Assert.Equal(
+            Guid.Parse("66666666-6666-6666-6666-666666666666"),
+            Assert.Single(restoredGroup!.MemberIds)
+        );
+    }
+
     [Fact]
     public void DeserializeThrowsUnknownComponentKeyExceptionForAnUnregisteredComponentType()
     {

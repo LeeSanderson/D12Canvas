@@ -218,6 +218,156 @@ public class BoardJsonSerializerPartialDeserializeTests
         );
     }
 
+    // Ticket 46: the partial path never fails the whole load over a group's problems either - a
+    // structurally malformed group is skipped-and-warned like a malformed component, and a group
+    // referencing a missing member is still loaded (its other, valid members still behave as a
+    // group) with a warning recorded instead of the load failing.
+    [Fact]
+    public void RoundTripsGroupsWithNoWarningsWhenEveryMemberResolves()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps("a"),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps("b"),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var group = new Group(new[] { first.Id, second.Id });
+        board.AddGroup(group);
+
+        var result = serializer.DeserializePartial(serializer.Serialize(board));
+
+        Assert.Empty(result.Warnings);
+        var restoredGroup = Assert.Single(result.Board.Groups);
+        Assert.Equal(group.Id, restoredGroup.Id);
+        Assert.Equal(group.MemberIds, restoredGroup.MemberIds);
+    }
+
+    [Fact]
+    public void RecordsAWarningForAGroupReferencingAMissingMemberButStillLoadsTheGroup()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Groups": [
+                {
+                  "Id": "55555555-5555-5555-5555-555555555555",
+                  "MemberIds": [ "66666666-6666-6666-6666-666666666666" ]
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        var restoredGroup = Assert.Single(result.Board.Groups);
+        Assert.Equal(Guid.Parse("55555555-5555-5555-5555-555555555555"), restoredGroup.Id);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("55555555-5555-5555-5555-555555555555", warning.Entity, ignoreCase: true);
+        Assert.Contains(
+            "66666666-6666-6666-6666-666666666666",
+            warning.Reason,
+            StringComparison.OrdinalIgnoreCase
+        );
+    }
+
+    [Fact]
+    public void SkipsAStructurallyMalformedGroupEntryAndRecordsAWarning()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Groups": [
+                {
+                  "Id": "99999999-9999-9999-9999-999999999999",
+                  "MemberIds": "not-an-array"
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        Assert.Empty(result.Board.Groups);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("99999999-9999-9999-9999-999999999999", warning.Entity, ignoreCase: true);
+    }
+
+    [Fact]
+    public void DoesNotWarnWhenAGroupIsDeclaredBeforeTheNestedGroupItReferences()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [
+                {
+                  "Id": "11111111-1111-1111-1111-111111111111",
+                  "ComponentTypeKey": "test-props",
+                  "Props": { "Text": "leaf" },
+                  "Bounds": { "X": 0, "Y": 0, "Width": 10, "Height": 10 },
+                  "ZIndex": 0
+                }
+              ],
+              "Groups": [
+                {
+                  "Id": "77777777-7777-7777-7777-777777777777",
+                  "MemberIds": [ "88888888-8888-8888-8888-888888888888" ]
+                },
+                {
+                  "Id": "88888888-8888-8888-8888-888888888888",
+                  "MemberIds": [ "11111111-1111-1111-1111-111111111111" ]
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        Assert.Empty(result.Warnings);
+        Assert.Equal(2, result.Board.Groups.Count);
+    }
+
+    [Fact]
+    public void SkipsAGroupWithADuplicateIdAndRecordsAWarningInsteadOfFailingTheLoad()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Groups": [
+                {
+                  "Id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                  "MemberIds": []
+                },
+                {
+                  "Id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                  "MemberIds": []
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        var restoredGroup = Assert.Single(result.Board.Groups);
+        Assert.Equal(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), restoredGroup.Id);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", warning.Entity, ignoreCase: true);
+    }
+
     [Fact]
     public void StillThrowsUnsupportedSchemaVersionExceptionForAWrongSchemaVersion()
     {
