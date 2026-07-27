@@ -18,6 +18,11 @@
 </style>
 
 @code {
+    // A tiny embedded PNG so the screenshot baseline stays deterministic and offline - no
+    // dependency on a real network fetch succeeding inside the visual-test container.
+    private const string SampleImageDataUrl =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAASSURBVBhXY3DMfPgfGTOQLgAAUD8ooVtGnUoAAAAASUVORK5CYII=";
+
     private readonly Board _board = SeedBoard();
 
     private static Board SeedBoard()
@@ -69,6 +74,14 @@
                 new TextProps("Text built-in", "#1565c0", 20, "bold", "center"),
                 new Bounds(700, 480, 200, 40),
                 zIndex: 5
+            )
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "image",
+                new ImageProps(SampleImageDataUrl, "Image built-in", "cover"),
+                new Bounds(460, 20, 240, 180),
+                zIndex: 6
             )
         );
         return board;

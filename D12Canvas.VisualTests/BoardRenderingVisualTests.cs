@@ -38,7 +38,7 @@ public sealed class BoardRenderingVisualTests : IAsyncLifetime
         );
         _page = await _context.NewPageAsync();
         await _page.GotoAsync("/board-demo");
-        await Expect(_page.Locator(".component-container")).ToHaveCountAsync(6);
+        await Expect(_page.Locator(".component-container")).ToHaveCountAsync(7);
     }
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();

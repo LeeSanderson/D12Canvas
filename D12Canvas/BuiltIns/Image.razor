@@ -1,0 +1,59 @@
+@namespace D12Canvas.BuiltIns
+
+@if (MissingUrl || _hasError)
+{
+    <div class="d12-image-placeholder">
+        <span aria-hidden="true">🖼️</span>
+        <span>@(MissingUrl ? "No image" : "Image unavailable")</span>
+    </div>
+}
+else
+{
+    <img class="d12-image" src="@Props.Url" alt="@Props.AltText" style="@Style" @onerror="() => _hasError = true" />
+}
+
+<style>
+    .d12-image {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        display: block;
+    }
+
+    .d12-image-placeholder {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        background-color: #f0f0f0;
+        border: 1px dashed #999999;
+        color: #666666;
+        font-size: 12px;
+        text-align: center;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public ImageProps Props { get; set; } = new("", "", "cover");
+
+    private bool _hasError;
+    private string? _lastUrl;
+
+    protected override void OnParametersSet()
+    {
+        if (Props.Url != _lastUrl)
+        {
+            _hasError = false;
+            _lastUrl = Props.Url;
+        }
+    }
+
+    private bool MissingUrl => string.IsNullOrWhiteSpace(Props.Url);
+
+    private string Style => $"object-fit: {Props.Fit};";
+}

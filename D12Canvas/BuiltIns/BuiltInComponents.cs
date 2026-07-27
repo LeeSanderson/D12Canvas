@@ -48,5 +48,18 @@ internal static class BuiltInComponents
                 builder.DefaultSize = new ComponentSize(200, 40);
             }
         );
+
+        options.RegisterComponent<Image, ImageProps>(
+            "image",
+            builder =>
+            {
+                builder.DisplayName = "Image";
+                builder.AccessibleName = "Image";
+                builder.DefaultProps = new ImageProps("", "", "cover");
+                builder.Icon = "🖼️";
+                builder.Category = "Basic Shapes";
+                builder.DefaultSize = new ComponentSize(240, 180);
+            }
+        );
     }
 }
