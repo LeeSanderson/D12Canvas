@@ -20,6 +20,17 @@
         @ChildContent
     </div>
 
+    @* Ticket 47: the four standard ports are automatic on every instance (ADR 0005) - no
+       registration opt-in, so they're rendered unconditionally here rather than sourced from
+       Props/registration. Fractional border-center placement (and staying there through move and
+       resize) comes for free from positioning each one in plain CSS percentages of this container's
+       own box - no per-instance computation needed. Visibility (hover/selection) is CSS-only too
+       (see .port rules below), so no C# state or extra render is involved. *@
+    <div class="port port-top"></div>
+    <div class="port port-right"></div>
+    <div class="port port-bottom"></div>
+    <div class="port port-left"></div>
+
     @if ((IsSelected && !IsMultiSelected) || _editMode)
     {
         <div class="resize-handle top-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopLeft))"></div>
@@ -61,6 +72,48 @@
     .component-container.selected {
         outline: 2px solid #2f80ed;
         outline-offset: 2px;
+    }
+
+    /* Ticket 47: standard ports, hidden until hover/selection. Rendered before the resize handles
+       below in markup order, so a selected instance's edge-midpoint resize handle (same
+       border-center point as its port) paints on top of it. Sized noticeably larger than the 10px
+       resize handle (box-sizing is border-box app-wide, via Bootstrap's reboot, so this 20px port's
+       own 2px border eats inward rather than adding outward) so its green fill still forms a
+       visible ring around the handle instead of being fully hidden behind it. */
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .component-container:hover .port,
+    .component-container.selected .port {
+        opacity: 1;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
     }
 
     .resize-handle {

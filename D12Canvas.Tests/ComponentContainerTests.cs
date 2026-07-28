@@ -136,6 +136,43 @@ public class ComponentContainerTests : ComponentTestBase
     }
 
     [Fact]
+    public void EveryInstanceRendersAllFourStandardPortsWithDirectionalClasses()
+    {
+        // bUnit has no real browser layout/pseudo-class engine, so "at their border centers" and
+        // "hidden otherwise" (ticket 47) aren't checkable here - the class names below are what
+        // the stylesheet keys its percentage-of-box positioning and hover/selection opacity off
+        // of, and PortsVisualTests.cs proves the resulting on-screen behavior in a real browser.
+        var container = Render<ComponentContainer>();
+
+        Assert.Equal(4, container.FindAll(".port").Count);
+        Assert.Single(container.FindAll(".port-top"));
+        Assert.Single(container.FindAll(".port-right"));
+        Assert.Single(container.FindAll(".port-bottom"));
+        Assert.Single(container.FindAll(".port-left"));
+    }
+
+    [Fact]
+    public void PortsSurviveAResizeRerenderUnchanged()
+    {
+        // Ports are positioned via plain CSS percentages of the container's own box, not computed
+        // from Bounds in C#, so re-rendering the same instance at different Width/Height should
+        // touch nothing about them - this exercises that actual update path (including
+        // ComponentContainer's own ShouldRender override), rather than just asserting on two
+        // independent fresh renders.
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.Width, 200).Add(p => p.Height, 150)
+        );
+
+        container.Render(parameters => parameters.Add(p => p.Width, 60).Add(p => p.Height, 400));
+
+        Assert.Equal(4, container.FindAll(".port").Count);
+        Assert.Single(container.FindAll(".port-top"));
+        Assert.Single(container.FindAll(".port-right"));
+        Assert.Single(container.FindAll(".port-bottom"));
+        Assert.Single(container.FindAll(".port-left"));
+    }
+
+    [Fact]
     public void SelectedInstanceRendersResizeHandles()
     {
         var container = Render<ComponentContainer>(parameters =>

@@ -109,7 +109,7 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 224px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
+    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 224px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
 
 <!--!--><style>
     .demo-note {
@@ -124,7 +124,12 @@
     .demo-note p {
         margin: 0;
     }
-</style></div></div><!--!-->
+</style></div><!--!-->
+
+    <div class="port port-top"></div>
+    <div class="port port-right"></div>
+    <div class="port port-bottom"></div>
+    <div class="port port-left"></div></div><!--!-->
 
 <!--!--><style>
     .component-container {
@@ -154,6 +159,48 @@
     .component-container.selected {
         outline: 2px solid #2f80ed;
         outline-offset: 2px;
+    }
+
+    /* Ticket 47: standard ports, hidden until hover/selection. Rendered before the resize handles
+       below in markup order, so a selected instance's edge-midpoint resize handle (same
+       border-center point as its port) paints on top of it. Sized noticeably larger than the 10px
+       resize handle (box-sizing is border-box app-wide, via Bootstrap's reboot, so this 20px port's
+       own 2px border eats inward rather than adding outward) so its green fill still forms a
+       visible ring around the handle instead of being fully hidden behind it. */
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .component-container:hover .port,
+    .component-container.selected .port {
+        opacity: 1;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
     }
 
     .resize-handle {
@@ -211,7 +258,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Stress item" _bl_4="" aria-selected="true"><div class="container-content"><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
+</style><!--!--><div class="component-container view-mode selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Stress item" _bl_4="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
 
 <!--!--><style>
     .stress-item {
@@ -224,7 +271,12 @@
         font-family: monospace;
         font-size: 12px;
     }
-</style></div></div><!--!-->
+</style></div><!--!-->
+
+    <div class="port port-top"></div>
+    <div class="port port-right"></div>
+    <div class="port port-bottom"></div>
+    <div class="port port-left"></div></div><!--!-->
 
 <!--!--><style>
     .component-container {
@@ -254,6 +306,48 @@
     .component-container.selected {
         outline: 2px solid #2f80ed;
         outline-offset: 2px;
+    }
+
+    /* Ticket 47: standard ports, hidden until hover/selection. Rendered before the resize handles
+       below in markup order, so a selected instance's edge-midpoint resize handle (same
+       border-center point as its port) paints on top of it. Sized noticeably larger than the 10px
+       resize handle (box-sizing is border-box app-wide, via Bootstrap's reboot, so this 20px port's
+       own 2px border eats inward rather than adding outward) so its green fill still forms a
+       visible ring around the handle instead of being fully hidden behind it. */
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .component-container:hover .port,
+    .component-container.selected .port {
+        opacity: 1;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
     }
 
     .resize-handle {
