@@ -23,28 +23,27 @@ public static class FuzzyPngComparer
         );
     }
 
-    private static CompareResult Compare(Stream received, Stream verified)
-    {
-        var receivedImage = Png.Decode(received);
-        var verifiedImage = Png.Decode(verified);
+    private static CompareResult Compare(Stream received, Stream verified) =>
+        Evaluate(Png.Decode(received), Png.Decode(verified));
 
-        if (
-            receivedImage.Width != verifiedImage.Width
-            || receivedImage.Height != verifiedImage.Height
-        )
+    // Split out from Compare so tests can exercise the actual pass/fail decision directly against
+    // decoded pixel buffers, without needing a PNG encoder just to round-trip a synthetic image.
+    internal static CompareResult Evaluate(Png.Image received, Png.Image verified)
+    {
+        if (received.Width != verified.Width || received.Height != verified.Height)
         {
             return CompareResult.NotEqual(
-                $"Image dimensions differ: {receivedImage.Width}x{receivedImage.Height} vs {verifiedImage.Width}x{verifiedImage.Height}."
+                $"Image dimensions differ: {received.Width}x{received.Height} vs {verified.Width}x{verified.Height}."
             );
         }
 
         var diffPixels = PixelMatch.Compare(
-            receivedImage.Rgba,
-            verifiedImage.Rgba,
-            receivedImage.Width,
-            receivedImage.Height
+            received.Rgba,
+            verified.Rgba,
+            received.Width,
+            received.Height
         );
-        var totalPixels = receivedImage.Width * receivedImage.Height;
+        var totalPixels = received.Width * received.Height;
         var ratio = (double)diffPixels / totalPixels;
 
         return ratio <= MaxDiffPixelRatio

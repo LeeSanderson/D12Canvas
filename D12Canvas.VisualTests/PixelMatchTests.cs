@@ -128,4 +128,55 @@ public class PixelMatchTests
 
         Assert.Equal(0, PixelMatch.Compare(image.Rgba, copy, image.Width, image.Height));
     }
+
+    [Fact]
+    public void Evaluate_IdenticalRealScreenshot_IsEqual()
+    {
+        var path = SiblingPath("PaletteVisualTests.RenderedPalette_MatchesBaseline.verified.png");
+        var image = Png.Decode(File.ReadAllBytes(path));
+        var copy = new Png.Image((byte[])image.Rgba.Clone(), image.Width, image.Height);
+
+        Assert.True(FuzzyPngComparer.Evaluate(copy, image).IsEqual);
+    }
+
+    [Fact]
+    public void Evaluate_SmallButRealChangeOnActualScreenshot_IsNotEqual()
+    {
+        // A 40x40 solid-magenta patch dropped onto a real committed baseline - visually small (a
+        // few percent of the frame at most) but a real, deliberate content change, not rendering
+        // noise. Guards against the fuzzy comparer's tolerance being calibrated so loose that it
+        // also swallows genuine regressions, not just the sub-pixel noise it was built for.
+        var path = SiblingPath("PaletteVisualTests.RenderedPalette_MatchesBaseline.verified.png");
+        var original = Png.Decode(File.ReadAllBytes(path));
+        var modified = WithSolidPatch(original, x: 20, y: 20, size: 40, r: 255, g: 0, b: 255);
+
+        var result = FuzzyPngComparer.Evaluate(modified, original);
+
+        Assert.False(result.IsEqual);
+    }
+
+    private static Png.Image WithSolidPatch(
+        Png.Image image,
+        int x,
+        int y,
+        int size,
+        byte r,
+        byte g,
+        byte b
+    )
+    {
+        var rgba = (byte[])image.Rgba.Clone();
+        for (var dy = 0; dy < size && y + dy < image.Height; dy++)
+        {
+            for (var dx = 0; dx < size && x + dx < image.Width; dx++)
+            {
+                var pos = ((y + dy) * image.Width + (x + dx)) * 4;
+                rgba[pos] = r;
+                rgba[pos + 1] = g;
+                rgba[pos + 2] = b;
+                rgba[pos + 3] = 255;
+            }
+        }
+        return new Png.Image(rgba, image.Width, image.Height);
+    }
 }
