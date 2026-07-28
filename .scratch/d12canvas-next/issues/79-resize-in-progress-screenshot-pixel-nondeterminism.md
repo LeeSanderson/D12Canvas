@@ -40,3 +40,23 @@ picks this up, though the value itself is close to arbitrary given the nondeterm
 render-settle wait already demonstrably doesn't help. Alternatively, capture only the resized element's
 own bounding box (`Locator.ScreenshotAsync()`) instead of a full-page screenshot, in case cropping out the
 rest of the page removes whatever's actually jittering.
+
+**Addendum - the same class of problem is bigger than "mid-resize":** pushing ticket 78's fix to GitHub
+Actions surfaced 5 *more* PNG-only failures that all pass reliably in local container runs (same pinned
+image, same digest) but fail on the GitHub-hosted runner: `ClickToAddPlacementVisualTests.
+ClickToAddedInstance_MatchesBaseline` (not even a drag/resize - a single click, no gesture in flight),
+`ClickToAddPlacementVisualTests.ConsecutiveClickToAdds_CascadeWithAnOffset_MatchesBaseline`,
+`DragAndDropPlacementVisualTests.DroppedInstance_MatchesBaseline` (post-drop, settled),
+`DragMoveVisualTests.DragInProgress_MatchesBaseline`, and `DragMoveVisualTests.
+ReleasedInstance_MatchesBaseline` (post-release, settled). HTML matched exactly in every case, same as
+the two resize tests above. Since `ClickToAddedInstance_MatchesBaseline` involves no drag/mid-gesture
+timing at all, this can't be purely a "screenshot during an active gesture" problem - it's at minimum
+partly a genuine **cross-machine PNG rendering difference between two hosts running the identical pinned
+image/digest** (my local podman-backed container vs. the GitHub Actions Linux runner), which contradicts
+README's "the same image... neutralizes cross-platform font/rendering drift" claim. Worked around for
+ticket 78's landing by downloading the actual `.received.png` files GitHub produced (via the workflow's
+own `visual-test-diffs` artifact upload) and promoting those as the new baselines, rather than trusting
+a local container run as proof of what CI will do. Whether these 5 are now stable long-term (deterministic
+per-machine, just different across machines) or will drift again on a future CI run (genuinely
+nondeterministic per-capture, like the two resize tests) is unconfirmed - worth checking after a few more
+merges to main before considering this closed.
