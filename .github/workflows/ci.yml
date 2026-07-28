@@ -14,7 +14,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.x"
+          # Exact match for global.json's pinned SDK (see ticket 78) - the visual-tests job below
+          # gets the same version for free from the pinned container image.
+          dotnet-version: "10.0.301"
       - name: Restore dotnet tools
         run: dotnet tool restore
       - name: Check formatting

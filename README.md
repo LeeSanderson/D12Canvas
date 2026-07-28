@@ -27,9 +27,17 @@ a side effect.
 
 Font/anti-aliasing rendering differs enough across OSes to produce false-positive diffs, so the
 visual tests always run inside the official Playwright Docker image — the same image CI uses —
-never directly on a dev machine:
+never directly on a dev machine. The SDK version is pinned in `global.json` to match what that
+image bundles; install the same SDK locally if you ever need to run `D12Canvas.Tests` outside a
+container.
+
+Because the container bind-mounts your working directory, it inherits any stale `obj`/`bin`
+build artifacts already sitting on the host - which can leave Blazor's scoped-CSS bundle out of
+sync and produce spurious baseline diffs unrelated to any real change (see ticket 78). Always wipe
+build artifacts first:
 
 ```bash
+find . -type d \( -name obj -o -name bin \) -exec rm -rf {} +
 docker run --rm -v "$PWD:/workspace" -w /workspace mcr.microsoft.com/playwright/dotnet:v1.61.0-noble \
   bash -c "dotnet tool restore && dotnet test --project D12Canvas.VisualTests/D12Canvas.VisualTests.csproj"
 ```
