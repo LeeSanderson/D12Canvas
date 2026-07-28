@@ -4,9 +4,11 @@ public sealed class Board
 {
     private readonly Dictionary<Guid, ComponentInstance> _components = new();
     private readonly Dictionary<Guid, Group> _groups = new();
+    private readonly Dictionary<Guid, Edge> _edges = new();
 
     public IReadOnlyCollection<ComponentInstance> Components => _components.Values;
     public IReadOnlyCollection<Group> Groups => _groups.Values;
+    public IReadOnlyCollection<Edge> Edges => _edges.Values;
 
     public void AddComponent(ComponentInstance instance) => _components.Add(instance.Id, instance);
 
@@ -20,6 +22,58 @@ public sealed class Board
     public void RemoveGroup(Guid id) => _groups.Remove(id);
 
     public Group? GetGroup(Guid id) => _groups.TryGetValue(id, out var group) ? group : null;
+
+    public void AddEdge(Edge edge) => _edges.Add(edge.Id, edge);
+
+    public void RemoveEdge(Guid id) => _edges.Remove(id);
+
+    public Edge? GetEdge(Guid id) => _edges.TryGetValue(id, out var edge) ? edge : null;
+
+    // Ticket 48: an endpoint's live board-space point, resolved from its referenced instance's
+    // current Bounds rather than stored - what lets an attached edge track move/resize for free
+    // (ADR 0005). Null when the referenced instance no longer exists.
+    public (double X, double Y)? ResolveEndpoint(PortEndpoint endpoint)
+    {
+        var instance = GetComponent(endpoint.ComponentId);
+        if (instance is null)
+        {
+            return null;
+        }
+
+        var (fractionX, fractionY) = StandardPorts.FractionOf(endpoint.PortId);
+        return instance.Bounds.PointAtFraction(fractionX, fractionY);
+    }
+
+    // Ticket 48: geometric proximity hit-test for a connector-drag drop point - ADR 0005 settled
+    // on discrete named ports (rejecting nearest-point-on-perimeter), so a drop only resolves to
+    // a port when within tolerance of one of an instance's actual standard port points. Returns
+    // the closest match across every instance's four standard ports, or null when nothing is
+    // within tolerance.
+    public PortEndpoint? FindPortNear((double X, double Y) point, double tolerance)
+    {
+        PortEndpoint? closest = null;
+        var closestDistance = double.MaxValue;
+
+        foreach (var instance in _components.Values)
+        {
+            foreach (var portId in StandardPorts.All)
+            {
+                var (fractionX, fractionY) = StandardPorts.FractionOf(portId);
+                var (portX, portY) = instance.Bounds.PointAtFraction(fractionX, fractionY);
+                var distance = Math.Sqrt(
+                    Math.Pow(portX - point.X, 2) + Math.Pow(portY - point.Y, 2)
+                );
+
+                if (distance <= tolerance && distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closest = new PortEndpoint(instance.Id, portId);
+                }
+            }
+        }
+
+        return closest;
+    }
 
     // Ticket 44: a Group's bounds are never stored - only ever resolved on demand from its
     // members, which may themselves be component instances or nested groups. A member id that no

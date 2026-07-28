@@ -108,6 +108,29 @@ public partial class DiagramCanvas : IAsyncDisposable
     private double _groupResizeMinBboxWidth;
     private double _groupResizeMinBboxHeight;
 
+    // Ticket 48: connector drag-in-progress state (ADR 0005/0009) - lives here, not on Board,
+    // the same reasoning as every other momentary gesture tracked in this file. Owned centrally
+    // (rather than by the source ComponentContainer) because a completed connection spans two
+    // different instances.
+    private bool _isConnectingPort;
+    private Guid _connectSourceComponentId;
+    private PortId _connectSourcePortId;
+    private (double Left, double Top) _connectContainerOrigin;
+    private (double X, double Y) _connectCurrentPoint;
+
+    // Board-space radius a connector-drag release must land within one of an instance's own
+    // standard ports to attach - matches that port affordance's own authored radius
+    // (ComponentContainer.razor: a 20px-diameter circle in the same, zoom-independent local
+    // coordinate space Bounds itself uses; the ancestor .canvas-content's CSS scale transform
+    // only changes its *painted* on-screen footprint, not this board-space size). dropPoint
+    // (from ToBoardPoint) and FindPortNear's own port positions are both already in that same
+    // board space, so this needs no further scaling by zoom.
+    private const double PortHitRadius = 10;
+
+    // Read by ComponentContainer (via the ParentCanvas cascading parameter) so every instance's
+    // own mousemove/mouseup can forward to this gesture instead of running its own drag logic.
+    public bool IsConnectingPort => _isConnectingPort;
+
     private ElementReference ContainerElement;
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
     private List<Action> _cleanupFunctions = new List<Action>();
@@ -207,11 +230,16 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // ADR 0009: Escape clears the selection (later, it will also cancel an in-progress connector
-    // drag - no such gesture exists yet, so clearing selection is its whole job today).
+    // ADR 0009: Escape clears the selection, and (ticket 48) cancels an in-progress connector
+    // drag rather than letting it resolve against wherever the pointer happens to be.
     [JSInvokable]
     public void OnEscapePressed()
     {
+        if (_isConnectingPort)
+        {
+            CancelPortDrag();
+        }
+
         _selectedInstanceIds.Clear();
         StateHasChanged();
     }
@@ -475,6 +503,83 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // Ticket 48: fired by a ComponentContainer's own port mousedown (OnPortDragStart).
+    // _isConnectingPort must flip synchronously, in this same call - a real browser's very next
+    // mousemove/mouseup can arrive before an awaited JS round-trip resolves (unlike bUnit's mock,
+    // which completes synchronously), and ComponentContainer's own forwarding check would race
+    // against it, silently dropping the gesture's start. The container's page position is instead
+    // refreshed in the background by RefreshConnectContainerOrigin below - a stale origin only
+    // costs a barely-perceptible one-frame offset on the drag-preview's very first paint, self-
+    // correcting on the next mousemove, which is a far cheaper price than the race.
+    private void StartPortDrag(Guid instanceId, PortDragStartEventArgs args)
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        _isConnectingPort = true;
+        _connectSourceComponentId = instanceId;
+        _connectSourcePortId = args.PortId;
+        _connectCurrentPoint = ToBoardPoint((args.ClientX, args.ClientY), _connectContainerOrigin);
+        StateHasChanged();
+
+        _ = RefreshConnectContainerOrigin();
+    }
+
+    private async Task RefreshConnectContainerOrigin()
+    {
+        var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
+            "getContainerDimensions",
+            ContainerElement
+        );
+        _connectContainerOrigin = (containerRect["left"], containerRect["top"]);
+    }
+
+    // Ticket 48: called both by this class's own HandleMouseMove (pointer over empty canvas) and
+    // by any ComponentContainer forwarding its own mousemove (pointer over an instance's body) -
+    // either way, DiagramCanvas is the single owner of the gesture's live preview.
+    public void UpdatePortDrag(double clientX, double clientY)
+    {
+        if (!_isConnectingPort)
+        {
+            return;
+        }
+
+        _connectCurrentPoint = ToBoardPoint((clientX, clientY), _connectContainerOrigin);
+        StateHasChanged();
+    }
+
+    // Ticket 48: resolves the drop point to a port within PortHitRadius and creates the Edge if
+    // found. Dropping on empty canvas, or back on the exact port the drag started from, cancels
+    // the gesture instead - floating endpoints for an unattached drop are ticket 49's concern.
+    public void CompletePortDrag(double clientX, double clientY)
+    {
+        if (!_isConnectingPort || Board is null)
+        {
+            CancelPortDrag();
+            return;
+        }
+
+        var dropPoint = ToBoardPoint((clientX, clientY), _connectContainerOrigin);
+        var source = new PortEndpoint(_connectSourceComponentId, _connectSourcePortId);
+        var target = Board.FindPortNear(dropPoint, PortHitRadius);
+
+        if (target is { } resolvedTarget && resolvedTarget != source)
+        {
+            Board.AddEdge(new Edge(source, resolvedTarget));
+        }
+
+        CancelPortDrag();
+    }
+
+    private void CancelPortDrag()
+    {
+        _isConnectingPort = false;
+        _connectSourceComponentId = Guid.Empty;
+        StateHasChanged();
+    }
+
     // Ticket 43: generic commit point for a built-in's own inline WYSIWYG text edit (or any future
     // opaque Props edit) - Sticky Note and Text call this from their own editor on blur, via the
     // ParentCanvas cascading parameter every built-in already has access to. MutateEntityCommand
@@ -691,6 +796,15 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void HandleMouseMove(MouseEventArgs e)
     {
+        // Ticket 48: reached when the pointer is directly over empty canvas mid-connector-drag
+        // (over an instance's own body, ComponentContainer forwards here instead - see
+        // UpdatePortDrag's other caller).
+        if (_isConnectingPort)
+        {
+            UpdatePortDrag(e.ClientX, e.ClientY);
+            return;
+        }
+
         if (_isMarqueeSelecting)
         {
             _marqueeCurrent = ToBoardPoint(e, _marqueeContainerOrigin);
@@ -740,6 +854,14 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void HandleMouseUp(MouseEventArgs e)
     {
+        // Ticket 48: same reasoning as the top of HandleMouseMove above - a drop landing
+        // directly on empty canvas reaches this handler natively.
+        if (_isConnectingPort)
+        {
+            CompletePortDrag(e.ClientX, e.ClientY);
+            return;
+        }
+
         // Single-commit gestures (ticket 33): only write to Board once, here, and only if the
         // drag actually moved anything - a plain click that happened to land inside the bbox or on
         // a handle is a no-op, matching every other gesture's press-release-with-no-movement rule.
@@ -766,15 +888,22 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // Screen (client) coordinates to board space, given the container's own page position -
-    // shared by the marquee gesture and HandleDrop below.
+    // shared by the marquee gesture, HandleDrop below, and (ticket 48) the connector-drag
+    // gesture, whose coordinates arrive as raw doubles rather than a MouseEventArgs when
+    // forwarded from a ComponentContainer.
     private (double X, double Y) ToBoardPoint(
-        MouseEventArgs e,
+        (double ClientX, double ClientY) client,
         (double Left, double Top) containerOrigin
     ) =>
         (
-            (e.ClientX - containerOrigin.Left - _zoomPanTracker.PanX) / _zoomPanTracker.Scale,
-            (e.ClientY - containerOrigin.Top - _zoomPanTracker.PanY) / _zoomPanTracker.Scale
+            (client.ClientX - containerOrigin.Left - _zoomPanTracker.PanX) / _zoomPanTracker.Scale,
+            (client.ClientY - containerOrigin.Top - _zoomPanTracker.PanY) / _zoomPanTracker.Scale
         );
+
+    private (double X, double Y) ToBoardPoint(
+        MouseEventArgs e,
+        (double Left, double Top) containerOrigin
+    ) => ToBoardPoint((e.ClientX, e.ClientY), containerOrigin);
 
     private static Bounds MarqueeBoundsFrom((double X, double Y) a, (double X, double Y) b) =>
         new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
@@ -883,6 +1012,33 @@ public partial class DiagramCanvas : IAsyncDisposable
     private bool PointIsWithinSelectionBounds((double X, double Y) point) =>
         HasMultiMemberSelection
         && (SelectedInstancesBounds()?.Intersects(new Bounds(point.X, point.Y, 0, 0)) ?? false);
+
+    // Ticket 48: an edge's rendered endpoints, resolved fresh from Board on every render - this
+    // is what lets an attached edge track its instances through move/resize with no separate
+    // update path. Null (skip rendering) if either endpoint's instance no longer exists.
+    private ((double X, double Y) From, (double X, double Y) To)? EdgeLine(Edge edge)
+    {
+        var from = Board?.ResolveEndpoint(edge.Source);
+        var to = Board?.ResolveEndpoint(edge.Target);
+
+        return from is null || to is null ? null : (from.Value, to.Value);
+    }
+
+    // The in-progress connector drag-preview: from the source port's live position to wherever
+    // the pointer currently is in board space.
+    private ((double X, double Y) From, (double X, double Y) To)? ConnectPreviewLine()
+    {
+        if (!_isConnectingPort || Board is null)
+        {
+            return null;
+        }
+
+        var from = Board.ResolveEndpoint(
+            new PortEndpoint(_connectSourceComponentId, _connectSourcePortId)
+        );
+
+        return from is null ? null : (from.Value, _connectCurrentPoint);
+    }
 
     private string MarqueeStyle
     {

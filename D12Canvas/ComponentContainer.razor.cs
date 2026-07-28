@@ -69,6 +69,12 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public EventCallback<Bounds> OnResized { get; set; }
 
+    // Ticket 48: fired the instant a port is pressed - DiagramCanvas owns the rest of the
+    // connector-drag gesture (live preview, drop hit-test) from there, since a completed
+    // connection spans two different instances.
+    [Parameter]
+    public EventCallback<PortDragStartEventArgs> OnPortDragStart { get; set; }
+
     [Parameter]
     public EventCallback<ComponentContainerStateChangedEventArgs> OnStateChanged { get; set; }
 
@@ -94,6 +100,13 @@ public partial class ComponentContainer : IAsyncDisposable
     private MouseEventArgs? _moveStart;
     private double _moveStartX;
     private double _moveStartY;
+
+    // Ticket 48: true for the span of a single mousedown - set synchronously in StartPortDrag
+    // (before OnPortDragStart's async invocation, so it's already true by the time this same
+    // mousedown bubbles up from the port) and consumed/cleared immediately in HandleMouseDown.
+    // Deliberately not left true for the gesture's whole duration: the connector drag's eventual
+    // mouseup can land on a completely different instance, so this container may never see it.
+    private bool _isPortDragging;
     private ElementReference _containerRef;
     private DotNetObjectReference<ComponentContainer>? _dotNetRef;
     private IJSObjectReference? _jsModule;
@@ -163,10 +176,19 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseDown(MouseEventArgs e)
     {
+        // Ticket 48: _isPortDragging only needs to survive from the port's own mousedown handler
+        // to this same event's bubble arriving here - captured and cleared immediately so it
+        // can't leak into a later, unrelated mousedown on this same container (this container may
+        // never see the connector-drag gesture's own eventual mouseup/mousemove at all, since
+        // that could land on a completely different instance - see HandleMouseMove/Up below).
+        var wasPortDragging = _isPortDragging;
+        _isPortDragging = false;
+
         // Only armed when selected-and-not-editing, and only from the container's own body, not a
-        // resize handle: a resize handle's mousedown already set _isResizing (it bubbles here
-        // afterwards), and !_isResizing keeps this gesture from also engaging on top of that one.
-        if (IsSelected && !_editMode && !_isResizing)
+        // resize handle or a port: a resize handle's mousedown already set _isResizing (same for
+        // a port's own mousedown and wasPortDragging) - each bubbles here afterwards, and the
+        // matching guard keeps this gesture from also engaging on top of it.
+        if (IsSelected && !_editMode && !_isResizing && !wasPortDragging)
         {
             _isMoving = true;
             _moveStart = e;
@@ -177,7 +199,7 @@ public partial class ComponentContainer : IAsyncDisposable
         if (!_editMode)
             return;
 
-        if (!_isResizing)
+        if (!_isResizing && !wasPortDragging)
         {
             _isDragging = true;
             _dragStart = e;
@@ -188,6 +210,18 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseMove(MouseEventArgs e)
     {
+        // Ticket 48: while a connector drag is in progress (started here or on any other
+        // instance), DiagramCanvas owns the whole gesture - forward raw client coordinates
+        // rather than running this container's own move/resize logic. Needed even when the
+        // cursor never leaves this container's own bounding box (e.g. still near the source
+        // port), since @onmousemove:stopPropagation would otherwise keep DiagramCanvas from ever
+        // seeing the event.
+        if (ParentCanvas?.IsConnectingPort == true)
+        {
+            ParentCanvas.UpdatePortDrag(e.ClientX, e.ClientY);
+            return;
+        }
+
         if (_isMoving && _moveStart != null)
         {
             var (deltaX, deltaY) = ScaledDelta(_moveStart, e);
@@ -240,6 +274,15 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseUp(MouseEventArgs e)
     {
+        // Ticket 48: same forwarding as HandleMouseMove above - this may be the source
+        // instance's own port drag ending on itself, or a drop landing on a different instance's
+        // body (its own @onmouseup:stopPropagation would otherwise swallow the release).
+        if (ParentCanvas?.IsConnectingPort == true)
+        {
+            ParentCanvas.CompletePortDrag(e.ClientX, e.ClientY);
+            return;
+        }
+
         if (_isMoving)
         {
             _isMoving = false;
@@ -280,6 +323,15 @@ public partial class ComponentContainer : IAsyncDisposable
 
         // Stop the event from propagating to prevent dragging
         // e.StopPropagation();
+    }
+
+    // Ticket 48: a port's own mousedown. Doesn't stop propagation, so it bubbles up to
+    // HandleMouseDown afterwards (same ordering the resize handles above rely on) - setting
+    // _isPortDragging first stops that handler from also arming an instance move.
+    private void StartPortDrag(MouseEventArgs e, PortId portId)
+    {
+        _isPortDragging = true;
+        OnPortDragStart.InvokeAsync(new PortDragStartEventArgs(portId, e.ClientX, e.ClientY));
     }
 
     private void ApplyResize(double deltaX, double deltaY)
@@ -382,4 +434,18 @@ public class ComponentContainerStateChangedEventArgs : EventArgs
     public double Width { get; set; }
     public double Height { get; set; }
     public bool IsEditMode { get; set; }
+}
+
+public class PortDragStartEventArgs : EventArgs
+{
+    public PortId PortId { get; }
+    public double ClientX { get; }
+    public double ClientY { get; }
+
+    public PortDragStartEventArgs(PortId portId, double clientX, double clientY)
+    {
+        PortId = portId;
+        ClientX = clientX;
+        ClientY = clientY;
+    }
 }

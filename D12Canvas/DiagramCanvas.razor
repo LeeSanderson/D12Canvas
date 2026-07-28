@@ -23,6 +23,27 @@
          @ondrop="@HandleDrop" @ondrop:preventDefault="true">
         <div class="canvas-content" style="@ContentStyle">
             <CascadingValue Value="this" Name="ParentCanvas">
+            <svg class="edges-layer">
+                @if (Board is not null)
+                {
+                    @foreach (var edge in Board.Edges)
+                    {
+                        var line = EdgeLine(edge);
+                        if (line is not null)
+                        {
+                            <line @key="edge.Id" x1="@line.Value.From.X" y1="@line.Value.From.Y" x2="@line.Value.To.X" y2="@line.Value.To.Y" class="edge-line" />
+                        }
+                    }
+                }
+                @if (_isConnectingPort)
+                {
+                    var preview = ConnectPreviewLine();
+                    if (preview is not null)
+                    {
+                        <line x1="@preview.Value.From.X" y1="@preview.Value.From.Y" x2="@preview.Value.To.X" y2="@preview.Value.To.Y" class="connector-drag-preview" />
+                    }
+                }
+            </svg>
             @if (Board is not null)
             {
                 @foreach (var instance in VisibleComponents)
@@ -42,7 +63,8 @@
                                         Props="instance.Props"
                                         OnSelect="@((shiftKey) => SelectComponent(instance.Id, shiftKey))"
                                         OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
-                                        OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))">
+                                        OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))"
+                                        OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))">
                         @* Ticket 43: lets a text-carrying built-in (Sticky Note, Text) identify
                            itself back to ParentCanvas when committing its own inline WYSIWYG edit -
                            see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
@@ -193,6 +215,33 @@
         top: calc(50% - 5px);
         left: -5px;
         cursor: ew-resize;
+    }
+
+    /* Ticket 48: sits before the component-instance loop in markup order, so at the shared
+       default z-index:0 the instances (later in DOM) paint over it - edges tuck behind shapes,
+       matching common diagram-tool convention. width/height 100% resolves against
+       .canvas-content's own explicit inline px size (ContentStyle), which is expressed directly
+       in board-space units - same coordinate system ComponentContainer's own left/top already
+       use - so no separate scaling or viewBox is needed for the line coordinates below. */
+    .edges-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .edge-line {
+        stroke: #4a4a4a;
+        stroke-width: 2;
+    }
+
+    .connector-drag-preview {
+        stroke: #2ecc71;
+        stroke-width: 2;
+        stroke-dasharray: 6 4;
     }
 
     .canvas-content {

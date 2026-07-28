@@ -446,4 +446,192 @@ public class BoardTests
 
         Assert.Null(board.FindContainingGroup(instance.Id));
     }
+
+    // Ticket 48: Board.Edges (ADR 0005) - mirrors the Groups add/remove/get coverage above.
+    [Fact]
+    public void AddedEdgeIsRetrievableByItsId()
+    {
+        var board = new Board();
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+
+        board.AddEdge(edge);
+
+        Assert.Same(edge, board.GetEdge(edge.Id));
+    }
+
+    [Fact]
+    public void GetEdgeForAnUnknownIdReturnsNull()
+    {
+        var board = new Board();
+
+        Assert.Null(board.GetEdge(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void RemovedEdgeIsNoLongerRetrievable()
+    {
+        var board = new Board();
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+        board.AddEdge(edge);
+
+        board.RemoveEdge(edge.Id);
+
+        Assert.Null(board.GetEdge(edge.Id));
+    }
+
+    [Fact]
+    public void EdgesExposesEveryAddedEdge()
+    {
+        var board = new Board();
+        var first = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+        var second = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Top),
+            new PortEndpoint(Guid.NewGuid(), PortId.Bottom)
+        );
+
+        board.AddEdge(first);
+        board.AddEdge(second);
+
+        Assert.Equal(new[] { first, second }, board.Edges, ReferenceEqualityComparer.Instance);
+    }
+
+    // Ticket 48: ResolveEndpoint resolves an attached endpoint's live board point from its
+    // referenced instance's current Bounds - what lets an edge track move/resize for free.
+    [Fact]
+    public void ResolveEndpointReturnsThePortsCurrentBoardPoint()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 100, 40, 20)
+        );
+        board.AddComponent(instance);
+
+        var point = board.ResolveEndpoint(new PortEndpoint(instance.Id, PortId.Right));
+
+        Assert.Equal((140.0, 110.0), point);
+    }
+
+    [Fact]
+    public void ResolveEndpointTracksTheInstanceAfterItMoves()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 100, 40, 20)
+        );
+        board.AddComponent(instance);
+        var endpoint = new PortEndpoint(instance.Id, PortId.Right);
+        var before = board.ResolveEndpoint(endpoint);
+
+        instance.Bounds = new Bounds(200, 300, 40, 20);
+        var after = board.ResolveEndpoint(endpoint);
+
+        Assert.Equal((140.0, 110.0), before);
+        Assert.Equal((240.0, 310.0), after);
+    }
+
+    [Fact]
+    public void ResolveEndpointTracksTheInstanceAfterItResizes()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 40, 20)
+        );
+        board.AddComponent(instance);
+        var endpoint = new PortEndpoint(instance.Id, PortId.Bottom);
+
+        instance.Bounds = new Bounds(0, 0, 80, 100);
+        var point = board.ResolveEndpoint(endpoint);
+
+        Assert.Equal((40.0, 100.0), point);
+    }
+
+    [Fact]
+    public void ResolveEndpointForAMissingComponentReturnsNull()
+    {
+        var board = new Board();
+
+        var point = board.ResolveEndpoint(new PortEndpoint(Guid.NewGuid(), PortId.Top));
+
+        Assert.Null(point);
+    }
+
+    // Ticket 48: FindPortNear - the connector-drag drop hit-test. ADR 0005 settled on discrete
+    // named ports, so this only resolves within a tolerance of an instance's actual port points.
+    [Fact]
+    public void FindPortNearReturnsThePortWithinTolerance()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 100, 40, 20)
+        );
+        board.AddComponent(instance);
+
+        var found = board.FindPortNear((141, 111), tolerance: 5);
+
+        Assert.Equal(new PortEndpoint(instance.Id, PortId.Right), found);
+    }
+
+    [Fact]
+    public void FindPortNearReturnsNullWhenNothingIsWithinTolerance()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 100, 40, 20)
+        );
+        board.AddComponent(instance);
+
+        var found = board.FindPortNear((141, 111), tolerance: 0.5);
+
+        Assert.Null(found);
+    }
+
+    [Fact]
+    public void FindPortNearPicksTheClosestPortAcrossMultipleInstances()
+    {
+        var board = new Board();
+        var near = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 100, 40, 20)
+        );
+        var far = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(300, 300, 40, 20)
+        );
+        board.AddComponent(near);
+        board.AddComponent(far);
+
+        // (140, 110) is exactly "near"'s right port and far away from every port on "far".
+        var found = board.FindPortNear((140, 110), tolerance: 50);
+
+        Assert.Equal(new PortEndpoint(near.Id, PortId.Right), found);
+    }
+
+    [Fact]
+    public void FindPortNearOnAnEmptyBoardReturnsNull()
+    {
+        var board = new Board();
+
+        Assert.Null(board.FindPortNear((0, 0), tolerance: 1000));
+    }
 }

@@ -1,4 +1,5 @@
 @namespace D12Canvas
+@using D12Canvas.Model
 
 <div @ref="_containerRef"
      class="@ContainerCssClass"
@@ -26,10 +27,13 @@
        resize) comes for free from positioning each one in plain CSS percentages of this container's
        own box - no per-instance computation needed. Visibility (hover/selection) is CSS-only too
        (see .port rules below), so no C# state or extra render is involved. *@
-    <div class="port port-top"></div>
-    <div class="port port-right"></div>
-    <div class="port port-bottom"></div>
-    <div class="port port-left"></div>
+    @* Ticket 48: each port's own mousedown starts a connector drag (StartPortDrag) - it doesn't
+       stop propagation, so it still bubbles up to HandleMouseDown afterwards, matching how the
+       resize handles below interact with that same handler. *@
+    <div class="port port-top" @onmousedown="@((e) => StartPortDrag(e, PortId.Top))"></div>
+    <div class="port port-right" @onmousedown="@((e) => StartPortDrag(e, PortId.Right))"></div>
+    <div class="port port-bottom" @onmousedown="@((e) => StartPortDrag(e, PortId.Bottom))"></div>
+    <div class="port port-left" @onmousedown="@((e) => StartPortDrag(e, PortId.Left))"></div>
 
     @if ((IsSelected && !IsMultiSelected) || _editMode)
     {
@@ -89,11 +93,16 @@
         border: 2px solid #ffffff;
         opacity: 0;
         pointer-events: none;
+        cursor: crosshair;
     }
 
+    /* Ticket 48: a port only becomes interactive (pointer-events: auto) exactly when it's
+       visible - matches the opacity rule so a hidden port can never intercept a click meant for
+       the container underneath it. */
     .component-container:hover .port,
     .component-container.selected .port {
         opacity: 1;
+        pointer-events: auto;
     }
 
     .port-top {
