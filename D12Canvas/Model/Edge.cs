@@ -1,15 +1,16 @@
 namespace D12Canvas.Model;
 
-// ADR 0005: a Board entity connecting two ports. Ticket 48 only creates port-to-port edges with
-// straight-line routing - per-edge routing/arrows (ticket 52) and floating endpoints (ticket 49)
-// are later tickets' concern.
+// ADR 0005: a Board entity connecting two endpoints, straight-line routing only for now (per-edge
+// routing/arrows are ticket 52's concern). Each endpoint is either attached to a port or floating
+// at a fixed point (ticket 49) - Source/Target can independently be either shape, and can change
+// shape after creation (an attached endpoint dragged off its port becomes floating, and vice versa).
 public sealed class Edge
 {
     public Guid Id { get; }
-    public PortEndpoint Source { get; set; }
-    public PortEndpoint Target { get; set; }
+    public IEdgeEndpoint Source { get; set; }
+    public IEdgeEndpoint Target { get; set; }
 
-    public Edge(PortEndpoint source, PortEndpoint target, Guid? id = null)
+    public Edge(IEdgeEndpoint source, IEdgeEndpoint target, Guid? id = null)
     {
         Id = id ?? Guid.NewGuid();
         Source = source;

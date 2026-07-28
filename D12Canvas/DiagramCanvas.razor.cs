@@ -118,6 +118,14 @@ public partial class DiagramCanvas : IAsyncDisposable
     private (double Left, double Top) _connectContainerOrigin;
     private (double X, double Y) _connectCurrentPoint;
 
+    // Ticket 49: set when this drag is repositioning an EXISTING edge's endpoint - grabbed from a
+    // port that already anchors an edge (StartPortDrag), or from a floating endpoint's own marker
+    // (StartFloatingEndpointDrag) - rather than creating a brand new one. Null means "creating a
+    // new edge from a bare port" (ticket 48's original path). While set, the edge being edited is
+    // rendered via the drag preview instead of its own normal line (see IsBeingEdited).
+    private Guid? _connectEditingEdgeId;
+    private bool _connectEditingEdgeIsSource;
+
     // Board-space radius a connector-drag release must land within one of an instance's own
     // standard ports to attach - matches that port affordance's own authored radius
     // (ComponentContainer.razor: a 20px-diameter circle in the same, zoom-independent local
@@ -518,10 +526,39 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
+        // Ticket 49: a port that already anchors an edge starts a "reposition this edge's
+        // endpoint" gesture instead of creating a new edge - matches common diagramming-tool UX
+        // (grabbing a connected point moves the connection; grabbing a bare port starts a new one).
+        var attachedEdge = Board.FindEdgeAttachedTo(new PortEndpoint(instanceId, args.PortId));
+
         _isConnectingPort = true;
         _connectSourceComponentId = instanceId;
         _connectSourcePortId = args.PortId;
+        _connectEditingEdgeId = attachedEdge?.EdgeId;
+        _connectEditingEdgeIsSource = attachedEdge?.IsSource ?? false;
         _connectCurrentPoint = ToBoardPoint((args.ClientX, args.ClientY), _connectContainerOrigin);
+        StateHasChanged();
+
+        _ = RefreshConnectContainerOrigin();
+    }
+
+    // Ticket 49: grabbing a floating endpoint's own marker starts the same connector-drag gesture
+    // as StartPortDrag, but always originates from an existing Edge - CompletePortDrag mutates
+    // that edge's Source/Target in place rather than creating a new one. Unlike a port press
+    // (nested inside a ComponentContainer, which needs the mousedown-bubbles-then-gate trick), this
+    // marker sits directly on the canvas, so stopping propagation at the marker itself (see the
+    // .razor markup) is enough to keep the canvas's own pan/marquee logic from also engaging.
+    private void StartFloatingEndpointDrag(Guid edgeId, bool isSource, MouseEventArgs e)
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        _isConnectingPort = true;
+        _connectEditingEdgeId = edgeId;
+        _connectEditingEdgeIsSource = isSource;
+        _connectCurrentPoint = ToBoardPoint(e, _connectContainerOrigin);
         StateHasChanged();
 
         _ = RefreshConnectContainerOrigin();
@@ -550,9 +587,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 48: resolves the drop point to a port within PortHitRadius and creates the Edge if
-    // found. Dropping on empty canvas, or back on the exact port the drag started from, cancels
-    // the gesture instead - floating endpoints for an unattached drop are ticket 49's concern.
+    // Ticket 48/49: resolves the drop point to a port within PortHitRadius, falling back to a
+    // FloatingEndpoint at the drop point itself when nothing is within tolerance - so a connector
+    // drag always produces a valid endpoint, attached or not. Either creates a brand new Edge
+    // (bare-port origin) or writes the resolved endpoint onto whichever side of an existing Edge
+    // is being repositioned (ApplyEdgeEndpointEdit).
     public void CompletePortDrag(double clientX, double clientY)
     {
         if (!_isConnectingPort || Board is null)
@@ -562,21 +601,65 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         var dropPoint = ToBoardPoint((clientX, clientY), _connectContainerOrigin);
-        var source = new PortEndpoint(_connectSourceComponentId, _connectSourcePortId);
-        var target = Board.FindPortNear(dropPoint, PortHitRadius);
+        var hitPort = Board.FindPortNear(dropPoint, PortHitRadius);
+        IEdgeEndpoint resolved = hitPort is { } port
+            ? port
+            : new FloatingEndpoint(dropPoint.X, dropPoint.Y);
 
-        if (target is { } resolvedTarget && resolvedTarget != source)
+        if (_connectEditingEdgeId is { } editingEdgeId)
         {
-            Board.AddEdge(new Edge(source, resolvedTarget));
+            ApplyEdgeEndpointEdit(editingEdgeId, _connectEditingEdgeIsSource, resolved);
+        }
+        else
+        {
+            var source = new PortEndpoint(_connectSourceComponentId, _connectSourcePortId);
+
+            // Dropping back on the exact port the drag started from creates no edge - a real
+            // gesture always connects two distinct points.
+            if (!(resolved is PortEndpoint resolvedPort && resolvedPort == source))
+            {
+                Board.AddEdge(new Edge(source, resolved));
+            }
         }
 
         CancelPortDrag();
+    }
+
+    // Ticket 49: writes the drag's resolved endpoint onto whichever side of the edge is being
+    // edited - unless doing so would collapse the edge onto a single point (both ends resolving to
+    // the same port, or both left floating at the same coordinate), in which case the edge is left
+    // exactly as it was before this drag. IEdgeEndpoint's implementations are records, so structural
+    // equality already covers both shapes without a type-specific comparison.
+    private void ApplyEdgeEndpointEdit(Guid edgeId, bool editingSource, IEdgeEndpoint resolved)
+    {
+        var edge = Board!.GetEdge(edgeId);
+        if (edge is null)
+        {
+            return;
+        }
+
+        var other = editingSource ? edge.Target : edge.Source;
+        if (resolved.Equals(other))
+        {
+            return;
+        }
+
+        if (editingSource)
+        {
+            edge.Source = resolved;
+        }
+        else
+        {
+            edge.Target = resolved;
+        }
     }
 
     private void CancelPortDrag()
     {
         _isConnectingPort = false;
         _connectSourceComponentId = Guid.Empty;
+        _connectEditingEdgeId = null;
+        _connectEditingEdgeIsSource = false;
         StateHasChanged();
     }
 
@@ -1024,8 +1107,12 @@ public partial class DiagramCanvas : IAsyncDisposable
         return from is null || to is null ? null : (from.Value, to.Value);
     }
 
-    // The in-progress connector drag-preview: from the source port's live position to wherever
-    // the pointer currently is in board space.
+    // The in-progress connector drag-preview: from a fixed origin to wherever the pointer
+    // currently is in board space. Ticket 49: while repositioning an existing edge's endpoint,
+    // the fixed origin is the edge's OTHER endpoint (not the one being dragged) - that edge's own
+    // normal line is suppressed for the duration (see IsBeingEdited), so this preview is the only
+    // thing representing it. Otherwise (creating a brand new edge) the origin is the bare port
+    // the drag started from, same as ticket 48.
     private ((double X, double Y) From, (double X, double Y) To)? ConnectPreviewLine()
     {
         if (!_isConnectingPort || Board is null)
@@ -1033,11 +1120,60 @@ public partial class DiagramCanvas : IAsyncDisposable
             return null;
         }
 
-        var from = Board.ResolveEndpoint(
-            new PortEndpoint(_connectSourceComponentId, _connectSourcePortId)
-        );
+        var from = _connectEditingEdgeId is { } editingEdgeId
+            ? ResolveOtherEndpoint(editingEdgeId, _connectEditingEdgeIsSource)
+            : Board.ResolveEndpoint(
+                new PortEndpoint(_connectSourceComponentId, _connectSourcePortId)
+            );
 
         return from is null ? null : (from.Value, _connectCurrentPoint);
+    }
+
+    private (double X, double Y)? ResolveOtherEndpoint(Guid edgeId, bool draggingSource)
+    {
+        var edge = Board!.GetEdge(edgeId);
+        if (edge is null)
+        {
+            return null;
+        }
+
+        var other = draggingSource ? edge.Target : edge.Source;
+        return Board.ResolveEndpoint(other);
+    }
+
+    // Ticket 49: true while the given edge is being repositioned mid-drag (either endpoint) - its
+    // normal line is suppressed for the duration in favour of the drag preview, since one <line>
+    // element represents both ends together.
+    private bool IsBeingEdited(Guid edgeId) => _isConnectingPort && _connectEditingEdgeId == edgeId;
+
+    // Ticket 49: true only while THIS SPECIFIC SIDE of the edge is the one being dragged - unlike
+    // IsBeingEdited, this doesn't suppress the untouched side's own floating marker (each marker is
+    // independent, so an edge with one attached and one floating end shouldn't hide the floating
+    // one while the attached end is what's being re-dragged).
+    private bool IsEndpointBeingEdited(Guid edgeId, bool isSource) =>
+        IsBeingEdited(edgeId) && _connectEditingEdgeIsSource == isSource;
+
+    // Ticket 49: every persisted (not currently being dragged) floating endpoint across the whole
+    // Board, each with a stable render key - an edge can have zero, one, or both ends floating.
+    private IEnumerable<(Edge Edge, bool IsSource, double X, double Y)> FloatingEndpoints()
+    {
+        if (Board is null)
+        {
+            yield break;
+        }
+
+        foreach (var edge in Board.Edges)
+        {
+            if (edge.Source is FloatingEndpoint source && !IsEndpointBeingEdited(edge.Id, true))
+            {
+                yield return (edge, true, source.X, source.Y);
+            }
+
+            if (edge.Target is FloatingEndpoint target && !IsEndpointBeingEdited(edge.Id, false))
+            {
+                yield return (edge, false, target.X, target.Y);
+            }
+        }
     }
 
     private string MarqueeStyle

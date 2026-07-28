@@ -570,6 +570,31 @@ public class BoardTests
         Assert.Null(point);
     }
 
+    // Ticket 49: a FloatingEndpoint resolves to its own fixed point regardless of Board contents -
+    // it tracks nothing, unlike a PortEndpoint.
+    [Fact]
+    public void ResolveEndpointReturnsAFloatingEndpointsOwnFixedPoint()
+    {
+        var board = new Board();
+
+        var point = board.ResolveEndpoint(new FloatingEndpoint(42, 99));
+
+        Assert.Equal((42.0, 99.0), point);
+    }
+
+    [Fact]
+    public void ResolveEndpointForAFloatingEndpointIgnoresUnrelatedBoardComponents()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 40, 20))
+        );
+
+        var point = board.ResolveEndpoint(new FloatingEndpoint(500, 500));
+
+        Assert.Equal((500.0, 500.0), point);
+    }
+
     // Ticket 48: FindPortNear - the connector-drag drop hit-test. ADR 0005 settled on discrete
     // named ports, so this only resolves within a tolerance of an instance's actual port points.
     [Fact]
@@ -633,5 +658,57 @@ public class BoardTests
         var board = new Board();
 
         Assert.Null(board.FindPortNear((0, 0), tolerance: 1000));
+    }
+
+    // Ticket 49: FindEdgeAttachedTo - distinguishes "start a new edge" from "reposition this
+    // edge's existing endpoint" (DiagramCanvas.StartPortDrag).
+    [Fact]
+    public void FindEdgeAttachedToFindsTheEdgeWhosSourceIsThisPort()
+    {
+        var board = new Board();
+        var source = new PortEndpoint(Guid.NewGuid(), PortId.Right);
+        var edge = new Edge(source, new PortEndpoint(Guid.NewGuid(), PortId.Left));
+        board.AddEdge(edge);
+
+        var found = board.FindEdgeAttachedTo(source);
+
+        Assert.Equal((edge.Id, true), found);
+    }
+
+    [Fact]
+    public void FindEdgeAttachedToFindsTheEdgeWhosTargetIsThisPort()
+    {
+        var board = new Board();
+        var target = new PortEndpoint(Guid.NewGuid(), PortId.Left);
+        var edge = new Edge(new PortEndpoint(Guid.NewGuid(), PortId.Right), target);
+        board.AddEdge(edge);
+
+        var found = board.FindEdgeAttachedTo(target);
+
+        Assert.Equal((edge.Id, false), found);
+    }
+
+    [Fact]
+    public void FindEdgeAttachedToReturnsNullForAnUnattachedPort()
+    {
+        var board = new Board();
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(Guid.NewGuid(), PortId.Right),
+                new PortEndpoint(Guid.NewGuid(), PortId.Left)
+            )
+        );
+
+        var found = board.FindEdgeAttachedTo(new PortEndpoint(Guid.NewGuid(), PortId.Top));
+
+        Assert.Null(found);
+    }
+
+    [Fact]
+    public void FindEdgeAttachedToOnAnEmptyBoardReturnsNull()
+    {
+        var board = new Board();
+
+        Assert.Null(board.FindEdgeAttachedTo(new PortEndpoint(Guid.NewGuid(), PortId.Top)));
     }
 }

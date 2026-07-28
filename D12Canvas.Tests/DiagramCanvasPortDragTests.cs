@@ -121,11 +121,14 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         Assert.Equal("125", line.GetAttribute("y2"));
     }
 
+    // Ticket 49: dropping on empty canvas now creates the edge with a floating endpoint at the
+    // release point, rather than cancelling the gesture (ticket 48's original placeholder
+    // behaviour) - see DiagramCanvasFloatingEndpointTests for the rest of ticket 49's coverage.
     [Fact]
-    public void DroppingOnEmptyCanvasCreatesNoEdgeAndCancelsTheGesture()
+    public void DroppingOnEmptyCanvasCreatesAnEdgeWithAFloatingEndpoint()
     {
         var board = new Board();
-        AddInstance(board, 100, 100); // right port at (150, 125)
+        var source = AddInstance(board, 100, 100); // right port at (150, 125)
         AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
@@ -135,7 +138,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         background.MouseMove(new MouseEventArgs { ClientX = 190, ClientY = 400 });
         background.MouseUp(new MouseEventArgs { ClientX = 190, ClientY = 400 });
 
-        Assert.Empty(board.Edges);
+        var edge = Assert.Single(board.Edges);
+        Assert.Equal(new PortEndpoint(source.Id, PortId.Right), edge.Source);
+        Assert.Equal(new FloatingEndpoint(190, 400), edge.Target);
         Assert.Empty(canvas.FindAll(".connector-drag-preview"));
     }
 

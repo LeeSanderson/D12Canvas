@@ -29,18 +29,27 @@ public sealed class Board
 
     public Edge? GetEdge(Guid id) => _edges.TryGetValue(id, out var edge) ? edge : null;
 
-    // Ticket 48: an endpoint's live board-space point, resolved from its referenced instance's
-    // current Bounds rather than stored - what lets an attached edge track move/resize for free
-    // (ADR 0005). Null when the referenced instance no longer exists.
-    public (double X, double Y)? ResolveEndpoint(PortEndpoint endpoint)
+    // Ticket 48/49: an endpoint's live board-space point. A PortEndpoint resolves from its
+    // referenced instance's current Bounds rather than stored - what lets an attached edge track
+    // move/resize for free (ADR 0005); a FloatingEndpoint resolves to its own fixed point, tracking
+    // nothing. Null when a PortEndpoint's referenced instance no longer exists.
+    public (double X, double Y)? ResolveEndpoint(IEdgeEndpoint endpoint) =>
+        endpoint switch
+        {
+            PortEndpoint port => ResolvePort(port),
+            FloatingEndpoint floating => (floating.X, floating.Y),
+            _ => null,
+        };
+
+    private (double X, double Y)? ResolvePort(PortEndpoint port)
     {
-        var instance = GetComponent(endpoint.ComponentId);
+        var instance = GetComponent(port.ComponentId);
         if (instance is null)
         {
             return null;
         }
 
-        var (fractionX, fractionY) = StandardPorts.FractionOf(endpoint.PortId);
+        var (fractionX, fractionY) = StandardPorts.FractionOf(port.PortId);
         return instance.Bounds.PointAtFraction(fractionX, fractionY);
     }
 
@@ -73,6 +82,28 @@ public sealed class Board
         }
 
         return closest;
+    }
+
+    // Ticket 49: does any edge already anchor to this exact port? Used to tell "start a new edge"
+    // apart from "reposition this edge's existing endpoint" (see DiagramCanvas.StartPortDrag).
+    // Multiple edges sharing the same port pick whichever is found first - an acceptable ambiguity
+    // this ticket doesn't need to resolve.
+    public (Guid EdgeId, bool IsSource)? FindEdgeAttachedTo(PortEndpoint endpoint)
+    {
+        foreach (var edge in _edges.Values)
+        {
+            if (edge.Source is PortEndpoint source && source == endpoint)
+            {
+                return (edge.Id, true);
+            }
+
+            if (edge.Target is PortEndpoint target && target == endpoint)
+            {
+                return (edge.Id, false);
+            }
+        }
+
+        return null;
     }
 
     // Ticket 44: a Group's bounds are never stored - only ever resolved on demand from its

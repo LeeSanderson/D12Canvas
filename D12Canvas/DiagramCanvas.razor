@@ -28,11 +28,24 @@
                 {
                     @foreach (var edge in Board.Edges)
                     {
-                        var line = EdgeLine(edge);
-                        if (line is not null)
+                        if (!IsBeingEdited(edge.Id))
                         {
-                            <line @key="edge.Id" x1="@line.Value.From.X" y1="@line.Value.From.Y" x2="@line.Value.To.X" y2="@line.Value.To.Y" class="edge-line" />
+                            var line = EdgeLine(edge);
+                            if (line is not null)
+                            {
+                                <line @key="edge.Id" x1="@line.Value.From.X" y1="@line.Value.From.Y" x2="@line.Value.To.X" y2="@line.Value.To.Y" class="edge-line" />
+                            }
                         }
+                    }
+                    @* Ticket 49: a draggable marker for each unattached edge endpoint - dropping it
+                       on a port attaches that side; dropping a port that already anchors an edge
+                       here instead (StartPortDrag) detaches that side back to floating. *@
+                    @foreach (var floating in FloatingEndpoints())
+                    {
+                        <circle @key="@($"{floating.Edge.Id}-{(floating.IsSource ? "source" : "target")}")"
+                                cx="@floating.X" cy="@floating.Y" r="6" class="floating-endpoint"
+                                @onmousedown="@((e) => StartFloatingEndpointDrag(floating.Edge.Id, floating.IsSource, e))"
+                                @onmousedown:stopPropagation></circle>
                     }
                 }
                 @if (_isConnectingPort)
@@ -242,6 +255,18 @@
         stroke: #2ecc71;
         stroke-width: 2;
         stroke-dasharray: 6 4;
+    }
+
+    /* Ticket 49: a floating (unattached) edge endpoint. Filled distinctly from both the gray
+       edge line and the green port affordance so it doesn't read as either. Always interactive
+       (pointer-events overriding the layer's own none, same trick .port uses) since - unlike a
+       port - a floating endpoint has no other affordance revealing it can be grabbed. */
+    .floating-endpoint {
+        fill: #f39c12;
+        stroke: #ffffff;
+        stroke-width: 1.5px;
+        pointer-events: auto;
+        cursor: grab;
     }
 
     .canvas-content {

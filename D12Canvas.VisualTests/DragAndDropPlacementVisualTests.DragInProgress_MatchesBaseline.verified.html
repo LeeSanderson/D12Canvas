@@ -250,6 +250,18 @@
         stroke-dasharray: 6 4;
     }
 
+    /* Ticket 49: a floating (unattached) edge endpoint. Filled distinctly from both the gray
+       edge line and the green port affordance so it doesn't read as either. Always interactive
+       (pointer-events overriding the layer's own none, same trick .port uses) since - unlike a
+       port - a floating endpoint has no other affordance revealing it can be grabbed. */
+    .floating-endpoint {
+        fill: #f39c12;
+        stroke: #ffffff;
+        stroke-width: 1.5px;
+        pointer-events: auto;
+        cursor: grab;
+    }
+
     .canvas-content {
         position: absolute;
         top: 0;
