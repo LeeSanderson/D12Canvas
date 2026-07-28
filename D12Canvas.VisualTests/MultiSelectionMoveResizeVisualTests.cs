@@ -110,10 +110,7 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }
 
-    // Quarantined: the resulting PNG is pixel-nondeterministic run-to-run even though the HTML
-    // snapshot is byte-identical every time - a pre-existing screenshot-capture flake (tickets
-    // 33/45), not caused by or fixable via ticket 78's SDK-skew fix. See ticket 79.
-    [Fact(Skip = "Pixel-nondeterministic mid-resize screenshot capture - see ticket 79")]
+    [Fact]
     public async Task GroupResizeInProgress_MatchesBaseline()
     {
         await SelectBothInstances();

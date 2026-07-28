@@ -16,5 +16,6 @@ public static class ModuleInitializer
     {
         VerifyPlaywright.Initialize(installPlaywright: true);
         Assertions.SetDefaultExpectTimeout(DefaultExpectTimeoutMilliseconds);
+        FuzzyPngComparer.Register();
     }
 }

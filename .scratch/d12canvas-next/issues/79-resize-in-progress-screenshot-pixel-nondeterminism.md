@@ -7,7 +7,7 @@ ticket 30). Their HTML snapshot is byte-identical on every run - the resize itse
 - but the PNG differs from *any* baseline, including one captured moments earlier from the exact same
 code path. Re-running against a freshly-promoted baseline still fails on the next run.
 
-**Status:** needs-triage
+**Status:** resolved
 
 **How it was found:** While implementing ticket 78 (SDK-skew fix), regenerating baselines under the newly
 SDK-pinned, cleaned environment left 22 of 23 HTML+PNG pairs passing - confirming the SDK-skew root cause
@@ -60,3 +60,20 @@ a local container run as proof of what CI will do. Whether these 5 are now stabl
 per-machine, just different across machines) or will drift again on a future CI run (genuinely
 nondeterministic per-capture, like the two resize tests) is unconfirmed - worth checking after a few more
 merges to main before considering this closed.
+
+**Resolved via ticket 80.** A second GitHub Actions run made the picture clearer still: 8 tests failed
+that time, including 3 (`MarqueeVisualTests.BothInstancesSelected_AfterMarqueeRelease_MatchesBaseline`,
+`MultiSelectionMoveResizeVisualTests.BoundingBoxVisible_MatchesBaseline`,
+`MultiSelectionMoveResizeVisualTests.PersistedGroupBoundingBoxVisible_MatchesBaseline`) that had *passed*
+in the first run with baselines nobody touched in between - proof this isn't "different but stable per
+machine," it's genuinely nondeterministic across runs on GitHub's own infrastructure (almost certainly
+different underlying host hardware per run affecting sub-pixel rasterization), the same class of problem
+as the two resize tests, just wider than "mid-resize."
+
+Ticket 80 ported pixelmatch's OKLab/HyAB comparison to .NET and registered it with Verify as a tolerant
+PNG comparer, replacing byte-exact comparison for every screenshot baseline in the suite. Both this
+ticket's two Skip-quarantined tests were un-skipped and now pass reliably (verified across repeated
+clean-container runs), and calibration against 13 real "should match" noisy pairs pulled from actual CI
+runs showed each one measuring an *exact* 0.0% diff under the ported algorithm's own default settings -
+strong evidence the fuzzy comparer resolves this whole class of failure, not just the two tests this
+ticket started with.
