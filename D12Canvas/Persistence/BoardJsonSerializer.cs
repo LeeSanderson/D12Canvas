@@ -22,7 +22,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         var envelope = new BoardEnvelope(
             CurrentSchemaVersion,
             board.Components.Select(ToComponentEnvelope).ToList(),
-            board.Groups.Select(ToGroupEnvelope).ToList()
+            board.Groups.Select(ToGroupEnvelope).ToList(),
+            board.Edges.Select(ToEdgeEnvelope).ToList()
         );
 
         return JsonSerializer.Serialize(envelope, Options);
@@ -48,6 +49,11 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             board.AddGroup(FromGroupEnvelope(groupEnvelope));
         }
 
+        foreach (var edgeEnvelope in envelope.Edges ?? [])
+        {
+            board.AddEdge(FromEdgeEnvelope(edgeEnvelope));
+        }
+
         return board;
     }
 
@@ -62,50 +68,71 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         var board = new Board();
         var warnings = new List<BoardDeserializeWarning>();
 
-        var index = 0;
-        foreach (
-            var componentElement in root.GetProperty(nameof(BoardEnvelope.Components))
-                .EnumerateArray()
-        )
-        {
-            var entity = DescribeEntity(
-                componentElement,
-                nameof(ComponentInstanceEnvelope.Id),
-                nameof(BoardEnvelope.Components),
-                index
-            );
-            index++;
-
-            try
-            {
-                var componentEnvelope =
-                    componentElement.Deserialize<ComponentInstanceEnvelope>(Options)
-                    ?? throw new JsonException("The component entry is empty.");
-
-                board.AddComponent(FromComponentEnvelope(componentEnvelope));
-            }
-            catch (UnknownComponentKeyException ex)
-            {
-                warnings.Add(
-                    new BoardDeserializeWarning(entity, $"Unknown component type '{ex.Key}'.")
-                );
-            }
-            catch (Exception ex)
-            {
-                // Deliberately broad: any failure to parse or bind one entity must never
-                // abort the rest of the load, so it's reported as a warning instead.
-                warnings.Add(
-                    new BoardDeserializeWarning(entity, $"Malformed entity: {ex.Message}")
-                );
-            }
-        }
+        ParseEntries<ComponentInstanceEnvelope>(
+            root.GetProperty(nameof(BoardEnvelope.Components)),
+            nameof(ComponentInstanceEnvelope.Id),
+            nameof(BoardEnvelope.Components),
+            warnings,
+            (_, componentEnvelope) => board.AddComponent(FromComponentEnvelope(componentEnvelope))
+        );
 
         if (root.TryGetProperty(nameof(BoardEnvelope.Groups), out var groupsElement))
         {
             DeserializeGroupsPartial(groupsElement, board, warnings);
         }
 
+        if (root.TryGetProperty(nameof(BoardEnvelope.Edges), out var edgesElement))
+        {
+            DeserializeEdgesPartial(edgesElement, board, warnings);
+        }
+
         return new PartialBoardDeserializeResult(board, warnings);
+    }
+
+    // Ticket 51: an edge referencing a missing instance is tolerated, not fatal - Board.ResolveEndpoint
+    // already tolerates a dangling PortEndpoint componentId at read time (Model/Board.cs), so a
+    // warning is recorded but the edge still loads, mirroring how a group's missing member is
+    // handled just above. Edges never reference Groups (ticket 15), so no group-membership check
+    // is needed here.
+    private static void DeserializeEdgesPartial(
+        JsonElement edgesElement,
+        Board board,
+        List<BoardDeserializeWarning> warnings
+    )
+    {
+        ParseEntries<EdgeEnvelope>(
+            edgesElement,
+            nameof(EdgeEnvelope.Id),
+            nameof(BoardEnvelope.Edges),
+            warnings,
+            (entity, edgeEnvelope) =>
+            {
+                var edge = FromEdgeEnvelope(edgeEnvelope);
+
+                foreach (var missingComponentId in MissingComponentIds(edge, board))
+                {
+                    warnings.Add(
+                        new BoardDeserializeWarning(
+                            entity,
+                            $"References missing instance '{missingComponentId}'."
+                        )
+                    );
+                }
+
+                board.AddEdge(edge);
+            }
+        );
+    }
+
+    private static IEnumerable<Guid> MissingComponentIds(Edge edge, Board board)
+    {
+        foreach (var endpoint in new[] { edge.Source, edge.Target })
+        {
+            if (endpoint is PortEndpoint port && board.GetComponent(port.ComponentId) is null)
+            {
+                yield return port.ComponentId;
+            }
+        }
     }
 
     // A group referencing a member (component or nested group) that doesn't exist is tolerated,
@@ -121,32 +148,13 @@ public sealed class BoardJsonSerializer : IBoardSerializer
     {
         var parsedGroups = new List<(string Entity, GroupEnvelope Envelope)>();
 
-        var index = 0;
-        foreach (var groupElement in groupsElement.EnumerateArray())
-        {
-            var entity = DescribeEntity(
-                groupElement,
-                nameof(GroupEnvelope.Id),
-                nameof(BoardEnvelope.Groups),
-                index
-            );
-            index++;
-
-            try
-            {
-                var groupEnvelope =
-                    groupElement.Deserialize<GroupEnvelope>(Options)
-                    ?? throw new JsonException("The group entry is empty.");
-
-                parsedGroups.Add((entity, groupEnvelope));
-            }
-            catch (Exception ex)
-            {
-                warnings.Add(
-                    new BoardDeserializeWarning(entity, $"Malformed entity: {ex.Message}")
-                );
-            }
-        }
+        ParseEntries<GroupEnvelope>(
+            groupsElement,
+            nameof(GroupEnvelope.Id),
+            nameof(BoardEnvelope.Groups),
+            warnings,
+            (entity, groupEnvelope) => parsedGroups.Add((entity, groupEnvelope))
+        );
 
         var knownIds = new HashSet<Guid>(board.Components.Select(c => c.Id));
         knownIds.UnionWith(parsedGroups.Select(g => g.Envelope.Id));
@@ -183,6 +191,52 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         }
     }
 
+    // Ticket 51: the shared "iterate a JSON array, describe each entry for error reporting,
+    // deserialize it, and turn any failure into a warning instead of aborting the load" shape -
+    // duplicated across Components/Groups/Edges once Edges arrived as a third occurrence (ticket
+    // 46 deliberately deferred this extraction until then). `onEntry` does whatever each entity
+    // kind needs with a successfully-parsed envelope (bind and add to the board, or - for Groups -
+    // stash it for a second, cross-referencing pass); anything `onEntry` throws is still caught
+    // here and reported the same way as a parse failure.
+    private static void ParseEntries<TEnvelope>(
+        JsonElement arrayElement,
+        string idPropertyName,
+        string arrayPropertyName,
+        List<BoardDeserializeWarning> warnings,
+        Action<string, TEnvelope> onEntry
+    )
+    {
+        var index = 0;
+        foreach (var element in arrayElement.EnumerateArray())
+        {
+            var entity = DescribeEntity(element, idPropertyName, arrayPropertyName, index);
+            index++;
+
+            try
+            {
+                var envelope =
+                    element.Deserialize<TEnvelope>(Options)
+                    ?? throw new JsonException("The entry is empty.");
+
+                onEntry(entity, envelope);
+            }
+            catch (UnknownComponentKeyException ex)
+            {
+                warnings.Add(
+                    new BoardDeserializeWarning(entity, $"Unknown component type '{ex.Key}'.")
+                );
+            }
+            catch (Exception ex)
+            {
+                // Deliberately broad: any failure to parse or bind one entity (or a duplicate Id
+                // added later by onEntry) must never abort the rest of the load.
+                warnings.Add(
+                    new BoardDeserializeWarning(entity, $"Malformed entity: {ex.Message}")
+                );
+            }
+        }
+    }
+
     private static string DescribeEntity(
         JsonElement element,
         string idPropertyName,
@@ -206,6 +260,49 @@ public sealed class BoardJsonSerializer : IBoardSerializer
 
     private static Group FromGroupEnvelope(GroupEnvelope envelope) =>
         new(envelope.MemberIds, envelope.Id);
+
+    private static EdgeEnvelope ToEdgeEnvelope(Edge edge) =>
+        new(edge.Id, ToEndpointEnvelope(edge.Source), ToEndpointEnvelope(edge.Target));
+
+    private static EdgeEndpointEnvelope ToEndpointEnvelope(IEdgeEndpoint endpoint) =>
+        endpoint switch
+        {
+            PortEndpoint port => new EdgeEndpointEnvelope(
+                port.ComponentId,
+                port.PortId,
+                null,
+                null
+            ),
+            FloatingEndpoint floating => new EdgeEndpointEnvelope(
+                null,
+                null,
+                floating.X,
+                floating.Y
+            ),
+            _ => throw new NotSupportedException(
+                $"Unsupported edge endpoint type '{endpoint.GetType()}'."
+            ),
+        };
+
+    private static Edge FromEdgeEnvelope(EdgeEnvelope envelope) =>
+        new(
+            FromEndpointEnvelope(envelope.Source),
+            FromEndpointEnvelope(envelope.Target),
+            envelope.Id
+        );
+
+    private static IEdgeEndpoint FromEndpointEnvelope(EdgeEndpointEnvelope? envelope) =>
+        envelope switch
+        {
+            { ComponentId: { } componentId, PortId: { } portId } => new PortEndpoint(
+                componentId,
+                portId
+            ),
+            { X: { } x, Y: { } y } => new FloatingEndpoint(x, y),
+            _ => throw new JsonException(
+                "The edge endpoint is neither port-attached nor floating."
+            ),
+        };
 
     private static ComponentInstanceEnvelope ToComponentEnvelope(ComponentInstance instance) =>
         new(

@@ -302,6 +302,163 @@ public class BoardJsonSerializerTests
         );
     }
 
+    // Ticket 51: Edges join the envelope alongside Components and Groups. Attached endpoints
+    // round-trip as instance + port references; floating endpoints as board points.
+    [Fact]
+    public void SerializeProducesAnEnvelopeWithAnEdgesArray()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var edge = new Edge(
+            new PortEndpoint(first.Id, PortId.Right),
+            new PortEndpoint(second.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+
+        var json = serializer.Serialize(board);
+
+        using var document = JsonDocument.Parse(json);
+        var edgesElement = document.RootElement.GetProperty("Edges");
+        Assert.Equal(1, edgesElement.GetArrayLength());
+        Assert.Equal(edge.Id, edgesElement[0].GetProperty("Id").GetGuid());
+    }
+
+    [Fact]
+    public void DeserializeRebuildsAnEdgeWithBothEndpointsAttachedToPorts()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var edge = new Edge(
+            new PortEndpoint(first.Id, PortId.Right),
+            new PortEndpoint(second.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredEdge = restored.GetEdge(edge.Id);
+        Assert.NotNull(restoredEdge);
+        Assert.Equal(new PortEndpoint(first.Id, PortId.Right), restoredEdge!.Source);
+        Assert.Equal(new PortEndpoint(second.Id, PortId.Left), restoredEdge.Target);
+    }
+
+    [Fact]
+    public void DeserializeRebuildsAnEdgeWithAFloatingEndpoint()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var instance = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        board.AddComponent(instance);
+        var edge = new Edge(
+            new PortEndpoint(instance.Id, PortId.Right),
+            new FloatingEndpoint(123, 456)
+        );
+        board.AddEdge(edge);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredEdge = restored.GetEdge(edge.Id);
+        Assert.NotNull(restoredEdge);
+        Assert.Equal(new FloatingEndpoint(123, 456), restoredEdge!.Target);
+    }
+
+    [Fact]
+    public void ReloadedEdgesStayAttachedMovingAnEndpointInstanceAfterRoundTripStillDragsTheEdgeAlong()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(first.Id, PortId.Right),
+                new PortEndpoint(second.Id, PortId.Left)
+            )
+        );
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+        var restoredFirst = restored.GetComponent(first.Id)!;
+        restoredFirst.Bounds = new Bounds(100, 100, 10, 10);
+
+        var restoredEdge = Assert.Single(restored.Edges);
+        var sourcePoint = restored.ResolveEndpoint(restoredEdge.Source);
+        Assert.Equal(restoredFirst.Bounds.PointAtFraction(1, 0.5), sourcePoint);
+    }
+
+    // Strict deserialize does no referential-integrity checking for Edges either, same as Groups
+    // (StrictDeserializeLoadsAGroupWithAMissingMemberWithoutThrowing above) - a dangling endpoint
+    // componentId is loaded as-is. Only the tolerant partial path turns this into a warning.
+    [Fact]
+    public void StrictDeserializeLoadsAnEdgeWithAMissingEndpointInstanceWithoutThrowing()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Edges": [
+                {
+                  "Id": "77777777-7777-7777-7777-777777777777",
+                  "Source": {
+                    "ComponentId": "66666666-6666-6666-6666-666666666666",
+                    "PortId": 0,
+                    "X": null,
+                    "Y": null
+                  },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 10, "Y": 20 }
+                }
+              ]
+            }
+            """;
+
+        var restored = serializer.Deserialize(json);
+
+        var restoredEdge = restored.GetEdge(Guid.Parse("77777777-7777-7777-7777-777777777777"));
+        Assert.NotNull(restoredEdge);
+        Assert.Equal(
+            new PortEndpoint(Guid.Parse("66666666-6666-6666-6666-666666666666"), PortId.Top),
+            restoredEdge!.Source
+        );
+    }
+
     [Fact]
     public void DeserializeThrowsUnknownComponentKeyExceptionForAnUnregisteredComponentType()
     {

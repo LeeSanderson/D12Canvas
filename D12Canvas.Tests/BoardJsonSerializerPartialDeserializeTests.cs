@@ -368,6 +368,132 @@ public class BoardJsonSerializerPartialDeserializeTests
         Assert.Equal("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", warning.Entity, ignoreCase: true);
     }
 
+    // Ticket 51: the partial path never fails the whole load over an edge's problems either - a
+    // structurally malformed edge is skipped-and-warned like a malformed component/group, and an
+    // edge referencing a missing instance is still loaded (its other, valid endpoint still
+    // resolves) with a warning recorded instead of the load failing.
+    [Fact]
+    public void RoundTripsEdgesWithNoWarningsWhenBothEndpointsResolve()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps("a"),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps("b"),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var edge = new Edge(
+            new PortEndpoint(first.Id, PortId.Right),
+            new PortEndpoint(second.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+
+        var result = serializer.DeserializePartial(serializer.Serialize(board));
+
+        Assert.Empty(result.Warnings);
+        var restoredEdge = Assert.Single(result.Board.Edges);
+        Assert.Equal(edge.Id, restoredEdge.Id);
+    }
+
+    [Fact]
+    public void RecordsAWarningForAnEdgeReferencingAMissingInstanceButStillLoadsTheEdge()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Edges": [
+                {
+                  "Id": "77777777-7777-7777-7777-777777777777",
+                  "Source": {
+                    "ComponentId": "66666666-6666-6666-6666-666666666666",
+                    "PortId": 0,
+                    "X": null,
+                    "Y": null
+                  },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 10, "Y": 20 }
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        var restoredEdge = Assert.Single(result.Board.Edges);
+        Assert.Equal(Guid.Parse("77777777-7777-7777-7777-777777777777"), restoredEdge.Id);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("77777777-7777-7777-7777-777777777777", warning.Entity, ignoreCase: true);
+        Assert.Contains(
+            "66666666-6666-6666-6666-666666666666",
+            warning.Reason,
+            StringComparison.OrdinalIgnoreCase
+        );
+    }
+
+    [Fact]
+    public void SkipsAnEdgeWithADuplicateIdAndRecordsAWarningInsteadOfFailingTheLoad()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Edges": [
+                {
+                  "Id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                  "Source": { "ComponentId": null, "PortId": null, "X": 0, "Y": 0 },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 10, "Y": 10 }
+                },
+                {
+                  "Id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                  "Source": { "ComponentId": null, "PortId": null, "X": 0, "Y": 0 },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 20, "Y": 20 }
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        var restoredEdge = Assert.Single(result.Board.Edges);
+        Assert.Equal(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"), restoredEdge.Id);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("cccccccc-cccc-cccc-cccc-cccccccccccc", warning.Entity, ignoreCase: true);
+    }
+
+    [Fact]
+    public void SkipsAStructurallyMalformedEdgeEntryAndRecordsAWarning()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Edges": [
+                {
+                  "Id": "88888888-8888-8888-8888-888888888888",
+                  "Source": { "ComponentId": null, "PortId": null, "X": null, "Y": null },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 10, "Y": 20 }
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        Assert.Empty(result.Board.Edges);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("88888888-8888-8888-8888-888888888888", warning.Entity, ignoreCase: true);
+    }
+
     [Fact]
     public void StillThrowsUnsupportedSchemaVersionExceptionForAWrongSchemaVersion()
     {
