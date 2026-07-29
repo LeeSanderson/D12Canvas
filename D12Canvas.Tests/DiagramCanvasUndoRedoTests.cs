@@ -420,4 +420,133 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
 
         Assert.Empty(board.Components);
     }
+
+    // Ticket 50: the port-to-port drag gesture (ticket 48) now routes through AddEdgeCommand
+    // (ADR 0007) - undo removes the created edge, redo restores it with the same attachments.
+    [Fact]
+    public async Task UndoAfterCreatingAnEdgeRemovesIt()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100); // right port at (150, 125)
+        AddInstance(board, 250, 100); // left port at (250, 125)
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0]
+            .QuerySelector(".port-right")!
+            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        var targetPort = containers[1].QuerySelector(".port-left")!;
+        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        Assert.Single(board.Edges);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Empty(board.Edges);
+    }
+
+    [Fact]
+    public async Task RedoAfterUndoingAnEdgeCreationRestoresItWithTheSameAttachments()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100); // right port at (150, 125)
+        var target = AddInstance(board, 250, 100); // left port at (250, 125)
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0]
+            .QuerySelector(".port-right")!
+            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        var targetPort = containers[1].QuerySelector(".port-left")!;
+        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        var createdId = Assert.Single(board.Edges).Id;
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
+
+        var restored = Assert.Single(board.Edges);
+        Assert.Equal(createdId, restored.Id);
+        Assert.Equal(new PortEndpoint(source.Id, PortId.Right), restored.Source);
+        Assert.Equal(new PortEndpoint(target.Id, PortId.Left), restored.Target);
+    }
+
+    // Ticket 50: a selected edge's own RemoveEdgeCommand (ADR 0007) - undo restores the same
+    // Edge reference, so both endpoints (attached or floating) come back exactly as they were.
+    [Fact]
+    public async Task UndoAfterDeletingASelectedEdgeRestoresItWithBothAttachedEndpointsIntact()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100); // right port at (150, 125)
+        var target = AddInstance(board, 250, 100); // left port at (250, 125)
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var containers = canvas.FindAll(".component-container");
+        containers[0]
+            .QuerySelector(".port-right")!
+            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        var targetPort = containers[1].QuerySelector(".port-left")!;
+        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        var edgeId = Assert.Single(board.Edges).Id;
+
+        canvas.Find(".edge-line").Click();
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+        Assert.Empty(board.Edges);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        var restored = Assert.Single(board.Edges);
+        Assert.Equal(edgeId, restored.Id);
+        Assert.Equal(new PortEndpoint(source.Id, PortId.Right), restored.Source);
+        Assert.Equal(new PortEndpoint(target.Id, PortId.Left), restored.Target);
+    }
+
+    [Fact]
+    public async Task UndoAfterDeletingASelectedEdgeRestoresAFloatingEndpointIntact()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100); // right port at (150, 125)
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
+        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        var background = canvas.Find(".diagram-canvas");
+        background.MouseMove(new MouseEventArgs { ClientX = 190, ClientY = 400 });
+        background.MouseUp(new MouseEventArgs { ClientX = 190, ClientY = 400 });
+        var edgeId = Assert.Single(board.Edges).Id;
+
+        canvas.Find(".edge-line").Click();
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+        Assert.Empty(board.Edges);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        var restored = Assert.Single(board.Edges);
+        Assert.Equal(edgeId, restored.Id);
+        Assert.Equal(new PortEndpoint(source.Id, PortId.Right), restored.Source);
+        Assert.Equal(new FloatingEndpoint(190, 400), restored.Target);
+    }
+
+    [Fact]
+    public async Task RedoAfterUndoingAnEdgeDeleteRemovesItAgain()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100); // right port at (150, 125)
+        AddInstance(board, 250, 100); // left port at (250, 125)
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var containers = canvas.FindAll(".component-container");
+        containers[0]
+            .QuerySelector(".port-right")!
+            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        var targetPort = containers[1].QuerySelector(".port-left")!;
+        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+
+        canvas.Find(".edge-line").Click();
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
+
+        Assert.Empty(board.Edges);
+    }
 }

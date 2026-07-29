@@ -547,9 +547,22 @@
         z-index: 0;
     }
 
+    /* Ticket 50: unlike the rest of .edges-layer (pointer-events: none), an edge line is always
+       clickable so it can be selected - it has no hover-to-reveal affordance the way a port does,
+       since the line itself already IS the visible affordance. */
     .edge-line {
         stroke: #4a4a4a;
         stroke-width: 2;
+        pointer-events: auto;
+        cursor: pointer;
+    }
+
+    /* Ticket 50: the selected-edge affordance - same selection blue as
+       .component-container.selected's outline, applied as the line's own stroke since an outline
+       doesn't apply to SVG shapes. */
+    .edge-line.selected {
+        stroke: #2f80ed;
+        stroke-width: 3;
     }
 
     .connector-drag-preview {

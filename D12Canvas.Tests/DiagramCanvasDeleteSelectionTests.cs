@@ -11,6 +11,8 @@ namespace D12Canvas.Tests;
 // Ticket 34: Delete removes every currently selected instance from Board and clears the
 // selection - single and multi-selection are the same code path (unlike move/resize, deletion
 // has no "as one unit" delta to apply). Undo-wrapping is ticket 38's job.
+// Ticket 50: Delete also removes a selected edge - its own exclusive branch, since an edge
+// selection is never mixed into the instance-selection set.
 public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -98,5 +100,27 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
 
         Assert.NotNull(board.GetComponent(instance.Id));
         Assert.Single(canvas.FindAll(".component-container"));
+    }
+
+    [Fact]
+    public async Task DeletePressedRemovesTheSelectedEdgeAndClearsItsSelection()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100);
+        var target = AddInstance(board, 250);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new PortEndpoint(target.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.Find(".edge-line").Click();
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+
+        Assert.Null(board.GetEdge(edge.Id));
+        Assert.Empty(canvas.FindAll(".edge-line"));
+        Assert.NotNull(board.GetComponent(source.Id));
+        Assert.NotNull(board.GetComponent(target.Id));
     }
 }

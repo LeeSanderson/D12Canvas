@@ -56,6 +56,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     // serialized or tracked by undo/redo. Ticket 32: ad-hoc multi-select via marquee/shift-click.
     private readonly HashSet<Guid> _selectedInstanceIds = new();
 
+    // Ticket 50: an edge's own exclusive selection slot - edges don't participate in multi-select,
+    // grouping, or move/resize as a unit (ADR 0006 only covers component instances), so an edge id
+    // is never mixed into _selectedInstanceIds. Selecting an edge always clears any instance
+    // selection, and selecting an instance (or starting a marquee) always clears this.
+    private Guid? _selectedEdgeId;
+
     // Ticket 37: session-scoped, in-memory undo/redo (ADR 0007) - lives here, not on Board, for
     // the same reason selection does; never serialized, never survives a reload.
     private readonly CommandHistory _history = new();
@@ -249,6 +255,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _selectedInstanceIds.Clear();
+        _selectedEdgeId = null;
         StateHasChanged();
     }
 
@@ -261,28 +268,43 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Ticket 44: reads through ExpandedSelection so a selected Group's members are what actually
     // get deleted (the Group entity itself, now referencing missing members, is left for a future
     // ticket to decide how to handle - not exercised by this one).
+    // Ticket 50: a selected edge takes a separate branch - it's never mixed into
+    // _selectedInstanceIds (see _selectedEdgeId), and there's no multi-select or "as one unit"
+    // delta to apply, just the one RemoveEdgeCommand.
     [JSInvokable]
     public void OnDeletePressed()
     {
         if (Board is not null)
         {
-            var commands = new List<ICommand>();
-            foreach (var id in ExpandedSelection())
+            if (_selectedEdgeId is { } edgeId)
             {
-                var instance = Board.GetComponent(id);
-                if (instance is not null)
+                var edge = Board.GetEdge(edgeId);
+                if (edge is not null)
                 {
-                    commands.Add(new RemoveEntityCommand(Board, instance));
+                    _history.Do(new RemoveEdgeCommand(Board, edge));
                 }
             }
-
-            if (commands.Count > 0)
+            else
             {
-                _history.Do(new CompositeCommand(commands));
+                var commands = new List<ICommand>();
+                foreach (var id in ExpandedSelection())
+                {
+                    var instance = Board.GetComponent(id);
+                    if (instance is not null)
+                    {
+                        commands.Add(new RemoveEntityCommand(Board, instance));
+                    }
+                }
+
+                if (commands.Count > 0)
+                {
+                    _history.Do(new CompositeCommand(commands));
+                }
             }
         }
 
         _selectedInstanceIds.Clear();
+        _selectedEdgeId = null;
         StateHasChanged();
     }
 
@@ -416,9 +438,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     // rest of the selection; a plain click always collapses the selection down to just this one.
     // Ticket 44: clicking any member of a Group selects the whole group instead of just that one
     // instance - selection and group membership converge (ADR 0006).
+    // Ticket 50: selecting a component always clears any edge selection - the two slots are
+    // mutually exclusive.
     private void SelectComponent(Guid instanceId, bool addToSelection)
     {
         var effectiveId = EffectiveSelectionId(instanceId);
+        _selectedEdgeId = null;
 
         if (addToSelection)
         {
@@ -616,9 +641,12 @@ public partial class DiagramCanvas : IAsyncDisposable
 
             // Dropping back on the exact port the drag started from creates no edge - a real
             // gesture always connects two distinct points.
+            // Ticket 50: routed through AddEdgeCommand (ADR 0007) rather than a direct
+            // Board.AddEdge call, so undo removes the created edge and redo restores it with the
+            // same attachments.
             if (!(resolved is PortEndpoint resolvedPort && resolvedPort == source))
             {
-                Board.AddEdge(new Edge(source, resolved));
+                _history.Do(new AddEdgeCommand(Board, new Edge(source, resolved)));
             }
         }
 
@@ -810,6 +838,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _selectedInstanceIds.Clear();
+        _selectedEdgeId = null;
     }
 
     // The registered TComponent's props parameter is a fixed contract (ADR 0001 addendum):
@@ -1007,6 +1036,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         var marquee = MarqueeBoundsFrom(_marqueeAnchor, _marqueeCurrent);
         _selectedInstanceIds.Clear();
+        _selectedEdgeId = null;
         foreach (var instance in Board.Components)
         {
             if (instance.Bounds.Intersects(marquee))
@@ -1140,6 +1170,20 @@ public partial class DiagramCanvas : IAsyncDisposable
         var other = draggingSource ? edge.Target : edge.Source;
         return Board.ResolveEndpoint(other);
     }
+
+    // Ticket 50: an end user clicks an edge to select it - the edge counterpart to
+    // SelectComponent, but kept as its own exclusive slot (see _selectedEdgeId) since edges don't
+    // participate in multi-select, grouping, or move/resize as a unit.
+    private void SelectEdge(Guid edgeId)
+    {
+        _selectedInstanceIds.Clear();
+        _selectedEdgeId = edgeId;
+    }
+
+    private bool IsEdgeSelected(Guid edgeId) => _selectedEdgeId == edgeId;
+
+    private string EdgeLineCssClass(Guid edgeId) =>
+        IsEdgeSelected(edgeId) ? "edge-line selected" : "edge-line";
 
     // Ticket 49: true while the given edge is being repositioned mid-drag (either endpoint) - its
     // normal line is suppressed for the duration in favour of the drag preview, since one <line>
