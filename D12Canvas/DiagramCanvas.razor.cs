@@ -41,6 +41,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     private string? _pendingPaletteDragKey;
     private bool _isDragOverBoard;
 
+    // Ticket 54/ADR 0009: the "Connector" palette entry isn't a registered component type - Edge is
+    // its own entity (ADR 0003), not something ADR 0001's RegisterComponent covers - so it has no
+    // real registry key. This sentinel flows through the exact same BeginPaletteDrag/ClickToAdd
+    // gesture plumbing every other palette entry uses; PlaceComponent below recognizes it and routes
+    // to PlaceConnector instead of resolving it through Registry.
+    public const string ConnectorPaletteKey = "__d12-connector__";
+
     public void BeginPaletteDrag(string componentTypeKey) =>
         _pendingPaletteDragKey = componentTypeKey;
 
@@ -1427,10 +1434,33 @@ public partial class DiagramCanvas : IAsyncDisposable
     // checked Board is non-null (both do, before computing their center point).
     // Ticket 38: routed through AddEntityCommand (ADR 0007) rather than a direct Board.AddComponent
     // call, so undo removes the placed instance and redo restores it with the same Id.
+    // Ticket 54: the Connector sentinel key never reaches NewCenteredInstance/Registry.Resolve -
+    // there's no registration for it to resolve.
     private void PlaceComponent(string componentTypeKey, double centerX, double centerY)
     {
+        if (componentTypeKey == ConnectorPaletteKey)
+        {
+            PlaceConnector(centerX, centerY);
+            return;
+        }
+
         var instance = NewCenteredInstance(componentTypeKey, centerX, centerY);
         _history.Do(new AddEntityCommand(Board!, instance));
+    }
+
+    // Ticket 54: the palette's own way of dropping a new Edge, both ends floating, centered on the
+    // same drop point / viewport-center-plus-cascade point every other placement gesture uses (ADR
+    // 0009) - a fixed-length horizontal segment rather than a single point, so the new edge is
+    // immediately visible and grabbable rather than a zero-length line. Routed through AddEdgeCommand
+    // (ADR 0007) exactly like a connector drag's own edge creation (CompletePortDrag), so undo/redo
+    // treats it identically.
+    private const double ConnectorDefaultHalfLength = 40;
+
+    private void PlaceConnector(double centerX, double centerY)
+    {
+        var source = new FloatingEndpoint(centerX - ConnectorDefaultHalfLength, centerY);
+        var target = new FloatingEndpoint(centerX + ConnectorDefaultHalfLength, centerY);
+        _history.Do(new AddEdgeCommand(Board!, new Edge(source, target)));
     }
 
     // Ticket 53: extracted from PlaceComponent so AddEdgeLabel (which centers a label the same way,

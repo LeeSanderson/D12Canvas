@@ -1,4 +1,5 @@
 using System.Linq;
+using AngleSharp.Dom;
 using Bunit;
 using D12Canvas.Model;
 using D12Canvas.Registration;
@@ -16,6 +17,14 @@ public class PaletteTests : ComponentTestBase
     {
         Services.AddSingleton<IComponentRegistry>(_registry);
     }
+
+    // Finds one palette entry button by its aria-label - every test past ticket 54 needs to scope
+    // past the always-present built-in Connector entry rather than assume there's only one button
+    // on the page.
+    private static IElement EntryButton(IRenderedComponent<Palette> palette, string ariaLabel) =>
+        palette
+            .FindAll(".d12-palette-entry-button")
+            .Single(e => e.GetAttribute("aria-label") == ariaLabel);
 
     private void RegisterComponent(
         string key,
@@ -49,7 +58,12 @@ public class PaletteTests : ComponentTestBase
 
         var palette = Render<Palette>();
 
-        var entries = palette.FindAll(".d12-palette-entry-button");
+        // The built-in Connector entry (ticket 54) always renders alongside registered types -
+        // excluded here since this test is only about registrations.
+        var entries = palette
+            .FindAll(".d12-palette-entry-button")
+            .Where(e => e.GetAttribute("aria-label") != "Connector")
+            .ToList();
         Assert.Equal(2, entries.Count);
         Assert.Contains(
             entries,
@@ -72,8 +86,7 @@ public class PaletteTests : ComponentTestBase
 
         var palette = Render<Palette>();
 
-        var entry = palette.Find(".d12-palette-entry-button");
-        Assert.Null(entry.QuerySelector(".d12-palette-entry-icon"));
+        Assert.Null(EntryButton(palette, "Rectangle").QuerySelector(".d12-palette-entry-icon"));
     }
 
     [Fact]
@@ -129,8 +142,10 @@ public class PaletteTests : ComponentTestBase
 
         var palette = Render<Palette>();
 
-        var entry = palette.Find(".d12-palette-entry-button");
-        Assert.Equal("A yellow sticky note", entry.GetAttribute("aria-label"));
+        Assert.Equal(
+            "A yellow sticky note",
+            EntryButton(palette, "A yellow sticky note").GetAttribute("aria-label")
+        );
     }
 
     [Fact]
@@ -158,7 +173,7 @@ public class PaletteTests : ComponentTestBase
 
         var palette = Render<Palette>();
 
-        Assert.Equal("true", palette.Find(".d12-palette-entry-button").GetAttribute("draggable"));
+        Assert.Equal("true", EntryButton(palette, "Rectangle").GetAttribute("draggable"));
     }
 
     [Fact]
@@ -172,7 +187,7 @@ public class PaletteTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
 
-        palette.Find(".d12-palette-entry-button").DragStart(new DragEventArgs());
+        EntryButton(palette, "Rectangle").DragStart(new DragEventArgs());
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
 
         var instance = Assert.Single(board.Components);
@@ -187,7 +202,8 @@ public class PaletteTests : ComponentTestBase
         var palette = Render<Palette>();
 
         var exception = Record.Exception(
-            () => palette.Find(".d12-palette-entry-button").DragStart(new DragEventArgs())
+            () =>
+                palette.FindAll(".d12-palette-entry-button").First().DragStart(new DragEventArgs())
         );
         Assert.Null(exception);
     }
@@ -203,7 +219,7 @@ public class PaletteTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
 
-        palette.Find(".d12-palette-entry-button").Click();
+        EntryButton(palette, "Rectangle").Click();
 
         var instance = Assert.Single(board.Components);
         Assert.Equal("rectangle", instance.ComponentTypeKey);
@@ -216,7 +232,55 @@ public class PaletteTests : ComponentTestBase
 
         var palette = Render<Palette>();
 
-        var exception = Record.Exception(() => palette.Find(".d12-palette-entry-button").Click());
+        var exception = Record.Exception(
+            () => palette.FindAll(".d12-palette-entry-button").First().Click()
+        );
         Assert.Null(exception);
+    }
+
+    // Ticket 54/ADR 0009: the built-in "Connector" entry - not a registry registration - appears
+    // regardless of what (if anything) is registered, and is never grouped into a
+    // .d12-palette-category heading (see GroupsEntriesUnderTheirRegisteredCategoryHeading /
+    // RendersNoCategoriesWhenNothingIsRegistered above, both unaffected by its presence).
+    [Fact]
+    public void TheConnectorEntryAppearsEvenWhenNothingIsRegistered()
+    {
+        var palette = Render<Palette>();
+
+        Assert.Equal("true", EntryButton(palette, "Connector").GetAttribute("draggable"));
+        Assert.Empty(palette.FindAll(".d12-palette-category"));
+    }
+
+    [Fact]
+    public void DragStartOnTheConnectorEntryBeginsAConnectorPaletteDragOnTheWiredCanvas()
+    {
+        SetupDiagramCanvasJsModule();
+        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
+
+        EntryButton(palette, "Connector").DragStart(new DragEventArgs());
+        canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
+
+        Assert.Empty(board.Components);
+        Assert.Single(board.Edges);
+    }
+
+    [Fact]
+    public void ClickingTheConnectorEntryPlacesAFloatingEdgeOnTheWiredCanvas()
+    {
+        SetupDiagramCanvasJsModule();
+        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
+
+        EntryButton(palette, "Connector").Click();
+
+        Assert.Empty(board.Components);
+        Assert.Single(board.Edges);
     }
 }
