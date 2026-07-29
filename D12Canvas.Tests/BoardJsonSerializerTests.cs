@@ -390,6 +390,75 @@ public class BoardJsonSerializerTests
         Assert.Equal(new FloatingEndpoint(123, 456), restoredEdge!.Target);
     }
 
+    // Ticket 52: RoutingStyle/SourceArrow/TargetArrow round-trip through the same envelope,
+    // including non-default values - proving the round-trip isn't just an artifact of every edge
+    // happening to keep its default style.
+    [Fact]
+    public void DeserializeRebuildsAnEdgesNonDefaultRoutingAndArrowStyles()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var edge = new Edge(
+            new PortEndpoint(first.Id, PortId.Right),
+            new PortEndpoint(second.Id, PortId.Left),
+            routingStyle: EdgeRouting.Curved,
+            sourceArrow: ArrowStyle.Arrow,
+            targetArrow: ArrowStyle.None
+        );
+        board.AddEdge(edge);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredEdge = restored.GetEdge(edge.Id);
+        Assert.NotNull(restoredEdge);
+        Assert.Equal(EdgeRouting.Curved, restoredEdge!.RoutingStyle);
+        Assert.Equal(ArrowStyle.Arrow, restoredEdge.SourceArrow);
+        Assert.Equal(ArrowStyle.None, restoredEdge.TargetArrow);
+    }
+
+    // Ticket 52: a board saved before this ticket has no RoutingStyle/SourceArrow/TargetArrow
+    // properties in its JSON at all - same "field didn't exist yet" tolerance Groups/Edges
+    // themselves already rely on (BoardEnvelope.Groups/Edges being nullable). Every edge from such
+    // a board should come back with Edge's own ADR 0005 defaults, not throw or leave a null style.
+    [Fact]
+    public void DeserializeDefaultsAnOlderEdgesMissingRoutingAndArrowStylesToTheAdr0005Defaults()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Edges": [
+                {
+                  "Id": "88888888-8888-8888-8888-888888888888",
+                  "Source": { "ComponentId": null, "PortId": null, "X": 1, "Y": 2 },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 3, "Y": 4 }
+                }
+              ]
+            }
+            """;
+
+        var restored = serializer.Deserialize(json);
+
+        var restoredEdge = restored.GetEdge(Guid.Parse("88888888-8888-8888-8888-888888888888"));
+        Assert.NotNull(restoredEdge);
+        Assert.Equal(EdgeRouting.Straight, restoredEdge!.RoutingStyle);
+        Assert.Equal(ArrowStyle.None, restoredEdge.SourceArrow);
+        Assert.Equal(ArrowStyle.Arrow, restoredEdge.TargetArrow);
+    }
+
     [Fact]
     public void ReloadedEdgesStayAttachedMovingAnEndpointInstanceAfterRoundTripStillDragsTheEdgeAlong()
     {

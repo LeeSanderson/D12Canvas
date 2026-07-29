@@ -1,0 +1,109 @@
+@page "/edge-styles-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Edge Styles Demo</PageTitle>
+
+<div class="canvas-container">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .canvas-container {
+        height: 900px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    // Ticket 52: a dedicated page (rather than reusing BoardDemo, which other Playwright visual
+    // tests depend on starting with zero edges) pre-seeding every RoutingStyle/ArrowStyle
+    // combination directly via the Board API - no interactive UI exists yet to set these (ticket
+    // 56, the property panel, isn't built), so this is the only way to get them on screen for a
+    // screenshot. Each pair is offset diagonally (not aligned on either axis) so Orthogonal's
+    // right-angle bend and Curved's S-curve are both visually distinct from a straight line.
+    private readonly Board _board = SeedBoard();
+
+    private static ComponentInstance AddRectangle(Board board, double x, double y)
+    {
+        var instance = new ComponentInstance(
+            "rectangle",
+            new RectangleProps("#e3f2fd", "#1565c0", 3),
+            new Bounds(x, y, 100, 60)
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+
+    private static void AddEdge(
+        Board board,
+        ComponentInstance source,
+        ComponentInstance target,
+        EdgeRouting routingStyle,
+        ArrowStyle sourceArrow,
+        ArrowStyle targetArrow
+    )
+    {
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(source.Id, PortId.Right),
+                new PortEndpoint(target.Id, PortId.Left),
+                routingStyle: routingStyle,
+                sourceArrow: sourceArrow,
+                targetArrow: targetArrow
+            )
+        );
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+
+        // Straight: default arrows, both arrows, no arrows.
+        AddEdge(
+            board,
+            AddRectangle(board, 60, 80),
+            AddRectangle(board, 300, 140),
+            EdgeRouting.Straight,
+            ArrowStyle.None,
+            ArrowStyle.Arrow
+        );
+        AddEdge(
+            board,
+            AddRectangle(board, 460, 80),
+            AddRectangle(board, 700, 140),
+            EdgeRouting.Straight,
+            ArrowStyle.Arrow,
+            ArrowStyle.Arrow
+        );
+        AddEdge(
+            board,
+            AddRectangle(board, 860, 80),
+            AddRectangle(board, 1100, 140),
+            EdgeRouting.Straight,
+            ArrowStyle.None,
+            ArrowStyle.None
+        );
+
+        // Orthogonal and Curved: default arrows each.
+        AddEdge(
+            board,
+            AddRectangle(board, 60, 280),
+            AddRectangle(board, 300, 380),
+            EdgeRouting.Orthogonal,
+            ArrowStyle.None,
+            ArrowStyle.Arrow
+        );
+        AddEdge(
+            board,
+            AddRectangle(board, 60, 480),
+            AddRectangle(board, 300, 580),
+            EdgeRouting.Curved,
+            ArrowStyle.None,
+            ArrowStyle.Arrow
+        );
+
+        return board;
+    }
+}

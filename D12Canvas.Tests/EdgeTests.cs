@@ -89,4 +89,59 @@ public class EdgeTests
             StandardPorts.All
         );
     }
+
+    // Ticket 52/ADR 0005: an edge not given explicit style defaults to the front-loaded
+    // single-directed-arrow case - straight routing, no arrow at the source, an arrow at the target.
+    [Fact]
+    public void EdgeDefaultsToStraightRoutingWithAnArrowOnlyAtTheTarget()
+    {
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+
+        Assert.Equal(EdgeRouting.Straight, edge.RoutingStyle);
+        Assert.Equal(ArrowStyle.None, edge.SourceArrow);
+        Assert.Equal(ArrowStyle.Arrow, edge.TargetArrow);
+    }
+
+    [Fact]
+    public void EdgeKeepsExplicitlyProvidedRoutingAndArrowStyles()
+    {
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left),
+            routingStyle: EdgeRouting.Curved,
+            sourceArrow: ArrowStyle.Arrow,
+            targetArrow: ArrowStyle.None
+        );
+
+        Assert.Equal(EdgeRouting.Curved, edge.RoutingStyle);
+        Assert.Equal(ArrowStyle.Arrow, edge.SourceArrow);
+        Assert.Equal(ArrowStyle.None, edge.TargetArrow);
+    }
+
+    [Fact]
+    public void EdgesRoutingAndArrowStylesAreIndependentlyMutable()
+    {
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+        var other = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+
+        edge.RoutingStyle = EdgeRouting.Orthogonal;
+        edge.SourceArrow = ArrowStyle.Arrow;
+        edge.TargetArrow = ArrowStyle.None;
+
+        Assert.Equal(EdgeRouting.Orthogonal, edge.RoutingStyle);
+        Assert.Equal(ArrowStyle.Arrow, edge.SourceArrow);
+        Assert.Equal(ArrowStyle.None, edge.TargetArrow);
+        Assert.Equal(EdgeRouting.Straight, other.RoutingStyle);
+        Assert.Equal(ArrowStyle.None, other.SourceArrow);
+        Assert.Equal(ArrowStyle.Arrow, other.TargetArrow);
+    }
 }

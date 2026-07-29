@@ -10,10 +10,10 @@
 <!--!--><!--!--><!--!--><title>Board Demo</title><!--!--><!--!--><!--!--></head>
 
 <body>
-    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
-        <button title="Navigation menu" class="navbar-toggler" b-91fadkni91=""><!--!--><span class="navbar-toggler-icon" b-91fadkni91=""></span></button></div></div><!--!-->
+    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-52l6hnzelf=""><div class="sidebar" b-52l6hnzelf=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-v5d2xmpyhr=""><div class="container-fluid" b-v5d2xmpyhr=""><!--!--><a class="navbar-brand" href="" b-v5d2xmpyhr="">D12Canvas.Demo</a>
+        <button title="Navigation menu" class="navbar-toggler" b-v5d2xmpyhr=""><!--!--><span class="navbar-toggler-icon" b-v5d2xmpyhr=""></span></button></div></div><!--!-->
 
-<div class="collapse nav-scrollable" b-91fadkni91=""><nav class="nav flex-column" b-91fadkni91=""><div class="nav-item px-3" b-91fadkni91=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
+<div class="collapse nav-scrollable" b-v5d2xmpyhr=""><nav class="nav flex-column" b-v5d2xmpyhr=""><div class="nav-item px-3" b-v5d2xmpyhr=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
                 Zoom and Pan Test
             </a><!--!-->
             <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
@@ -38,9 +38,10 @@
                 Virtualization Stress Test
             </a></div></nav></div></div><!--!-->
 
-    <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
+    <main b-52l6hnzelf=""><article class="content" style="height: 92vh;" b-52l6hnzelf=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"><line x1="780" y1="220" x2="800" y2="260" class="edge-line selected" aria-selected="true"></line></svg><!--!--><div class="component-container view-mode" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" role="group" aria-label="Demo note" _bl_3=""><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>Welcome to D12Canvas</p></div><!--!-->
+<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"><!--!--><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead"></path></marker>
+                            <marker id="edge-arrow-selected" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead selected"></path></marker></defs><line x1="780" y1="220" x2="800" y2="260" class="edge-line selected" marker-end="url(#edge-arrow-selected)" aria-selected="true"></line></svg><!--!--><div class="component-container view-mode" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" role="group" aria-label="Demo note" _bl_3=""><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>Welcome to D12Canvas</p></div><!--!-->
 
 <!--!--><style>
     .demo-note {
@@ -1264,8 +1265,12 @@
 
     /* Ticket 50: unlike the rest of .edges-layer (pointer-events: none), an edge line is always
        clickable so it can be selected - it has no hover-to-reveal affordance the way a port does,
-       since the line itself already IS the visible affordance. */
+       since the line itself already IS the visible affordance.
+       Ticket 52: fill:none matters once Orthogonal/Curved routing renders as an SVG path element -
+       an open multi-point path's implied closing segment would otherwise paint a filled wedge (a
+       plain SVG line element has no fill concept, so this was never visible before). */
     .edge-line {
+        fill: none;
         stroke: #4a4a4a;
         stroke-width: 2;
         pointer-events: auto;
@@ -1278,6 +1283,17 @@
     .edge-line.selected {
         stroke: #2f80ed;
         stroke-width: 3;
+    }
+
+    /* Ticket 52: arrowhead fill matching each of .edge-line's two stroke colors - kept as its own
+       rule (rather than `fill: context-stroke`) since that CSS Color 4 keyword isn't reliable
+       enough yet across the browsers this library targets. */
+    .edge-arrowhead {
+        fill: #4a4a4a;
+    }
+
+    .edge-arrowhead.selected {
+        fill: #2f80ed;
     }
 
     .connector-drag-preview {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using D12Canvas.History;
 using D12Canvas.Model;
 using D12Canvas.Registration;
@@ -708,6 +709,21 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // Ticket 52: the commit point for a routing-style/arrowhead change on a specific edge - the
+    // Edge counterpart to CommitPropsChange. No panel UI calls this yet (ticket 56 is still
+    // unbuilt), but the command/undo plumbing is independent of any UI and is exercised directly.
+    public void CommitEdgeStyleChange(Guid edgeId, EdgeStyle before, EdgeStyle after)
+    {
+        var edge = Board?.GetEdge(edgeId);
+        if (edge is null)
+        {
+            return;
+        }
+
+        _history.Do(new ChangeEdgeStyleCommand(edge, before, after));
+        StateHasChanged();
+    }
+
     // Ticket 33: armed by one of the group bounding-box overlay's own 8 handles (never an
     // individual instance's handles - those are suppressed while multi-selected). Snapshots each
     // member's own Bounds plus the bbox they currently form, both taken before this gesture flips
@@ -1184,6 +1200,47 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private string EdgeLineCssClass(Guid edgeId) =>
         IsEdgeSelected(edgeId) ? "edge-line selected" : "edge-line";
+
+    // Ticket 52: Orthogonal/Curved routing needs an SVG <path> (a <line> can only ever be
+    // straight), rendered via a computed `d`. Straight itself stays a plain <line> - see the
+    // markup - so every pre-52 test asserting x1/y1/x2/y2 on a default edge is untouched.
+    private static string EdgePathD(
+        EdgeRouting routing,
+        (double X, double Y) from,
+        (double X, double Y) to
+    )
+    {
+        var f = InvariantPoint(from);
+        var t = InvariantPoint(to);
+        var midX = ((from.X + to.X) / 2).ToString(CultureInfo.InvariantCulture);
+
+        return routing switch
+        {
+            EdgeRouting.Orthogonal => $"M {f.X} {f.Y} L {midX} {f.Y} L {midX} {t.Y} L {t.X} {t.Y}",
+            EdgeRouting.Curved => $"M {f.X} {f.Y} C {midX} {f.Y} {midX} {t.Y} {t.X} {t.Y}",
+            _ => $"M {f.X} {f.Y} L {t.X} {t.Y}",
+        };
+    }
+
+    private static (string X, string Y) InvariantPoint((double X, double Y) point) =>
+        (
+            point.X.ToString(CultureInfo.InvariantCulture),
+            point.Y.ToString(CultureInfo.InvariantCulture)
+        );
+
+    // Ticket 52: which <marker> (if any) an edge endpoint's ArrowStyle resolves to - null omits
+    // the marker-start/marker-end attribute entirely (Blazor's usual null-means-absent attribute
+    // convention, same as aria-selected above). Selected edges use the selected-color marker so an
+    // arrowhead never reads as a mismatched color against its own (now-blue) line.
+    private static string? EdgeMarkerUrl(ArrowStyle arrow, bool selected)
+    {
+        if (arrow == ArrowStyle.None)
+        {
+            return null;
+        }
+
+        return selected ? "url(#edge-arrow-selected)" : "url(#edge-arrow)";
+    }
 
     // Ticket 49: true while the given edge is being repositioned mid-drag (either endpoint) - its
     // normal line is suppressed for the duration in favour of the drag preview, since one <line>

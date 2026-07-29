@@ -23,10 +23,17 @@ internal sealed record GroupEnvelope(Guid Id, IReadOnlyList<Guid> MemberIds);
 // (PortEndpoint) or a board point (FloatingEndpoint, ticket 49) - never a CLR-type discriminator,
 // same convention as ComponentInstanceEnvelope's Props. Exactly one pair of fields is populated;
 // which pair tells FromEndpointEnvelope which IEdgeEndpoint shape to rebuild.
+//
+// Ticket 52: RoutingStyle/SourceArrow/TargetArrow default to Edge's own ADR 0005 defaults
+// (Straight/None/Arrow) so a board saved before this ticket - missing these properties entirely -
+// still deserializes, same "field didn't exist yet" convention Groups/Edges themselves already use.
 internal sealed record EdgeEnvelope(
     Guid Id,
     EdgeEndpointEnvelope Source,
-    EdgeEndpointEnvelope Target
+    EdgeEndpointEnvelope Target,
+    EdgeRouting RoutingStyle = EdgeRouting.Straight,
+    ArrowStyle SourceArrow = ArrowStyle.None,
+    ArrowStyle TargetArrow = ArrowStyle.Arrow
 );
 
 internal sealed record EdgeEndpointEnvelope(

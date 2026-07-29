@@ -262,7 +262,14 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         new(envelope.MemberIds, envelope.Id);
 
     private static EdgeEnvelope ToEdgeEnvelope(Edge edge) =>
-        new(edge.Id, ToEndpointEnvelope(edge.Source), ToEndpointEnvelope(edge.Target));
+        new(
+            edge.Id,
+            ToEndpointEnvelope(edge.Source),
+            ToEndpointEnvelope(edge.Target),
+            edge.RoutingStyle,
+            edge.SourceArrow,
+            edge.TargetArrow
+        );
 
     private static EdgeEndpointEnvelope ToEndpointEnvelope(IEdgeEndpoint endpoint) =>
         endpoint switch
@@ -288,7 +295,10 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         new(
             FromEndpointEnvelope(envelope.Source),
             FromEndpointEnvelope(envelope.Target),
-            envelope.Id
+            envelope.Id,
+            envelope.RoutingStyle,
+            envelope.SourceArrow,
+            envelope.TargetArrow
         );
 
     private static IEdgeEndpoint FromEndpointEnvelope(EdgeEndpointEnvelope? envelope) =>
