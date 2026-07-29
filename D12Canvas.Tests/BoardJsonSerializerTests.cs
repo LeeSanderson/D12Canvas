@@ -459,6 +459,131 @@ public class BoardJsonSerializerTests
         Assert.Equal(ArrowStyle.Arrow, restoredEdge.TargetArrow);
     }
 
+    // Ticket 53: an edge's embedded Label round-trips through the same envelope as an ordinary
+    // ComponentInstanceEnvelope (Props/Bounds/ComponentTypeKey) - it's not a separate Board.Components
+    // entry, so it isn't in the Components array at all, just nested on its owning edge.
+    [Fact]
+    public void SerializeIncludesTheEdgesLabelWhenPresent()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var label = new ComponentInstance(
+            TestComponentKey,
+            new TestProps("Label text"),
+            new Bounds(5, 5, 80, 24)
+        );
+        var edge = new Edge(
+            new PortEndpoint(first.Id, PortId.Right),
+            new PortEndpoint(second.Id, PortId.Left),
+            label: label
+        );
+        board.AddEdge(edge);
+
+        var json = serializer.Serialize(board);
+
+        using var document = JsonDocument.Parse(json);
+        var edgeElement = document.RootElement.GetProperty("Edges")[0];
+        Assert.True(edgeElement.TryGetProperty("Label", out var labelElement));
+        Assert.Equal(label.Id, labelElement.GetProperty("Id").GetGuid());
+    }
+
+    [Fact]
+    public void DeserializeRebuildsAnEdgesLabelAsAnEmbeddedComponentInstance()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 20, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var label = new ComponentInstance(
+            TestComponentKey,
+            new TestProps("Label text"),
+            new Bounds(5, 5, 80, 24)
+        );
+        var edge = new Edge(
+            new PortEndpoint(first.Id, PortId.Right),
+            new PortEndpoint(second.Id, PortId.Left),
+            label: label
+        );
+        board.AddEdge(edge);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredEdge = restored.GetEdge(edge.Id);
+        Assert.NotNull(restoredEdge);
+        Assert.NotNull(restoredEdge!.Label);
+        Assert.Equal(label.Id, restoredEdge.Label!.Id);
+        Assert.Equal(TestComponentKey, restoredEdge.Label.ComponentTypeKey);
+        Assert.Equal(new Bounds(5, 5, 80, 24), restoredEdge.Label.Bounds);
+        Assert.Equal("Label text", ((TestProps)restoredEdge.Label.Props).Text);
+    }
+
+    [Fact]
+    public void DeserializeRebuildsAnEdgeWithNoLabelAsNull()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new FloatingEndpoint(1, 2)
+        );
+        board.AddEdge(edge);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredEdge = restored.GetEdge(edge.Id);
+        Assert.NotNull(restoredEdge);
+        Assert.Null(restoredEdge!.Label);
+    }
+
+    // A board saved before this ticket has no "Label" property on its edges at all - same
+    // "field didn't exist yet" tolerance RoutingStyle/SourceArrow/TargetArrow already rely on.
+    [Fact]
+    public void DeserializeDefaultsAnOlderEdgesMissingLabelToNull()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Edges": [
+                {
+                  "Id": "99999999-9999-9999-9999-999999999999",
+                  "Source": { "ComponentId": null, "PortId": null, "X": 1, "Y": 2 },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 3, "Y": 4 }
+                }
+              ]
+            }
+            """;
+
+        var restored = serializer.Deserialize(json);
+
+        var restoredEdge = restored.GetEdge(Guid.Parse("99999999-9999-9999-9999-999999999999"));
+        Assert.NotNull(restoredEdge);
+        Assert.Null(restoredEdge!.Label);
+    }
+
     [Fact]
     public void ReloadedEdgesStayAttachedMovingAnEndpointInstanceAfterRoundTripStillDragsTheEdgeAlong()
     {

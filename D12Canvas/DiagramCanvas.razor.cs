@@ -697,9 +697,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     // ParentCanvas cascading parameter every built-in already has access to. MutateEntityCommand
     // treats Props as opaque (ADR 0007), so this works without DiagramCanvas knowing any TProps
     // shape. The caller is trusted to have already skipped a no-op (unchanged) edit.
+    // Ticket 53: falls back to Board.FindEdgeLabel when the id isn't an ordinary Board.Components
+    // entry - an edge's Label is the same kind of editable built-in (Text, by default) but lives
+    // only on its owning Edge (ADR 0005), so its own inline edit reaches this exact commit point
+    // via the same cascaded InstanceId, just resolved through a different lookup.
     public void CommitPropsChange(Guid instanceId, object before, object after)
     {
-        var instance = Board?.GetComponent(instanceId);
+        var instance = Board?.GetComponent(instanceId) ?? Board?.FindEdgeLabel(instanceId);
         if (instance is null)
         {
             return;
@@ -722,6 +726,74 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _history.Do(new ChangeEdgeStyleCommand(edge, before, after));
         StateHasChanged();
+    }
+
+    // Ticket 53/ADR 0005: the component type a brand-new edge label defaults to - a plain Text
+    // instance, edited in place exactly like any board Text/Sticky Note (ticket 43). Any host using
+    // D12Canvas's built-ins (BuiltInComponents.RegisterAll) always has this key registered.
+    private const string DefaultEdgeLabelComponentTypeKey = "text";
+
+    // Ticket 53: an end user double-clicks an edge's line to add a label - a no-op if it already
+    // has one (double-clicking elsewhere on the line never clobbers an existing label; editing it
+    // further goes through the label's own dblclick-to-edit, not this) or if the edge's own line
+    // can't currently be resolved (a dangling endpoint). The new label is a default (empty) Text
+    // instance centered on the edge's current midpoint - Bounds.X/Y are never read again afterwards
+    // (see EdgeLabelStyle), only Width/Height matter, the same "position is always live-derived,
+    // never persisted" trick ports and floating endpoints already rely on.
+    private void AddEdgeLabel(Guid edgeId)
+    {
+        var edge = Board?.GetEdge(edgeId);
+        if (edge is null || edge.Label is not null)
+        {
+            return;
+        }
+
+        var line = EdgeLine(edge);
+        if (line is null)
+        {
+            return;
+        }
+
+        var (midX, midY) = Midpoint(line.Value.From, line.Value.To);
+        var label = NewCenteredInstance(DefaultEdgeLabelComponentTypeKey, midX, midY);
+
+        _history.Do(new ChangeEdgeLabelCommand(edge, before: null, after: label));
+        StateHasChanged();
+    }
+
+    private static (double X, double Y) Midpoint(
+        (double X, double Y) from,
+        (double X, double Y) to
+    ) => ((from.X + to.X) / 2, (from.Y + to.Y) / 2);
+
+    // Ticket 53: an edge label's own rendered box - null when the edge has no label, or (like
+    // EdgeLine) when either endpoint can't currently be resolved. Recomputed every render from the
+    // edge's CURRENT endpoints rather than anything stored on the label itself, so it rides along
+    // for free as either endpoint moves or resizes - the label's own Bounds.X/Y are ignored for
+    // positioning, only Width/Height are read. The anchor is the straight-line midpoint between the
+    // two endpoints regardless of the edge's own RoutingStyle - a reasonable approximation for
+    // Orthogonal/Curved too, not full on-path placement.
+    // Ticket 49/53: while THIS edge's endpoint is mid-drag (IsBeingEdited), its own normal line is
+    // suppressed in favour of ConnectPreviewLine - the label follows that same live preview instead
+    // of the edge's last-committed (pre-drag) endpoints, so it doesn't visually detach and freeze
+    // for the duration of the drag.
+    private string? EdgeLabelStyle(Edge edge)
+    {
+        if (edge.Label is null)
+        {
+            return null;
+        }
+
+        var line = IsBeingEdited(edge.Id) ? ConnectPreviewLine() : EdgeLine(edge);
+        if (line is null)
+        {
+            return null;
+        }
+
+        var (midX, midY) = Midpoint(line.Value.From, line.Value.To);
+        var (width, height) = (edge.Label.Bounds.Width, edge.Label.Bounds.Height);
+
+        return $"left: {midX - width / 2}px; top: {midY - height / 2}px; width: {width}px; height: {height}px;";
     }
 
     // Ticket 33: armed by one of the group bounding-box overlay's own 8 handles (never an
@@ -1357,16 +1429,27 @@ public partial class DiagramCanvas : IAsyncDisposable
     // call, so undo removes the placed instance and redo restores it with the same Id.
     private void PlaceComponent(string componentTypeKey, double centerX, double centerY)
     {
+        var instance = NewCenteredInstance(componentTypeKey, centerX, centerY);
+        _history.Do(new AddEntityCommand(Board!, instance));
+    }
+
+    // Ticket 53: extracted from PlaceComponent so AddEdgeLabel (which centers a label the same way,
+    // but embeds it on an Edge instead of adding it to Board) doesn't duplicate the same
+    // resolve-registration/fallback-size/center-on-a-point construction.
+    private ComponentInstance NewCenteredInstance(
+        string componentTypeKey,
+        double centerX,
+        double centerY
+    )
+    {
         var registration = Registry.Resolve(componentTypeKey);
         var size = registration.DefaultSize ?? new ComponentSize(FallbackWidth, FallbackHeight);
 
-        var instance = new ComponentInstance(
+        return new ComponentInstance(
             registration.Key,
             registration.DefaultProps,
             new Bounds(centerX - size.Width / 2, centerY - size.Height / 2, size.Width, size.Height)
         );
-
-        _history.Do(new AddEntityCommand(Board!, instance));
     }
 
     private void HandleMouseWheel(WheelEventArgs e)

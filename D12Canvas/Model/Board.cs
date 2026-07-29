@@ -106,6 +106,13 @@ public sealed class Board
         return null;
     }
 
+    // Ticket 53: resolves an edge label's live ComponentInstance by its own id - used by
+    // DiagramCanvas.CommitPropsChange to find the right object to mutate when a label's inline
+    // text edit commits. A label has no Board.Components entry of its own (ADR 0005 embeds it
+    // directly on its owning Edge), so it needs this separate lookup rather than GetComponent.
+    public ComponentInstance? FindEdgeLabel(Guid instanceId) =>
+        _edges.Values.Select(edge => edge.Label).FirstOrDefault(label => label?.Id == instanceId);
+
     // Ticket 44: a Group's bounds are never stored - only ever resolved on demand from its
     // members, which may themselves be component instances or nested groups. A member id that no
     // longer resolves to anything (deleted out from under the group) is skipped rather than

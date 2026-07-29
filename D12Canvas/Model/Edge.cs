@@ -5,6 +5,9 @@ namespace D12Canvas.Model;
 // change shape after creation (an attached endpoint dragged off its port becomes floating, and vice
 // versa). Routing style and arrowheads (ticket 52) are per-edge, never board-wide, and default to
 // the single-directed-arrow case ADR 0005 front-loads (Straight, no arrow at Source, arrow at Target).
+// Ticket 53: Label is a full ComponentInstance embedded directly here (not a Board.Components
+// entry) - it has no existence independent of the edge that owns it, so deleting the edge removes
+// the label by construction, with no separate cleanup needed.
 public sealed class Edge
 {
     public Guid Id { get; }
@@ -13,6 +16,7 @@ public sealed class Edge
     public EdgeRouting RoutingStyle { get; set; }
     public ArrowStyle SourceArrow { get; set; }
     public ArrowStyle TargetArrow { get; set; }
+    public ComponentInstance? Label { get; set; }
 
     public Edge(
         IEdgeEndpoint source,
@@ -20,7 +24,8 @@ public sealed class Edge
         Guid? id = null,
         EdgeRouting routingStyle = EdgeRouting.Straight,
         ArrowStyle sourceArrow = ArrowStyle.None,
-        ArrowStyle targetArrow = ArrowStyle.Arrow
+        ArrowStyle targetArrow = ArrowStyle.Arrow,
+        ComponentInstance? label = null
     )
     {
         Id = id ?? Guid.NewGuid();
@@ -29,5 +34,6 @@ public sealed class Edge
         RoutingStyle = routingStyle;
         SourceArrow = sourceArrow;
         TargetArrow = targetArrow;
+        Label = label;
     }
 }

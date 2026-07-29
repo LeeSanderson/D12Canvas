@@ -61,7 +61,9 @@
                                       marker-end="@markerEnd"
                                       aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)"
                                       @onclick="@(() => SelectEdge(edge.Id))"
-                                      @onclick:stopPropagation />
+                                      @onclick:stopPropagation
+                                      @ondblclick="@(() => AddEdgeLabel(edge.Id))"
+                                      @ondblclick:stopPropagation />
                                 }
                                 else
                                 {
@@ -71,7 +73,9 @@
                                       marker-end="@markerEnd"
                                       aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)"
                                       @onclick="@(() => SelectEdge(edge.Id))"
-                                      @onclick:stopPropagation />
+                                      @onclick:stopPropagation
+                                      @ondblclick="@(() => AddEdgeLabel(edge.Id))"
+                                      @ondblclick:stopPropagation />
                                 }
                             }
                         }
@@ -124,6 +128,24 @@
                             <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
                         </CascadingValue>
                     </ComponentContainer>
+                }
+                @* Ticket 53/ADR 0005: a label is embedded on its Edge, not a Board.Components
+                   entry, so it's rendered here directly rather than via VisibleComponents/
+                   ComponentContainer (it's never independently selectable, movable, or resizable).
+                   Its box is fully live-derived every render (EdgeLabelStyle) - skipped entirely
+                   when the edge has no label or its line can't currently be resolved. *@
+                @foreach (var edge in Board.Edges)
+                {
+                    if (EdgeLabelStyle(edge) is { } labelStyle)
+                    {
+                        var labelRegistration = Registry.Resolve(edge.Label!.ComponentTypeKey);
+                        <div @key="@($"{edge.Id}-label")" class="edge-label" style="@labelStyle"
+                             @onmousedown:stopPropagation @onclick:stopPropagation>
+                            <CascadingValue Value="edge.Label.Id" Name="InstanceId">
+                                <DynamicComponent Type="labelRegistration.ComponentType" Parameters="GetComponentParameters(edge.Label)" />
+                            </CascadingValue>
+                        </div>
+                    }
                 }
             }
             @if (_isMarqueeSelecting)
@@ -316,6 +338,15 @@
 
     .edge-arrowhead.selected {
         fill: #2f80ed;
+    }
+
+    /* Ticket 53: an edge's embedded label (ADR 0005) - a plain absolutely-positioned HTML box in
+       the same board-space pixel coordinate system every ComponentContainer already uses, sitting
+       alongside (not inside) .edges-layer's SVG since a label is an ordinary DynamicComponent-
+       rendered built-in (Text by default), not an SVG shape. */
+    .edge-label {
+        position: absolute;
+        cursor: default;
     }
 
     .connector-drag-preview {

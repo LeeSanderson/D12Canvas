@@ -402,8 +402,12 @@
 
     /* Ticket 50: unlike the rest of .edges-layer (pointer-events: none), an edge line is always
        clickable so it can be selected - it has no hover-to-reveal affordance the way a port does,
-       since the line itself already IS the visible affordance. */
+       since the line itself already IS the visible affordance.
+       Ticket 52: fill:none matters once Orthogonal/Curved routing renders as an SVG path element -
+       an open multi-point path's implied closing segment would otherwise paint a filled wedge (a
+       plain SVG line element has no fill concept, so this was never visible before). */
     .edge-line {
+        fill: none;
         stroke: #4a4a4a;
         stroke-width: 2;
         pointer-events: auto;
@@ -416,6 +420,26 @@
     .edge-line.selected {
         stroke: #2f80ed;
         stroke-width: 3;
+    }
+
+    /* Ticket 52: arrowhead fill matching each of .edge-line's two stroke colors - kept as its own
+       rule (rather than `fill: context-stroke`) since that CSS Color 4 keyword isn't reliable
+       enough yet across the browsers this library targets. */
+    .edge-arrowhead {
+        fill: #4a4a4a;
+    }
+
+    .edge-arrowhead.selected {
+        fill: #2f80ed;
+    }
+
+    /* Ticket 53: an edge's embedded label (ADR 0005) - a plain absolutely-positioned HTML box in
+       the same board-space pixel coordinate system every ComponentContainer already uses, sitting
+       alongside (not inside) .edges-layer's SVG since a label is an ordinary DynamicComponent-
+       rendered built-in (Text by default), not an SVG shape. */
+    .edge-label {
+        position: absolute;
+        cursor: default;
     }
 
     .connector-drag-preview {

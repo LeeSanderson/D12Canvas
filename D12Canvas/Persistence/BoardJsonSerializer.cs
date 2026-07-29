@@ -94,7 +94,7 @@ public sealed class BoardJsonSerializer : IBoardSerializer
     // warning is recorded but the edge still loads, mirroring how a group's missing member is
     // handled just above. Edges never reference Groups (ticket 15), so no group-membership check
     // is needed here.
-    private static void DeserializeEdgesPartial(
+    private void DeserializeEdgesPartial(
         JsonElement edgesElement,
         Board board,
         List<BoardDeserializeWarning> warnings
@@ -268,7 +268,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             ToEndpointEnvelope(edge.Target),
             edge.RoutingStyle,
             edge.SourceArrow,
-            edge.TargetArrow
+            edge.TargetArrow,
+            edge.Label is null ? null : ToComponentEnvelope(edge.Label)
         );
 
     private static EdgeEndpointEnvelope ToEndpointEnvelope(IEdgeEndpoint endpoint) =>
@@ -291,14 +292,15 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             ),
         };
 
-    private static Edge FromEdgeEnvelope(EdgeEnvelope envelope) =>
+    private Edge FromEdgeEnvelope(EdgeEnvelope envelope) =>
         new(
             FromEndpointEnvelope(envelope.Source),
             FromEndpointEnvelope(envelope.Target),
             envelope.Id,
             envelope.RoutingStyle,
             envelope.SourceArrow,
-            envelope.TargetArrow
+            envelope.TargetArrow,
+            envelope.Label is null ? null : FromComponentEnvelope(envelope.Label)
         );
 
     private static IEdgeEndpoint FromEndpointEnvelope(EdgeEndpointEnvelope? envelope) =>

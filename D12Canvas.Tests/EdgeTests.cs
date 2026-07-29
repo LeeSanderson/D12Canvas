@@ -144,4 +144,50 @@ public class EdgeTests
         Assert.Equal(ArrowStyle.None, other.SourceArrow);
         Assert.Equal(ArrowStyle.Arrow, other.TargetArrow);
     }
+
+    // Ticket 53/ADR 0005: a label is a full embedded ComponentInstance, not a separate entity -
+    // absent by default, since not every edge has one.
+    [Fact]
+    public void EdgeDefaultsToNoLabel()
+    {
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+
+        Assert.Null(edge.Label);
+    }
+
+    [Fact]
+    public void EdgeKeepsAnExplicitlyProvidedLabel()
+    {
+        var label = new ComponentInstance("text", new object(), new Bounds(0, 0, 80, 24));
+
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left),
+            label: label
+        );
+
+        Assert.Same(label, edge.Label);
+    }
+
+    [Fact]
+    public void EdgesLabelsAreIndependentlyMutable()
+    {
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+        var other = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left)
+        );
+        var label = new ComponentInstance("text", new object(), new Bounds(0, 0, 80, 24));
+
+        edge.Label = label;
+
+        Assert.Same(label, edge.Label);
+        Assert.Null(other.Label);
+    }
 }

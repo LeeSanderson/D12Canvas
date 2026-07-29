@@ -711,4 +711,45 @@ public class BoardTests
 
         Assert.Null(board.FindEdgeAttachedTo(new PortEndpoint(Guid.NewGuid(), PortId.Top)));
     }
+
+    // Ticket 53: FindEdgeLabel - the lookup DiagramCanvas.CommitPropsChange falls back to when an
+    // edited instance isn't a Board.Components entry (a label lives only on its owning Edge).
+    [Fact]
+    public void FindEdgeLabelFindsTheLabelByItsOwnId()
+    {
+        var board = new Board();
+        var label = new ComponentInstance("text", "Label", new Bounds(0, 0, 80, 24));
+        var edge = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new PortEndpoint(Guid.NewGuid(), PortId.Left),
+            label: label
+        );
+        board.AddEdge(edge);
+
+        var found = board.FindEdgeLabel(label.Id);
+
+        Assert.Same(label, found);
+    }
+
+    [Fact]
+    public void FindEdgeLabelReturnsNullWhenNoEdgeHasThatLabel()
+    {
+        var board = new Board();
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(Guid.NewGuid(), PortId.Right),
+                new PortEndpoint(Guid.NewGuid(), PortId.Left)
+            )
+        );
+
+        Assert.Null(board.FindEdgeLabel(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void FindEdgeLabelOnAnEmptyBoardReturnsNull()
+    {
+        var board = new Board();
+
+        Assert.Null(board.FindEdgeLabel(Guid.NewGuid()));
+    }
 }
