@@ -1,5 +1,6 @@
 using System.Linq;
 using D12Canvas.BuiltIns;
+using D12Canvas.Panel;
 using D12Canvas.Registration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -90,6 +91,90 @@ public class BuiltInComponentsTests
         Assert.Equal(new ComponentSize(240, 180), registration.DefaultSize);
         Assert.Equal(new ImageProps("", "", "cover"), registration.DefaultProps);
         Assert.False(string.IsNullOrEmpty(registration.Icon));
+    }
+
+    // Ticket 57: every visual/style prop the four built-ins declare (per ticket 10) is
+    // panel-editable through one of the full built-in EditorKind set - Text content fields
+    // (StickyNote/Text's Text, Image's Url which is reserved for the ticket 58 Custom escape
+    // hatch) stay deliberately excluded.
+    [Fact]
+    public void RectangleEditablePropertiesCoverFillColorStrokeColorAndStrokeWidth()
+    {
+        var registration = RegisterAndResolve("rectangle");
+
+        Assert.Equivalent(
+            new[]
+            {
+                ("FillColor", EditorKind.Color),
+                ("StrokeColor", EditorKind.Color),
+                ("StrokeWidth", EditorKind.Number),
+            },
+            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind))
+        );
+    }
+
+    [Fact]
+    public void StickyNoteEditablePropertiesCoverColorTextColorAndFontSizeButNotText()
+    {
+        var registration = RegisterAndResolve("sticky-note");
+
+        Assert.Equivalent(
+            new[]
+            {
+                ("Color", EditorKind.Color),
+                ("TextColor", EditorKind.Color),
+                ("FontSize", EditorKind.Number),
+            },
+            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind))
+        );
+    }
+
+    [Fact]
+    public void TextEditablePropertiesCoverColorFontSizeFontWeightAndTextAlignButNotText()
+    {
+        var registration = RegisterAndResolve("text");
+
+        Assert.Equivalent(
+            new[]
+            {
+                ("Color", EditorKind.Color),
+                ("FontSize", EditorKind.Number),
+                ("FontWeight", EditorKind.Dropdown),
+                ("TextAlign", EditorKind.Dropdown),
+            },
+            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind))
+        );
+        Assert.Equal(
+            ["normal", "bold"],
+            registration.EditableProperties!.Single(p => p.Property.Name == "FontWeight").Options
+        );
+        Assert.Equal(
+            ["left", "center", "right"],
+            registration.EditableProperties!.Single(p => p.Property.Name == "TextAlign").Options
+        );
+    }
+
+    [Fact]
+    public void ImageEditablePropertiesCoverAltTextAndFitButNotUrl()
+    {
+        var registration = RegisterAndResolve("image");
+
+        Assert.Equivalent(
+            new[] { ("AltText", EditorKind.Text), ("Fit", EditorKind.Dropdown) },
+            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind))
+        );
+        Assert.Equal(
+            ["cover", "contain", "fill"],
+            registration.EditableProperties!.Single(p => p.Property.Name == "Fit").Options
+        );
+    }
+
+    private static ComponentRegistration RegisterAndResolve(string key)
+    {
+        var services = new ServiceCollection();
+        services.AddD12Canvas(_ => { });
+        var provider = services.BuildServiceProvider();
+        return provider.GetRequiredService<IComponentRegistry>().Resolve(key);
     }
 
     [Fact]

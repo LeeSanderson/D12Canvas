@@ -109,13 +109,22 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: -10px; top: 249px; width: 160px; height: 100px; z-index: 0;" role="group" aria-label="Rectangle" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #FFFFFF; border: 2px solid #333333;"></div><!--!-->
-
-<!--!--><style>
-    .d12-rectangle {
+    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: -30px; top: 279px; width: 200px; height: 40px; z-index: 0;" role="group" aria-label="Text" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="color: #000000; font-size: 16px; font-weight: normal; text-align: left;"></p><!--!--><style>
+    .d12-text {
         width: 100%;
         height: 100%;
         box-sizing: border-box;
+        margin: 0;
+    }
+
+    .d12-text-editor {
+        display: block;
+        font-family: inherit;
+        border: none;
+        outline: 1px dashed rgba(0, 0, 0, 0.4);
+        resize: none;
+        background: transparent;
+        padding: 0;
     }
 </style></div><div class="port-strip port-strip-top"></div><!--!-->
         <div class="port-strip port-strip-right"></div><!--!-->
@@ -508,7 +517,7 @@
         background-position: 0 0;
     }
 </style></div><!--!-->
-    <div class="panel-slot"><!--!--><div class="d12-property-panel" role="region" aria-label="Property panel"><ul class="d12-property-panel-fields"><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-FillColor">FillColor</label><input id="d12-property-panel-field-FillColor" class="d12-property-panel-input d12-property-panel-color" type="color" style="caret-color: transparent !important;"></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-StrokeColor">StrokeColor</label><input id="d12-property-panel-field-StrokeColor" class="d12-property-panel-input d12-property-panel-color" type="color" style="caret-color: transparent !important;"></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-StrokeWidth">StrokeWidth</label><input id="d12-property-panel-field-StrokeWidth" class="d12-property-panel-input" type="number" style="caret-color: transparent !important;"></li></ul></div><!--!-->
+    <div class="panel-slot"><!--!--><div class="d12-property-panel" role="region" aria-label="Property panel"><ul class="d12-property-panel-fields"><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-Color">Color</label><input id="d12-property-panel-field-Color" class="d12-property-panel-input d12-property-panel-color" type="color" style="caret-color: transparent !important;"></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-FontSize">FontSize</label><input id="d12-property-panel-field-FontSize" class="d12-property-panel-input" type="number" style="caret-color: transparent !important;"></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-FontWeight">FontWeight</label><select id="d12-property-panel-field-FontWeight" class="d12-property-panel-input"><option value="normal">normal</option><option value="bold">bold</option></select></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-TextAlign">TextAlign</label><select id="d12-property-panel-field-TextAlign" class="d12-property-panel-input"><option value="left">left</option><option value="center">center</option><option value="right">right</option></select></li></ul></div><!--!-->
 
 <!--!--><style>
     .d12-property-panel {

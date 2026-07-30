@@ -19,6 +19,21 @@ public static class EditablePropertySchema
                 )
             )
             .Where(entry => entry.Attribute is not null)
-            .Select(entry => new EditableProperty(entry.Property, entry.Attribute!.Kind))
+            .Select(entry => ToEditableProperty(entry.Property, entry.Attribute!))
             .ToList();
+
+    // A Dropdown control with no choices can't render a usable <select> - caught here, at
+    // discovery/registration time, rather than surfacing as an empty control in the panel.
+    private static EditableProperty ToEditableProperty(
+        PropertyInfo property,
+        PanelEditableAttribute attribute
+    )
+    {
+        if (attribute.Kind == EditorKind.Dropdown && (attribute.Options?.Length ?? 0) == 0)
+        {
+            throw new DropdownOptionsRequiredException(property.DeclaringType!, property.Name);
+        }
+
+        return new EditableProperty(property, attribute.Kind, attribute.Options);
+    }
 }

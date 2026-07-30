@@ -34,6 +34,37 @@
                                 @onchange="@(e => CommitEdit(property, e))"
                             />
                             break;
+                        case EditorKind.Color:
+                            <input
+                                id="@FieldId(property)"
+                                class="d12-property-panel-input d12-property-panel-color"
+                                type="color"
+                                value="@CurrentValue(property)"
+                                @onchange="@(e => CommitEdit(property, e))"
+                            />
+                            break;
+                        case EditorKind.Checkbox:
+                            <input
+                                id="@FieldId(property)"
+                                class="d12-property-panel-checkbox"
+                                type="checkbox"
+                                checked="@CurrentBoolValue(property)"
+                                @onchange="@(e => CommitEdit(property, e))"
+                            />
+                            break;
+                        case EditorKind.Dropdown:
+                            <select
+                                id="@FieldId(property)"
+                                class="d12-property-panel-input"
+                                value="@CurrentValue(property)"
+                                @onchange="@(e => CommitEdit(property, e))"
+                            >
+                                @foreach (var option in property.Options!)
+                                {
+                                    <option value="@option">@option</option>
+                                }
+                            </select>
+                            break;
                     }
                 </li>
             }
@@ -91,5 +122,16 @@
         border: 1px solid #ccc;
         border-radius: 4px;
         box-sizing: border-box;
+    }
+
+    .d12-property-panel-color {
+        padding: 2px;
+        height: 28px;
+    }
+
+    .d12-property-panel-checkbox {
+        width: 16px;
+        height: 16px;
+        align-self: flex-start;
     }
 </style>

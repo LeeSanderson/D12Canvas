@@ -6,9 +6,12 @@ using static Microsoft.Playwright.Assertions;
 namespace D12Canvas.VisualTests;
 
 // Screenshot-diff baselines for the property panel (ticket 56/ADR 0008): its empty state with
-// nothing selected, and its populated state once a Rectangle instance (StrokeWidth, a Number-kind
-// editable property) is selected. Any later ticket that renders a new visual state on canvas
-// chrome should add a case here alongside its own.
+// nothing selected, and its populated state once a Rectangle instance is selected (now also
+// covering Color, added by ticket 57 alongside Number). Ticket 57 also adds a Dropdown case
+// (Text's FontWeight/TextAlign). Checkbox has no bUnit-only coverage here since no built-in
+// declares a Checkbox-kind property yet - see PropertyPanelTests for its control-level coverage.
+// Any later ticket that renders a new visual state on canvas chrome should add a case here
+// alongside its own.
 public sealed class PropertyPanelVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -60,6 +63,18 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
         await _page.Locator(".component-container").ClickAsync();
 
         await Expect(_page.Locator("#d12-property-panel-field-StrokeWidth")).ToBeVisibleAsync();
+        await Expect(_page.Locator("#d12-property-panel-field-FillColor")).ToBeVisibleAsync();
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
+    [Fact]
+    public async Task PopulatedPanelWithDropdownControl_MatchesBaseline()
+    {
+        await _page.Locator(".d12-palette-entry-button[aria-label='Text']").ClickAsync();
+        await _page.Locator(".component-container").ClickAsync();
+
+        await Expect(_page.Locator("#d12-property-panel-field-FontWeight")).ToBeVisibleAsync();
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }

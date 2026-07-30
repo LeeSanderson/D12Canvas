@@ -186,8 +186,8 @@ public class D12CanvasOptionsTests
 
     // ADR 0008: editable properties default to whatever a TProps record's own [PanelEditable]
     // attributes declare - PanelTestProps.Content carries none (it's this type's stand-in for a
-    // Text-type *content* field, excluded the same way StickyNoteProps.Text is), so only Label/
-    // Count should surface here.
+    // Text-type *content* field, excluded the same way StickyNoteProps.Text is), so only its
+    // five [PanelEditable]-carrying fields (one per EditorKind, ticket 56/57) should surface here.
     [Fact]
     public void RegisterComponentDiscoversEditablePropertiesFromPanelEditableAttributesByDefault()
     {
@@ -205,7 +205,7 @@ public class D12CanvasOptionsTests
 
         var editableProperties = options.Registry.Resolve("widget").EditableProperties!;
 
-        Assert.Equal(2, editableProperties.Count);
+        Assert.Equal(5, editableProperties.Count);
         Assert.Contains(
             editableProperties,
             p => p.Property.Name == nameof(PanelTestProps.Label) && p.Kind == EditorKind.Text
@@ -214,10 +214,49 @@ public class D12CanvasOptionsTests
             editableProperties,
             p => p.Property.Name == nameof(PanelTestProps.Count) && p.Kind == EditorKind.Number
         );
+        Assert.Contains(
+            editableProperties,
+            p => p.Property.Name == nameof(PanelTestProps.Tint) && p.Kind == EditorKind.Color
+        );
+        Assert.Contains(
+            editableProperties,
+            p => p.Property.Name == nameof(PanelTestProps.Flag) && p.Kind == EditorKind.Checkbox
+        );
+        Assert.Contains(
+            editableProperties,
+            p =>
+                p.Property.Name == nameof(PanelTestProps.Mode)
+                && p.Kind == EditorKind.Dropdown
+                && p.Options!.SequenceEqual(["a", "b", "c"])
+        );
         Assert.DoesNotContain(
             editableProperties,
             p => p.Property.Name == nameof(PanelTestProps.Content)
         );
+    }
+
+    // Ticket 57: a Dropdown-kind property with no choices can't render a usable <select>, so this
+    // is caught at registration time rather than surfacing as an empty control in the panel.
+    [Fact]
+    public void RegisterComponentWithADropdownPropertyMissingOptionsThrowsNamingTheProperty()
+    {
+        var options = new D12CanvasOptions();
+
+        var exception = Assert.Throws<DropdownOptionsRequiredException>(
+            () =>
+                options.RegisterComponent<TestComponentDouble, PropsWithMissingDropdownOptions>(
+                    "widget",
+                    builder =>
+                    {
+                        builder.DisplayName = "Widget";
+                        builder.AccessibleName = "Widget";
+                        builder.DefaultProps = new PropsWithMissingDropdownOptions();
+                    }
+                )
+        );
+
+        Assert.Equal(typeof(PropsWithMissingDropdownOptions), exception.PropsType);
+        Assert.Equal(nameof(PropsWithMissingDropdownOptions.Mode), exception.PropertyName);
     }
 
     // ADR 0008: "attributes set the default schema, the builder is the escape hatch" - setting

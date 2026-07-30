@@ -73,6 +73,11 @@ public partial class PropertyPanel : IDisposable
             ? ""
             : FormatValue(property.Property.GetValue(SelectedInstance.Props));
 
+    // Checkbox binds via the "checked" DOM property, not "value" - a separate accessor rather than
+    // routing bool through FormatValue/CurrentValue's string-shaped path.
+    private bool CurrentBoolValue(EditableProperty property) =>
+        SelectedInstance is not null && property.Property.GetValue(SelectedInstance.Props) is true;
+
     private static string FormatValue(object? value) =>
         value switch
         {
@@ -96,7 +101,7 @@ public partial class PropertyPanel : IDisposable
         object? newValue;
         try
         {
-            newValue = ConvertValue((string?)args.Value, property.Property.PropertyType);
+            newValue = ConvertValue(args.Value, property.Property.PropertyType);
         }
         catch (Exception ex)
             when (ex is FormatException or InvalidCastException or OverflowException)
@@ -115,10 +120,22 @@ public partial class PropertyPanel : IDisposable
         Canvas?.CommitPropsChange(instance.Id, before, after);
     }
 
-    private static object? ConvertValue(string? raw, Type targetType) =>
-        targetType == typeof(string)
-            ? raw ?? ""
-            : Convert.ChangeType(raw, targetType, CultureInfo.InvariantCulture);
+    // A checkbox's ChangeEventArgs.Value arrives as a bool (Blazor reads the DOM element's
+    // .checked property directly); every other control's arrives as a string.
+    private static object? ConvertValue(object? raw, Type targetType)
+    {
+        if (targetType == typeof(string))
+        {
+            return raw as string ?? "";
+        }
+
+        if (targetType == typeof(bool))
+        {
+            return (bool)raw!;
+        }
+
+        return Convert.ChangeType(raw, targetType, CultureInfo.InvariantCulture);
+    }
 
     // A TProps record is immutable - editing one field normally means a `with` expression, but the
     // panel only ever sees Props as an opaque object (ADR 0007), so it has no compile-time TProps

@@ -9,6 +9,10 @@ public sealed class PanelEditableAttribute : Attribute
 {
     public EditorKind Kind { get; }
 
+    // Only meaningful (and required, see EditablePropertySchema.DiscoverFrom) for EditorKind.Dropdown -
+    // the fixed set of choices the <select> renders.
+    public string[]? Options { get; set; }
+
     public PanelEditableAttribute(EditorKind kind)
     {
         Kind = kind;

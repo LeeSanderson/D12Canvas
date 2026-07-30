@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using AngleSharp.Html.Dom;
 using Bunit;
 using D12Canvas.Model;
 using D12Canvas.Panel;
@@ -43,11 +44,18 @@ public class PropertyPanelTests : ComponentTestBase
         Services.AddSingleton<IComponentRegistry>(_registry);
     }
 
-    private static ComponentInstance AddInstance(Board board, string label = "", double count = 0)
+    private static ComponentInstance AddInstance(
+        Board board,
+        string label = "",
+        double count = 0,
+        string tint = "#000000",
+        bool flag = false,
+        string mode = "a"
+    )
     {
         var instance = new ComponentInstance(
             ComponentTypeKey,
-            new PanelTestProps("content", label, count),
+            new PanelTestProps("content", label, count, tint, flag, mode),
             new Bounds(0, 0, 200, 200)
         );
         board.AddComponent(instance);
@@ -164,6 +172,191 @@ public class PropertyPanelTests : ComponentTestBase
         var countInput = panel.Find("#d12-property-panel-field-Count");
         Assert.Equal("number", countInput.GetAttribute("type"));
         Assert.Equal("42", countInput.GetAttribute("value"));
+    }
+
+    [Fact]
+    public void RendersColorCheckboxAndDropdownControlsForTheSelectionsEditableProperties()
+    {
+        var board = new Board();
+        AddInstance(board, tint: "#ff0000", flag: true, mode: "b");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        Select(canvas);
+
+        var tintInput = panel.Find("#d12-property-panel-field-Tint");
+        Assert.Equal("color", tintInput.GetAttribute("type"));
+        Assert.Equal("#ff0000", tintInput.GetAttribute("value"));
+
+        var flagInput = panel.Find("#d12-property-panel-field-Flag");
+        Assert.Equal("checkbox", flagInput.GetAttribute("type"));
+        Assert.True(((IHtmlInputElement)flagInput).IsChecked);
+
+        var modeSelect = panel.Find("#d12-property-panel-field-Mode");
+        Assert.Equal("select", modeSelect.TagName.ToLowerInvariant());
+        Assert.Equal(
+            ["a", "b", "c"],
+            modeSelect.QuerySelectorAll("option").Select(o => o.GetAttribute("value"))
+        );
+        Assert.Equal("b", ((IHtmlSelectElement)modeSelect).Value);
+    }
+
+    [Fact]
+    public void CommittingAColorEditRecordsExactlyOneHistoryEntryAndUpdatesLive()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, tint: "#000000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
+
+        Assert.Equal("#00ff00", ((PanelTestProps)instance.Props).Tint);
+    }
+
+    [Fact]
+    public async Task UndoAfterCommittingAColorEditRevertsIt()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, tint: "#000000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("#000000", ((PanelTestProps)instance.Props).Tint);
+    }
+
+    [Fact]
+    public async Task CommittingTheSameColorAgainRecordsNoAdditionalHistoryEntry()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, tint: "#000000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00"); // one real gesture
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00"); // no-op: same value again
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("#000000", ((PanelTestProps)instance.Props).Tint);
+    }
+
+    [Fact]
+    public void CommittingACheckboxEditRecordsExactlyOneHistoryEntryAndUpdatesLive()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, flag: false);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Flag").Change(true);
+
+        Assert.True(((PanelTestProps)instance.Props).Flag);
+    }
+
+    [Fact]
+    public async Task UndoAfterCommittingACheckboxEditRevertsIt()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, flag: false);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+        panel.Find("#d12-property-panel-field-Flag").Change(true);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.False(((PanelTestProps)instance.Props).Flag);
+    }
+
+    [Fact]
+    public async Task CommittingTheSameCheckboxValueAgainRecordsNoAdditionalHistoryEntry()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, flag: false);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Flag").Change(true); // one real gesture
+        panel.Find("#d12-property-panel-field-Flag").Change(true); // no-op: same value again
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.False(((PanelTestProps)instance.Props).Flag);
+    }
+
+    [Fact]
+    public void CommittingADropdownEditRecordsExactlyOneHistoryEntryAndUpdatesLive()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, mode: "a");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Mode").Change("b");
+
+        Assert.Equal("b", ((PanelTestProps)instance.Props).Mode);
+    }
+
+    [Fact]
+    public async Task UndoAfterCommittingADropdownEditRevertsIt()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, mode: "a");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+        panel.Find("#d12-property-panel-field-Mode").Change("b");
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("a", ((PanelTestProps)instance.Props).Mode);
+    }
+
+    [Fact]
+    public async Task CommittingTheSameDropdownValueAgainRecordsNoAdditionalHistoryEntry()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, mode: "a");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Mode").Change("b"); // one real gesture
+        panel.Find("#d12-property-panel-field-Mode").Change("b"); // no-op: same value again
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("a", ((PanelTestProps)instance.Props).Mode);
     }
 
     [Fact]
