@@ -1,0 +1,57 @@
+@page "/property-panel-demo"
+@using D12Canvas
+@using D12Canvas.Model
+
+<PageTitle>Property Panel Demo</PageTitle>
+
+<div class="property-panel-demo-layout">
+    <div class="palette-slot">
+        <Palette Canvas="_canvas" />
+    </div>
+    <div class="canvas-container">
+        <DiagramCanvas @ref="_canvas" Board="_board" />
+    </div>
+    <div class="panel-slot">
+        <PropertyPanel Canvas="_canvas" />
+    </div>
+</div>
+
+<style>
+    .property-panel-demo-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .palette-slot {
+        width: 260px;
+        padding: 16px;
+    }
+
+    .canvas-container {
+        flex: 1;
+        height: 600px;
+        border: 1px solid #ccc;
+    }
+
+    .panel-slot {
+        width: 260px;
+        padding: 16px;
+    }
+</style>
+
+@code {
+    private DiagramCanvas? _canvas;
+    private readonly Board _board = new();
+
+    // DiagramCanvas is declared after Palette/PropertyPanel in the markup above, so its @ref isn't
+    // captured until after they've already received their first (null) Canvas parameter (see
+    // PlacementDemo.razor). Forcing one extra render pass lets both pick up the now-non-null
+    // reference.
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            StateHasChanged();
+        }
+    }
+}

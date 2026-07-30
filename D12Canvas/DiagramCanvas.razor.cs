@@ -34,6 +34,25 @@ public partial class DiagramCanvas : IAsyncDisposable
     public EventCallback<ZoomPanChangedEventArgs> OnZoomOrPanChanged { get; set; }
     public event EventHandler<ZoomPanChangedEventArgs>? ZoomOrPanChanged;
 
+    // Ticket 56/ADR 0008: the property panel (a standalone chrome sibling, ADR 0002 - same
+    // wiring as Palette) subscribes to this to know when to re-render. Blazor's own auto-rerender
+    // after an event handler only covers DiagramCanvas's own render tree, never a sibling
+    // component's. Also raised by undo/redo (see OnUndoPressed/OnRedoPressed) even though
+    // selection identity itself is untouched there - either can change what the panel should be
+    // showing for the current selection (a newly selected instance, or the currently selected
+    // instance's Props reverting/reapplying).
+    public event EventHandler? SelectionChanged;
+
+    private void NotifySelectionChanged() => SelectionChanged?.Invoke(this, EventArgs.Empty);
+
+    // Ticket 56: the property panel edits exactly one ComponentInstance's Props at a time - null
+    // whenever the selection is empty, a multi-selection, an edge, or resolves to a Group (which
+    // has no Props of its own). Cross-type multi-select editing is ticket 59.
+    public ComponentInstance? SinglySelectedComponent =>
+        _selectedEdgeId is null && _selectedInstanceIds.Count == 1
+            ? Board?.GetComponent(_selectedInstanceIds.Single())
+            : null;
+
     // A palette entry has no compile-time-typed payload it can hand across the native HTML5 drag
     // session (Blazor's DragEventArgs.DataTransfer exposes no SetData/GetData) - Palette instead
     // calls this directly (via its explicit Canvas reference, ADR 0002) to stash which type is
@@ -264,6 +283,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _selectedInstanceIds.Clear();
         _selectedEdgeId = null;
+        NotifySelectionChanged();
         StateHasChanged();
     }
 
@@ -313,6 +333,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _selectedInstanceIds.Clear();
         _selectedEdgeId = null;
+        NotifySelectionChanged();
         StateHasChanged();
     }
 
@@ -333,6 +354,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _selectedInstanceIds.Clear();
         _selectedInstanceIds.Add(group.Id);
+        NotifySelectionChanged();
         StateHasChanged();
     }
 
@@ -371,15 +393,18 @@ public partial class DiagramCanvas : IAsyncDisposable
             }
         }
 
+        NotifySelectionChanged();
         StateHasChanged();
     }
 
     // ADR 0007/0009: Ctrl+Z / Ctrl+Shift+Z. Selection is untouched either way - it's not tracked
-    // by History (ADR 0006).
+    // by History (ADR 0006). NotifySelectionChanged still fires: an undone/redone MutateEntityCommand
+    // can change the currently-selected instance's Props out from under the property panel.
     [JSInvokable]
     public void OnUndoPressed()
     {
         _history.Undo();
+        NotifySelectionChanged();
         StateHasChanged();
     }
 
@@ -387,6 +412,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void OnRedoPressed()
     {
         _history.Redo();
+        NotifySelectionChanged();
         StateHasChanged();
     }
 
@@ -459,11 +485,13 @@ public partial class DiagramCanvas : IAsyncDisposable
             {
                 _selectedInstanceIds.Add(effectiveId);
             }
+            NotifySelectionChanged();
             return;
         }
 
         _selectedInstanceIds.Clear();
         _selectedInstanceIds.Add(effectiveId);
+        NotifySelectionChanged();
     }
 
     // Ticket 30: fired once by ComponentContainer's OnMoved, on release - the whole
@@ -951,6 +979,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _selectedInstanceIds.Clear();
         _selectedEdgeId = null;
+        NotifySelectionChanged();
     }
 
     // The registered TComponent's props parameter is a fixed contract (ADR 0001 addendum):
@@ -1156,6 +1185,8 @@ public partial class DiagramCanvas : IAsyncDisposable
                 _selectedInstanceIds.Add(EffectiveSelectionId(instance.Id));
             }
         }
+
+        NotifySelectionChanged();
     }
 
     // The combined bounding box of the current selection, or null when nothing is selected - used
@@ -1288,6 +1319,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         _selectedInstanceIds.Clear();
         _selectedEdgeId = edgeId;
+        NotifySelectionChanged();
     }
 
     private bool IsEdgeSelected(Guid edgeId) => _selectedEdgeId == edgeId;

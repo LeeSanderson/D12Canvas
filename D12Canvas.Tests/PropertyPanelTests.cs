@@ -1,0 +1,308 @@
+using System.Threading.Tasks;
+using Bunit;
+using D12Canvas.Model;
+using D12Canvas.Panel;
+using D12Canvas.Registration;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+
+namespace D12Canvas.Tests;
+
+// Ticket 56/ADR 0008: the property panel is chrome - standalone and host-positioned, wired to its
+// DiagramCanvas the same explicit way Palette is (ADR 0002) - built generically from whatever
+// [PanelEditable] the selection's registered TProps declares. Exercised through the real
+// DiagramCanvas/ComponentContainer stack (not a bare Board) since selection itself is
+// DiagramCanvas's own transient view state (ADR 0006) - there's no other way to select an instance.
+public class PropertyPanelTests : ComponentTestBase
+{
+    private const string ComponentTypeKey = "panel-test-component";
+
+    private readonly ComponentRegistry _registry = new();
+
+    public PropertyPanelTests()
+    {
+        SetupDiagramCanvasJsModule();
+        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+
+        _registry.Register(
+            new ComponentRegistration(
+                Key: ComponentTypeKey,
+                ComponentType: typeof(PanelTestPropsComponent),
+                PropsType: typeof(PanelTestProps),
+                DisplayName: "Panel Test",
+                AccessibleName: "Panel test component",
+                DefaultProps: new PanelTestProps("", "", 0),
+                Icon: null,
+                Role: "group",
+                DefaultSize: null,
+                Category: null,
+                EditableProperties: EditablePropertySchema.DiscoverFrom(typeof(PanelTestProps))
+            )
+        );
+        Services.AddSingleton<IComponentRegistry>(_registry);
+    }
+
+    private static ComponentInstance AddInstance(Board board, string label = "", double count = 0)
+    {
+        var instance = new ComponentInstance(
+            ComponentTypeKey,
+            new PanelTestProps("content", label, count),
+            new Bounds(0, 0, 200, 200)
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+
+    private static void Select(IRenderedComponent<DiagramCanvas> canvas) =>
+        canvas.Find(".component-container").Click();
+
+    [Fact]
+    public void RendersStandaloneWithoutRequiringAWiredCanvas()
+    {
+        var panel = Render<PropertyPanel>();
+
+        Assert.NotNull(panel.Find(".d12-property-panel"));
+    }
+
+    [Fact]
+    public void ShowsAnEmptyStateWhenNothingIsSelected()
+    {
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+        Assert.Empty(panel.FindAll(".d12-property-panel-field"));
+    }
+
+    [Fact]
+    public void ShowsAnEmptyStateWhenAMultiSelectionIsActive()
+    {
+        var board = new Board();
+        AddInstance(board);
+        AddInstance(board);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+
+        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+    }
+
+    // Grouping (ADR 0006) collapses a multi-selection onto a single Group id in
+    // DiagramCanvas's selection set - SinglySelectedComponent must still read this as "nothing to
+    // edit" (a Group has no Props of its own), not mistake the lone selected id for a component.
+    [Fact]
+    public async Task ShowsAnEmptyStateWhenTheSelectionIsAGroup()
+    {
+        var board = new Board();
+        AddInstance(board);
+        AddInstance(board);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
+
+        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+    }
+
+    [Fact]
+    public void ShowsAnEmptyStateWhenAnEdgeIsSelected()
+    {
+        var board = new Board();
+        var source = AddInstance(board);
+        var target = new ComponentInstance(
+            ComponentTypeKey,
+            new PanelTestProps("content", "", 0),
+            new Bounds(300, 0, 200, 200)
+        );
+        board.AddComponent(target);
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(source.Id, PortId.Right),
+                new PortEndpoint(target.Id, PortId.Left)
+            )
+        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        canvas.Find(".edge-line").Click();
+
+        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+    }
+
+    [Fact]
+    public void RendersTextAndNumberControlsForTheSelectionsEditableProperties()
+    {
+        var board = new Board();
+        AddInstance(board, label: "Hello", count: 42);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        Select(canvas);
+
+        var labelInput = panel.Find("#d12-property-panel-field-Label");
+        Assert.Equal("text", labelInput.GetAttribute("type"));
+        Assert.Equal("Hello", labelInput.GetAttribute("value"));
+
+        var countInput = panel.Find("#d12-property-panel-field-Count");
+        Assert.Equal("number", countInput.GetAttribute("type"));
+        Assert.Equal("42", countInput.GetAttribute("value"));
+    }
+
+    [Fact]
+    public void ExcludesAContentFieldCarryingNoPanelEditableAttribute()
+    {
+        var board = new Board();
+        AddInstance(board);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        Select(canvas);
+
+        Assert.Empty(panel.FindAll("#d12-property-panel-field-Content"));
+    }
+
+    [Fact]
+    public void PanelUpdatesLiveWhenSelectionChangesOnTheCanvas()
+    {
+        var board = new Board();
+        AddInstance(board, label: "First");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        Select(canvas);
+        Assert.NotEmpty(panel.FindAll("#d12-property-panel-field-Label"));
+
+        canvas.Find(".diagram-canvas").Click();
+
+        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+    }
+
+    [Fact]
+    public void CommittingATextEditRecordsExactlyOneHistoryEntryAndUpdatesLive()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, label: "Original");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Label").Change("Edited");
+
+        Assert.Equal("Edited", ((PanelTestProps)instance.Props).Label);
+        Assert.Equal("Edited", panel.Find("#d12-property-panel-field-Label").GetAttribute("value"));
+    }
+
+    [Fact]
+    public async Task UndoAfterCommittingATextEditRevertsIt()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, label: "Original");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+        panel.Find("#d12-property-panel-field-Label").Change("Edited");
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("Original", ((PanelTestProps)instance.Props).Label);
+    }
+
+    [Fact]
+    public void CommittingANumberEditUpdatesTheInstanceLive()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, count: 1);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Count").Change("99");
+
+        Assert.Equal(99, ((PanelTestProps)instance.Props).Count);
+    }
+
+    [Fact]
+    public async Task UndoAfterCommittingANumberEditRevertsIt()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, count: 1);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+        panel.Find("#d12-property-panel-field-Count").Change("99");
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal(1, ((PanelTestProps)instance.Props).Count);
+    }
+
+    [Fact]
+    public async Task CommittingTheSameValueAgainRecordsNoAdditionalHistoryEntry()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, label: "Original");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find("#d12-property-panel-field-Label").Change("Edited"); // one real gesture
+        panel.Find("#d12-property-panel-field-Label").Change("Edited"); // no-op: same value again
+
+        // If the no-op had wrongly recorded its own history entry, a single Undo would only
+        // revert that phantom entry and Label would still read "Edited" here.
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("Original", ((PanelTestProps)instance.Props).Label);
+    }
+
+    [Fact]
+    public void EditingAnInvalidNumberIsANoOp()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, count: 1);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        var exception = Record.Exception(
+            () => panel.Find("#d12-property-panel-field-Count").Change("not-a-number")
+        );
+
+        Assert.Null(exception);
+        Assert.Equal(1, ((PanelTestProps)instance.Props).Count);
+    }
+}

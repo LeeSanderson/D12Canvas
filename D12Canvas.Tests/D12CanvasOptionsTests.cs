@@ -1,3 +1,5 @@
+using System.Linq;
+using D12Canvas.Panel;
 using D12Canvas.Registration;
 using Xunit;
 
@@ -162,5 +164,87 @@ public class D12CanvasOptionsTests
 
         var registration = options.Registry.Resolve("totally-unrelated-key");
         Assert.Equal(typeof(TestComponentDouble), registration.ComponentType);
+    }
+
+    [Fact]
+    public void RegisterComponentDefaultsToNoEditablePropertiesWhenNoneAreDeclared()
+    {
+        var options = new D12CanvasOptions();
+
+        options.RegisterComponent<TestComponentDouble, TestProps>(
+            "widget",
+            builder =>
+            {
+                builder.DisplayName = "Widget";
+                builder.AccessibleName = "Widget";
+                builder.DefaultProps = new TestProps();
+            }
+        );
+
+        Assert.Empty(options.Registry.Resolve("widget").EditableProperties!);
+    }
+
+    // ADR 0008: editable properties default to whatever a TProps record's own [PanelEditable]
+    // attributes declare - PanelTestProps.Content carries none (it's this type's stand-in for a
+    // Text-type *content* field, excluded the same way StickyNoteProps.Text is), so only Label/
+    // Count should surface here.
+    [Fact]
+    public void RegisterComponentDiscoversEditablePropertiesFromPanelEditableAttributesByDefault()
+    {
+        var options = new D12CanvasOptions();
+
+        options.RegisterComponent<TestComponentDouble, PanelTestProps>(
+            "widget",
+            builder =>
+            {
+                builder.DisplayName = "Widget";
+                builder.AccessibleName = "Widget";
+                builder.DefaultProps = new PanelTestProps("", "", 0);
+            }
+        );
+
+        var editableProperties = options.Registry.Resolve("widget").EditableProperties!;
+
+        Assert.Equal(2, editableProperties.Count);
+        Assert.Contains(
+            editableProperties,
+            p => p.Property.Name == nameof(PanelTestProps.Label) && p.Kind == EditorKind.Text
+        );
+        Assert.Contains(
+            editableProperties,
+            p => p.Property.Name == nameof(PanelTestProps.Count) && p.Kind == EditorKind.Number
+        );
+        Assert.DoesNotContain(
+            editableProperties,
+            p => p.Property.Name == nameof(PanelTestProps.Content)
+        );
+    }
+
+    // ADR 0008: "attributes set the default schema, the builder is the escape hatch" - setting
+    // EditableProperties replaces whatever attribute discovery would otherwise have produced.
+    [Fact]
+    public void RegisterComponentBuilderOverridesTheAttributeDeclaredEditableSchema()
+    {
+        var options = new D12CanvasOptions();
+        var overrideSchema = new List<EditableProperty>
+        {
+            new(
+                typeof(PanelTestProps).GetProperty(nameof(PanelTestProps.Content))!,
+                EditorKind.Text
+            ),
+        };
+
+        options.RegisterComponent<TestComponentDouble, PanelTestProps>(
+            "widget",
+            builder =>
+            {
+                builder.DisplayName = "Widget";
+                builder.AccessibleName = "Widget";
+                builder.DefaultProps = new PanelTestProps("", "", 0);
+                builder.EditableProperties = overrideSchema;
+            }
+        );
+
+        Assert.Same(overrideSchema, options.Registry.Resolve("widget").EditableProperties);
     }
 }

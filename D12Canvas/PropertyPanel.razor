@@ -1,0 +1,95 @@
+@namespace D12Canvas
+
+@using D12Canvas.Panel
+
+<div class="d12-property-panel" role="region" aria-label="Property panel">
+    @if (SelectedInstance is null)
+    {
+        <p class="d12-property-panel-empty">No selection</p>
+    }
+    else
+    {
+        <ul class="d12-property-panel-fields">
+            @foreach (var property in EditableProperties)
+            {
+                <li class="d12-property-panel-field">
+                    <label class="d12-property-panel-label" for="@FieldId(property)">@property.Property.Name</label>
+                    @switch (property.Kind)
+                    {
+                        case EditorKind.Text:
+                            <input
+                                id="@FieldId(property)"
+                                class="d12-property-panel-input"
+                                type="text"
+                                value="@CurrentValue(property)"
+                                @onchange="@(e => CommitEdit(property, e))"
+                            />
+                            break;
+                        case EditorKind.Number:
+                            <input
+                                id="@FieldId(property)"
+                                class="d12-property-panel-input"
+                                type="number"
+                                value="@CurrentValue(property)"
+                                @onchange="@(e => CommitEdit(property, e))"
+                            />
+                            break;
+                    }
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+<style>
+    .d12-property-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    .d12-property-panel-empty {
+        margin: 0;
+        font-size: 13px;
+        color: #666;
+    }
+
+    .d12-property-panel-fields {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .d12-property-panel-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .d12-property-panel-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+    }
+
+    .d12-property-panel-input {
+        font: inherit;
+        padding: 4px 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+</style>

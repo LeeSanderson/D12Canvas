@@ -1,3 +1,4 @@
+using D12Canvas.Panel;
 using Microsoft.AspNetCore.Components;
 
 namespace D12Canvas.Registration;
@@ -57,7 +58,8 @@ public sealed class D12CanvasOptions
                 builder.Icon,
                 builder.Role,
                 builder.DefaultSize,
-                builder.Category
+                builder.Category,
+                builder.EditableProperties ?? EditablePropertySchema.DiscoverFrom(typeof(TProps))
             )
         );
 

@@ -1,3 +1,11 @@
+using D12Canvas.Panel;
+
 namespace D12Canvas.BuiltIns;
 
-public sealed record RectangleProps(string FillColor, string StrokeColor, double StrokeWidth);
+// FillColor/StrokeColor await EditorKind.Color (ticket 57) - StrokeWidth is Number-kind, already
+// shipped by ticket 56.
+public sealed record RectangleProps(
+    string FillColor,
+    string StrokeColor,
+    [property: PanelEditable(EditorKind.Number)] double StrokeWidth
+);
