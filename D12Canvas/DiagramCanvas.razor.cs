@@ -45,13 +45,41 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void NotifySelectionChanged() => SelectionChanged?.Invoke(this, EventArgs.Empty);
 
-    // Ticket 56: the property panel edits exactly one ComponentInstance's Props at a time - null
-    // whenever the selection is empty, a multi-selection, an edge, or resolves to a Group (which
-    // has no Props of its own). Cross-type multi-select editing is ticket 59.
-    public ComponentInstance? SinglySelectedComponent =>
-        _selectedEdgeId is null && _selectedInstanceIds.Count == 1
-            ? Board?.GetComponent(_selectedInstanceIds.Single())
-            : null;
+    // Ticket 56/59: the property panel's selection surface - every top-level selected id resolved
+    // to a ComponentInstance, deliberately NOT expanded through group membership (unlike
+    // ExpandedSelection, which move/resize/delete use). A selected Group's own id lives in Board's
+    // separate group dictionary, so Board.GetComponent returns null for it - and, since a Group has
+    // no Props of its own to edit, ANY unresolvable id in the selection empties the whole result
+    // rather than silently dropping just that one entry (a shift-click can mix a grouped member,
+    // i.e. its group's id per ticket 44's EffectiveSelectionId, with a standalone instance in the
+    // same selection - that must read as "nothing to edit", the same as a lone selected Group,
+    // rather than collapsing to "edit the one standalone instance"). Empty whenever an edge is
+    // selected instead (edges have no Props reachable via this panel). A single resolved instance
+    // is ticket 56's "edit exactly one instance" case; 2+ (same type or cross-type) is ticket 59.
+    public IReadOnlyList<ComponentInstance> SelectedComponents
+    {
+        get
+        {
+            if (Board is null || _selectedEdgeId is not null)
+            {
+                return Array.Empty<ComponentInstance>();
+            }
+
+            var resolved = new List<ComponentInstance>();
+            foreach (var id in _selectedInstanceIds)
+            {
+                var instance = Board.GetComponent(id);
+                if (instance is null)
+                {
+                    return Array.Empty<ComponentInstance>();
+                }
+
+                resolved.Add(instance);
+            }
+
+            return resolved;
+        }
+    }
 
     // A palette entry has no compile-time-typed payload it can hand across the native HTML5 drag
     // session (Blazor's DragEventArgs.DataTransfer exposes no SetData/GetData) - Palette instead
@@ -741,7 +769,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // via the same cascaded InstanceId, just resolved through a different lookup.
     public void CommitPropsChange(Guid instanceId, object before, object after)
     {
-        var instance = Board?.GetComponent(instanceId) ?? Board?.FindEdgeLabel(instanceId);
+        var instance = ResolvePropsEntity(instanceId);
         if (instance is null)
         {
             return;
@@ -750,6 +778,40 @@ public partial class DiagramCanvas : IAsyncDisposable
         _history.Do(new MutateEntityCommand(instance, before, after));
         StateHasChanged();
     }
+
+    // Ticket 59/ADR 0008: the multi-instance counterpart to CommitPropsChange - a same-type or
+    // cross-type bulk property edit resolves to one MutateEntityCommand per instance that actually
+    // changed, wrapped in a single CompositeCommand (ADR 0007) so the whole gesture undoes/redoes
+    // as one atomic entry regardless of how many instances it touched. The caller is trusted to
+    // have already skipped any instance whose value wouldn't actually change.
+    public void CommitPropsChangeBatch(
+        IReadOnlyList<(Guid InstanceId, object Before, object After)> changes
+    )
+    {
+        var commands = new List<ICommand>();
+        foreach (var (instanceId, before, after) in changes)
+        {
+            var instance = ResolvePropsEntity(instanceId);
+            if (instance is not null)
+            {
+                commands.Add(new MutateEntityCommand(instance, before, after));
+            }
+        }
+
+        if (commands.Count == 0)
+        {
+            return;
+        }
+
+        _history.Do(new CompositeCommand(commands));
+        StateHasChanged();
+    }
+
+    // Ticket 43/53/59: shared by CommitPropsChange and CommitPropsChangeBatch - an id is either an
+    // ordinary Board.Components entry or (ticket 53) an edge's Label, which lives only on its
+    // owning Edge (ADR 0005) rather than in Board's own component dictionary.
+    private ComponentInstance? ResolvePropsEntity(Guid id) =>
+        Board?.GetComponent(id) ?? Board?.FindEdgeLabel(id);
 
     // Ticket 52: the commit point for a routing-style/arrowhead change on a specific edge - the
     // Edge counterpart to CommitPropsChange. No panel UI calls this yet (ticket 56 is still

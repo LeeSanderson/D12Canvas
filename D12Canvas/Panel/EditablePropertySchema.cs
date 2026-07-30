@@ -41,6 +41,11 @@ public static class EditablePropertySchema
             throw new CustomEditorRequiredException(property.DeclaringType!, property.Name);
         }
 
-        return new EditableProperty(property, attribute.Kind, attribute.Options);
+        return new EditableProperty(
+            property,
+            attribute.Kind,
+            attribute.Options,
+            SharedTag: attribute.SharedTag
+        );
     }
 }

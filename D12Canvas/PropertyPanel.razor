@@ -3,71 +3,71 @@
 @using D12Canvas.Panel
 
 <div class="d12-property-panel" role="region" aria-label="Property panel">
-    @if (SelectedInstance is null)
+    @if (SelectedInstances.Count == 0)
     {
         <p class="d12-property-panel-empty">No selection</p>
     }
     else
     {
         <ul class="d12-property-panel-fields">
-            @foreach (var property in EditableProperties)
+            @foreach (var field in Fields)
             {
                 <li class="d12-property-panel-field">
-                    <label class="d12-property-panel-label" for="@FieldId(property)">@property.Property.Name</label>
-                    @switch (property.Kind)
+                    <label class="d12-property-panel-label" for="@field.FieldId">@field.Label</label>
+                    @switch (field.Kind)
                     {
                         case EditorKind.Text:
                             <input
-                                id="@FieldId(property)"
+                                id="@field.FieldId"
                                 class="d12-property-panel-input"
                                 type="text"
-                                value="@CurrentValue(property)"
-                                @onchange="@(e => CommitEdit(property, e))"
+                                value="@CurrentValue(field)"
+                                @onchange="@(e => CommitEdit(field, e))"
                             />
                             break;
                         case EditorKind.Number:
                             <input
-                                id="@FieldId(property)"
+                                id="@field.FieldId"
                                 class="d12-property-panel-input"
                                 type="number"
-                                value="@CurrentValue(property)"
-                                @onchange="@(e => CommitEdit(property, e))"
+                                value="@CurrentValue(field)"
+                                @onchange="@(e => CommitEdit(field, e))"
                             />
                             break;
                         case EditorKind.Color:
                             <input
-                                id="@FieldId(property)"
+                                id="@field.FieldId"
                                 class="d12-property-panel-input d12-property-panel-color"
                                 type="color"
-                                value="@CurrentValue(property)"
-                                @onchange="@(e => CommitEdit(property, e))"
+                                value="@CurrentValue(field)"
+                                @onchange="@(e => CommitEdit(field, e))"
                             />
                             break;
                         case EditorKind.Checkbox:
                             <input
-                                id="@FieldId(property)"
+                                id="@field.FieldId"
                                 class="d12-property-panel-checkbox"
                                 type="checkbox"
-                                checked="@CurrentBoolValue(property)"
-                                @onchange="@(e => CommitEdit(property, e))"
+                                checked="@CurrentBoolValue(field)"
+                                @onchange="@(e => CommitEdit(field, e))"
                             />
                             break;
                         case EditorKind.Dropdown:
                             <select
-                                id="@FieldId(property)"
+                                id="@field.FieldId"
                                 class="d12-property-panel-input"
-                                value="@CurrentValue(property)"
-                                @onchange="@(e => CommitEdit(property, e))"
+                                value="@CurrentValue(field)"
+                                @onchange="@(e => CommitEdit(field, e))"
                             >
-                                @foreach (var option in property.Options!)
+                                @foreach (var option in field.Options!)
                                 {
                                     <option value="@option">@option</option>
                                 }
                             </select>
                             break;
                         case EditorKind.Custom:
-                            <div id="@FieldId(property)" class="d12-property-panel-custom">
-                                @property.CustomEditor!(CustomContext(property))
+                            <div id="@field.FieldId" class="d12-property-panel-custom">
+                                @field.CustomEditor!(CustomContext(field))
                             </div>
                             break;
                     }

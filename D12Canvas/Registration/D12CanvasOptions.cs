@@ -47,6 +47,16 @@ public sealed class D12CanvasOptions
             throw new ComponentRegistrationException(key, nameof(builder.DefaultProps));
         }
 
+        var editableProperties =
+            builder.EditableProperties ?? EditablePropertySchema.DiscoverFrom(typeof(TProps));
+
+        SharedPropertyValidator.ValidateAgainstExisting(
+            editableProperties,
+            _registry.All.Select(registration =>
+                registration.EditableProperties ?? Array.Empty<EditableProperty>()
+            )
+        );
+
         _registry.Register(
             new ComponentRegistration(
                 key,
@@ -59,7 +69,7 @@ public sealed class D12CanvasOptions
                 builder.Role,
                 builder.DefaultSize,
                 builder.Category,
-                builder.EditableProperties ?? EditablePropertySchema.DiscoverFrom(typeof(TProps))
+                editableProperties
             )
         );
 

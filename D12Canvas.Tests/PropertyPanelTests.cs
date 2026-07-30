@@ -19,6 +19,11 @@ public class PropertyPanelTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "panel-test-component";
 
+    // Ticket 59: a second, distinct registered type - PanelTestPropsSecondary.AccentColor shares
+    // PanelTestProps.Tint's "color" SharedTag (matching Kind/CLR type), so the two combine into one
+    // cross-type row; PanelTestPropsSecondary.Note carries no tag, so it must never surface there.
+    private const string SecondaryComponentTypeKey = "panel-test-component-secondary";
+
     private readonly ComponentRegistry _registry = new();
 
     public PropertyPanelTests()
@@ -53,6 +58,23 @@ public class PropertyPanelTests : ComponentTestBase
                     .ToList()
             )
         );
+        _registry.Register(
+            new ComponentRegistration(
+                Key: SecondaryComponentTypeKey,
+                ComponentType: typeof(PanelTestPropsSecondaryComponent),
+                PropsType: typeof(PanelTestPropsSecondary),
+                DisplayName: "Panel Test Secondary",
+                AccessibleName: "Panel test secondary component",
+                DefaultProps: new PanelTestPropsSecondary(),
+                Icon: null,
+                Role: "group",
+                DefaultSize: null,
+                Category: null,
+                EditableProperties: EditablePropertySchema.DiscoverFrom(
+                    typeof(PanelTestPropsSecondary)
+                )
+            )
+        );
         Services.AddSingleton<IComponentRegistry>(_registry);
     }
 
@@ -70,6 +92,21 @@ public class PropertyPanelTests : ComponentTestBase
             ComponentTypeKey,
             new PanelTestProps("content", label, count, tint, flag, mode, customValue),
             new Bounds(0, 0, 200, 200)
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+
+    private static ComponentInstance AddSecondaryInstance(
+        Board board,
+        string accentColor = "#000000",
+        string note = ""
+    )
+    {
+        var instance = new ComponentInstance(
+            SecondaryComponentTypeKey,
+            new PanelTestPropsSecondary(accentColor, note),
+            new Bounds(300, 0, 200, 200)
         );
         board.AddComponent(instance);
         return instance;
@@ -99,12 +136,14 @@ public class PropertyPanelTests : ComponentTestBase
         Assert.Empty(panel.FindAll(".d12-property-panel-field"));
     }
 
+    // Ticket 59: a same-type 2+ multi-selection now edits that type's full declared schema, rather
+    // than showing the empty state ticket 56 originally locked in for any multi-selection.
     [Fact]
-    public void ShowsAnEmptyStateWhenAMultiSelectionIsActive()
+    public void SameTypeMultiSelectionRendersTheFullDeclaredSchema()
     {
         var board = new Board();
-        AddInstance(board);
-        AddInstance(board);
+        AddInstance(board, label: "First");
+        AddInstance(board, label: "Second");
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var panel = Render<PropertyPanel>(parameters =>
             parameters.Add(p => p.Canvas, canvas.Instance)
@@ -114,7 +153,118 @@ public class PropertyPanelTests : ComponentTestBase
         containers[0].Click();
         containers[1].Click(new MouseEventArgs { ShiftKey = true });
 
-        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+        Assert.NotNull(panel.Find("#d12-property-panel-field-Label"));
+        Assert.NotNull(panel.Find("#d12-property-panel-field-Count"));
+        Assert.NotNull(panel.Find("#d12-property-panel-field-Tint"));
+        Assert.NotNull(panel.Find("#d12-property-panel-field-Flag"));
+        Assert.NotNull(panel.Find("#d12-property-panel-field-Mode"));
+    }
+
+    [Fact]
+    public void CommittingASameTypeMultiSelectionEditAppliesToEveryInstance()
+    {
+        var board = new Board();
+        var first = AddInstance(board, tint: "#000000");
+        var second = AddInstance(board, tint: "#000000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
+
+        Assert.Equal("#00ff00", ((PanelTestProps)first.Props).Tint);
+        Assert.Equal("#00ff00", ((PanelTestProps)second.Props).Tint);
+    }
+
+    [Fact]
+    public async Task UndoAfterASameTypeMultiSelectionEditRevertsEveryInstanceAsOneStep()
+    {
+        var board = new Board();
+        var first = AddInstance(board, tint: "#000000");
+        var second = AddInstance(board, tint: "#000000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("#000000", ((PanelTestProps)first.Props).Tint);
+        Assert.Equal("#000000", ((PanelTestProps)second.Props).Tint);
+    }
+
+    // Ticket 59: only the properties an author has explicitly tagged as shared (matching
+    // SharedTag) surface for a cross-type selection - PanelTestProps.Label and
+    // PanelTestPropsSecondary.Note carry no tag at all, and must not appear.
+    [Fact]
+    public void CrossTypeMultiSelectionSurfacesOnlyExplicitlySharedTaggedProperties()
+    {
+        var board = new Board();
+        AddInstance(board);
+        AddSecondaryInstance(board);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+
+        Assert.Single(panel.FindAll(".d12-property-panel-field"));
+        Assert.NotNull(panel.Find("#d12-property-panel-field-color"));
+        Assert.Empty(panel.FindAll("#d12-property-panel-field-Label"));
+        Assert.Empty(panel.FindAll("#d12-property-panel-field-Count"));
+        Assert.Empty(panel.FindAll("#d12-property-panel-field-Note"));
+    }
+
+    [Fact]
+    public void CommittingACrossTypeSharedPropertyEditAppliesToEveryInstance()
+    {
+        var board = new Board();
+        var first = AddInstance(board, tint: "#000000");
+        var second = AddSecondaryInstance(board, accentColor: "#000000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+
+        panel.Find("#d12-property-panel-field-color").Change("#00ff00");
+
+        Assert.Equal("#00ff00", ((PanelTestProps)first.Props).Tint);
+        Assert.Equal("#00ff00", ((PanelTestPropsSecondary)second.Props).AccentColor);
+    }
+
+    [Fact]
+    public async Task UndoAfterACrossTypeSharedPropertyEditRevertsEveryInstanceAsOneStep()
+    {
+        var board = new Board();
+        var first = AddInstance(board, tint: "#000000");
+        var second = AddSecondaryInstance(board, accentColor: "#000000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        panel.Find("#d12-property-panel-field-color").Change("#00ff00");
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("#000000", ((PanelTestProps)first.Props).Tint);
+        Assert.Equal("#000000", ((PanelTestPropsSecondary)second.Props).AccentColor);
     }
 
     // Grouping (ADR 0006) collapses a multi-selection onto a single Group id in
@@ -135,6 +285,32 @@ public class PropertyPanelTests : ComponentTestBase
         containers[0].Click();
         containers[1].Click(new MouseEventArgs { ShiftKey = true });
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
+
+        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+    }
+
+    // Ticket 44/59: a shift-click can mix a grouped member's own group id (EffectiveSelectionId)
+    // with a standalone instance's plain id in the same ad-hoc selection - that must still read as
+    // "nothing to edit" (SelectedComponents), the same as a lone selected Group, rather than
+    // collapsing to "edit just the standalone instance".
+    [Fact]
+    public async Task ShowsAnEmptyStateWhenSelectionMixesAGroupWithAStandaloneInstance()
+    {
+        var board = new Board();
+        AddInstance(board);
+        AddInstance(board);
+        AddInstance(board);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
+
+        canvas.FindAll(".component-container")[2].Click(new MouseEventArgs { ShiftKey = true });
 
         Assert.NotNull(panel.Find(".d12-property-panel-empty"));
     }

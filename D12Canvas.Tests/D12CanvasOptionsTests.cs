@@ -312,4 +312,134 @@ public class D12CanvasOptionsTests
 
         Assert.Same(overrideSchema, options.Registry.Resolve("widget").EditableProperties);
     }
+
+    // Ticket 59/ADR 0008: SharedTag flows from [PanelEditable] into the discovered EditableProperty
+    // schema exactly like Kind/Options - it's what SharedPropertyValidator checks across types.
+    [Fact]
+    public void RegisterComponentDiscoversSharedTagFromPanelEditableAttribute()
+    {
+        var options = new D12CanvasOptions();
+
+        options.RegisterComponent<TestComponentDouble, PanelTestProps>(
+            "widget",
+            builder =>
+            {
+                builder.DisplayName = "Widget";
+                builder.AccessibleName = "Widget";
+                builder.DefaultProps = new PanelTestProps("", "", 0);
+            }
+        );
+
+        var tint = options
+            .Registry.Resolve("widget")
+            .EditableProperties!.Single(p => p.Property.Name == nameof(PanelTestProps.Tint));
+
+        Assert.Equal("color", tint.SharedTag);
+    }
+
+    // ADR 0008: two properties on different types can carry the same SharedTag as long as they
+    // agree in EditorKind and CLR type - registering the second one must not throw.
+    [Fact]
+    public void RegisterComponentWithACompatibleSharedTagOnADifferentTypeDoesNotThrow()
+    {
+        var options = new D12CanvasOptions();
+        options.RegisterComponent<TestComponentDouble, PanelTestProps>(
+            "widget-a",
+            builder =>
+            {
+                builder.DisplayName = "Widget A";
+                builder.AccessibleName = "Widget A";
+                builder.DefaultProps = new PanelTestProps("", "", 0);
+            }
+        );
+
+        var exception = Record.Exception(
+            () =>
+                options.RegisterComponent<TestComponentDouble, PanelTestPropsSecondary>(
+                    "widget-b",
+                    builder =>
+                    {
+                        builder.DisplayName = "Widget B";
+                        builder.AccessibleName = "Widget B";
+                        builder.DefaultProps = new PanelTestPropsSecondary();
+                    }
+                )
+        );
+
+        Assert.Null(exception);
+        Assert.Contains(
+            options.Registry.Resolve("widget-b").EditableProperties!,
+            p =>
+                p.Property.Name == nameof(PanelTestPropsSecondary.AccentColor)
+                && p.SharedTag == "color"
+        );
+    }
+
+    // ADR 0008: "a mismatch is a registration-time error, not a silent merge" - a SharedTag reused
+    // with a different EditorKind is caught here, naming both conflicting properties.
+    [Fact]
+    public void RegisterComponentWithASharedTagMismatchedEditorKindThrowsNamingBothProperties()
+    {
+        var options = new D12CanvasOptions();
+        options.RegisterComponent<TestComponentDouble, PanelTestProps>(
+            "widget-a",
+            builder =>
+            {
+                builder.DisplayName = "Widget A";
+                builder.AccessibleName = "Widget A";
+                builder.DefaultProps = new PanelTestProps("", "", 0);
+            }
+        );
+
+        var exception = Assert.Throws<SharedPropertyMismatchException>(
+            () =>
+                options.RegisterComponent<TestComponentDouble, PropsWithMismatchedSharedTagKind>(
+                    "widget-b",
+                    builder =>
+                    {
+                        builder.DisplayName = "Widget B";
+                        builder.AccessibleName = "Widget B";
+                        builder.DefaultProps = new PropsWithMismatchedSharedTagKind();
+                    }
+                )
+        );
+
+        Assert.Equal("color", exception.SharedTag);
+        Assert.Equal(typeof(PanelTestProps), exception.ExistingPropsType);
+        Assert.Equal(nameof(PanelTestProps.Tint), exception.ExistingPropertyName);
+        Assert.Equal(typeof(PropsWithMismatchedSharedTagKind), exception.NewPropsType);
+        Assert.Equal(nameof(PropsWithMismatchedSharedTagKind.Tint), exception.NewPropertyName);
+    }
+
+    // Same as above, but the mismatch is in CLR type (int vs string) rather than EditorKind.
+    [Fact]
+    public void RegisterComponentWithASharedTagMismatchedClrTypeThrowsNamingBothProperties()
+    {
+        var options = new D12CanvasOptions();
+        options.RegisterComponent<TestComponentDouble, PanelTestProps>(
+            "widget-a",
+            builder =>
+            {
+                builder.DisplayName = "Widget A";
+                builder.AccessibleName = "Widget A";
+                builder.DefaultProps = new PanelTestProps("", "", 0);
+            }
+        );
+
+        var exception = Assert.Throws<SharedPropertyMismatchException>(
+            () =>
+                options.RegisterComponent<TestComponentDouble, PropsWithMismatchedSharedTagClrType>(
+                    "widget-b",
+                    builder =>
+                    {
+                        builder.DisplayName = "Widget B";
+                        builder.AccessibleName = "Widget B";
+                        builder.DefaultProps = new PropsWithMismatchedSharedTagClrType();
+                    }
+                )
+        );
+
+        Assert.Equal("color", exception.SharedTag);
+        Assert.Equal(typeof(PropsWithMismatchedSharedTagClrType), exception.NewPropsType);
+    }
 }
