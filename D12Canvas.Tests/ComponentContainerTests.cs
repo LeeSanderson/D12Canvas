@@ -173,6 +173,20 @@ public class ComponentContainerTests : ComponentTestBase
     }
 
     [Fact]
+    public void AZIndexOnlyChangeReRendersTheContainersStyle()
+    {
+        // Ticket 60: a layering command changes only ZIndex, with Bounds/selection/Props/custom
+        // ports all unchanged - ComponentContainer's own ShouldRender override must still treat
+        // that as a real change, or a stacking change would silently fail to render (ADR 0008's
+        // "renders immediately") until some unrelated parameter happened to change too.
+        var container = Render<ComponentContainer>(parameters => parameters.Add(p => p.ZIndex, 2));
+
+        container.Render(parameters => parameters.Add(p => p.ZIndex, 9));
+
+        Assert.Contains("z-index: 9", container.Find(".component-container").GetAttribute("style"));
+    }
+
+    [Fact]
     public void SelectedInstanceRendersResizeHandles()
     {
         var container = Render<ComponentContainer>(parameters =>

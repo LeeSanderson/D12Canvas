@@ -889,4 +889,146 @@ public class BoardTests
 
         Assert.Null(board.FindEdgeLabel(Guid.NewGuid()));
     }
+
+    // Ticket 60/ADR 0008: layering query primitives - arithmetic-only (max/min +-1, or the next
+    // distinct value on either side), never a renumbering pass over other entities.
+    [Fact]
+    public void NextZIndexOnAnEmptyBoardIsZero()
+    {
+        var board = new Board();
+
+        Assert.Equal(0, board.NextZIndex());
+    }
+
+    [Fact]
+    public void NextZIndexIsOneAboveTheCurrentMax()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 2)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+
+        Assert.Equal(6, board.NextZIndex());
+    }
+
+    [Fact]
+    public void PreviousZIndexOnAnEmptyBoardIsZero()
+    {
+        var board = new Board();
+
+        Assert.Equal(0, board.PreviousZIndex());
+    }
+
+    [Fact]
+    public void PreviousZIndexIsOneBelowTheCurrentMin()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 2)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+
+        Assert.Equal(1, board.PreviousZIndex());
+    }
+
+    [Fact]
+    public void ZIndexAboveReturnsTheNextDistinctHigherValue()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 2)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 8)
+        );
+
+        Assert.Equal(5, board.ZIndexAbove(2));
+    }
+
+    [Fact]
+    public void ZIndexAboveSkipsOverASiblingTiedAtTheSameValue()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 8)
+        );
+
+        Assert.Equal(8, board.ZIndexAbove(5));
+    }
+
+    [Fact]
+    public void ZIndexAboveReturnsNullWhenAlreadyAtTheTop()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 2)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+
+        Assert.Null(board.ZIndexAbove(5));
+    }
+
+    [Fact]
+    public void ZIndexBelowReturnsTheNextDistinctLowerValue()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 2)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 8)
+        );
+
+        Assert.Equal(5, board.ZIndexBelow(8));
+    }
+
+    [Fact]
+    public void ZIndexBelowSkipsOverASiblingTiedAtTheSameValue()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 2)
+        );
+
+        Assert.Equal(2, board.ZIndexBelow(5));
+    }
+
+    [Fact]
+    public void ZIndexBelowReturnsNullWhenAlreadyAtTheBottom()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 2)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 10, 10), 5)
+        );
+
+        Assert.Null(board.ZIndexBelow(2));
+    }
 }

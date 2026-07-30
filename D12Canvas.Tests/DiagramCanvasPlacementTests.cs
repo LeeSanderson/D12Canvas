@@ -145,6 +145,23 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
     }
 
     [Fact]
+    public void DroppingAPendingPaletteDragPlacesTheNewInstanceAboveEveryExistingInstance()
+    {
+        RegisterTestComponent(new ComponentSize(120, 80));
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(ComponentTypeKey, new TestProps(), new Bounds(0, 0, 50, 50), 9)
+        );
+
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
+        canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
+
+        var placed = board.Components.Single(i => i.Bounds.Width == 120);
+        Assert.Equal(10, placed.ZIndex);
+    }
+
+    [Fact]
     public void DraggingOverTheCanvasShowsTheDragOverAffordanceUntilDragLeaveOrDrop()
     {
         RegisterTestComponent(new ComponentSize(120, 80));

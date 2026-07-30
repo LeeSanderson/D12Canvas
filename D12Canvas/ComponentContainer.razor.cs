@@ -131,6 +131,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private bool _lastRenderedIsSelected;
     private bool _lastRenderedIsMultiSelected;
     private object? _lastRenderedProps;
+    private int _lastRenderedZIndex;
 
     // Ticket 55: CustomPorts is the same mutable List<PortDef> reference across renders (a port is
     // added/undone in place on ComponentInstance), so reference equality can't detect a change -
@@ -169,7 +170,11 @@ public partial class ComponentContainer : IAsyncDisposable
             || !Equals(Props, _lastRenderedProps)
             // Ticket 55: a custom port added (or undone) since the last render, at otherwise
             // unchanged Bounds/selection.
-            || CustomPorts.Count != _lastRenderedCustomPortsCount;
+            || CustomPorts.Count != _lastRenderedCustomPortsCount
+            // Ticket 60: a layering command changes ZIndex alone, at otherwise unchanged
+            // Bounds/selection - without this check, a stacking change wouldn't render until some
+            // unrelated parameter also changed, violating ADR 0008's "renders immediately."
+            || ZIndex != _lastRenderedZIndex;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -183,6 +188,7 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedIsMultiSelected = IsMultiSelected;
         _lastRenderedProps = Props;
         _lastRenderedCustomPortsCount = CustomPorts.Count;
+        _lastRenderedZIndex = ZIndex;
 
         if (firstRender)
         {

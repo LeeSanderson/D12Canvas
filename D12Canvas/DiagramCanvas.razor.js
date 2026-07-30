@@ -110,6 +110,26 @@ export async function addKeyboardListener(element, dotnetRef) {
                     }
                 }
                 break;
+            case "BracketRight":
+                // Ctrl+] (bring forward) / Ctrl+Shift+] (bring to front) - ticket 60/ADR 0008/0009.
+                if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    if (event.shiftKey) {
+                        dotnetRef.invokeMethodAsync("OnBringToFrontPressed");
+                    } else {
+                        dotnetRef.invokeMethodAsync("OnBringForwardPressed");
+                    }
+                }
+                break;
+            case "BracketLeft":
+                // Ctrl+[ (send backward) / Ctrl+Shift+[ (send to back) - ticket 60/ADR 0008/0009.
+                if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    if (event.shiftKey) {
+                        dotnetRef.invokeMethodAsync("OnSendToBackPressed");
+                    } else {
+                        dotnetRef.invokeMethodAsync("OnSendBackwardPressed");
+                    }
+                }
+                break;
         }
         event.preventDefault();
     };

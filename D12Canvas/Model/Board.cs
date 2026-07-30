@@ -202,4 +202,29 @@ public sealed class Board
             .Values.Where(instance => expandedViewport.Intersects(instance.Bounds))
             .ToList();
     }
+
+    // Ticket 60/ADR 0008: layering is arithmetic-only field writes on ZIndex, never a renumbering
+    // pass over other entities. NextZIndex is also what a newly-placed instance receives, so it
+    // always appears above every existing one (ADR 0008 rejects a fixed baseline ZIndex).
+    public int NextZIndex() =>
+        _components.Count == 0 ? 0 : _components.Values.Max(c => c.ZIndex) + 1;
+
+    public int PreviousZIndex() =>
+        _components.Count == 0 ? 0 : _components.Values.Min(c => c.ZIndex) - 1;
+
+    // The next distinct ZIndex value strictly above/below the given one, skipping over any ties
+    // at that same value - so bringing a component forward/backward past a whole cluster of tied
+    // siblings takes one step, not one swap per sibling. Null when nothing exists on the far side
+    // (already at that extreme).
+    public int? ZIndexAbove(int zIndex)
+    {
+        var higher = _components.Values.Where(c => c.ZIndex > zIndex).ToList();
+        return higher.Count == 0 ? null : higher.Min(c => c.ZIndex);
+    }
+
+    public int? ZIndexBelow(int zIndex)
+    {
+        var lower = _components.Values.Where(c => c.ZIndex < zIndex).ToList();
+        return lower.Count == 0 ? null : lower.Max(c => c.ZIndex);
+    }
 }

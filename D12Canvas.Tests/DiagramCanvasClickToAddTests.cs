@@ -121,6 +121,22 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task ClickToAddPlacesTheNewInstanceAboveEveryExistingInstance()
+    {
+        RegisterTestComponent(new ComponentSize(120, 80));
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(ComponentTypeKey, new TestProps(), new Bounds(0, 0, 50, 50), 9)
+        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
+
+        var placed = board.Components.Single(i => i.Bounds.Width == 120);
+        Assert.Equal(10, placed.ZIndex);
+    }
+
+    [Fact]
     public async Task ClickToAddIsANoOpWhenNoBoardIsWired()
     {
         RegisterTestComponent(new ComponentSize(120, 80));

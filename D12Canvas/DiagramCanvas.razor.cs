@@ -444,6 +444,112 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // ADR 0008/0009: Ctrl+]/Ctrl+Shift+] and Ctrl+[/Ctrl+Shift+[. Layering reads through
+    // ExpandedSelection (ticket 44), so a selected Group's members are reordered independently,
+    // same as any other multi-selection - a Group's own "bulk-write, preserve relative member
+    // order" layering behaviour is ticket 61's job, not this one's.
+    [JSInvokable]
+    public void OnBringToFrontPressed() => RestackSelection(toFront: true);
+
+    [JSInvokable]
+    public void OnSendToBackPressed() => RestackSelection(toFront: false);
+
+    [JSInvokable]
+    public void OnBringForwardPressed() =>
+        ApplyZIndexChange(instance => Board!.ZIndexAbove(instance.ZIndex));
+
+    [JSInvokable]
+    public void OnSendBackwardPressed() =>
+        ApplyZIndexChange(instance => Board!.ZIndexBelow(instance.ZIndex));
+
+    // Bring to Front / Send to Back move the whole selection above/below every other entity in
+    // one gesture - unlike Forward/Backward, every selected instance needs to land on its own
+    // distinct value (not all tied at the same Board.NextZIndex()/PreviousZIndex()), so their
+    // relative order to each other survives the move: consecutive values starting from the
+    // board's current extreme, assigned in ascending original-ZIndex order.
+    private void RestackSelection(bool toFront)
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        var selected = ExpandedSelection()
+            .Select(id => Board.GetComponent(id))
+            .Where(instance => instance is not null)
+            .Cast<ComponentInstance>()
+            .OrderBy(instance => instance.ZIndex)
+            .ToList();
+
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        var start = toFront ? Board.NextZIndex() : Board.PreviousZIndex() - selected.Count + 1;
+        var commands = new List<ICommand>();
+        for (var i = 0; i < selected.Count; i++)
+        {
+            var instance = selected[i];
+            var newZIndex = start + i;
+            if (newZIndex == instance.ZIndex)
+            {
+                continue;
+            }
+
+            commands.Add(new ChangeZIndexCommand(instance, instance.ZIndex, newZIndex));
+        }
+
+        if (commands.Count == 0)
+        {
+            return;
+        }
+
+        _history.Do(new CompositeCommand(commands));
+        StateHasChanged();
+    }
+
+    // Shared by Forward/Backward: resolves the current selection to live ComponentInstances,
+    // computes each one's new ZIndex via the supplied rule - evaluated against the board's state
+    // before any of this gesture's own writes, so a multi-selection's members never see each
+    // other's in-progress changes - skips any that wouldn't actually change, and commits the rest
+    // as one undoable gesture (ADR 0007): one ChangeZIndexCommand per changed instance, wrapped in
+    // a CompositeCommand, mirroring OnDeletePressed/OnUngroupPressed's own "build a list, wrap
+    // once" shape.
+    private void ApplyZIndexChange(Func<ComponentInstance, int?> computeNewZIndex)
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        var commands = new List<ICommand>();
+        foreach (var id in ExpandedSelection())
+        {
+            var instance = Board.GetComponent(id);
+            if (instance is null)
+            {
+                continue;
+            }
+
+            var newZIndex = computeNewZIndex(instance);
+            if (newZIndex is null || newZIndex == instance.ZIndex)
+            {
+                continue;
+            }
+
+            commands.Add(new ChangeZIndexCommand(instance, instance.ZIndex, newZIndex.Value));
+        }
+
+        if (commands.Count == 0)
+        {
+            return;
+        }
+
+        _history.Do(new CompositeCommand(commands));
+        StateHasChanged();
+    }
+
     // Ticket 44: a top-level entry in _selectedInstanceIds can be either a component instance id
     // or a Group id (grouping/clicking a member collapses selection onto the Group - ADR 0006).
     // This recursively flattens every entry down to the underlying component instance ids, so the
@@ -1575,6 +1681,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Ticket 53: extracted from PlaceComponent so AddEdgeLabel (which centers a label the same way,
     // but embeds it on an Edge instead of adding it to Board) doesn't duplicate the same
     // resolve-registration/fallback-size/center-on-a-point construction.
+    // Ticket 60/ADR 0008: a newly-placed instance always defaults to Board.NextZIndex(), i.e.
+    // above every existing entity - never a fixed baseline that would bury it behind them.
     private ComponentInstance NewCenteredInstance(
         string componentTypeKey,
         double centerX,
@@ -1587,7 +1695,13 @@ public partial class DiagramCanvas : IAsyncDisposable
         return new ComponentInstance(
             registration.Key,
             registration.DefaultProps,
-            new Bounds(centerX - size.Width / 2, centerY - size.Height / 2, size.Width, size.Height)
+            new Bounds(
+                centerX - size.Width / 2,
+                centerY - size.Height / 2,
+                size.Width,
+                size.Height
+            ),
+            Board!.NextZIndex()
         );
     }
 
