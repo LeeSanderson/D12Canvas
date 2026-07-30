@@ -57,7 +57,7 @@ The canvas-chrome component that surfaces editable `TProps` fields for the curre
 A `TProps` field exposed through the property panel, declared by default via an attribute on the `TProps` record and optionally overridden by the registration builder. Carries an `EditorKind` describing which panel control renders it.
 
 **EditorKind**:
-The kind of control an editable property renders as in the property panel — a closed built-in set (Text, Color, Number, Checkbox, Dropdown, …) plus `Custom`, which takes an author-supplied `RenderFragment<TProps>` for anything the built-ins can't express.
+The kind of control an editable property renders as in the property panel — a closed built-in set (Text, Color, Number, Checkbox, Dropdown, …) plus `Custom`, which takes an author-supplied `RenderFragment<CustomEditorContext>` (the property's current value plus a commit callback) for anything the built-ins can't express. A `Custom`-kind property can only be declared via the registration builder, never a `[PanelEditable]` attribute, since an attribute argument can't carry a RenderFragment.
 
 **Gesture**:
 One completed user-facing action on the board — a drag from press to release, a resize, a prop edit committed on blur, a create, a delete, a group, an ungroup. The unit undo/redo operates on: a gesture becomes exactly one history entry, never one per intermediate frame.

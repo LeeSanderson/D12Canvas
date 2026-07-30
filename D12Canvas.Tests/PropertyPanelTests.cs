@@ -38,7 +38,19 @@ public class PropertyPanelTests : ComponentTestBase
                 Role: "group",
                 DefaultSize: null,
                 Category: null,
-                EditableProperties: EditablePropertySchema.DiscoverFrom(typeof(PanelTestProps))
+                // CustomValue carries no [PanelEditable] (ticket 58) - a Custom-kind property can
+                // only come from the builder override, so it's appended here rather than being
+                // picked up by DiscoverFrom like every other kind above.
+                EditableProperties: EditablePropertySchema
+                    .DiscoverFrom(typeof(PanelTestProps))
+                    .Append(
+                        new EditableProperty(
+                            typeof(PanelTestProps).GetProperty(nameof(PanelTestProps.CustomValue))!,
+                            EditorKind.Custom,
+                            CustomEditor: PanelTestCustomEditor.Fragment
+                        )
+                    )
+                    .ToList()
             )
         );
         Services.AddSingleton<IComponentRegistry>(_registry);
@@ -50,12 +62,13 @@ public class PropertyPanelTests : ComponentTestBase
         double count = 0,
         string tint = "#000000",
         bool flag = false,
-        string mode = "a"
+        string mode = "a",
+        string customValue = ""
     )
     {
         var instance = new ComponentInstance(
             ComponentTypeKey,
-            new PanelTestProps("content", label, count, tint, flag, mode),
+            new PanelTestProps("content", label, count, tint, flag, mode, customValue),
             new Bounds(0, 0, 200, 200)
         );
         board.AddComponent(instance);
@@ -497,5 +510,76 @@ public class PropertyPanelTests : ComponentTestBase
 
         Assert.Null(exception);
         Assert.Equal(1, ((PanelTestProps)instance.Props).Count);
+    }
+
+    [Fact]
+    public void RendersTheCustomEditorForTheSelectionsCustomKindProperty()
+    {
+        var board = new Board();
+        AddInstance(board);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        Select(canvas);
+
+        Assert.NotNull(panel.Find("#d12-property-panel-field-CustomValue"));
+        Assert.NotNull(panel.Find($"#{PanelTestCustomEditor.CommitButtonId}"));
+    }
+
+    [Fact]
+    public void CommittingThroughTheCustomEditorRecordsExactlyOneHistoryEntryAndUpdatesLive()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, customValue: "before");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find($"#{PanelTestCustomEditor.CommitButtonId}").Click();
+
+        Assert.Equal(
+            PanelTestCustomEditor.CommittedValue,
+            ((PanelTestProps)instance.Props).CustomValue
+        );
+    }
+
+    [Fact]
+    public async Task UndoAfterCommittingThroughTheCustomEditorRevertsIt()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, customValue: "before");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+        panel.Find($"#{PanelTestCustomEditor.CommitButtonId}").Click();
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("before", ((PanelTestProps)instance.Props).CustomValue);
+    }
+
+    [Fact]
+    public async Task CommittingTheSameCustomValueAgainRecordsNoAdditionalHistoryEntry()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, customValue: "before");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        panel.Find($"#{PanelTestCustomEditor.CommitButtonId}").Click(); // one real gesture
+        panel.Find($"#{PanelTestCustomEditor.CommitButtonId}").Click(); // no-op: same value again
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("before", ((PanelTestProps)instance.Props).CustomValue);
     }
 }

@@ -259,6 +259,32 @@ public class D12CanvasOptionsTests
         Assert.Equal(nameof(PropsWithMissingDropdownOptions.Mode), exception.PropertyName);
     }
 
+    // Ticket 58: EditorKind.Custom needs a RenderFragment, which an attribute argument can never
+    // supply (attributes require compile-time constants) - so declaring it via [PanelEditable]
+    // alone is always a registration-time error; a Custom-kind property must come from the
+    // builder's EditableProperties override instead.
+    [Fact]
+    public void RegisterComponentWithACustomKindPropertyDeclaredViaAttributeThrowsNamingTheProperty()
+    {
+        var options = new D12CanvasOptions();
+
+        var exception = Assert.Throws<CustomEditorRequiredException>(
+            () =>
+                options.RegisterComponent<TestComponentDouble, PropsWithCustomEditorAttribute>(
+                    "widget",
+                    builder =>
+                    {
+                        builder.DisplayName = "Widget";
+                        builder.AccessibleName = "Widget";
+                        builder.DefaultProps = new PropsWithCustomEditorAttribute();
+                    }
+                )
+        );
+
+        Assert.Equal(typeof(PropsWithCustomEditorAttribute), exception.PropsType);
+        Assert.Equal(nameof(PropsWithCustomEditorAttribute.Value), exception.PropertyName);
+    }
+
     // ADR 0008: "attributes set the default schema, the builder is the escape hatch" - setting
     // EditableProperties replaces whatever attribute discovery would otherwise have produced.
     [Fact]

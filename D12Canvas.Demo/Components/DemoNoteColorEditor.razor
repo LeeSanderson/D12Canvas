@@ -1,0 +1,64 @@
+@namespace D12Canvas.Demo.Components
+
+@using D12Canvas.Panel
+@using Microsoft.AspNetCore.Components.Rendering
+
+<div class="demo-note-color-editor" role="group" aria-label="Note color">
+    @foreach (var swatch in Swatches)
+    {
+        <button
+            type="button"
+            class="demo-note-color-swatch"
+            style="background-color: @swatch;"
+            aria-label="@swatch"
+            aria-pressed="@(swatch.Equals(Context.Value))"
+            @onclick="@(() => Context.Commit(swatch))"
+        ></button>
+    }
+</div>
+
+<style>
+    .demo-note-color-editor {
+        display: flex;
+        gap: 6px;
+    }
+
+    .demo-note-color-swatch {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .demo-note-color-swatch[aria-pressed="true"] {
+        border-color: #333;
+    }
+</style>
+
+@code {
+    // A curated preset list - the point of this ticket-58 demo is the escape hatch itself
+    // (a swatch picker the built-in EditorKind set can't express), not an exhaustive color grid.
+    private static readonly string[] Swatches =
+    {
+        "#ffd966",
+        "#a2d9ce",
+        "#f5b7b1",
+        "#d2b4de",
+    };
+
+    [Parameter]
+    public CustomEditorContext Context { get; set; } = null!;
+
+    // Wraps this component behind a plain RenderFragment<CustomEditorContext> - what
+    // EditableProperty.CustomEditor actually needs - so Program.cs's registration call only
+    // references this static factory, not RenderTreeBuilder internals.
+    public static RenderFragment<CustomEditorContext> Editor =>
+        context => builder =>
+        {
+            builder.OpenComponent<DemoNoteColorEditor>(0);
+            builder.AddAttribute(1, nameof(Context), context);
+            builder.CloseComponent();
+        };
+}

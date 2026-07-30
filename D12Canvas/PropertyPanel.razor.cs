@@ -78,6 +78,15 @@ public partial class PropertyPanel : IDisposable
     private bool CurrentBoolValue(EditableProperty property) =>
         SelectedInstance is not null && property.Property.GetValue(SelectedInstance.Props) is true;
 
+    // A Custom editor gets the property's current value plus a commit callback closed over this
+    // same property - Commit directly, not via CommitEdit, since a Custom editor's value is
+    // already CLR-typed and needs no ChangeEventArgs/ConvertValue parsing (ticket 58).
+    private CustomEditorContext CustomContext(EditableProperty property) =>
+        new(
+            property.Property.GetValue(SelectedInstance!.Props),
+            newValue => Commit(property, newValue)
+        );
+
     private static string FormatValue(object? value) =>
         value switch
         {
@@ -87,17 +96,10 @@ public partial class PropertyPanel : IDisposable
             _ => value.ToString() ?? "",
         };
 
-    // Each commit is exactly one MutateEntityCommand (ADR 0007), routed through
-    // Canvas.CommitPropsChange - same discipline as a built-in's own inline text edit (ticket 43).
-    // An edit that fails to parse or that leaves the value unchanged commits nothing.
+    // An edit that fails to parse commits nothing - Commit's own no-op-if-unchanged guard covers
+    // the "same value again" case once parsing succeeds.
     private void CommitEdit(EditableProperty property, ChangeEventArgs args)
     {
-        var instance = SelectedInstance;
-        if (instance is null)
-        {
-            return;
-        }
-
         object? newValue;
         try
         {
@@ -105,6 +107,22 @@ public partial class PropertyPanel : IDisposable
         }
         catch (Exception ex)
             when (ex is FormatException or InvalidCastException or OverflowException)
+        {
+            return;
+        }
+
+        Commit(property, newValue);
+    }
+
+    // Each commit is exactly one MutateEntityCommand (ADR 0007), routed through
+    // Canvas.CommitPropsChange - same discipline as a built-in's own inline text edit (ticket 43).
+    // Shared by every EditorKind's commit path: CommitEdit converts a ChangeEventArgs value first;
+    // a Custom editor's RenderFragment already produces a CLR-typed value, so CustomContext's
+    // Commit callback calls straight through to here (ticket 58).
+    private void Commit(EditableProperty property, object? newValue)
+    {
+        var instance = SelectedInstance;
+        if (instance is null)
         {
             return;
         }

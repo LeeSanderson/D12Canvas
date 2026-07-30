@@ -10,6 +10,7 @@ namespace D12Canvas.VisualTests;
 // covering Color, added by ticket 57 alongside Number). Ticket 57 also adds a Dropdown case
 // (Text's FontWeight/TextAlign). Checkbox has no bUnit-only coverage here since no built-in
 // declares a Checkbox-kind property yet - see PropertyPanelTests for its control-level coverage.
+// Ticket 58 adds a Custom case (Demo Note's swatch-picker Color editor).
 // Any later ticket that renders a new visual state on canvas chrome should add a case here
 // alongside its own.
 public sealed class PropertyPanelVisualTests : IAsyncLifetime
@@ -75,6 +76,17 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
         await _page.Locator(".component-container").ClickAsync();
 
         await Expect(_page.Locator("#d12-property-panel-field-FontWeight")).ToBeVisibleAsync();
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
+    [Fact]
+    public async Task PopulatedPanelWithCustomControl_MatchesBaseline()
+    {
+        await _page.Locator(".d12-palette-entry-button[aria-label='Demo note']").ClickAsync();
+        await _page.Locator(".component-container").ClickAsync();
+
+        await Expect(_page.Locator(".demo-note-color-editor")).ToBeVisibleAsync();
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }

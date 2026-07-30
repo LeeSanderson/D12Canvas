@@ -7,7 +7,9 @@ namespace D12Canvas.Tests;
 // A second props type alongside TestProps: PropertyPanelTests needs one shape that carries a
 // Text-type *content* field (Content, no attribute - excluded from the panel, like StickyNote's
 // Text), plus one field per EditorKind the panel supports (ticket 56: Label/Count; ticket 57:
-// Tint/Flag/Mode), all at once. Trailing defaults keep every pre-ticket-57 3-arg call site intact.
+// Tint/Flag/Mode; ticket 58: CustomValue), all at once. Trailing defaults keep every pre-ticket-58
+// call site intact. CustomValue carries no [PanelEditable] - a Custom-kind property can only come
+// from the registration builder (ticket 58), so PropertyPanelTests wires it in itself.
 internal sealed record PanelTestProps(
     string Content,
     [property: PanelEditable(EditorKind.Text)] string Label,
@@ -15,7 +17,8 @@ internal sealed record PanelTestProps(
     [property: PanelEditable(EditorKind.Color)] string Tint = "#000000",
     [property: PanelEditable(EditorKind.Checkbox)] bool Flag = false,
     [property: PanelEditable(EditorKind.Dropdown, Options = new[] { "a", "b", "c" })]
-        string Mode = "a"
+        string Mode = "a",
+    string CustomValue = ""
 );
 
 internal sealed class PanelTestPropsComponent : ComponentBase

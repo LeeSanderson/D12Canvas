@@ -65,6 +65,11 @@
                                 }
                             </select>
                             break;
+                        case EditorKind.Custom:
+                            <div id="@FieldId(property)" class="d12-property-panel-custom">
+                                @property.CustomEditor!(CustomContext(property))
+                            </div>
+                            break;
                     }
                 </li>
             }
@@ -133,5 +138,9 @@
         width: 16px;
         height: 16px;
         align-self: flex-start;
+    }
+
+    .d12-property-panel-custom {
+        display: flex;
     }
 </style>

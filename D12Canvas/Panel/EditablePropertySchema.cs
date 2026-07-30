@@ -23,7 +23,9 @@ public static class EditablePropertySchema
             .ToList();
 
     // A Dropdown control with no choices can't render a usable <select> - caught here, at
-    // discovery/registration time, rather than surfacing as an empty control in the panel.
+    // discovery/registration time, rather than surfacing as an empty control in the panel. A
+    // Custom-kind attribute can never carry the RenderFragment it needs (ticket 58) - caught the
+    // same way.
     private static EditableProperty ToEditableProperty(
         PropertyInfo property,
         PanelEditableAttribute attribute
@@ -32,6 +34,11 @@ public static class EditablePropertySchema
         if (attribute.Kind == EditorKind.Dropdown && (attribute.Options?.Length ?? 0) == 0)
         {
             throw new DropdownOptionsRequiredException(property.DeclaringType!, property.Name);
+        }
+
+        if (attribute.Kind == EditorKind.Custom)
+        {
+            throw new CustomEditorRequiredException(property.DeclaringType!, property.Name);
         }
 
         return new EditableProperty(property, attribute.Kind, attribute.Options);
