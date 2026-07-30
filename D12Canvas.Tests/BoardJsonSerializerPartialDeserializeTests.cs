@@ -438,6 +438,46 @@ public class BoardJsonSerializerPartialDeserializeTests
         );
     }
 
+    // Ticket 55: a dangling custom-port reference is tolerated exactly like a dangling standard
+    // port reference (RecordsAWarningForAnEdgeReferencingAMissingInstanceButStillLoadsTheEdge
+    // above) - a warning is recorded but the edge still loads.
+    [Fact]
+    public void RecordsAWarningForAnEdgeReferencingAMissingInstanceViaACustomPortButStillLoadsTheEdge()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Edges": [
+                {
+                  "Id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+                  "Source": {
+                    "ComponentId": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+                    "PortId": null,
+                    "X": null,
+                    "Y": null,
+                    "CustomPortId": "ffffffff-ffff-ffff-ffff-ffffffffffff"
+                  },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 10, "Y": 20 }
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        var restoredEdge = Assert.Single(result.Board.Edges);
+        Assert.Equal(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"), restoredEdge.Id);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("dddddddd-dddd-dddd-dddd-dddddddddddd", warning.Entity, ignoreCase: true);
+        Assert.Contains(
+            "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+            warning.Reason,
+            StringComparison.OrdinalIgnoreCase
+        );
+    }
+
     [Fact]
     public void SkipsAnEdgeWithADuplicateIdAndRecordsAWarningInsteadOfFailingTheLoad()
     {

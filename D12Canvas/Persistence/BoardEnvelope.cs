@@ -9,20 +9,28 @@ internal sealed record BoardEnvelope(
     IReadOnlyList<EdgeEnvelope>? Edges = null
 );
 
+// Ticket 55: CustomPorts defaults to null so a board saved before this ticket - missing the
+// property entirely - still deserializes, same "field didn't exist yet" convention the Edge-level
+// fields below already rely on. A present-but-empty list and an absent property both map to "no
+// custom ports" (ComponentInstance's own ctor treats a null list the same as an empty one).
 internal sealed record ComponentInstanceEnvelope(
     Guid Id,
     string ComponentTypeKey,
     object? Props,
     BoundsEnvelope Bounds,
-    int ZIndex
+    int ZIndex,
+    IReadOnlyList<PortDefEnvelope>? CustomPorts = null
 );
+
+internal readonly record struct PortDefEnvelope(Guid Id, double FractionX, double FractionY);
 
 internal sealed record GroupEnvelope(Guid Id, IReadOnlyList<Guid> MemberIds);
 
-// ADR 0005/ticket 51: an edge's endpoint round-trips as either an instance + port reference
-// (PortEndpoint) or a board point (FloatingEndpoint, ticket 49) - never a CLR-type discriminator,
-// same convention as ComponentInstanceEnvelope's Props. Exactly one pair of fields is populated;
-// which pair tells FromEndpointEnvelope which IEdgeEndpoint shape to rebuild.
+// ADR 0005/ticket 51: an edge's endpoint round-trips as either an instance + standard port
+// reference (PortEndpoint), an instance + custom port reference (CustomPortEndpoint, ticket 55), or
+// a board point (FloatingEndpoint, ticket 49) - never a CLR-type discriminator, same convention as
+// ComponentInstanceEnvelope's Props. Exactly one combination of fields is populated; which one
+// tells FromEndpointEnvelope which IEdgeEndpoint shape to rebuild.
 //
 // Ticket 52: RoutingStyle/SourceArrow/TargetArrow default to Edge's own ADR 0005 defaults
 // (Straight/None/Arrow) so a board saved before this ticket - missing these properties entirely -
@@ -41,11 +49,15 @@ internal sealed record EdgeEnvelope(
     ComponentInstanceEnvelope? Label = null
 );
 
+// Ticket 55: CustomPortId defaults to null (last positional, same "field didn't exist yet"
+// tolerance the rest of this envelope already relies on) so a board saved before this ticket still
+// deserializes every PortEndpoint/FloatingEndpoint it has unaffected.
 internal sealed record EdgeEndpointEnvelope(
     Guid? ComponentId,
     PortId? PortId,
     double? X,
-    double? Y
+    double? Y,
+    Guid? CustomPortId = null
 );
 
 internal readonly record struct BoundsEnvelope(double X, double Y, double Width, double Height);

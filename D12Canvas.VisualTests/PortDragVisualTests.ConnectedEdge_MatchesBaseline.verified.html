@@ -56,9 +56,7 @@
     .demo-note p {
         margin: 0;
     }
-</style></div><!--!-->
-
-    <div class="port port-top"></div><!--!-->
+</style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
     <div class="port port-bottom"></div><!--!-->
     <div class="port port-left"></div></div><!--!-->
@@ -138,6 +136,46 @@
     .port-left {
         top: calc(50% - 10px);
         left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
     }
 
     .resize-handle {
@@ -210,9 +248,7 @@
     .demo-note p {
         margin: 0;
     }
-</style></div><!--!-->
-
-    <div class="port port-top"></div><!--!-->
+</style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
     <div class="port port-bottom"></div><!--!-->
     <div class="port port-left"></div></div><!--!-->
@@ -292,6 +328,46 @@
     .port-left {
         top: calc(50% - 10px);
         left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
     }
 
     .resize-handle {
@@ -364,9 +440,7 @@
     .demo-note p {
         margin: 0;
     }
-</style></div><!--!-->
-
-    <div class="port port-top"></div><!--!-->
+</style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
     <div class="port port-bottom"></div><!--!-->
     <div class="port port-left"></div></div><!--!-->
@@ -446,6 +520,46 @@
     .port-left {
         top: calc(50% - 10px);
         left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
     }
 
     .resize-handle {
@@ -511,9 +625,7 @@
         height: 100%;
         box-sizing: border-box;
     }
-</style></div><!--!-->
-
-    <div class="port port-top"></div><!--!-->
+</style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
     <div class="port port-bottom"></div><!--!-->
     <div class="port port-left"></div></div><!--!-->
@@ -593,6 +705,46 @@
     .port-left {
         top: calc(50% - 10px);
         left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
     }
 
     .resize-handle {
@@ -676,9 +828,7 @@
         background: transparent;
         padding: 0;
     }
-</style></div><!--!-->
-
-    <div class="port port-top"></div><!--!-->
+</style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
     <div class="port port-bottom"></div><!--!-->
     <div class="port port-left"></div></div><!--!-->
@@ -758,6 +908,46 @@
     .port-left {
         top: calc(50% - 10px);
         left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
     }
 
     .resize-handle {
@@ -832,9 +1022,7 @@
         background: transparent;
         padding: 0;
     }
-</style></div><!--!-->
-
-    <div class="port port-top"></div><!--!-->
+</style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
     <div class="port port-bottom"></div><!--!-->
     <div class="port port-left"></div></div><!--!-->
@@ -914,6 +1102,46 @@
     .port-left {
         top: calc(50% - 10px);
         left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
     }
 
     .resize-handle {
@@ -994,9 +1222,7 @@
         font-size: 12px;
         text-align: center;
     }
-</style></div><!--!-->
-
-    <div class="port port-top"></div><!--!-->
+</style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
     <div class="port port-bottom"></div><!--!-->
     <div class="port port-left"></div></div><!--!-->
@@ -1076,6 +1302,46 @@
     .port-left {
         top: calc(50% - 10px);
         left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
     }
 
     .resize-handle {

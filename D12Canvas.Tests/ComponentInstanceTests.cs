@@ -63,4 +63,51 @@ public class ComponentInstanceTests
 
         Assert.Equal(new Bounds(50, 60, 200, 150), instance.Bounds);
     }
+
+    // Ticket 55/ADR 0005: custom ports are nothing a component type's developer declares at
+    // registration - a fresh instance starts with none, regardless of its type.
+    [Fact]
+    public void DefaultsToNoCustomPortsWhenNoneAreProvided()
+    {
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 100, 100)
+        );
+
+        Assert.Empty(instance.CustomPorts);
+    }
+
+    [Fact]
+    public void CustomPortsCanBeAddedInPlaceAfterCreation()
+    {
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 100, 100)
+        );
+        var port = new PortDef(0.25, 0);
+
+        instance.CustomPorts.Add(port);
+
+        Assert.Equal(new[] { port }, instance.CustomPorts);
+    }
+
+    // Ticket 51-style persistence round-trip precedent: FromComponentEnvelope reconstructs an
+    // instance with its custom ports already populated at construction, not added afterwards.
+    [Fact]
+    public void CustomPortsProvidedAtConstructionAreCopiedNotSharedByReference()
+    {
+        var seedPorts = new List<PortDef> { new(0.25, 0) };
+
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 100, 100),
+            customPorts: seedPorts
+        );
+        seedPorts.Add(new PortDef(0.75, 1));
+
+        Assert.Single(instance.CustomPorts);
+    }
 }

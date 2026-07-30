@@ -132,6 +132,14 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             {
                 yield return port.ComponentId;
             }
+
+            if (
+                endpoint is CustomPortEndpoint custom
+                && board.GetComponent(custom.ComponentId) is null
+            )
+            {
+                yield return custom.ComponentId;
+            }
         }
     }
 
@@ -281,6 +289,13 @@ public sealed class BoardJsonSerializer : IBoardSerializer
                 null,
                 null
             ),
+            CustomPortEndpoint custom => new EdgeEndpointEnvelope(
+                custom.ComponentId,
+                null,
+                null,
+                null,
+                custom.PortId
+            ),
             FloatingEndpoint floating => new EdgeEndpointEnvelope(
                 null,
                 null,
@@ -310,6 +325,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
                 componentId,
                 portId
             ),
+            { ComponentId: { } componentId, CustomPortId: { } customPortId } =>
+                new CustomPortEndpoint(componentId, customPortId),
             { X: { } x, Y: { } y } => new FloatingEndpoint(x, y),
             _ => throw new JsonException(
                 "The edge endpoint is neither port-attached nor floating."
@@ -327,7 +344,10 @@ public sealed class BoardJsonSerializer : IBoardSerializer
                 instance.Bounds.Width,
                 instance.Bounds.Height
             ),
-            instance.ZIndex
+            instance.ZIndex,
+            instance
+                .CustomPorts.Select(p => new PortDefEnvelope(p.Id, p.FractionX, p.FractionY))
+                .ToList()
         );
 
     private ComponentInstance FromComponentEnvelope(ComponentInstanceEnvelope envelope)
@@ -348,7 +368,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
                 envelope.Bounds.Height
             ),
             envelope.ZIndex,
-            envelope.Id
+            envelope.Id,
+            envelope.CustomPorts?.Select(p => new PortDef(p.Id, p.FractionX, p.FractionY)).ToList()
         );
     }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using D12Canvas.Model;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -75,6 +76,17 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public EventCallback<PortDragStartEventArgs> OnPortDragStart { get; set; }
 
+    // Ticket 55/ADR 0005: this instance's own runtime-added ports - instance-scoped state that
+    // lives on ComponentInstance itself, passed down the same way Props is.
+    [Parameter]
+    public IReadOnlyList<PortDef> CustomPorts { get; set; } = Array.Empty<PortDef>();
+
+    // Ticket 55: fired when a double-click on one of the four border strips adds a custom port -
+    // DiagramCanvas owns turning this into an undoable AddCustomPortCommand, since it alone knows
+    // which ComponentInstance this container renders.
+    [Parameter]
+    public EventCallback<PortDef> OnAddCustomPort { get; set; }
+
     [Parameter]
     public EventCallback<ComponentContainerStateChangedEventArgs> OnStateChanged { get; set; }
 
@@ -120,6 +132,12 @@ public partial class ComponentContainer : IAsyncDisposable
     private bool _lastRenderedIsMultiSelected;
     private object? _lastRenderedProps;
 
+    // Ticket 55: CustomPorts is the same mutable List<PortDef> reference across renders (a port is
+    // added/undone in place on ComponentInstance), so reference equality can't detect a change -
+    // count is a cheap enough proxy since a port is only ever added or removed wholesale, never
+    // repositioned in place.
+    private int _lastRenderedCustomPortsCount;
+
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
 
@@ -148,7 +166,10 @@ public partial class ComponentContainer : IAsyncDisposable
             // Ticket 75: an in-place Props edit (ticket 43's inline text editing, or any future
             // property-panel edit) at unchanged Bounds/selection would otherwise never reach
             // ChildContent - Props types are records, so this is a cheap structural comparison.
-            || !Equals(Props, _lastRenderedProps);
+            || !Equals(Props, _lastRenderedProps)
+            // Ticket 55: a custom port added (or undone) since the last render, at otherwise
+            // unchanged Bounds/selection.
+            || CustomPorts.Count != _lastRenderedCustomPortsCount;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -161,6 +182,7 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedIsSelected = IsSelected;
         _lastRenderedIsMultiSelected = IsMultiSelected;
         _lastRenderedProps = Props;
+        _lastRenderedCustomPortsCount = CustomPorts.Count;
 
         if (firstRender)
         {
@@ -325,14 +347,49 @@ public partial class ComponentContainer : IAsyncDisposable
         // e.StopPropagation();
     }
 
-    // Ticket 48: a port's own mousedown. Doesn't stop propagation, so it bubbles up to
-    // HandleMouseDown afterwards (same ordering the resize handles above rely on) - setting
-    // _isPortDragging first stops that handler from also arming an instance move.
-    private void StartPortDrag(MouseEventArgs e, PortId portId)
+    // Ticket 48/55: a port's own mousedown (standard or custom - PortRef covers both). Doesn't
+    // stop propagation, so it bubbles up to HandleMouseDown afterwards (same ordering the resize
+    // handles above rely on) - setting _isPortDragging first stops that handler from also arming
+    // an instance move.
+    private void StartPortDrag(MouseEventArgs e, PortRef port)
     {
         _isPortDragging = true;
-        OnPortDragStart.InvokeAsync(new PortDragStartEventArgs(portId, e.ClientX, e.ClientY));
+        OnPortDragStart.InvokeAsync(new PortDragStartEventArgs(port, e.ClientX, e.ClientY));
     }
+
+    // Ticket 55/ADR 0005: a double-click anywhere along one of the four border strips (rendered
+    // only while ShowSelectionOverlay, see the .razor markup) adds a custom port there. OffsetX/
+    // OffsetY (relative to the strip's own box, which spans the container's full width or height
+    // on its axis - see .port-strip CSS) gives the fraction along that side directly; the
+    // perpendicular fraction is the side's own fixed 0/1, the same border-center convention
+    // StandardPorts already uses.
+    private void AddCustomPort(MouseEventArgs e, PortStripSide side)
+    {
+        var (fractionX, fractionY) = side switch
+        {
+            PortStripSide.Top => (Clamp01(e.OffsetX / Width), 0.0),
+            PortStripSide.Right => (1.0, Clamp01(e.OffsetY / Height)),
+            PortStripSide.Bottom => (Clamp01(e.OffsetX / Width), 1.0),
+            PortStripSide.Left => (0.0, Clamp01(e.OffsetY / Height)),
+            _ => throw new ArgumentOutOfRangeException(nameof(side)),
+        };
+
+        OnAddCustomPort.InvokeAsync(new PortDef(fractionX, fractionY));
+    }
+
+    private static double Clamp01(double value) => Math.Clamp(value, 0, 1);
+
+    // Ticket 55: the shared visibility gate for the border strips and the resize handles - both
+    // are selection-driven overlay affordances, suppressed for a multi-selected member (ticket 33's
+    // shared bounding-box overlay grows its own handles instead) but shown during edit mode too,
+    // same as resize handles always have been.
+    private bool ShowSelectionOverlay => (IsSelected && !IsMultiSelected) || _editMode;
+
+    private static string CustomPortStyle(PortDef port) =>
+        $"left: calc({FormatPercent(port.FractionX)}% - 10px); top: calc({FormatPercent(port.FractionY)}% - 10px);";
+
+    private static string FormatPercent(double fraction) =>
+        (fraction * 100).ToString(CultureInfo.InvariantCulture);
 
     private void ApplyResize(double deltaX, double deltaY)
     {
@@ -427,6 +484,15 @@ public enum ResizeDirection
     Left,
 }
 
+// Ticket 55: which of the four border strips a double-click-to-add-a-custom-port landed on.
+public enum PortStripSide
+{
+    Top,
+    Right,
+    Bottom,
+    Left,
+}
+
 public class ComponentContainerStateChangedEventArgs : EventArgs
 {
     public double X { get; set; }
@@ -438,13 +504,13 @@ public class ComponentContainerStateChangedEventArgs : EventArgs
 
 public class PortDragStartEventArgs : EventArgs
 {
-    public PortId PortId { get; }
+    public PortRef Port { get; }
     public double ClientX { get; }
     public double ClientY { get; }
 
-    public PortDragStartEventArgs(PortId portId, double clientX, double clientY)
+    public PortDragStartEventArgs(PortRef port, double clientX, double clientY)
     {
-        PortId = portId;
+        Port = port;
         ClientX = clientX;
         ClientY = clientY;
     }

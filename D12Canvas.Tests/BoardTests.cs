@@ -595,6 +595,72 @@ public class BoardTests
         Assert.Equal((500.0, 500.0), point);
     }
 
+    // Ticket 55: a CustomPortEndpoint resolves its own fraction against the instance's Bounds -
+    // the same "derived, never stored" trick a standard port's PortEndpoint already relies on, so
+    // it tracks move/resize for free too.
+    [Fact]
+    public void ResolveEndpointForACustomPortReturnsItsFractionalPositionOnTheInstancesBounds()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 100, 40, 20)
+        );
+        var port = new PortDef(0.25, 0);
+        instance.CustomPorts.Add(port);
+        board.AddComponent(instance);
+
+        var point = board.ResolveEndpoint(new CustomPortEndpoint(instance.Id, port.Id));
+
+        Assert.Equal((110.0, 100.0), point);
+    }
+
+    [Fact]
+    public void ResolveEndpointForACustomPortTracksTheInstanceAfterItResizes()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 40, 20)
+        );
+        var port = new PortDef(0.25, 0);
+        instance.CustomPorts.Add(port);
+        board.AddComponent(instance);
+
+        instance.Bounds = new Bounds(0, 0, 80, 100);
+        var point = board.ResolveEndpoint(new CustomPortEndpoint(instance.Id, port.Id));
+
+        Assert.Equal((20.0, 0.0), point);
+    }
+
+    [Fact]
+    public void ResolveEndpointForACustomPortOnAMissingComponentReturnsNull()
+    {
+        var board = new Board();
+
+        var point = board.ResolveEndpoint(new CustomPortEndpoint(Guid.NewGuid(), Guid.NewGuid()));
+
+        Assert.Null(point);
+    }
+
+    [Fact]
+    public void ResolveEndpointForAnUnknownCustomPortIdOnAnExistingInstanceReturnsNull()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 40, 20)
+        );
+        board.AddComponent(instance);
+
+        var point = board.ResolveEndpoint(new CustomPortEndpoint(instance.Id, Guid.NewGuid()));
+
+        Assert.Null(point);
+    }
+
     // Ticket 48: FindPortNear - the connector-drag drop hit-test. ADR 0005 settled on discrete
     // named ports, so this only resolves within a tolerance of an instance's actual port points.
     [Fact]
@@ -660,6 +726,46 @@ public class BoardTests
         Assert.Null(board.FindPortNear((0, 0), tolerance: 1000));
     }
 
+    // Ticket 55: a custom port is hit-tested exactly like a standard one - ADR 0005's "attaches
+    // exactly as to standard ports" requirement.
+    [Fact]
+    public void FindPortNearReturnsACustomPortWithinTolerance()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 100, 40, 20)
+        );
+        var port = new PortDef(0.25, 0);
+        instance.CustomPorts.Add(port);
+        board.AddComponent(instance);
+
+        // Custom port sits at (110, 100) - fraction (0.25, 0) of a 40x20 box at (100, 100).
+        var found = board.FindPortNear((111, 101), tolerance: 5);
+
+        Assert.Equal(new CustomPortEndpoint(instance.Id, port.Id), found);
+    }
+
+    [Fact]
+    public void FindPortNearPicksTheCloserOfAStandardAndACustomPortOnTheSameInstance()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(100, 100, 40, 20)
+        );
+        // Right port sits at (140, 110); this custom port sits farther away, at (100, 100).
+        var port = new PortDef(0, 0);
+        instance.CustomPorts.Add(port);
+        board.AddComponent(instance);
+
+        var found = board.FindPortNear((139, 109), tolerance: 50);
+
+        Assert.Equal(new PortEndpoint(instance.Id, PortId.Right), found);
+    }
+
     // Ticket 49: FindEdgeAttachedTo - distinguishes "start a new edge" from "reposition this
     // edge's existing endpoint" (DiagramCanvas.StartPortDrag).
     [Fact]
@@ -710,6 +816,37 @@ public class BoardTests
         var board = new Board();
 
         Assert.Null(board.FindEdgeAttachedTo(new PortEndpoint(Guid.NewGuid(), PortId.Top)));
+    }
+
+    // Ticket 55: FindEdgeAttachedTo works for a custom port exactly as it does for a standard one -
+    // needed so re-grabbing an already-connected custom port starts a "reposition" drag rather than
+    // creating a second edge (DiagramCanvas.StartPortDrag).
+    [Fact]
+    public void FindEdgeAttachedToFindsTheEdgeWhoseSourceIsACustomPort()
+    {
+        var board = new Board();
+        var source = new CustomPortEndpoint(Guid.NewGuid(), Guid.NewGuid());
+        var edge = new Edge(source, new PortEndpoint(Guid.NewGuid(), PortId.Left));
+        board.AddEdge(edge);
+
+        var found = board.FindEdgeAttachedTo(source);
+
+        Assert.Equal((edge.Id, true), found);
+    }
+
+    [Fact]
+    public void FindEdgeAttachedToReturnsNullForACustomPortThatIsAttachedToNothing()
+    {
+        var board = new Board();
+        var instanceId = Guid.NewGuid();
+        var attachedPortId = Guid.NewGuid();
+        board.AddEdge(
+            new Edge(new CustomPortEndpoint(instanceId, attachedPortId), new FloatingEndpoint(0, 0))
+        );
+
+        var found = board.FindEdgeAttachedTo(new CustomPortEndpoint(instanceId, Guid.NewGuid()));
+
+        Assert.Null(found);
     }
 
     // Ticket 53: FindEdgeLabel - the lookup DiagramCanvas.CommitPropsChange falls back to when an

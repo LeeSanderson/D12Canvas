@@ -29,14 +29,15 @@ public sealed class Board
 
     public Edge? GetEdge(Guid id) => _edges.TryGetValue(id, out var edge) ? edge : null;
 
-    // Ticket 48/49: an endpoint's live board-space point. A PortEndpoint resolves from its
-    // referenced instance's current Bounds rather than stored - what lets an attached edge track
-    // move/resize for free (ADR 0005); a FloatingEndpoint resolves to its own fixed point, tracking
-    // nothing. Null when a PortEndpoint's referenced instance no longer exists.
+    // Ticket 48/49/55: an endpoint's live board-space point. A PortEndpoint/CustomPortEndpoint
+    // resolves from its referenced instance's current Bounds rather than stored - what lets an
+    // attached edge track move/resize for free (ADR 0005); a FloatingEndpoint resolves to its own
+    // fixed point, tracking nothing. Null when a referenced instance or custom port no longer exists.
     public (double X, double Y)? ResolveEndpoint(IEdgeEndpoint endpoint) =>
         endpoint switch
         {
             PortEndpoint port => ResolvePort(port),
+            CustomPortEndpoint custom => ResolveCustomPort(custom),
             FloatingEndpoint floating => (floating.X, floating.Y),
             _ => null,
         };
@@ -53,30 +54,46 @@ public sealed class Board
         return instance.Bounds.PointAtFraction(fractionX, fractionY);
     }
 
-    // Ticket 48: geometric proximity hit-test for a connector-drag drop point - ADR 0005 settled
-    // on discrete named ports (rejecting nearest-point-on-perimeter), so a drop only resolves to
-    // a port when within tolerance of one of an instance's actual standard port points. Returns
-    // the closest match across every instance's four standard ports, or null when nothing is
-    // within tolerance.
-    public PortEndpoint? FindPortNear((double X, double Y) point, double tolerance)
+    private (double X, double Y)? ResolveCustomPort(CustomPortEndpoint endpoint)
     {
-        PortEndpoint? closest = null;
+        var instance = GetComponent(endpoint.ComponentId);
+        if (instance is null)
+        {
+            return null;
+        }
+
+        foreach (var port in instance.CustomPorts)
+        {
+            if (port.Id == endpoint.PortId)
+            {
+                return instance.Bounds.PointAtFraction(port.FractionX, port.FractionY);
+            }
+        }
+
+        return null;
+    }
+
+    // Ticket 48/55: geometric proximity hit-test for a connector-drag drop point - ADR 0005 settled
+    // on discrete named ports (rejecting nearest-point-on-perimeter), so a drop only resolves to a
+    // port when within tolerance of one of an instance's actual port points, standard or custom.
+    // Returns the closest match across every instance's ports, or null when nothing is within
+    // tolerance.
+    public IEdgeEndpoint? FindPortNear((double X, double Y) point, double tolerance)
+    {
+        IEdgeEndpoint? closest = null;
         var closestDistance = double.MaxValue;
 
         foreach (var instance in _components.Values)
         {
-            foreach (var portId in StandardPorts.All)
+            foreach (var (endpoint, fractionX, fractionY) in AllPorts(instance))
             {
-                var (fractionX, fractionY) = StandardPorts.FractionOf(portId);
                 var (portX, portY) = instance.Bounds.PointAtFraction(fractionX, fractionY);
-                var distance = Math.Sqrt(
-                    Math.Pow(portX - point.X, 2) + Math.Pow(portY - point.Y, 2)
-                );
+                var distance = DistanceFrom(portX, portY, point);
 
                 if (distance <= tolerance && distance < closestDistance)
                 {
                     closestDistance = distance;
-                    closest = new PortEndpoint(instance.Id, portId);
+                    closest = endpoint;
                 }
             }
         }
@@ -84,20 +101,48 @@ public sealed class Board
         return closest;
     }
 
-    // Ticket 49: does any edge already anchor to this exact port? Used to tell "start a new edge"
-    // apart from "reposition this edge's existing endpoint" (see DiagramCanvas.StartPortDrag).
-    // Multiple edges sharing the same port pick whichever is found first - an acceptable ambiguity
-    // this ticket doesn't need to resolve.
-    public (Guid EdgeId, bool IsSource)? FindEdgeAttachedTo(PortEndpoint endpoint)
+    // Ticket 55: every port an instance exposes, standard and custom alike, each already paired
+    // with the IEdgeEndpoint it resolves to - lets FindPortNear hit-test both kinds with a single
+    // loop body instead of repeating it once per kind.
+    private static IEnumerable<(
+        IEdgeEndpoint Endpoint,
+        double FractionX,
+        double FractionY
+    )> AllPorts(ComponentInstance instance)
+    {
+        foreach (var portId in StandardPorts.All)
+        {
+            var (fractionX, fractionY) = StandardPorts.FractionOf(portId);
+            yield return (new PortEndpoint(instance.Id, portId), fractionX, fractionY);
+        }
+
+        foreach (var port in instance.CustomPorts)
+        {
+            yield return (
+                new CustomPortEndpoint(instance.Id, port.Id),
+                port.FractionX,
+                port.FractionY
+            );
+        }
+    }
+
+    private static double DistanceFrom(double x, double y, (double X, double Y) point) =>
+        Math.Sqrt(Math.Pow(x - point.X, 2) + Math.Pow(y - point.Y, 2));
+
+    // Ticket 49/55: does any edge already anchor to this exact port (standard or custom)? Used to
+    // tell "start a new edge" apart from "reposition this edge's existing endpoint" (see
+    // DiagramCanvas.StartPortDrag). Multiple edges sharing the same port pick whichever is found
+    // first - an acceptable ambiguity this ticket doesn't need to resolve.
+    public (Guid EdgeId, bool IsSource)? FindEdgeAttachedTo(IEdgeEndpoint endpoint)
     {
         foreach (var edge in _edges.Values)
         {
-            if (edge.Source is PortEndpoint source && source == endpoint)
+            if (edge.Source.Equals(endpoint))
             {
                 return (edge.Id, true);
             }
 
-            if (edge.Target is PortEndpoint target && target == endpoint)
+            if (edge.Target.Equals(endpoint))
             {
                 return (edge.Id, false);
             }

@@ -111,6 +111,82 @@ public class BoardJsonSerializerTests
         Assert.DoesNotContain(typeof(TestProps).AssemblyQualifiedName!, json);
     }
 
+    // Ticket 55/ADR 0005: a custom port round-trips alongside the rest of ComponentInstance's
+    // own envelope - not a separate Board array, since it's instance-scoped state, not a
+    // first-class board entity.
+    [Fact]
+    public void SerializeIncludesAnInstancesCustomPorts()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var instance = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        instance.CustomPorts.Add(new PortDef(0.25, 0));
+        board.AddComponent(instance);
+
+        var json = serializer.Serialize(board);
+
+        using var document = JsonDocument.Parse(json);
+        var componentElement = document.RootElement.GetProperty("Components")[0];
+        var customPortsElement = componentElement.GetProperty("CustomPorts");
+        Assert.Equal(1, customPortsElement.GetArrayLength());
+        Assert.Equal(0.25, customPortsElement[0].GetProperty("FractionX").GetDouble());
+    }
+
+    [Fact]
+    public void DeserializeRebuildsAnInstancesCustomPortsWithIdentityIntact()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var instance = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var port = new PortDef(0.25, 0);
+        instance.CustomPorts.Add(port);
+        board.AddComponent(instance);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredInstance = restored.GetComponent(instance.Id);
+        Assert.NotNull(restoredInstance);
+        Assert.Equal(new[] { port }, restoredInstance!.CustomPorts);
+    }
+
+    // A board saved before this ticket has no "CustomPorts" property on its components at all -
+    // same "field didn't exist yet" tolerance every other ticket's own envelope addition relies on.
+    [Fact]
+    public void DeserializeDefaultsAnOlderInstanceMissingCustomPortsToAnEmptyList()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [
+                {
+                  "Id": "11111111-1111-1111-1111-111111111111",
+                  "ComponentTypeKey": "test-props",
+                  "Props": {},
+                  "Bounds": { "X": 0, "Y": 0, "Width": 10, "Height": 10 },
+                  "ZIndex": 0
+                }
+              ]
+            }
+            """;
+
+        var restored = serializer.Deserialize(json);
+
+        var restoredInstance = restored.GetComponent(
+            Guid.Parse("11111111-1111-1111-1111-111111111111")
+        );
+        Assert.NotNull(restoredInstance);
+        Assert.Empty(restoredInstance!.CustomPorts);
+    }
+
     [Fact]
     public void ComponentsOfDifferentTypesEachBindToTheirOwnPropsType()
     {
@@ -615,6 +691,38 @@ public class BoardJsonSerializerTests
         var restoredEdge = Assert.Single(restored.Edges);
         var sourcePoint = restored.ResolveEndpoint(restoredEdge.Source);
         Assert.Equal(restoredFirst.Bounds.PointAtFraction(1, 0.5), sourcePoint);
+    }
+
+    // Ticket 55/ADR 0005: an edge attached to a custom port round-trips exactly like one attached
+    // to a standard port - same envelope shape, distinguished by which field pair is populated
+    // (see EdgeEndpointEnvelope), and still tracks its instance's Bounds afterwards.
+    [Fact]
+    public void ACustomPortAttachedEdgeRoundTripsAndStaysAttached()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var port = new PortDef(0.25, 0);
+        first.CustomPorts.Add(port);
+        board.AddComponent(first);
+        var edge = new Edge(new CustomPortEndpoint(first.Id, port.Id), new FloatingEndpoint(1, 2));
+        board.AddEdge(edge);
+
+        var restored = serializer.Deserialize(serializer.Serialize(board));
+
+        var restoredEdge = Assert.Single(restored.Edges);
+        Assert.Equal(new CustomPortEndpoint(first.Id, port.Id), restoredEdge.Source);
+
+        var restoredFirst = restored.GetComponent(first.Id)!;
+        restoredFirst.Bounds = new Bounds(100, 100, 20, 20);
+        Assert.Equal(
+            restoredFirst.Bounds.PointAtFraction(0.25, 0),
+            restored.ResolveEndpoint(restoredEdge.Source)
+        );
     }
 
     // Strict deserialize does no referential-integrity checking for Edges either, same as Groups

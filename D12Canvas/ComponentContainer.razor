@@ -21,6 +21,20 @@
         @ChildContent
     </div>
 
+    @* Ticket 55/ADR 0005: a double-click anywhere along one of these four border strips adds a
+       custom port there. Rendered before the ports below (and so painted underneath them, later
+       markup wins the same stacking-context tie-break the ports/resize-handles comment below
+       relies on) so a standard or custom port's own small hit circle always wins a click over the
+       broader strip beneath it - only the rest of the border reaches this handler. Stops
+       propagation so it doesn't also enter edit mode (the container's own @ondblclick). *@
+    @if (ShowSelectionOverlay)
+    {
+        <div class="port-strip port-strip-top" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Top))" @ondblclick:stopPropagation></div>
+        <div class="port-strip port-strip-right" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Right))" @ondblclick:stopPropagation></div>
+        <div class="port-strip port-strip-bottom" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Bottom))" @ondblclick:stopPropagation></div>
+        <div class="port-strip port-strip-left" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Left))" @ondblclick:stopPropagation></div>
+    }
+
     @* Ticket 47: the four standard ports are automatic on every instance (ADR 0005) - no
        registration opt-in, so they're rendered unconditionally here rather than sourced from
        Props/registration. Fractional border-center placement (and staying there through move and
@@ -30,12 +44,22 @@
     @* Ticket 48: each port's own mousedown starts a connector drag (StartPortDrag) - it doesn't
        stop propagation, so it still bubbles up to HandleMouseDown afterwards, matching how the
        resize handles below interact with that same handler. *@
-    <div class="port port-top" @onmousedown="@((e) => StartPortDrag(e, PortId.Top))"></div>
-    <div class="port port-right" @onmousedown="@((e) => StartPortDrag(e, PortId.Right))"></div>
-    <div class="port port-bottom" @onmousedown="@((e) => StartPortDrag(e, PortId.Bottom))"></div>
-    <div class="port port-left" @onmousedown="@((e) => StartPortDrag(e, PortId.Left))"></div>
+    <div class="port port-top" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Top)))"></div>
+    <div class="port port-right" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Right)))"></div>
+    <div class="port port-bottom" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Bottom)))"></div>
+    <div class="port port-left" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Left)))"></div>
 
-    @if ((IsSelected && !IsMultiSelected) || _editMode)
+    @* Ticket 55: an instance's own runtime-added custom ports - the same drag-to-connect affordance
+       as a standard port (StartPortDrag), just at a user-chosen fractional position instead of a
+       fixed border-center one, so its own inline style (not a CSS class) positions it. *@
+    @foreach (var port in CustomPorts)
+    {
+        <div class="port custom-port" style="@CustomPortStyle(port)"
+             @onmousedown="@((e) => StartPortDrag(e, PortRef.Custom(port.Id)))"
+             @key="port.Id"></div>
+    }
+
+    @if (ShowSelectionOverlay)
     {
         <div class="resize-handle top-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopLeft))"></div>
         <div class="resize-handle top" @onmousedown="@((e) => StartResize(e, ResizeDirection.Top))"></div>
@@ -123,6 +147,46 @@
     .port-left {
         top: calc(50% - 10px);
         left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
     }
 
     .resize-handle {

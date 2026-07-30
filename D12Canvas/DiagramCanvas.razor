@@ -120,7 +120,9 @@
                                         OnSelect="@((shiftKey) => SelectComponent(instance.Id, shiftKey))"
                                         OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
                                         OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))"
-                                        OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))">
+                                        OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
+                                        CustomPorts="instance.CustomPorts"
+                                        OnAddCustomPort="@((port) => AddCustomPort(instance.Id, port))">
                         @* Ticket 43: lets a text-carrying built-in (Sticky Note, Text) identify
                            itself back to ParentCanvas when committing its own inline WYSIWYG edit -
                            see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@

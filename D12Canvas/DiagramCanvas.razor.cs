@@ -128,7 +128,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // different instances.
     private bool _isConnectingPort;
     private Guid _connectSourceComponentId;
-    private PortId _connectSourcePortId;
+    private PortRef _connectSourcePortRef;
     private (double Left, double Top) _connectContainerOrigin;
     private (double X, double Y) _connectCurrentPoint;
 
@@ -559,14 +559,15 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        // Ticket 49: a port that already anchors an edge starts a "reposition this edge's
+        // Ticket 49/55: a port that already anchors an edge starts a "reposition this edge's
         // endpoint" gesture instead of creating a new edge - matches common diagramming-tool UX
         // (grabbing a connected point moves the connection; grabbing a bare port starts a new one).
-        var attachedEdge = Board.FindEdgeAttachedTo(new PortEndpoint(instanceId, args.PortId));
+        // Works the same for a custom port as a standard one - PortRef.ToEndpoint resolves either.
+        var attachedEdge = Board.FindEdgeAttachedTo(args.Port.ToEndpoint(instanceId));
 
         _isConnectingPort = true;
         _connectSourceComponentId = instanceId;
-        _connectSourcePortId = args.PortId;
+        _connectSourcePortRef = args.Port;
         _connectEditingEdgeId = attachedEdge?.EdgeId;
         _connectEditingEdgeIsSource = attachedEdge?.IsSource ?? false;
         _connectCurrentPoint = ToBoardPoint((args.ClientX, args.ClientY), _connectContainerOrigin);
@@ -645,14 +646,16 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
         else
         {
-            var source = new PortEndpoint(_connectSourceComponentId, _connectSourcePortId);
+            var source = _connectSourcePortRef.ToEndpoint(_connectSourceComponentId);
 
             // Dropping back on the exact port the drag started from creates no edge - a real
-            // gesture always connects two distinct points.
+            // gesture always connects two distinct points. IEdgeEndpoint's implementations are all
+            // record structs, so structural equality already covers every shape (standard port,
+            // custom port) without a type-specific comparison - same as ApplyEdgeEndpointEdit below.
             // Ticket 50: routed through AddEdgeCommand (ADR 0007) rather than a direct
             // Board.AddEdge call, so undo removes the created edge and redo restores it with the
             // same attachments.
-            if (!(resolved is PortEndpoint resolvedPort && resolvedPort == source))
+            if (!resolved.Equals(source))
             {
                 _history.Do(new AddEdgeCommand(Board, new Edge(source, resolved)));
             }
@@ -732,6 +735,20 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _history.Do(new ChangeEdgeStyleCommand(edge, before, after));
+        StateHasChanged();
+    }
+
+    // Ticket 55/ADR 0005: the commit point for a border double-click adding a custom port - routed
+    // through AddCustomPortCommand (ADR 0007) so undo removes exactly the port that was added.
+    private void AddCustomPort(Guid instanceId, PortDef port)
+    {
+        var instance = Board?.GetComponent(instanceId);
+        if (instance is null)
+        {
+            return;
+        }
+
+        _history.Do(new AddCustomPortCommand(instance, port));
         StateHasChanged();
     }
 
@@ -1247,9 +1264,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         var from = _connectEditingEdgeId is { } editingEdgeId
             ? ResolveOtherEndpoint(editingEdgeId, _connectEditingEdgeIsSource)
-            : Board.ResolveEndpoint(
-                new PortEndpoint(_connectSourceComponentId, _connectSourcePortId)
-            );
+            : Board.ResolveEndpoint(_connectSourcePortRef.ToEndpoint(_connectSourceComponentId));
 
         return from is null ? null : (from.Value, _connectCurrentPoint);
     }
