@@ -1,0 +1,111 @@
+using Microsoft.Playwright;
+using VerifyTests;
+using Xunit;
+using static Microsoft.Playwright.Assertions;
+
+namespace D12Canvas.VisualTests;
+
+// Screenshot-diff baseline for the selection context menu (ticket 62/ADR 0009): right-clicking a
+// selected instance opens a menu offering Delete, the four layering commands, and (once 2+
+// instances are selected) Group. Any later ticket that renders a new visual state on canvas should
+// add a case here alongside its own.
+public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
+{
+    private static readonly PageScreenshotOptions ScreenshotOptions = new()
+    {
+        FullPage = true,
+        Type = ScreenshotType.Png,
+        Animations = ScreenshotAnimations.Disabled,
+    };
+
+    private readonly IBrowser _browser;
+    private IBrowserContext _context = null!;
+    private IPage _page = null!;
+
+    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
+    // class depends on the Demo app assembly fixture having finished starting up.
+    public SelectionContextMenuVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
+    {
+        _browser = playwright.Browser;
+    }
+
+    public async ValueTask InitializeAsync()
+    {
+        _context = await _browser.NewContextAsync(
+            new BrowserNewContextOptions
+            {
+                BaseURL = DemoAppFixture.BaseUrl,
+                ViewportSize = new ViewportSize { Width = 1000, Height = 700 },
+            }
+        );
+        _page = await _context.NewPageAsync();
+        await _page.GotoAsync("/placement-demo");
+        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(6);
+    }
+
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+
+    [Fact]
+    public async Task RightClickOnASelectedInstanceOpensTheMenu_MatchesBaseline()
+    {
+        await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
+        var instance = _page.Locator(".component-container");
+        await instance.ClickAsync();
+        await Expect(instance).ToHaveAttributeAsync("aria-selected", "true");
+
+        await instance.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
+
+        await Expect(_page.Locator(".d12-context-menu")).ToBeVisibleAsync();
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
+    // Places the first instance and selects it while it's still the board's only one - same
+    // reasoning as ZIndexLayeringVisualTests' own helper: the cascading +20,+20 click-to-add offset
+    // (ADR 0009) doesn't fully clear a default-sized instance, and the second one renders above the
+    // first (ticket 60's new-on-top default), so a click landing on the first's own on-screen spot
+    // after the second exists would hit the second instead.
+    [Fact]
+    public async Task RightClickOnATwoInstanceSelectionOffersGroup_MatchesBaseline()
+    {
+        var entries = _page.Locator(".d12-palette-entry-button");
+        await entries.Nth(0).ClickAsync();
+        await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
+        await _page.Locator(".component-container").ClickAsync();
+        await Expect(_page.Locator(".component-container[aria-selected='true']"))
+            .ToHaveCountAsync(1);
+
+        await entries.Nth(1).ClickAsync();
+        await Expect(_page.Locator(".component-container")).ToHaveCountAsync(2);
+
+        // The second, now-on-top instance is the only one reachable by a real click - shift-click
+        // adds it to the existing selection instead of trying to reach the now-covered first one.
+        var topInstance = _page.Locator(".component-container").Nth(1);
+        await topInstance.ClickAsync(
+            new LocatorClickOptions { Modifiers = [KeyboardModifier.Shift] }
+        );
+        await Expect(_page.Locator(".component-container[aria-selected='true']"))
+            .ToHaveCountAsync(2);
+
+        await topInstance.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
+
+        await Expect(_page.GetByRole(AriaRole.Menuitem, new() { Name = "Group" }))
+            .ToBeVisibleAsync();
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
+    [Fact]
+    public async Task RightClickOnEmptyCanvasOpensNoMenu()
+    {
+        await _page
+            .Locator(".diagram-canvas")
+            .ClickAsync(
+                new LocatorClickOptions
+                {
+                    Button = MouseButton.Right,
+                    Position = new Position { X = 10, Y = 10 },
+                }
+            );
+
+        await Expect(_page.Locator(".d12-context-menu")).ToHaveCountAsync(0);
+    }
+}

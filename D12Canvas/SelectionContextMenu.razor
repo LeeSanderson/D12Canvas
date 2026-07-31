@@ -1,0 +1,75 @@
+@namespace D12Canvas
+
+<div class="d12-context-menu" role="menu" aria-label="Selection actions"
+     style="@MenuStyle"
+     @ref="_menuRef"
+     @onkeydown="HandleKeyDown" @onkeydown:stopPropagation
+     @oncontextmenu:preventDefault>
+    <button type="button" class="d12-context-menu-item" role="menuitem" autofocus
+            @onclick="InvokeDelete">Delete</button>
+    @if (CanGroup)
+    {
+        <button type="button" class="d12-context-menu-item" role="menuitem"
+                @onclick="InvokeGroup">Group</button>
+    }
+    @if (CanUngroup)
+    {
+        <button type="button" class="d12-context-menu-item" role="menuitem"
+                @onclick="InvokeUngroup">Ungroup</button>
+    }
+    <div class="d12-context-menu-separator" role="separator"></div>
+    <button type="button" class="d12-context-menu-item" role="menuitem"
+            @onclick="InvokeBringToFront">Bring to Front</button>
+    <button type="button" class="d12-context-menu-item" role="menuitem"
+            @onclick="InvokeBringForward">Bring Forward</button>
+    <button type="button" class="d12-context-menu-item" role="menuitem"
+            @onclick="InvokeSendBackward">Send Backward</button>
+    <button type="button" class="d12-context-menu-item" role="menuitem"
+            @onclick="InvokeSendToBack">Send to Back</button>
+</div>
+
+<style>
+    .d12-context-menu {
+        position: absolute;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 160px;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 4px;
+        box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .d12-context-menu-item {
+        display: block;
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        font-size: 13px;
+        color: inherit;
+    }
+
+    .d12-context-menu-item:hover {
+        background: #f0f0f0;
+        border-color: #ccc;
+    }
+
+    .d12-context-menu-separator {
+        height: 1px;
+        margin: 4px 6px;
+        background: #ccc;
+    }
+</style>

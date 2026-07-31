@@ -17,6 +17,7 @@
          @onmouseup="@HandleMouseUp"
          @onwheel="@HandleMouseWheel"
          @onclick="@HandleCanvasClick"
+         @oncontextmenu="@HandleContextMenu" @oncontextmenu:preventDefault="@HasContextMenuEligibleSelection"
          @ondragenter="@HandleDragEnterOrOver" @ondragenter:preventDefault="true"
          @ondragover="@HandleDragEnterOrOver" @ondragover:preventDefault="true"
          @ondragleave="@HandleDragLeave"
@@ -178,6 +179,22 @@
     @if (_isDragOverBoard)
     {
         <div class="drag-over-affordance"></div>
+    }
+    @* Ticket 62/ADR 0009: a sibling of .diagram-canvas (like .drag-over-affordance above), not
+       nested inside .canvas-content - canvas chrome (CONTEXT.md) must not pan/zoom with board
+       content, so its anchor (_contextMenu.X/Y) is plain container-relative pixels, not board space. *@
+    @if (_contextMenu is not null)
+    {
+        <SelectionContextMenu X="_contextMenu.X" Y="_contextMenu.Y"
+                               CanGroup="CanGroupSelection" CanUngroup="CanUngroupSelection"
+                               OnDelete="@(() => InvokeFromContextMenu(OnDeletePressed))"
+                               OnGroup="@(() => InvokeFromContextMenu(OnGroupPressed))"
+                               OnUngroup="@(() => InvokeFromContextMenu(OnUngroupPressed))"
+                               OnBringToFront="@(() => InvokeFromContextMenu(OnBringToFrontPressed))"
+                               OnSendToBack="@(() => InvokeFromContextMenu(OnSendToBackPressed))"
+                               OnBringForward="@(() => InvokeFromContextMenu(OnBringForwardPressed))"
+                               OnSendBackward="@(() => InvokeFromContextMenu(OnSendBackwardPressed))"
+                               OnRequestClose="@CloseContextMenu" />
     }
 </div>
 

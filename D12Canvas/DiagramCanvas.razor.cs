@@ -117,6 +117,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     // selection, and selecting an instance (or starting a marquee) always clears this.
     private Guid? _selectedEdgeId;
 
+    // Ticket 62/ADR 0009: the open selection context menu, if any - null means none is open. Its
+    // anchor point is plain container-relative pixels (not board space), since the menu is canvas
+    // chrome (CONTEXT.md) that must not pan/zoom with the board content.
+    private sealed record ContextMenuState(double X, double Y);
+
+    private ContextMenuState? _contextMenu;
+
     // Ticket 37: session-scoped, in-memory undo/redo (ADR 0007) - lives here, not on Board, for
     // the same reason selection does; never serialized, never survives a reload.
     private readonly CommandHistory _history = new();
@@ -311,6 +318,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _selectedInstanceIds.Clear();
         _selectedEdgeId = null;
+        _contextMenu = null;
         NotifySelectionChanged();
         StateHasChanged();
     }
@@ -372,7 +380,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnGroupPressed()
     {
-        if (Board is null || _selectedInstanceIds.Count < 2)
+        if (Board is null || !CanGroupSelection)
         {
             return;
         }
@@ -393,7 +401,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnUngroupPressed()
     {
-        if (Board is null)
+        if (Board is null || !CanUngroupSelection)
         {
             return;
         }
@@ -403,11 +411,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             .Where(group => group is not null)
             .Cast<Group>()
             .ToList();
-
-        if (groups.Count == 0)
-        {
-            return;
-        }
 
         var commands = groups.Select(group => (ICommand)new UngroupCommand(Board, group)).ToList();
         _history.Do(new CompositeCommand(commands));
@@ -548,6 +551,61 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _history.Do(new CompositeCommand(commands));
         StateHasChanged();
+    }
+
+    // Ticket 62/ADR 0009: right-click on a selection opens the menu; right-click on empty canvas
+    // (nothing selected) is a no-op here, leaving the @oncontextmenu:preventDefault binding false
+    // for that render so the browser's own default menu shows instead.
+    private bool HasContextMenuEligibleSelection =>
+        _selectedInstanceIds.Count > 0 || _selectedEdgeId is not null;
+
+    // Same eligibility OnGroupPressed itself already guards on (2+ top-level entries) - kept as its
+    // own property so the menu's own "should Group show" question reads independently of invoking it.
+    private bool CanGroupSelection => _selectedInstanceIds.Count >= 2;
+
+    // Same eligibility OnUngroupPressed itself already computes - true whenever at least one
+    // top-level entry resolves to a persisted Group.
+    private bool CanUngroupSelection =>
+        _selectedInstanceIds.Any(id => Board?.GetGroup(id) is not null);
+
+    // ClientX/ClientY (not OffsetX/OffsetY) since a right-click landing on a nested
+    // ComponentContainer would make OffsetX/OffsetY relative to THAT element, not this one - same
+    // reasoning ToBoardPoint's own callers already rely on. Container rect fetched fresh (matching
+    // HandleMouseDown/HandleDrop's own "the container can move on the page" reasoning), converted to
+    // plain container-relative pixels rather than board space - the menu is canvas chrome, so it must
+    // not run through ToBoardPoint's pan/zoom division.
+    private async Task HandleContextMenu(MouseEventArgs e)
+    {
+        if (!HasContextMenuEligibleSelection)
+        {
+            return;
+        }
+
+        var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
+            "getContainerDimensions",
+            ContainerElement
+        );
+
+        _contextMenu = new ContextMenuState(
+            e.ClientX - containerRect["left"],
+            e.ClientY - containerRect["top"]
+        );
+        StateHasChanged();
+    }
+
+    private void CloseContextMenu()
+    {
+        _contextMenu = null;
+        StateHasChanged();
+    }
+
+    // Shared by every menu item's own click callback (see the markup) - closes the menu first so a
+    // command that itself calls StateHasChanged (every OnXPressed does) never re-renders with a
+    // stale menu still open.
+    private void InvokeFromContextMenu(Action action)
+    {
+        _contextMenu = null;
+        action();
     }
 
     // Ticket 44: a top-level entry in _selectedInstanceIds can be either a component instance id

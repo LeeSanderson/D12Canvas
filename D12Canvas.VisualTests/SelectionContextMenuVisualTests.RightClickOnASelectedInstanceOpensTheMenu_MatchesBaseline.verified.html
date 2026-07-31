@@ -1,0 +1,597 @@
+﻿<!DOCTYPE html><html lang="en" style="--blazor-load-percentage: 100%; --blazor-load-percentage-text: &quot;100%&quot;;"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <base href="/">
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link href="D12Canvas.Demo.styles.css" rel="stylesheet">
+<!--!--><!--!--><!--!--><title>Placement Demo</title><!--!--><!--!--><!--!--></head>
+
+<body>
+    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
+        <button title="Navigation menu" class="navbar-toggler" b-91fadkni91=""><!--!--><span class="navbar-toggler-icon" b-91fadkni91=""></span></button></div></div><!--!-->
+
+<div class="collapse nav-scrollable" b-91fadkni91=""><nav class="nav flex-column" b-91fadkni91=""><div class="nav-item px-3" b-91fadkni91=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
+                Zoom and Pan Test
+            </a><!--!-->
+            <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
+                Child Component Test
+            </a><!--!-->
+            <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
+                Component Container Demo
+            </a><!--!-->
+            <!--!--><a href="board-demo" class="nav-link"><!--!-->
+                Board Demo
+            </a><!--!-->
+            <!--!--><a href="palette-demo" class="nav-link"><!--!-->
+                Palette Demo
+            </a><!--!-->
+            <!--!--><a href="placement-demo" class="nav-link active" aria-current="page"><!--!-->
+                Placement Demo
+            </a><!--!-->
+            <!--!--><a href="save-load-demo" class="nav-link"><!--!-->
+                Save/Load Demo
+            </a><!--!-->
+            <!--!--><a href="virtualization-stress-test" class="nav-link"><!--!-->
+                Virtualization Stress Test
+            </a></div></nav></div></div><!--!-->
+
+    <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
+
+<div class="placement-demo-layout"><div class="palette-slot"><!--!--><div class="d12-palette" role="region" aria-label="Component palette"><div class="d12-palette-category"><h3 class="d12-palette-category-title">Notes</h3><!--!-->
+            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Demo note" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">📝</span><span class="d12-palette-entry-name">Demo Note</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Stress Test</h3><!--!-->
+            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Stress item" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">▦</span><span class="d12-palette-entry-name">Stress Item</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Basic Shapes</h3><!--!-->
+            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Rectangle" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">▭</span><span class="d12-palette-entry-name">Rectangle</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Sticky Note" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🗒️</span><span class="d12-palette-entry-name">Sticky Note</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Text" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🔤</span><span class="d12-palette-entry-name">Text</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Image" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🖼️</span><span class="d12-palette-entry-name">Image</span></button></li></ul></div><button type="button" class="d12-palette-entry-button" aria-label="Connector" draggable="true"><!--!--><span class="d12-palette-entry-name">Connector</span></button></div><!--!-->
+
+<!--!--><style>
+    .d12-palette {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    .d12-palette-category-title {
+        margin: 0 0 6px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #666;
+    }
+
+    .d12-palette-entries {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .d12-palette-entry-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+    }
+
+    .d12-palette-entry-button:hover {
+        background: #f0f0f0;
+        border-color: #ccc;
+    }
+
+    .d12-palette-entry-icon {
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .d12-palette-entry-name {
+        font-size: 13px;
+    }
+</style></div><!--!-->
+    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 224px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
+
+<!--!--><style>
+    .demo-note {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .demo-note p {
+        margin: 0;
+    }
+</style></div><div class="port-strip port-strip-top"></div><!--!-->
+        <div class="port-strip port-strip-right"></div><!--!-->
+        <div class="port-strip port-strip-bottom"></div><!--!-->
+        <div class="port-strip port-strip-left"></div><div class="port port-top"></div><!--!-->
+    <div class="port port-right"></div><!--!-->
+    <div class="port port-bottom"></div><!--!-->
+    <div class="port port-left"></div><div class="resize-handle top-left"></div><!--!-->
+        <div class="resize-handle top"></div><!--!-->
+        <div class="resize-handle top-right"></div><!--!-->
+        <div class="resize-handle right"></div><!--!-->
+        <div class="resize-handle bottom-right"></div><!--!-->
+        <div class="resize-handle bottom"></div><!--!-->
+        <div class="resize-handle bottom-left"></div><!--!-->
+        <div class="resize-handle left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
+    }
+
+    /* Ticket 47: standard ports, hidden until hover/selection. Rendered before the resize handles
+       below in markup order, so a selected instance's edge-midpoint resize handle (same
+       border-center point as its port) paints on top of it. Sized noticeably larger than the 10px
+       resize handle (box-sizing is border-box app-wide, via Bootstrap's reboot, so this 20px port's
+       own 2px border eats inward rather than adding outward) so its green fill still forms a
+       visible ring around the handle instead of being fully hidden behind it. */
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        cursor: crosshair;
+    }
+
+    /* Ticket 48: a port only becomes interactive (pointer-events: auto) exactly when it's
+       visible - matches the opacity rule so a hidden port can never intercept a click meant for
+       the container underneath it. */
+    .component-container:hover .port,
+    .component-container.selected .port {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
+    }
+
+    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
+       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
+       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
+       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
+       either in the DOM or it isn't. */
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style></div></div><!--!--><div class="d12-context-menu" role="menu" aria-label="Selection actions" style="left: 209px; top: 299.40625px;" _bl_4=""><button type="button" class="d12-context-menu-item" role="menuitem" autofocus="">Delete</button><!--!--><div class="d12-context-menu-separator" role="separator"></div>
+    <button type="button" class="d12-context-menu-item" role="menuitem">Bring to Front</button><!--!-->
+    <button type="button" class="d12-context-menu-item" role="menuitem">Bring Forward</button><!--!-->
+    <button type="button" class="d12-context-menu-item" role="menuitem">Send Backward</button><!--!-->
+    <button type="button" class="d12-context-menu-item" role="menuitem">Send to Back</button></div><!--!-->
+
+<!--!--><style>
+    .d12-context-menu {
+        position: absolute;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 160px;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 4px;
+        box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .d12-context-menu-item {
+        display: block;
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+        font: inherit;
+        font-size: 13px;
+        color: inherit;
+    }
+
+    .d12-context-menu-item:hover {
+        background: #f0f0f0;
+        border-color: #ccc;
+    }
+
+    .d12-context-menu-separator {
+        height: 1px;
+        margin: 4px 6px;
+        background: #ccc;
+    }
+</style></div><!--!-->
+
+<!--!--><style>
+    .diagram-container {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        grid-template-rows: minmax(400px, auto) minmax(400px, 100%);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #ccc;
+    }
+    
+    .diagram-canvas {
+        width: 100%;
+        height: 100%;
+        grid-row: 1;
+        position: relative;
+        cursor: grab;
+    }
+    
+    .diagram-canvas:active {
+        cursor: grabbing;
+    }
+
+    /* A styled sibling element - not a box-shadow/outline on .diagram-canvas itself, and not
+       nested inside it either. .canvas-content is an opaque, oversized (3000x3000)
+       absolutely-positioned child that paints over any decoration on .diagram-canvas's own box,
+       so a decoration there never reads. Placed instead as a sibling of .diagram-canvas directly
+       in .diagram-container (the grid container): as an absolutely-positioned grid item with no
+       explicit grid-row/column, it sizes against the container's full padding box rather than
+       .diagram-canvas's own row track (whose CSS Grid "auto" sizing collapses toward the 400px
+       minimum, since .diagram-canvas has no in-flow content of its own to size the track by). */
+    .drag-over-affordance {
+        position: absolute;
+        inset: 0;
+        box-shadow: inset 0 0 0 3px #4a90d9;
+        background-color: rgba(74, 144, 217, 0.08);
+        pointer-events: none;
+    }
+
+    .marquee-select {
+        position: absolute;
+        border: 1px dashed #2f80ed;
+        background-color: rgba(47, 128, 237, 0.08);
+        pointer-events: none;
+    }
+
+    /* Ticket 33: the multi-selection's combined bounding box. The box itself lets clicks/drags
+       pass through to whatever's underneath (a member's own body, or empty canvas) - only its own
+       8 handles (each individually re-enabling pointer-events) are directly interactive. */
+    .selection-bounding-box {
+        position: absolute;
+        border: 1px solid #2f80ed;
+        pointer-events: none;
+    }
+
+    .group-resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #2f80ed;
+        border-radius: 50%;
+        pointer-events: auto;
+    }
+
+    .group-resize-handle.top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .group-resize-handle.top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .group-resize-handle.top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .group-resize-handle.right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .group-resize-handle.bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .group-resize-handle.bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .group-resize-handle.bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .group-resize-handle.left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+
+    /* Ticket 48: sits before the component-instance loop in markup order, so at the shared
+       default z-index:0 the instances (later in DOM) paint over it - edges tuck behind shapes,
+       matching common diagram-tool convention. width/height 100% resolves against
+       .canvas-content's own explicit inline px size (ContentStyle), which is expressed directly
+       in board-space units - same coordinate system ComponentContainer's own left/top already
+       use - so no separate scaling or viewBox is needed for the line coordinates below. */
+    .edges-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* Ticket 50: unlike the rest of .edges-layer (pointer-events: none), an edge line is always
+       clickable so it can be selected - it has no hover-to-reveal affordance the way a port does,
+       since the line itself already IS the visible affordance.
+       Ticket 52: fill:none matters once Orthogonal/Curved routing renders as an SVG path element -
+       an open multi-point path's implied closing segment would otherwise paint a filled wedge (a
+       plain SVG line element has no fill concept, so this was never visible before). */
+    .edge-line {
+        fill: none;
+        stroke: #4a4a4a;
+        stroke-width: 2;
+        pointer-events: auto;
+        cursor: pointer;
+    }
+
+    /* Ticket 50: the selected-edge affordance - same selection blue as
+       .component-container.selected's outline, applied as the line's own stroke since an outline
+       doesn't apply to SVG shapes. */
+    .edge-line.selected {
+        stroke: #2f80ed;
+        stroke-width: 3;
+    }
+
+    /* Ticket 52: arrowhead fill matching each of .edge-line's two stroke colors - kept as its own
+       rule (rather than `fill: context-stroke`) since that CSS Color 4 keyword isn't reliable
+       enough yet across the browsers this library targets. */
+    .edge-arrowhead {
+        fill: #4a4a4a;
+    }
+
+    .edge-arrowhead.selected {
+        fill: #2f80ed;
+    }
+
+    /* Ticket 53: an edge's embedded label (ADR 0005) - a plain absolutely-positioned HTML box in
+       the same board-space pixel coordinate system every ComponentContainer already uses, sitting
+       alongside (not inside) .edges-layer's SVG since a label is an ordinary DynamicComponent-
+       rendered built-in (Text by default), not an SVG shape. */
+    .edge-label {
+        position: absolute;
+        cursor: default;
+    }
+
+    .connector-drag-preview {
+        stroke: #2ecc71;
+        stroke-width: 2;
+        stroke-dasharray: 6 4;
+    }
+
+    /* Ticket 49: a floating (unattached) edge endpoint. Filled distinctly from both the gray
+       edge line and the green port affordance so it doesn't read as either. Always interactive
+       (pointer-events overriding the layer's own none, same trick .port uses) since - unlike a
+       port - a floating endpoint has no other affordance revealing it can be grabbed. */
+    .floating-endpoint {
+        fill: #f39c12;
+        stroke: #ffffff;
+        stroke-width: 1.5px;
+        pointer-events: auto;
+        cursor: grab;
+    }
+
+    .canvas-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: top left;
+        transition: transform 0.1s ease-out;
+        background: #f0f0f0;
+        background-image: 
+            linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+        background-position: 0 0;
+    }
+</style></div></div><!--!-->
+
+<!--!--><style>
+    .placement-demo-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .palette-slot {
+        width: 260px;
+        padding: 16px;
+    }
+
+    .canvas-container {
+        flex: 1;
+        height: 600px;
+        border: 1px solid #ccc;
+    }
+</style></article></main></div><!--!-->
+        <!--!--></div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+
+
+
+</body></html>
