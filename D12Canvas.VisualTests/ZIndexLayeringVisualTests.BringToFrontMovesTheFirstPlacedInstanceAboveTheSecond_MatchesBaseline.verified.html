@@ -10,10 +10,10 @@
 <!--!--><!--!--><!--!--><title>Placement Demo</title><!--!--><!--!--><!--!--></head>
 
 <body>
-    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-52l6hnzelf=""><div class="sidebar" b-52l6hnzelf=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-v5d2xmpyhr=""><div class="container-fluid" b-v5d2xmpyhr=""><!--!--><a class="navbar-brand" href="" b-v5d2xmpyhr="">D12Canvas.Demo</a>
-        <button title="Navigation menu" class="navbar-toggler" b-v5d2xmpyhr=""><!--!--><span class="navbar-toggler-icon" b-v5d2xmpyhr=""></span></button></div></div><!--!-->
+    <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
+        <button title="Navigation menu" class="navbar-toggler" b-91fadkni91=""><!--!--><span class="navbar-toggler-icon" b-91fadkni91=""></span></button></div></div><!--!-->
 
-<div class="collapse nav-scrollable" b-v5d2xmpyhr=""><nav class="nav flex-column" b-v5d2xmpyhr=""><div class="nav-item px-3" b-v5d2xmpyhr=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
+<div class="collapse nav-scrollable" b-91fadkni91=""><nav class="nav flex-column" b-91fadkni91=""><div class="nav-item px-3" b-91fadkni91=""><!--!--><a href="ZoomPanTest" class="nav-link"><!--!-->
                 Zoom and Pan Test
             </a><!--!-->
             <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
@@ -38,7 +38,7 @@
                 Virtualization Stress Test
             </a></div></nav></div></div><!--!-->
 
-    <main b-52l6hnzelf=""><article class="content" style="height: 92vh;" b-52l6hnzelf=""><!--!--><!--!--><!--!--><!--!-->
+    <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
 <div class="placement-demo-layout"><div class="palette-slot"><!--!--><div class="d12-palette" role="region" aria-label="Component palette"><div class="d12-palette-category"><h3 class="d12-palette-category-title">Notes</h3><!--!-->
             <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Demo note" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">📝</span><span class="d12-palette-entry-name">Demo Note</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Stress Test</h3><!--!-->
@@ -551,11 +551,17 @@
 
     /* Ticket 33: the multi-selection's combined bounding box. The box itself lets clicks/drags
        pass through to whatever's underneath (a member's own body, or empty canvas) - only its own
-       8 handles (each individually re-enabling pointer-events) are directly interactive. */
+       8 handles (each individually re-enabling pointer-events) are directly interactive.
+       Ticket 60 fix: needs an explicit z-index above any ComponentContainer's own - otherwise a
+       member sitting at a higher Board ZIndex paints over this box's handles and swallows their
+       mousedown/click, breaking group-resize hit-testing. 1000 is comfortably above anything
+       Board.NextZIndex() produces in practice; the handles (nested, no z-index of their own) stack
+       within this box's own context, so setting it here alone is enough. */
     .selection-bounding-box {
         position: absolute;
         border: 1px solid #2f80ed;
         pointer-events: none;
+        z-index: 1000;
     }
 
     .group-resize-handle {

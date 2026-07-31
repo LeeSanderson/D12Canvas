@@ -363,11 +363,17 @@
 
     /* Ticket 33: the multi-selection's combined bounding box. The box itself lets clicks/drags
        pass through to whatever's underneath (a member's own body, or empty canvas) - only its own
-       8 handles (each individually re-enabling pointer-events) are directly interactive. */
+       8 handles (each individually re-enabling pointer-events) are directly interactive.
+       Ticket 60 fix: needs an explicit z-index above any ComponentContainer's own - otherwise a
+       member sitting at a higher Board ZIndex paints over this box's handles and swallows their
+       mousedown/click, breaking group-resize hit-testing. 1000 is comfortably above anything
+       Board.NextZIndex() produces in practice; the handles (nested, no z-index of their own) stack
+       within this box's own context, so setting it here alone is enough. */
     .selection-bounding-box {
         position: absolute;
         border: 1px solid #2f80ed;
         pointer-events: none;
+        z-index: 1000;
     }
 
     .group-resize-handle {
