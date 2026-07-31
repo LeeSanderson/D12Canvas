@@ -202,6 +202,20 @@ public sealed class Board
             .ToList();
     }
 
+    // The Group counterpart to GetVisible - only top-level groups (not themselves nested inside
+    // another Group) are candidates, since a nested group has no tab stop or rendering of its
+    // own. A member-less group (every member since deleted) has no resolvable bounds and is
+    // excluded rather than crashing.
+    public IReadOnlyCollection<Group> GetVisibleGroups(Bounds viewport, double overscan = 0)
+    {
+        var expandedViewport = viewport.ExpandedBy(overscan);
+
+        return _groups
+            .Values.Where(group => FindContainingGroup(group.Id) is null)
+            .Where(group => GetBounds(group) is { } bounds && expandedViewport.Intersects(bounds))
+            .ToList();
+    }
+
     // Layering is arithmetic-only field writes on ZIndex, never a renumbering pass over other
     // entities. NextZIndex is also what a newly-placed instance receives, so it always appears
     // above every existing one (a fixed baseline ZIndex was rejected as an alternative).

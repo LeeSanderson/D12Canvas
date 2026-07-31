@@ -9,9 +9,7 @@ public class ComponentContainerTests : ComponentTestBase
 {
     public ComponentContainerTests()
     {
-        var module = JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
-        module.SetupVoid("registerClickOutside").SetVoidResult();
-        module.SetupVoid("unregisterClickOutside").SetVoidResult();
+        SetupComponentContainerJsModule();
     }
 
     [Fact]

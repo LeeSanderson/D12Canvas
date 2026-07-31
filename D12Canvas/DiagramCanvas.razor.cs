@@ -211,6 +211,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     private List<Action> _cleanupFunctions = new List<Action>();
     private IJSObjectReference? _jsModule;
 
+    // Set by OnGroupPressed - the new group's own tab stop doesn't exist in the DOM until the
+    // render its grouping triggers actually commits, so the focusElement call has to wait for
+    // OnAfterRenderAsync (guaranteed to run after that render lands) rather than firing inline.
+    private bool _pendingGroupFocus;
+
     protected override void OnInitialized()
     {
         _zoomPanTracker.Changed += OnZoomPanChanged;
@@ -250,6 +255,12 @@ public partial class DiagramCanvas : IAsyncDisposable
             _cleanupFunctions.Add(keyboardCleanup);
 
             StateHasChanged();
+        }
+
+        if (_pendingGroupFocus)
+        {
+            _pendingGroupFocus = false;
+            await _jsModule!.InvokeVoidAsync("focusGroupTabStop", ContainerElement);
         }
     }
 
@@ -373,6 +384,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     // entity - the group becomes the new selection. A selection entry that is already a Group's
     // own id (from a prior grouping) is carried over by reference rather than flattened to its
     // members, so grouping a selection that already contains a group nests it.
+    // Unlike a marquee or a shift-click (which can leave a multi-selection with no single element
+    // to hand real DOM focus to), grouping always resolves to exactly one new focusable target -
+    // the group's own tab stop - so this moves focus there too, once it exists in the DOM (see
+    // _pendingGroupFocus/OnAfterRenderAsync).
     [JSInvokable]
     public void OnGroupPressed()
     {
@@ -386,6 +401,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _selectedInstanceIds.Clear();
         _selectedInstanceIds.Add(group.Id);
+        _pendingGroupFocus = true;
         NotifySelectionChanged();
         StateHasChanged();
     }
@@ -636,6 +652,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     private bool IsSelected(Guid instanceId) => ExpandedSelection().Contains(instanceId);
+
+    // A top-level Group's own selection state - unlike IsSelected, this must NOT read through
+    // ExpandedSelection (which flattens a selected group down to its member ids, so the group's
+    // own id is never "contained" in it). The raw, unexpanded selection set is exactly the group's
+    // own aria-selected state.
+    private bool IsGroupSelected(Guid groupId) => _selectedInstanceIds.Contains(groupId);
 
     // Distinguishes "selected" from "selected as part of a group of 2+" - only the
     // latter suppresses a ComponentContainer's own resize handles in favour of the shared overlay's.
@@ -1216,6 +1238,59 @@ public partial class DiagramCanvas : IAsyncDisposable
     // never by a per-frame timer - so the mounted window follows the same cadence.
     private IReadOnlyCollection<ComponentInstance> VisibleComponents =>
         Board?.GetVisible(_zoomPanTracker.Viewport, Overscan) ?? Array.Empty<ComponentInstance>();
+
+    private bool IsGrouped(Guid instanceId) => Board?.FindContainingGroup(instanceId) is not null;
+
+    // One entry per keyboard tab stop: either a rendered ComponentInstance or a top-level Group's
+    // own single stop - never both for a grouped member, which has no tab stop of its own (see
+    // IsGrouped/ComponentContainer.Focusable). Ordered by current on-screen position (top-left to
+    // bottom-right, i.e. Y then X) rather than creation order or ZIndex, so native Tab/Shift+Tab
+    // traversal follows reading order for free once each stop's own tabindex="0" and DOM position
+    // (this list's own order) are in place - no keyboard interception needed for Tab itself.
+    // Drawn from the same windowed-mounting viewport query as VisibleComponents/GetVisibleGroups,
+    // so an instance or group entirely outside the current viewport (+ overscan) has no tab stop
+    // at all - reachability is bounded by what's currently mounted, not the whole Board.
+    private readonly record struct TabStop(
+        ComponentInstance? Instance,
+        Group? Group,
+        Bounds Bounds
+    );
+
+    private IReadOnlyList<TabStop> OrderedTabStops()
+    {
+        if (Board is null)
+        {
+            return Array.Empty<TabStop>();
+        }
+
+        var stops = new List<TabStop>();
+        foreach (var instance in VisibleComponents)
+        {
+            stops.Add(new TabStop(instance, null, EffectiveBounds(instance)));
+        }
+
+        foreach (var group in Board.GetVisibleGroups(_zoomPanTracker.Viewport, Overscan))
+        {
+            stops.Add(new TabStop(null, group, Board.GetBounds(group)!.Value));
+        }
+
+        return stops.OrderBy(s => s.Bounds.Y).ThenBy(s => s.Bounds.X).ToList();
+    }
+
+    // The sole entry point for the "focusing selects" half of focus-follows-selection - reached
+    // only via a tab stop's own @onfocus (native Tab/Shift+Tab navigation, or the click-driven
+    // focusElement call below), never wired to any keyboard shortcut directly. Always a hard
+    // single-select, matching "landing focus on an entity selects it outright - there is no
+    // separate commit step"; a grouped member is never the id passed here (it has no tab stop of
+    // its own), and a top-level Group's own id needs no EffectiveSelectionId resolution
+    // (SelectComponent already handles that uniformly for both cases).
+    private void FocusEntity(Guid id) => SelectComponent(id, addToSelection: false);
+
+    private static string GroupTabStopStyle(Bounds bounds) =>
+        $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";
+
+    private static string GroupAccessibleLabel(Group group) =>
+        $"Group ({group.MemberIds.Count} items)";
 
     private string CanvasCssClass =>
         _isDragOverBoard ? "diagram-canvas drag-over" : "diagram-canvas";

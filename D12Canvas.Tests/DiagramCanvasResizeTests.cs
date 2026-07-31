@@ -16,7 +16,7 @@ public class DiagramCanvasResizeTests : ComponentTestBase
     public DiagramCanvasResizeTests()
     {
         SetupDiagramCanvasJsModule();
-        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

@@ -7,14 +7,17 @@
      role="@Role"
      aria-label="@AccessibleName"
      aria-selected="@(IsSelected ? "true" : null)"
+     tabindex="@(Focusable ? "0" : null)"
      @onmousedown="HandleMouseDown"
      @onmousedown:stopPropagation
+     @onmousedown:preventDefault="true"
      @onmousemove="HandleMouseMove"
      @onmousemove:stopPropagation
      @onmouseup="HandleMouseUp"
      @onmouseup:stopPropagation
      @onclick="HandleClick"
      @onclick:stopPropagation
+     @onfocus="HandleFocus"
      @ondblclick="SwitchToEditMode">
 
     <div class="container-content">
@@ -100,6 +103,10 @@
     .component-container.selected {
         outline: 2px solid #2f80ed;
         outline-offset: 2px;
+    }
+
+    .component-container:focus {
+        outline: none;
     }
 
     .port {

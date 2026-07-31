@@ -103,34 +103,56 @@
             </svg>
             @if (Board is not null)
             {
-                @foreach (var instance in VisibleComponents)
+                @foreach (var stop in OrderedTabStops())
                 {
-                    var registration = Registry.Resolve(instance.ComponentTypeKey);
-                    var effectiveBounds = EffectiveBounds(instance);
-                    <ComponentContainer @key="instance.Id"
-                                        X="effectiveBounds.X"
-                                        Y="effectiveBounds.Y"
-                                        Width="effectiveBounds.Width"
-                                        Height="effectiveBounds.Height"
-                                        ZIndex="instance.ZIndex"
-                                        AccessibleName="@registration.AccessibleName"
-                                        Role="@registration.Role"
-                                        IsSelected="@IsSelected(instance.Id)"
-                                        IsMultiSelected="@IsMultiSelected(instance.Id)"
-                                        Props="instance.Props"
-                                        OnSelect="@((shiftKey) => SelectComponent(instance.Id, shiftKey))"
-                                        OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
-                                        OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))"
-                                        OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
-                                        CustomPorts="instance.CustomPorts"
-                                        OnAddCustomPort="@((port) => AddCustomPort(instance.Id, port))">
-                        @* Lets a text-carrying built-in (Sticky Note, Text) identify
-                           itself back to ParentCanvas when committing its own inline WYSIWYG edit -
-                           see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
-                        <CascadingValue Value="instance.Id" Name="InstanceId">
-                            <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
-                        </CascadingValue>
-                    </ComponentContainer>
+                    if (stop.Instance is { } instance)
+                    {
+                        var registration = Registry.Resolve(instance.ComponentTypeKey);
+                        <ComponentContainer @key="instance.Id"
+                                            X="stop.Bounds.X"
+                                            Y="stop.Bounds.Y"
+                                            Width="stop.Bounds.Width"
+                                            Height="stop.Bounds.Height"
+                                            ZIndex="instance.ZIndex"
+                                            AccessibleName="@registration.AccessibleName"
+                                            Role="@registration.Role"
+                                            IsSelected="@IsSelected(instance.Id)"
+                                            IsMultiSelected="@IsMultiSelected(instance.Id)"
+                                            Focusable="@(!IsGrouped(instance.Id))"
+                                            Props="instance.Props"
+                                            OnSelect="@((shiftKey) => SelectComponent(instance.Id, shiftKey))"
+                                            OnFocus="@(() => FocusEntity(instance.Id))"
+                                            OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
+                                            OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))"
+                                            OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
+                                            CustomPorts="instance.CustomPorts"
+                                            OnAddCustomPort="@((port) => AddCustomPort(instance.Id, port))">
+                            @* Lets a text-carrying built-in (Sticky Note, Text) identify
+                               itself back to ParentCanvas when committing its own inline WYSIWYG edit -
+                               see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
+                            <CascadingValue Value="instance.Id" Name="InstanceId">
+                                <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
+                            </CascadingValue>
+                        </ComponentContainer>
+                    }
+                    else if (stop.Group is { } group)
+                    {
+                        @* A persisted Group's own single tab stop - invisible and
+                           mouse-transparent (pointer-events: none; selecting the group by mouse
+                           still goes through clicking one of its members), it exists
+                           purely so Tab/Shift+Tab can reach the group as one stop instead of each
+                           member individually. Selecting the group already renders the shared
+                           .selection-bounding-box overlay (HasMultiMemberSelection) as this stop's
+                           own visible focus indicator - no separate chrome needed here. *@
+                        <div @key="group.Id"
+                             class="group-tab-stop"
+                             style="@GroupTabStopStyle(stop.Bounds)"
+                             tabindex="0"
+                             role="group"
+                             aria-label="@GroupAccessibleLabel(group)"
+                             aria-selected="@(IsGroupSelected(group.Id) ? "true" : null)"
+                             @onfocus="@(() => FocusEntity(group.Id))"></div>
+                    }
                 }
                 @* A label is embedded on its Edge, not a Board.Components
                    entry, so it's rendered here directly rather than via VisibleComponents/
@@ -241,6 +263,15 @@
         border: 1px solid #2f80ed;
         pointer-events: none;
         z-index: 1000;
+    }
+
+    .group-tab-stop {
+        position: absolute;
+        pointer-events: none;
+    }
+
+    .group-tab-stop:focus {
+        outline: none;
     }
 
     .group-resize-handle {

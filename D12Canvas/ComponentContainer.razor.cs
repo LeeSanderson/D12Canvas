@@ -41,6 +41,13 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public bool IsSelected { get; set; }
 
+    // False while this instance is a member of a Group - a grouped member is
+    // reachable only through the group's own single tab stop, never individually, so it renders
+    // with no tabindex at all rather than tabindex="-1" (which would still accept a direct
+    // .focus() call, e.g. from stale JS).
+    [Parameter]
+    public bool Focusable { get; set; } = true;
+
     // Never rendered directly by ComponentContainer itself (ChildContent stays an
     // opaque RenderFragment) - carried purely so ShouldRender can detect an in-place Props edit at
     // otherwise-unchanged Bounds/selection, which none of its other compared fields would catch.
@@ -58,6 +65,13 @@ public partial class ComponentContainer : IAsyncDisposable
     // membership in a multi-selection instead of always collapsing to single-select.
     [Parameter]
     public EventCallback<bool> OnSelect { get; set; }
+
+    // Fired when this container's own root element receives DOM focus - native Tab/Shift+Tab
+    // navigation lands here with no keyboard wiring of our own needed (see Focusable's tabindex),
+    // so this is the sole entry point for the "focusing selects" half of focus-follows-selection.
+    // DiagramCanvas always resolves it to a single-entity select, never an add.
+    [Parameter]
+    public EventCallback OnFocus { get; set; }
 
     // Fired once, on release, with the instance's final Bounds - a drag-move is one
     // gesture (recorded once on gesture commit, never per intermediate frame), so
@@ -130,6 +144,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private bool _lastRenderedEditMode;
     private bool _lastRenderedIsSelected;
     private bool _lastRenderedIsMultiSelected;
+    private bool _lastRenderedFocusable;
     private object? _lastRenderedProps;
     private int _lastRenderedZIndex;
 
@@ -164,6 +179,11 @@ public partial class ComponentContainer : IAsyncDisposable
             || _editMode != _lastRenderedEditMode
             || IsSelected != _lastRenderedIsSelected
             || IsMultiSelected != _lastRenderedIsMultiSelected
+            // A Group/Ungroup command flips Focusable (and so the rendered tabindex) alone, at
+            // otherwise-unchanged Bounds/selection (grouping keeps every member selected) - without
+            // this check the tabindex attribute wouldn't update until some unrelated parameter also
+            // changed.
+            || Focusable != _lastRenderedFocusable
             // An in-place Props edit (inline text editing, or any future
             // property-panel edit) at unchanged Bounds/selection would otherwise never reach
             // ChildContent - Props types are records, so this is a cheap structural comparison.
@@ -186,6 +206,7 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedEditMode = _editMode;
         _lastRenderedIsSelected = IsSelected;
         _lastRenderedIsMultiSelected = IsMultiSelected;
+        _lastRenderedFocusable = Focusable;
         _lastRenderedProps = Props;
         _lastRenderedCustomPortsCount = CustomPorts.Count;
         _lastRenderedZIndex = ZIndex;
@@ -200,7 +221,24 @@ public partial class ComponentContainer : IAsyncDisposable
         }
     }
 
-    private void HandleClick(MouseEventArgs e) => OnSelect.InvokeAsync(e.ShiftKey);
+    // A shift-click's own selection-toggle result (DiagramCanvas.SelectComponent) must not be
+    // clobbered by a subsequent hard single-select from OnFocus - so only a plain click drives
+    // DOM focus explicitly here. A plain click on a GROUPED member still selects the whole group
+    // correctly (DiagramCanvas resolves that), but this container has no tabindex while grouped
+    // (Focusable is false), so focusElement is a harmless no-op there - a mouse click on a grouped
+    // member leaves DOM focus wherever it was, a narrow gap left open the same way a marquee's
+    // resulting multi-selection has no single element to focus either.
+    private async Task HandleClick(MouseEventArgs e)
+    {
+        await OnSelect.InvokeAsync(e.ShiftKey);
+
+        if (!e.ShiftKey && Focusable && _jsModule is not null)
+        {
+            await _jsModule.InvokeVoidAsync("focusElement", _containerRef);
+        }
+    }
+
+    private Task HandleFocus() => OnFocus.InvokeAsync();
 
     private void HandleMouseDown(MouseEventArgs e)
     {

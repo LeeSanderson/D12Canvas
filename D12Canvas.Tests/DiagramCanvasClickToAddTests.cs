@@ -16,7 +16,7 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
     public DiagramCanvasClickToAddTests()
     {
         SetupDiagramCanvasJsModule();
-        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+        SetupComponentContainerJsModule();
     }
 
     private void RegisterTestComponent(ComponentSize? defaultSize)

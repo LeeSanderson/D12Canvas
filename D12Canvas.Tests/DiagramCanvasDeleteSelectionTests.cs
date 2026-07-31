@@ -20,7 +20,7 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
     public DiagramCanvasDeleteSelectionTests()
     {
         SetupDiagramCanvasJsModule();
-        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

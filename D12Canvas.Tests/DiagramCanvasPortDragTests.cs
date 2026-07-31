@@ -17,7 +17,7 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     public DiagramCanvasPortDragTests()
     {
         SetupDiagramCanvasJsModule();
-        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

@@ -40,6 +40,16 @@ export async function getElementDimensions(element) {
     };
 }
 
+// Moves DOM focus to a just-created Group's own tab stop, scoped to this canvas's own
+// container. Grouping always clears any prior selection down to just the new group, so right
+// after it commits exactly one group-tab-stop is aria-selected - no need to identify it by id.
+export function focusGroupTabStop(container) {
+    const stop = container.querySelector('.group-tab-stop[aria-selected="true"]');
+    if (stop) {
+        stop.focus();
+    }
+}
+
 // Backspace/Delete double as the browser's own text-editing keys, so unlike this listener's other
 // codes they must not fire while focus is on an editable host-page element (an <input>/<textarea>
 // elsewhere on the embedding page, or a future in-canvas editable field) - otherwise typing
@@ -54,31 +64,44 @@ function isEditableTarget(target) {
 
 export async function addKeyboardListener(element, dotnetRef) {
     const handleKeyDown = (event) => {
+        // preventDefault is called only from inside a branch that actually invokes a
+        // dotnetRef method - never unconditionally after the switch. Tab (native browser focus
+        // navigation) and every other unhandled key must reach the browser's own default
+        // handling, both here and in this host page beyond D12Canvas's own container (this
+        // listener is window-level, so isEditableTarget's guards actually protect anything).
         switch (event.code) {
             case "PageUp":
+                event.preventDefault();
                 dotnetRef.invokeMethodAsync("OnZoomIn");
                 break;
             case "PageDown":
+                event.preventDefault();
                 dotnetRef.invokeMethodAsync("OnZoomOut");
                 break;
             case "ArrowLeft":
+                event.preventDefault();
                 dotnetRef.invokeMethodAsync("OnPanLeft");
                 break;
             case "ArrowRight":
+                event.preventDefault();
                 dotnetRef.invokeMethodAsync("OnPanRight");
                 break;
             case "ArrowUp":
+                event.preventDefault();
                 dotnetRef.invokeMethodAsync("OnPanUp");
                 break;
             case "ArrowDown":
+                event.preventDefault();
                 dotnetRef.invokeMethodAsync("OnPanDown");
                 break;
             case "Escape":
+                event.preventDefault();
                 dotnetRef.invokeMethodAsync("OnEscapePressed");
                 break;
             case "Delete":
             case "Backspace":
                 if (!isEditableTarget(event.target)) {
+                    event.preventDefault();
                     dotnetRef.invokeMethodAsync("OnDeletePressed");
                 }
                 break;
@@ -87,6 +110,7 @@ export async function addKeyboardListener(element, dotnetRef) {
                 // guards against hijacking it while focus is on an editable host-page element -
                 // same reasoning as Delete/Backspace above.
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    event.preventDefault();
                     if (event.shiftKey) {
                         dotnetRef.invokeMethodAsync("OnRedoPressed");
                     } else {
@@ -99,6 +123,7 @@ export async function addKeyboardListener(element, dotnetRef) {
                 // Ctrl+Z above: while focus is on an editable host-page element (e.g. mid inline
                 // WYSIWYG text edit), this must not hijack the keystroke.
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    event.preventDefault();
                     if (event.shiftKey) {
                         dotnetRef.invokeMethodAsync("OnUngroupPressed");
                     } else {
@@ -108,6 +133,7 @@ export async function addKeyboardListener(element, dotnetRef) {
                 break;
             case "BracketRight":
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    event.preventDefault();
                     if (event.shiftKey) {
                         dotnetRef.invokeMethodAsync("OnBringToFrontPressed");
                     } else {
@@ -117,6 +143,7 @@ export async function addKeyboardListener(element, dotnetRef) {
                 break;
             case "BracketLeft":
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    event.preventDefault();
                     if (event.shiftKey) {
                         dotnetRef.invokeMethodAsync("OnSendToBackPressed");
                     } else {
@@ -125,7 +152,6 @@ export async function addKeyboardListener(element, dotnetRef) {
                 }
                 break;
         }
-        event.preventDefault();
     };
 
     window.addEventListener('keydown', handleKeyDown);

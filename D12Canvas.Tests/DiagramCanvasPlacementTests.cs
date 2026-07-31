@@ -15,7 +15,7 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
     public DiagramCanvasPlacementTests()
     {
         SetupDiagramCanvasJsModule();
-        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+        SetupComponentContainerJsModule();
     }
 
     private void RegisterTestComponent(ComponentSize? defaultSize)

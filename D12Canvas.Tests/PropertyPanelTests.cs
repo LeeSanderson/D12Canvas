@@ -29,7 +29,7 @@ public class PropertyPanelTests : ComponentTestBase
     public PropertyPanelTests()
     {
         SetupDiagramCanvasJsModule();
-        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+        SetupComponentContainerJsModule();
 
         _registry.Register(
             new ComponentRegistration(

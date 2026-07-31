@@ -109,7 +109,7 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 224px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
+    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 224px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" tabindex="0" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
 
 <!--!--><style>
     .demo-note {
@@ -157,6 +157,10 @@
     .component-container.selected {
         outline: 2px solid #2f80ed;
         outline-offset: 2px;
+    }
+
+    .component-container:focus {
+        outline: none;
     }
 
     .port {
@@ -287,7 +291,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Stress item" _bl_4="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
+</style><!--!--><div class="component-container view-mode selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Stress item" tabindex="0" _bl_4="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
 
 <!--!--><style>
     .stress-item {
@@ -333,6 +337,10 @@
     .component-container.selected {
         outline: 2px solid #2f80ed;
         outline-offset: 2px;
+    }
+
+    .component-container:focus {
+        outline: none;
     }
 
     .port {
@@ -565,6 +573,15 @@
         border: 1px solid #2f80ed;
         pointer-events: none;
         z-index: 1000;
+    }
+
+    .group-tab-stop {
+        position: absolute;
+        pointer-events: none;
+    }
+
+    .group-tab-stop:focus {
+        outline: none;
     }
 
     .group-resize-handle {

@@ -19,7 +19,7 @@ public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
     public DiagramCanvasZIndexCommandsTests()
     {
         SetupDiagramCanvasJsModule();
-        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

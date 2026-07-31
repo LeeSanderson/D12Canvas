@@ -20,7 +20,7 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
     public DiagramCanvasInlineTextEditingTests()
     {
         SetupDiagramCanvasJsModule();
-        JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
+        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(
