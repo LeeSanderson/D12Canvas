@@ -5,10 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for multi-selection move/resize as one unit (ticket 33): the combined
-// bounding box (with its own 8 handles) once 2+ instances are selected, and a mid-resize state
-// showing every member scaled proportionally. Any later ticket that renders a new visual state on
-// canvas should add a case here alongside its own.
 public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -45,9 +41,9 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Click-to-adds both palette entries and marquee-selects across both (same technique
-    // MarqueeVisualTests uses for ticket 32), leaving both instances selected with the group
-    // bounding box visible.
+    // Click-to-adds both palette entries and marquee-selects across both (the same technique
+    // MarqueeVisualTests uses), leaving both instances selected with the group bounding box
+    // visible.
     private async Task SelectBothInstances()
     {
         var entries = _page.Locator(".d12-palette-entry-button");
@@ -92,11 +88,11 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }
 
-    // Ticket 45: a persisted Group's bounding box (computed on demand from its members, never
-    // stored - ADR 0006/0007) renders identically to an ad-hoc multi-selection's, since Ctrl+G
-    // only promotes the existing selection into a Group entity without changing how it's drawn.
-    // Pinned as its own baseline since it's driven by a real Ctrl+G keypress rather than the
-    // marquee/shift-click SelectBothInstances itself already covers.
+    // A persisted Group's bounding box (computed on demand from its members, never stored)
+    // renders identically to an ad-hoc multi-selection's, since Ctrl+G only promotes the existing
+    // selection into a Group entity without changing how it's drawn. Pinned as its own baseline
+    // since it's driven by a real Ctrl+G keypress rather than the marquee/shift-click
+    // SelectBothInstances itself already covers.
     [Fact]
     public async Task PersistedGroupBoundingBoxVisible_MatchesBaseline()
     {
@@ -130,11 +126,11 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await _page.Mouse.UpAsync();
     }
 
-    // Regression coverage for a real bug this ticket introduced and fixed: a handle's own
-    // mousedown/mouseup with no movement in between still fires a native click that bubbles past
-    // the (pointer-events: none) bounding box up to the canvas's own click-to-clear-selection
-    // handler, unless the handle also stops that click's propagation. bUnit can't drive this exact
-    // scenario (see DiagramCanvasMultiSelectionMoveResizeTests's comment) - a real browser can.
+    // Regression coverage for a real bug found and fixed here: a handle's own mousedown/mouseup
+    // with no movement in between still fires a native click that bubbles past the
+    // (pointer-events: none) bounding box up to the canvas's own click-to-clear-selection handler,
+    // unless the handle also stops that click's propagation. bUnit can't drive this exact scenario
+    // (see DiagramCanvasMultiSelectionMoveResizeTests's comment) - a real browser can.
     [Fact]
     public async Task StationaryClickOnGroupResizeHandle_DoesNotClearSelection()
     {

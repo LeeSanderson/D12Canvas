@@ -5,13 +5,13 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for ticket 52: per-edge routing style and arrowheads. The layered
-// testing strategy (spec.md) keeps this Playwright layer small and curated - the combinatorial
-// logic (every RoutingStyle x ArrowStyle pairing) is already exhaustively covered by
+// Screenshot-diff baseline for per-edge routing style and arrowheads. The layered testing
+// strategy (spec.md) keeps this Playwright layer small and curated - the combinatorial logic
+// (every RoutingStyle x ArrowStyle pairing) is already exhaustively covered by
 // DiagramCanvasEdgeRoutingAndArrowheadsTests (bUnit); this class only proves the real browser
 // actually paints straight/orthogonal/curved routing and start/end/both/no arrowheads correctly,
-// via EdgeStylesDemo's pre-seeded board (no interactive UI exists yet to set these - ticket 56, the
-// property panel, isn't built).
+// via EdgeStylesDemo's pre-seeded board (no interactive UI exists yet to set these - the property
+// panel isn't built yet).
 public sealed class EdgeRoutingAndArrowheadsVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

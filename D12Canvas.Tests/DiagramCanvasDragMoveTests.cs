@@ -7,8 +7,8 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 30: drag-move a selected instance. A drag is one press-to-release gesture (ADR 0007) -
-// Board only ever sees the final Bounds, on release, never an intermediate mousemove tick.
+// Drag-move a selected instance. A drag is one press-to-release gesture - Board only ever sees
+// the final Bounds, on release, never an intermediate mousemove tick.
 public class DiagramCanvasDragMoveTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

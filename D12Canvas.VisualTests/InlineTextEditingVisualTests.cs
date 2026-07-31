@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for inline WYSIWYG text editing (ticket 43): a Sticky Note's own
-// editor visible mid-edit, in place on the canvas (ADR 0008). Any later ticket that renders a new
-// visual state on canvas should add a case here alongside its own.
 public sealed class InlineTextEditingVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

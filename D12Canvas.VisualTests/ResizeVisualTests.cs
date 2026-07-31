@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for resize-via-handles (ticket 31): the resize-handle affordance on a
-// selected instance, and a mid-resize state. Any later ticket that renders a new visual state on
-// canvas should add a case here alongside its own.
 public sealed class ResizeVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -44,8 +41,6 @@ public sealed class ResizeVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Places and selects the sole instance, returning the bounding box of its bottom-right
-    // resize handle so callers can drive a real Mouse.Down/Move/Up sequence from its center.
     private async Task<(double X, double Y)> PlaceSelectAndLocateBottomRightHandle()
     {
         await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
@@ -74,7 +69,7 @@ public sealed class ResizeVisualTests : IAsyncLifetime
         var (handleX, handleY) = await PlaceSelectAndLocateBottomRightHandle();
 
         // A plain mouse drag (not native HTML5 drag-and-drop) - Chromium repaints normally while
-        // it's in flight, matching DragMoveVisualTests' own approach for ticket 30.
+        // it's in flight, matching DragMoveVisualTests' own approach.
         await _page.Mouse.MoveAsync((float)handleX, (float)handleY);
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)(handleX + 80), (float)(handleY + 40));

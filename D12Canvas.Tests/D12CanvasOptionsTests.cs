@@ -184,10 +184,10 @@ public class D12CanvasOptionsTests
         Assert.Empty(options.Registry.Resolve("widget").EditableProperties!);
     }
 
-    // ADR 0008: editable properties default to whatever a TProps record's own [PanelEditable]
-    // attributes declare - PanelTestProps.Content carries none (it's this type's stand-in for a
-    // Text-type *content* field, excluded the same way StickyNoteProps.Text is), so only its
-    // five [PanelEditable]-carrying fields (one per EditorKind, ticket 56/57) should surface here.
+    // Editable properties default to whatever a TProps record's own [PanelEditable] attributes
+    // declare - PanelTestProps.Content carries none (it's this type's stand-in for a Text-type
+    // *content* field, excluded the same way StickyNoteProps.Text is), so only its five
+    // [PanelEditable]-carrying fields (one per EditorKind) should surface here.
     [Fact]
     public void RegisterComponentDiscoversEditablePropertiesFromPanelEditableAttributesByDefault()
     {
@@ -235,8 +235,8 @@ public class D12CanvasOptionsTests
         );
     }
 
-    // Ticket 57: a Dropdown-kind property with no choices can't render a usable <select>, so this
-    // is caught at registration time rather than surfacing as an empty control in the panel.
+    // A Dropdown-kind property with no choices can't render a usable <select>, so this is caught
+    // at registration time rather than surfacing as an empty control in the panel.
     [Fact]
     public void RegisterComponentWithADropdownPropertyMissingOptionsThrowsNamingTheProperty()
     {
@@ -259,10 +259,10 @@ public class D12CanvasOptionsTests
         Assert.Equal(nameof(PropsWithMissingDropdownOptions.Mode), exception.PropertyName);
     }
 
-    // Ticket 58: EditorKind.Custom needs a RenderFragment, which an attribute argument can never
-    // supply (attributes require compile-time constants) - so declaring it via [PanelEditable]
-    // alone is always a registration-time error; a Custom-kind property must come from the
-    // builder's EditableProperties override instead.
+    // EditorKind.Custom needs a RenderFragment, which an attribute argument can never supply
+    // (attributes require compile-time constants) - so declaring it via [PanelEditable] alone is
+    // always a registration-time error; a Custom-kind property must come from the builder's
+    // EditableProperties override instead.
     [Fact]
     public void RegisterComponentWithACustomKindPropertyDeclaredViaAttributeThrowsNamingTheProperty()
     {
@@ -285,7 +285,7 @@ public class D12CanvasOptionsTests
         Assert.Equal(nameof(PropsWithCustomEditorAttribute.Value), exception.PropertyName);
     }
 
-    // ADR 0008: "attributes set the default schema, the builder is the escape hatch" - setting
+    // "Attributes set the default schema, the builder is the escape hatch" - setting
     // EditableProperties replaces whatever attribute discovery would otherwise have produced.
     [Fact]
     public void RegisterComponentBuilderOverridesTheAttributeDeclaredEditableSchema()
@@ -313,8 +313,8 @@ public class D12CanvasOptionsTests
         Assert.Same(overrideSchema, options.Registry.Resolve("widget").EditableProperties);
     }
 
-    // Ticket 59/ADR 0008: SharedTag flows from [PanelEditable] into the discovered EditableProperty
-    // schema exactly like Kind/Options - it's what SharedPropertyValidator checks across types.
+    // SharedTag flows from [PanelEditable] into the discovered EditableProperty schema exactly
+    // like Kind/Options - it's what SharedPropertyValidator checks across types.
     [Fact]
     public void RegisterComponentDiscoversSharedTagFromPanelEditableAttribute()
     {
@@ -337,8 +337,8 @@ public class D12CanvasOptionsTests
         Assert.Equal("color", tint.SharedTag);
     }
 
-    // ADR 0008: two properties on different types can carry the same SharedTag as long as they
-    // agree in EditorKind and CLR type - registering the second one must not throw.
+    // Two properties on different types can carry the same SharedTag as long as they agree in
+    // EditorKind and CLR type - registering the second one must not throw.
     [Fact]
     public void RegisterComponentWithACompatibleSharedTagOnADifferentTypeDoesNotThrow()
     {
@@ -375,8 +375,8 @@ public class D12CanvasOptionsTests
         );
     }
 
-    // ADR 0008: "a mismatch is a registration-time error, not a silent merge" - a SharedTag reused
-    // with a different EditorKind is caught here, naming both conflicting properties.
+    // "A mismatch is a registration-time error, not a silent merge" - a SharedTag reused with a
+    // different EditorKind is caught here, naming both conflicting properties.
     [Fact]
     public void RegisterComponentWithASharedTagMismatchedEditorKindThrowsNamingBothProperties()
     {

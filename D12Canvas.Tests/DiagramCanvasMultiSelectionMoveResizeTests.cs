@@ -7,13 +7,13 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 33: a multi-selection (2+) moves and resizes as a single bounding-box unit (ADR 0006).
-// The bounding box is computed over every selected member and rendered (with its own resize
-// handles) whenever 2+ are selected; individual members' own resize handles are suppressed for
-// that same reason (DiagramCanvasResizeTests/ComponentContainerTests cover their single-select
-// case). A move can start either by dragging one of the selected members directly, or by dragging
-// empty space inside the combined bounding box - either way every member moves by the same delta,
-// and the whole gesture (move or resize) commits to Board exactly once, on release.
+// A multi-selection (2+) moves and resizes as a single bounding-box unit. The bounding box is
+// computed over every selected member and rendered (with its own resize handles) whenever 2+ are
+// selected; individual members' own resize handles are suppressed for that same reason
+// (DiagramCanvasResizeTests/ComponentContainerTests cover their single-select case). A move can
+// start either by dragging one of the selected members directly, or by dragging empty space
+// inside the combined bounding box - either way every member moves by the same delta, and the
+// whole gesture (move or resize) commits to Board exactly once, on release.
 public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -81,8 +81,8 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
     public void TheBoundingBoxMatchesTheUnionOfMemberBoundsWhenTwoAreSelected()
     {
         var board = new Board();
-        AddInstance(board, 0, 0); // (0,0)-(50,50)
-        AddInstance(board, 300, 100); // (300,100)-(350,150)
+        AddInstance(board, 0, 0);
+        AddInstance(board, 300, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         SelectBoth(canvas);
@@ -137,7 +137,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         Assert.Equal(new Bounds(350, 50, 50, 50), second.Bounds);
 
         // The trailing native click that follows a real drag's mouseup must not clear the
-        // selection it just moved (same _dragMoved guard ticket 32 relies on for the marquee).
+        // selection it just moved (the same _dragMoved guard the marquee relies on).
         canvas.Find(".diagram-canvas").Click();
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
@@ -215,8 +215,8 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
     public void ResizingViaTheBottomRightHandleScalesEveryMemberProportionally()
     {
         var board = new Board();
-        var first = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
-        var second = AddInstance(board, 100, 0, 100, 50); // (100,0)-(200,50)
+        var first = AddInstance(board, 0, 0, 50, 50);
+        var second = AddInstance(board, 100, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         SelectBoth(canvas);
@@ -235,8 +235,8 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
     public void ResizingViaTheTopLeftHandleKeepsTheOppositeCornerOfTheBoundingBoxAnchored()
     {
         var board = new Board();
-        var first = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
-        var second = AddInstance(board, 100, 0, 100, 50); // (100,0)-(200,50)
+        var first = AddInstance(board, 0, 0, 50, 50);
+        var second = AddInstance(board, 100, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         SelectBoth(canvas);
@@ -294,8 +294,8 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
     public void GroupResizeScalesTheScreenDeltaByTheCurrentZoom()
     {
         var board = new Board();
-        var first = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
-        var second = AddInstance(board, 100, 0, 100, 50); // (100,0)-(200,50)
+        var first = AddInstance(board, 0, 0, 50, 50);
+        var second = AddInstance(board, 100, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
@@ -331,9 +331,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         SelectBoth(canvas);
 
-        // Both members already sit at the 50x50 floor a lone instance's own resize handles have
-        // always enforced (ticket 31). A large inward drag must be fully absorbed by the group
-        // resize's own clamp rather than proportionally scaling either member smaller than that.
+        // Both members already sit at the 50x50 floor a lone instance's own resize handles
+        // enforce. A large inward drag must be fully absorbed by the group resize's own clamp
+        // rather than proportionally scaling either member smaller than that.
         var handle = canvas.Find(".group-resize-handle.bottom-right");
         handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
         handle.MouseMove(new MouseEventArgs { ClientX = -700, ClientY = -800 });
@@ -364,8 +364,8 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         Assert.Empty(canvas.FindAll(".component-container .resize-handle"));
         Assert.Equal(8, canvas.FindAll(".group-resize-handle").Count);
 
-        // A plain click collapses the selection down to just this one (ADR 0006) - its own
-        // handles should reappear, and the group overlay should disappear.
+        // A plain click collapses the selection down to just this one - its own handles should
+        // reappear, and the group overlay should disappear.
         canvas.FindAll(".component-container")[0].Click();
 
         Assert.Empty(canvas.FindAll(".selection-bounding-box"));

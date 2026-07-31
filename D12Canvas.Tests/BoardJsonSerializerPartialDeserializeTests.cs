@@ -5,8 +5,8 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 36: partial deserialize never throws on unknown component-type keys or malformed
-// entities — it skips them, warns, and loads everything else normally.
+// Partial deserialize never throws on unknown component-type keys or malformed entities — it
+// skips them, warns, and loads everything else normally.
 public class BoardJsonSerializerPartialDeserializeTests
 {
     private const string TestComponentKey = "test-props";
@@ -218,7 +218,7 @@ public class BoardJsonSerializerPartialDeserializeTests
         );
     }
 
-    // Ticket 46: the partial path never fails the whole load over a group's problems either - a
+    // The partial path never fails the whole load over a group's problems either - a
     // structurally malformed group is skipped-and-warned like a malformed component, and a group
     // referencing a missing member is still loaded (its other, valid members still behave as a
     // group) with a warning recorded instead of the load failing.
@@ -368,7 +368,7 @@ public class BoardJsonSerializerPartialDeserializeTests
         Assert.Equal("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", warning.Entity, ignoreCase: true);
     }
 
-    // Ticket 51: the partial path never fails the whole load over an edge's problems either - a
+    // The partial path never fails the whole load over an edge's problems either - a
     // structurally malformed edge is skipped-and-warned like a malformed component/group, and an
     // edge referencing a missing instance is still loaded (its other, valid endpoint still
     // resolves) with a warning recorded instead of the load failing.
@@ -438,9 +438,9 @@ public class BoardJsonSerializerPartialDeserializeTests
         );
     }
 
-    // Ticket 55: a dangling custom-port reference is tolerated exactly like a dangling standard
-    // port reference (RecordsAWarningForAnEdgeReferencingAMissingInstanceButStillLoadsTheEdge
-    // above) - a warning is recorded but the edge still loads.
+    // A dangling custom-port reference is tolerated exactly like a dangling standard port
+    // reference (RecordsAWarningForAnEdgeReferencingAMissingInstanceButStillLoadsTheEdge above) -
+    // a warning is recorded but the edge still loads.
     [Fact]
     public void RecordsAWarningForAnEdgeReferencingAMissingInstanceViaACustomPortButStillLoadsTheEdge()
     {

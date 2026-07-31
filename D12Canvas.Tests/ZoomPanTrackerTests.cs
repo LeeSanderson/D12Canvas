@@ -67,18 +67,14 @@ namespace D12Canvas.Tests
         [Fact]
         public void PanTriggersChangedEvent()
         {
-            // Reset event tracking
             _eventTriggered = false;
             _lastEventArgs = null;
 
-            // Pan by 10 pixels in both directions
             _tracker.Pan(-10, -10);
 
-            // Verify event was triggered
             Assert.True(_eventTriggered);
             Assert.NotNull(_lastEventArgs);
 
-            // Verify event args contain correct values
             Assert.Equal(1.0, _lastEventArgs!.Scale);
             Assert.Equal(-10, _lastEventArgs!.PanX);
             Assert.Equal(-10, _lastEventArgs!.PanY);
@@ -87,18 +83,14 @@ namespace D12Canvas.Tests
         [Fact]
         public void ZoomInTriggersChangedEvent()
         {
-            // Reset event tracking
             _eventTriggered = false;
             _lastEventArgs = null;
 
-            // Zoom in
             _tracker.Zoom(true);
 
-            // Verify event was triggered
             Assert.True(_eventTriggered);
             Assert.NotNull(_lastEventArgs);
 
-            // Verify event args contain correct values
             Assert.Equal(1.1, _lastEventArgs!.Scale);
             Assert.Equal(0, _lastEventArgs!.PanX);
             Assert.Equal(0, _lastEventArgs!.PanY);
@@ -107,18 +99,14 @@ namespace D12Canvas.Tests
         [Fact]
         public void ZoomOutTriggersChangedEvent()
         {
-            // Reset event tracking
             _eventTriggered = false;
             _lastEventArgs = null;
 
-            // Zoom out
             _tracker.Zoom(false);
 
-            // Verify event was triggered
             Assert.True(_eventTriggered);
             Assert.NotNull(_lastEventArgs);
 
-            // Verify event args contain correct values
             Assert.Equal(0.9, _lastEventArgs!.Scale);
             Assert.Equal(0, _lastEventArgs!.PanX);
             Assert.Equal(0, _lastEventArgs!.PanY);
@@ -127,17 +115,14 @@ namespace D12Canvas.Tests
         [Fact]
         public void PanRespectsContainerBoundaries()
         {
-            // Set up a small container and large canvas
             _tracker.SetContainerSize(100, 100);
             _tracker.SetCanvasSize(1000, 1000);
 
-            // Try to pan too far right
             _tracker.Pan(100, 0);
-            Assert.Equal(0, _tracker.PanX); // Should be constrained to 0
+            Assert.Equal(0, _tracker.PanX);
 
-            // Try to pan too far left
             _tracker.Pan(-1000, 0);
-            Assert.Equal(-900, _tracker.PanX); // Should be constrained to -900 (1000 - 100)
+            Assert.Equal(-900, _tracker.PanX); // -900 = 1000 - 100
         }
 
         [Fact]
@@ -145,21 +130,17 @@ namespace D12Canvas.Tests
         {
             _tracker.SetContainerSize(100, 100);
             _tracker.SetCanvasSize(1000, 1000);
-            _tracker.Zoom(true); // Zoom in to 1.1
+            _tracker.Zoom(true);
 
-            // Try to pan too far right
             _tracker.Pan(100, 0);
             Assert.Equal(0, _tracker.PanX);
 
-            // Try to pan too far left
             _tracker.Pan(-1000, 0);
             Assert.Equal(-1000, _tracker.PanX); // (1000 * 1.1) - 100 = 1000
 
-            // Try to pan too far down
             _tracker.Pan(0, 100);
             Assert.Equal(0, _tracker.PanY);
 
-            // Try to pan too far up
             _tracker.Pan(0, -1000);
             Assert.Equal(-1000, _tracker.PanY); // (1000 * 1.1) - 100 = 1000
         }
@@ -181,21 +162,16 @@ namespace D12Canvas.Tests
         [Fact]
         public void SetContainerSizeUpdatesEventArgs()
         {
-            // Set initial container size
             _tracker.SetContainerSize(800, 600);
 
-            // Reset event tracking
             _eventTriggered = false;
             _lastEventArgs = null;
 
-            // Update container size
             _tracker.SetContainerSize(1200, 800);
 
-            // Verify event was triggered
             Assert.True(_eventTriggered);
             Assert.NotNull(_lastEventArgs);
 
-            // Verify event args contain correct container dimensions
             Assert.Equal(1200, _lastEventArgs!.ContainerWidth);
             Assert.Equal(800, _lastEventArgs!.ContainerHeight);
         }
@@ -203,18 +179,15 @@ namespace D12Canvas.Tests
         [Fact]
         public void SetCanvasSizeTriggersChangedEvent()
         {
-            // Set initial canvas size
             _tracker.SetCanvasSize(1000, 1000);
 
-            // Reset event tracking
             _eventTriggered = false;
             _lastEventArgs = null;
 
-            // Update canvas size (container/scale stay put, so the pan position
-            // itself never needs clamping - this must still notify)
+            // Container/scale stay put, so the pan position itself never needs clamping here -
+            // this must still notify.
             _tracker.SetCanvasSize(2000, 2000);
 
-            // Verify event was triggered
             Assert.True(_eventTriggered);
             Assert.NotNull(_lastEventArgs);
         }

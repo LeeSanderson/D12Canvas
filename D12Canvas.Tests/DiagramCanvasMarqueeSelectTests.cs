@@ -7,11 +7,11 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 32: marquee + shift-click multi-select (ADR 0006). A plain drag on empty canvas still
-// pans (pre-existing behaviour); Shift+drag draws an intersection-based marquee instead, pairing
-// with Shift-click's existing "multi-select gesture" meaning. A drag starting inside the current
-// selection's own combined bounding box does neither - reserved for ticket 33's group-move-as-a-
-// unit, so it's deliberately inert for now.
+// Marquee + shift-click multi-select. A plain drag on empty canvas still pans (pre-existing
+// behaviour); Shift+drag draws an intersection-based marquee instead, pairing with Shift-click's
+// existing "multi-select gesture" meaning. A drag starting inside the current selection's own
+// combined bounding box does neither - reserved for the group-move-as-a-unit gesture, so it's
+// deliberately inert for now.
 public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -194,7 +194,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
     public void MarqueeAccountsForZoomWhenConvertingScreenCoordinatesToBoardSpace()
     {
         var board = new Board();
-        AddInstance(board, 210, 210); // spans board (210,210)-(260,260)
+        AddInstance(board, 210, 210);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
@@ -277,16 +277,16 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
     }
 
     // A drag starting inside the selection's own combined bounding box - but on empty space, not
-    // on either instance itself - used to be deliberately inert (reserved for ticket 33), and this
-    // test asserted exactly that: no pan, no marquee, selection undisturbed. Ticket 33 gave that
-    // drag a real job (moving the whole selection as one unit) - see
+    // on either instance itself - used to be deliberately inert, and this test asserted exactly
+    // that: no pan, no marquee, selection undisturbed. That drag was later given a real job
+    // (moving the whole selection as one unit) - see
     // DiagramCanvasMultiSelectionMoveResizeTests.DraggingEmptySpaceWithinTheBoundingBoxMoves...
     // and ...TheBoardIsUnchangedMidGroupMoveAndOnlyUpdatesOnRelease, which cover the same gesture
     // (still no pan, still no marquee, still doesn't clear the selection) plus its new effect.
 
-    // A stationary click (no movement) on empty space still clears the selection per ADR 0006,
-    // even when that point happens to fall within the selection's combined bounding box - only a
-    // real drag from there does something else now (ticket 33's group move).
+    // A stationary click (no movement) on empty space still clears the selection, even when that
+    // point happens to fall within the selection's combined bounding box - only a real drag from
+    // there does something else now (the group move).
     [Fact]
     public void AStationaryClickWithinTheSelectionBoundsStillClearsTheSelection()
     {

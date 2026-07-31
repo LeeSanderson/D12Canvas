@@ -8,10 +8,10 @@ public sealed class ComponentInstance
     public Bounds Bounds { get; set; }
     public int ZIndex { get; set; }
 
-    // Ticket 55/ADR 0005: an end user's own runtime-added ports on this specific instance - nothing
-    // a component type's developer declares at registration. A plain mutable list (rather than a
-    // dedicated Add/Remove method) since AddCustomPortCommand already owns the undo/redo discipline
-    // around mutating it.
+    // An end user's own runtime-added ports on this specific instance - nothing a component
+    // type's developer declares at registration. A plain mutable list (rather than a dedicated
+    // Add/Remove method) since AddCustomPortCommand already owns the undo/redo discipline around
+    // mutating it.
     public List<PortDef> CustomPorts { get; }
 
     public ComponentInstance(

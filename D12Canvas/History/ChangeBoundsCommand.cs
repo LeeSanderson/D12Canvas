@@ -2,8 +2,8 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// ADR 0007: covers both move and resize as one command, since Bounds is already a single
-// combined position+size struct - which of the two a gesture was is never tracked here.
+// Covers both move and resize as one command, since Bounds is already a single combined
+// position+size struct - which of the two a gesture was is never tracked here.
 public sealed class ChangeBoundsCommand : ICommand
 {
     private readonly ComponentInstance _instance;

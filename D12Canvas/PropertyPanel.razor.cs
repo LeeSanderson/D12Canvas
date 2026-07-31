@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace D12Canvas;
 
-// ADR 0008: a standalone chrome component, wired to its DiagramCanvas the same explicit way
-// Palette is (ADR 0002 - chrome isn't nested inside the canvas, so no cascading parameter reaches
+// A standalone chrome component, wired to its DiagramCanvas the same explicit way
+// Palette is (chrome isn't nested inside the canvas, so no cascading parameter reaches
 // it). Unlike Palette, the panel's content depends on transient selection state living inside
 // DiagramCanvas, so it also subscribes to DiagramCanvas.SelectionChanged to know when to re-render.
 public partial class PropertyPanel : IDisposable
@@ -60,7 +60,7 @@ public partial class PropertyPanel : IDisposable
     private IReadOnlyList<ComponentInstance> SelectedInstances =>
         Canvas?.SelectedComponents ?? Array.Empty<ComponentInstance>();
 
-    // ADR 0008/ticket 59: one rendered row. A same-type selection (1 or 2+ instances) maps every
+    // One rendered row. A same-type selection (1 or 2+ instances) maps every
     // target to the SAME reflected PropertyInfo, since they all share one TProps type. A cross-type
     // multi-selection instead maps each instance to whichever of ITS OWN type's properties carries
     // the matching SharedTag - the names can differ across types, but SharedPropertyValidator
@@ -96,9 +96,9 @@ public partial class PropertyPanel : IDisposable
         }
     }
 
-    // Ticket 56/59: a single type's own full declared schema - the ticket-56 shape for one selected
+    // A single type's own full declared schema - the shape for one selected
     // instance, extended so a same-type 2+ multi-selection edits every member through the identical
-    // PropertyInfo (ticket 59).
+    // PropertyInfo.
     private IReadOnlyList<PanelField> SameTypeFields(
         string typeKey,
         IReadOnlyList<ComponentInstance> instances
@@ -114,7 +114,7 @@ public partial class PropertyPanel : IDisposable
             ))
             .ToList();
 
-    // Ticket 59/ADR 0008: only a tag every selected type's own schema carries surfaces at all -
+    // Only a tag every selected type's own schema carries surfaces at all -
     // never inferred from a shared property name, only from an explicit, matching SharedTag. Each
     // selected instance still reads/writes through its own type's PropertyInfo for that tag; the
     // field is keyed and labelled by the tag itself rather than any one type's property name, since
@@ -172,7 +172,7 @@ public partial class PropertyPanel : IDisposable
             .ToList();
     }
 
-    // ticket 59: a multi-target field displays whichever target happens to be first as its
+    // A multi-target field displays whichever target happens to be first as its
     // representative current value - there's no "mixed values" indicator, matching how a same-type
     // multi-selection already has no per-instance display distinction.
     private static object? FirstTargetValue(PanelField field) =>
@@ -188,7 +188,7 @@ public partial class PropertyPanel : IDisposable
 
     // A Custom editor gets the current value of the field's first target plus a commit callback
     // closed over this same field - Commit directly, not via CommitEdit, since a Custom editor's
-    // value is already CLR-typed and needs no ChangeEventArgs/ConvertValue parsing (ticket 58).
+    // value is already CLR-typed and needs no ChangeEventArgs/ConvertValue parsing.
     private CustomEditorContext CustomContext(PanelField field) =>
         new(FirstTargetValue(field), newValue => Commit(field, newValue));
 
@@ -224,8 +224,8 @@ public partial class PropertyPanel : IDisposable
         Commit(field, newValue);
     }
 
-    // Ticket 56/59: every target that would actually change becomes one MutateEntityCommand - a
-    // target already at newValue contributes nothing, the same no-op guard ticket 56 applied to a
+    // Every target that would actually change becomes one MutateEntityCommand - a
+    // target already at newValue contributes nothing, the same no-op guard used for a
     // single instance, just checked per target instead. The whole edit still commits as one atomic
     // history entry via CommitPropsChangeBatch, whether it touches one instance or many, and
     // whether or not every target ends up changing.
@@ -270,7 +270,7 @@ public partial class PropertyPanel : IDisposable
     }
 
     // A TProps record is immutable - editing one field normally means a `with` expression, but the
-    // panel only ever sees Props as an opaque object (ADR 0007), so it has no compile-time TProps
+    // panel only ever sees Props as an opaque object, so it has no compile-time TProps
     // to write `with` against. MemberwiseClone + a single reflected overwrite is the generic
     // equivalent: it copies every field byte-for-byte (so unrelated properties are untouched) and
     // leaves the original object - which becomes MutateEntityCommand's "before" - unmodified.

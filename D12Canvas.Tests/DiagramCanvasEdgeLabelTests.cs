@@ -10,11 +10,11 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 53/ADR 0005: an edge label is a full ComponentInstance (defaulting to Text) embedded
-// directly on its owning Edge, not a separate Board entity - added by double-clicking the edge's
-// own line, positioned live at the edge's current midpoint, edited in place via the exact same
-// inline WYSIWYG mechanism Text already has (ticket 43), and removed automatically when its edge
-// is deleted. Exercised through the real DiagramCanvas/ComponentContainer/Text stack, same as
+// An edge label is a full ComponentInstance (defaulting to Text) embedded directly on its owning
+// Edge, not a separate Board entity - added by double-clicking the edge's own line, positioned
+// live at the edge's current midpoint, edited in place via the exact same inline WYSIWYG
+// mechanism Text already has, and removed automatically when its edge is deleted. Exercised
+// through the real DiagramCanvas/ComponentContainer/Text stack, same as
 // DiagramCanvasInlineTextEditingTests.
 public class DiagramCanvasEdgeLabelTests : ComponentTestBase
 {
@@ -152,8 +152,8 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         Assert.NotEqual(styleBefore, styleAfter);
     }
 
-    // Ticket 49/53: while an existing edge's endpoint is mid-drag (reposition, not a brand-new
-    // connection), the edge's own normal line is suppressed in favour of the live drag preview
+    // While an existing edge's endpoint is mid-drag (reposition, not a brand-new connection), the
+    // edge's own normal line is suppressed in favour of the live drag preview
     // (DiagramCanvas.ConnectPreviewLine) - the label must follow that same preview, not the edge's
     // last-committed (pre-drag) endpoints, or it would visually freeze and detach for the drag's
     // duration.

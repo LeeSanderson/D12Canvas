@@ -3,14 +3,13 @@ using D12Canvas.Model;
 namespace D12Canvas;
 
 // The anchor/clamp math behind a handle-drag resize: shared by ComponentContainer's own
-// per-instance resize (ticket 31) and DiagramCanvas's group resize (ticket 33), which apply the
-// same 8-direction logic to two different things (one instance's bounds vs. a selection's combined
-// bounding box).
+// per-instance resize and DiagramCanvas's group resize, which apply the same 8-direction logic to
+// two different things (one instance's bounds vs. a selection's combined bounding box).
 internal static class ResizeMath
 {
-    // The floor a single component instance's own handle-drag resize has always enforced (ticket
-    // 31). Shared here so DiagramCanvas's group resize can derive its own bounding-box floor from
-    // the same value instead of encoding it a second time.
+    // The floor a single component instance's own handle-drag resize has always enforced. Shared
+    // here so DiagramCanvas's group resize can derive its own bounding-box floor from the same
+    // value instead of encoding it a second time.
     public const double DefaultMinWidth = 50;
     public const double DefaultMinHeight = 50;
 

@@ -5,10 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for the selection context menu (ticket 62/ADR 0009): right-clicking a
-// selected instance opens a menu offering Delete, the four layering commands, and (once 2+
-// instances are selected) Group. Any later ticket that renders a new visual state on canvas should
-// add a case here alongside its own.
 public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -61,9 +57,9 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
 
     // Places the first instance and selects it while it's still the board's only one - same
     // reasoning as ZIndexLayeringVisualTests' own helper: the cascading +20,+20 click-to-add offset
-    // (ADR 0009) doesn't fully clear a default-sized instance, and the second one renders above the
-    // first (ticket 60's new-on-top default), so a click landing on the first's own on-screen spot
-    // after the second exists would hit the second instead.
+    // doesn't fully clear a default-sized instance, and the second one renders above the first
+    // (new-on-top by default), so a click landing on the first's own on-screen spot after the
+    // second exists would hit the second instead.
     [Fact]
     public async Task RightClickOnATwoInstanceSelectionOffersGroup_MatchesBaseline()
     {

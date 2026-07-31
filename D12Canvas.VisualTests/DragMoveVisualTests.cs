@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for drag-move (ticket 30): a selected instance mid-drag, and the
-// board after the drag is released. Any later ticket that renders a new visual state on canvas
-// should add a case here alongside its own.
 public sealed class DragMoveVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -44,8 +41,6 @@ public sealed class DragMoveVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Selects the sole placed instance and moves the real mouse to its center, ready for a
-    // press/move/release sequence. Shared by both tests below.
     private async Task<(double X, double Y)> PlaceAndSelectInstance()
     {
         await _page.Locator(".d12-palette-entry-button").First.ClickAsync();

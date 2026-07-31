@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for marquee + shift-click multi-select (ticket 32): the marquee
-// rectangle mid-drag, and the resulting multi-selection once released. Any later ticket that
-// renders a new visual state on canvas should add a case here alongside its own.
 public sealed class MarqueeVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -45,7 +42,7 @@ public sealed class MarqueeVisualTests : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
     // Click-to-adds both palette entries so they land close together (viewport-centre plus the
-    // small cascading offset from ticket 28), then returns a point above/left of both and a point
+    // small cascading placement offset), then returns a point above/left of both and a point
     // below/right of both, ready to drag a marquee across the pair.
     private async Task<((float X, float Y) From, (float X, float Y) To)> PlaceTwoInstances()
     {
@@ -77,7 +74,7 @@ public sealed class MarqueeVisualTests : IAsyncLifetime
         var (from, to) = await PlaceTwoInstances();
 
         // A plain drag pans the canvas (pre-existing behaviour) - Shift+drag draws the marquee
-        // instead, same real Mouse.Down/Move technique DragMoveVisualTests uses for ticket 30.
+        // instead, the same real Mouse.Down/Move technique DragMoveVisualTests uses.
         await _page.Mouse.MoveAsync(from.X, from.Y);
         await _page.Keyboard.DownAsync("Shift");
         await _page.Mouse.DownAsync();

@@ -7,9 +7,8 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 31: resize a selected instance via its handles. A resize is one press-to-release
-// gesture (ADR 0007) - Board only ever sees the final Bounds, on release, never an intermediate
-// mousemove tick.
+// Resize a selected instance via its handles. A resize is one press-to-release gesture - Board
+// only ever sees the final Bounds, on release, never an intermediate mousemove tick.
 public class DiagramCanvasResizeTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

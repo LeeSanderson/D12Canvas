@@ -34,28 +34,28 @@ public partial class DiagramCanvas : IAsyncDisposable
     public EventCallback<ZoomPanChangedEventArgs> OnZoomOrPanChanged { get; set; }
     public event EventHandler<ZoomPanChangedEventArgs>? ZoomOrPanChanged;
 
-    // Ticket 56/ADR 0008: the property panel (a standalone chrome sibling, ADR 0002 - same
-    // wiring as Palette) subscribes to this to know when to re-render. Blazor's own auto-rerender
-    // after an event handler only covers DiagramCanvas's own render tree, never a sibling
-    // component's. Also raised by undo/redo (see OnUndoPressed/OnRedoPressed) even though
-    // selection identity itself is untouched there - either can change what the panel should be
-    // showing for the current selection (a newly selected instance, or the currently selected
-    // instance's Props reverting/reapplying).
+    // The property panel (a standalone chrome sibling, same wiring as Palette) subscribes to
+    // this to know when to re-render. Blazor's own auto-rerender after an event handler only
+    // covers DiagramCanvas's own render tree, never a sibling component's. Also raised by
+    // undo/redo (see OnUndoPressed/OnRedoPressed) even though selection identity itself is
+    // untouched there - either can change what the panel should be showing for the current
+    // selection (a newly selected instance, or the currently selected instance's Props
+    // reverting/reapplying).
     public event EventHandler? SelectionChanged;
 
     private void NotifySelectionChanged() => SelectionChanged?.Invoke(this, EventArgs.Empty);
 
-    // Ticket 56/59: the property panel's selection surface - every top-level selected id resolved
+    // The property panel's selection surface - every top-level selected id resolved
     // to a ComponentInstance, deliberately NOT expanded through group membership (unlike
     // ExpandedSelection, which move/resize/delete use). A selected Group's own id lives in Board's
     // separate group dictionary, so Board.GetComponent returns null for it - and, since a Group has
     // no Props of its own to edit, ANY unresolvable id in the selection empties the whole result
     // rather than silently dropping just that one entry (a shift-click can mix a grouped member,
-    // i.e. its group's id per ticket 44's EffectiveSelectionId, with a standalone instance in the
+    // i.e. its group's id per EffectiveSelectionId, with a standalone instance in the
     // same selection - that must read as "nothing to edit", the same as a lone selected Group,
     // rather than collapsing to "edit the one standalone instance"). Empty whenever an edge is
     // selected instead (edges have no Props reachable via this panel). A single resolved instance
-    // is ticket 56's "edit exactly one instance" case; 2+ (same type or cross-type) is ticket 59.
+    // is the "edit exactly one instance" case; 2+ (same type or cross-type) is the bulk-edit case.
     public IReadOnlyList<ComponentInstance> SelectedComponents
     {
         get
@@ -83,13 +83,13 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // A palette entry has no compile-time-typed payload it can hand across the native HTML5 drag
     // session (Blazor's DragEventArgs.DataTransfer exposes no SetData/GetData) - Palette instead
-    // calls this directly (via its explicit Canvas reference, ADR 0002) to stash which type is
+    // calls this directly (via its explicit Canvas reference) to stash which type is
     // being dragged, for HandleDrop to read back once the gesture completes.
     private string? _pendingPaletteDragKey;
     private bool _isDragOverBoard;
 
-    // Ticket 54/ADR 0009: the "Connector" palette entry isn't a registered component type - Edge is
-    // its own entity (ADR 0003), not something ADR 0001's RegisterComponent covers - so it has no
+    // The "Connector" palette entry isn't a registered component type - Edge is
+    // its own entity, not something RegisterComponent covers - so it has no
     // real registry key. This sentinel flows through the exact same BeginPaletteDrag/ClickToAdd
     // gesture plumbing every other palette entry uses; PlaceComponent below recognizes it and routes
     // to PlaceConnector instead of resolving it through Registry.
@@ -98,7 +98,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void BeginPaletteDrag(string componentTypeKey) =>
         _pendingPaletteDragKey = componentTypeKey;
 
-    // ADR 0009: click-to-add's default position is the viewport center (not a fixed board-space
+    // Click-to-add's default position is the viewport center (not a fixed board-space
     // origin, which could land off-screen once the user has panned), with a small cascading
     // offset per successive click so repeated adds don't stack in a perfectly overlapping pile.
     // The counter is global (not per component type) - it only needs to keep successive placements
@@ -107,40 +107,39 @@ public partial class DiagramCanvas : IAsyncDisposable
     private const double ClickToAddCascadeStep = 20;
     private int _clickToAddCascadeCount;
 
-    // Selection is transient view state (ADR 0006) - it lives here, never on Board, and is never
-    // serialized or tracked by undo/redo. Ticket 32: ad-hoc multi-select via marquee/shift-click.
+    // Selection is transient view state - it lives here, never on Board, and is never
+    // serialized or tracked by undo/redo. Ad-hoc multi-select via marquee/shift-click.
     private readonly HashSet<Guid> _selectedInstanceIds = new();
 
-    // Ticket 50: an edge's own exclusive selection slot - edges don't participate in multi-select,
-    // grouping, or move/resize as a unit (ADR 0006 only covers component instances), so an edge id
+    // An edge's own exclusive selection slot - edges don't participate in multi-select,
+    // grouping, or move/resize as a unit the way component instances do, so an edge id
     // is never mixed into _selectedInstanceIds. Selecting an edge always clears any instance
     // selection, and selecting an instance (or starting a marquee) always clears this.
     private Guid? _selectedEdgeId;
 
-    // Ticket 62/ADR 0009: the open selection context menu, if any - null means none is open. Its
+    // The open selection context menu, if any - null means none is open. Its
     // anchor point is plain container-relative pixels (not board space), since the menu is canvas
     // chrome (CONTEXT.md) that must not pan/zoom with the board content.
     private sealed record ContextMenuState(double X, double Y);
 
     private ContextMenuState? _contextMenu;
 
-    // Ticket 37: session-scoped, in-memory undo/redo (ADR 0007) - lives here, not on Board, for
+    // Session-scoped, in-memory undo/redo - lives here, not on Board, for
     // the same reason selection does; never serialized, never survives a reload.
     private readonly CommandHistory _history = new();
 
     private readonly ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
 
-    // Make ZoomPanTracker accessible to child components
     public ZoomPanTracker ZoomPanTracker => _zoomPanTracker;
 
-    // Ticket 32: a plain drag on empty canvas still pans (pre-existing behaviour, unchanged);
+    // A plain drag on empty canvas still pans (pre-existing behaviour, unchanged);
     // Shift+drag draws an intersection-based marquee instead, pairing with Shift-click's existing
     // "multi-select gesture" meaning. A drag starting inside the current selection's own combined
-    // bounding box does neither of those - it's ticket 33's group-move instead (see _isGroupMoving
+    // bounding box does neither of those - it's a group-move instead (see _isGroupMoving
     // below). Whichever of these a gesture turns out to be, it starts and ends with mousedown/
     // mouseup on the same element, so the browser's native click fires right after it - without the
     // _dragMoved guard that click would immediately clear the selection the drag just established
-    // (or leave alone), the same wrinkle ticket 29's original pan guard existed to solve.
+    // (or leave alone), the same wrinkle the original pan guard existed to solve.
     private bool _isPanning;
     private bool _isMarqueeSelecting;
     private bool _dragMoved;
@@ -151,7 +150,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private (double X, double Y) _marqueeAnchor;
     private (double X, double Y) _marqueeCurrent;
 
-    // Ticket 33: a multi-selection (2+) moves and resizes as a single bounding-box unit (ADR 0006).
+    // A multi-selection (2+) moves and resizes as a single bounding-box unit.
     // Move can start two ways - dragging empty space inside the combined bounding box (tracked here,
     // live-previewed every tick since DiagramCanvas owns the whole gesture) or dragging one of the
     // selected members directly (ComponentContainer's own existing _isMoving already tracks that
@@ -176,7 +175,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private double _groupResizeMinBboxWidth;
     private double _groupResizeMinBboxHeight;
 
-    // Ticket 48: connector drag-in-progress state (ADR 0005/0009) - lives here, not on Board,
+    // Connector drag-in-progress state - lives here, not on Board,
     // the same reasoning as every other momentary gesture tracked in this file. Owned centrally
     // (rather than by the source ComponentContainer) because a completed connection spans two
     // different instances.
@@ -186,10 +185,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     private (double Left, double Top) _connectContainerOrigin;
     private (double X, double Y) _connectCurrentPoint;
 
-    // Ticket 49: set when this drag is repositioning an EXISTING edge's endpoint - grabbed from a
+    // Set when this drag is repositioning an EXISTING edge's endpoint - grabbed from a
     // port that already anchors an edge (StartPortDrag), or from a floating endpoint's own marker
     // (StartFloatingEndpointDrag) - rather than creating a brand new one. Null means "creating a
-    // new edge from a bare port" (ticket 48's original path). While set, the edge being edited is
+    // new edge from a bare port" (the original connector-drag path). While set, the edge being edited is
     // rendered via the drag preview instead of its own normal line (see IsBeingEdited).
     private Guid? _connectEditingEdgeId;
     private bool _connectEditingEdgeIsSource;
@@ -235,21 +234,18 @@ public partial class DiagramCanvas : IAsyncDisposable
             _zoomPanTracker.SetContainerSize((int)dimensions["width"], (int)dimensions["height"]);
             _zoomPanTracker.SetCanvasSize(3000, 3000);
 
-            // Set up resize listener
             var resizeCleanup = await _jsModule.InvokeAsync<Action>(
                 "addResizeListener",
                 ContainerElement,
                 _dotNetObjectRef
             );
 
-            // Set up keyboard listener
             var keyboardCleanup = await _jsModule.InvokeAsync<Action>(
                 "addKeyboardListener",
                 ContainerElement,
                 _dotNetObjectRef
             );
 
-            // Store cleanup functions for disposal
             _cleanupFunctions.Add(resizeCleanup);
             _cleanupFunctions.Add(keyboardCleanup);
 
@@ -306,7 +302,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // ADR 0009: Escape clears the selection, and (ticket 48) cancels an in-progress connector
+    // Escape clears the selection, and cancels an in-progress connector
     // drag rather than letting it resolve against wherever the pointer happens to be.
     [JSInvokable]
     public void OnEscapePressed()
@@ -323,16 +319,16 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // ADR 0009: Delete/Backspace removes every currently selected instance from Board and clears
+    // Delete/Backspace removes every currently selected instance from Board and clears
     // the selection - single and multi-selection are the same code path here, since (unlike
     // move/resize) deletion has no "move as one unit" delta to apply, just N independent removals.
-    // Ticket 38: wrapped in one CompositeCommand of RemoveEntityCommands (ADR 0007), so a
+    // Wrapped in one CompositeCommand of RemoveEntityCommands, so a
     // multi-selection delete undoes as a single atomic entry and every deleted instance is
     // restored with its identity, bounds, and props intact.
-    // Ticket 44: reads through ExpandedSelection so a selected Group's members are what actually
-    // get deleted (the Group entity itself, now referencing missing members, is left for a future
-    // ticket to decide how to handle - not exercised by this one).
-    // Ticket 50: a selected edge takes a separate branch - it's never mixed into
+    // Reads through ExpandedSelection so a selected Group's members are what actually
+    // get deleted (the Group entity itself, now referencing missing members, is left for
+    // future work to decide how to handle - not exercised here).
+    // A selected edge takes a separate branch - it's never mixed into
     // _selectedInstanceIds (see _selectedEdgeId), and there's no multi-select or "as one unit"
     // delta to apply, just the one RemoveEdgeCommand.
     [JSInvokable]
@@ -373,7 +369,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // ADR 0006/0007: Ctrl+G promotes the current 2+ top-level selection into a persistent Group
+    // Ctrl+G promotes the current 2+ top-level selection into a persistent Group
     // entity - the group becomes the new selection. A selection entry that is already a Group's
     // own id (from a prior grouping) is carried over by reference rather than flattened to its
     // members, so grouping a selection that already contains a group nests it.
@@ -394,7 +390,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // ADR 0006/0007: Ctrl+Shift+G dissolves every currently-selected Group back into its
+    // Ctrl+Shift+G dissolves every currently-selected Group back into its
     // immediate members, which become independently selectable again - a member that is itself a
     // nested Group stays grouped (only the outer group is dissolved). Non-group entries already in
     // the selection are left untouched.
@@ -428,8 +424,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // ADR 0007/0009: Ctrl+Z / Ctrl+Shift+Z. Selection is untouched either way - it's not tracked
-    // by History (ADR 0006). NotifySelectionChanged still fires: an undone/redone MutateEntityCommand
+    // Ctrl+Z / Ctrl+Shift+Z. Selection is untouched either way - it's not tracked
+    // by History. NotifySelectionChanged still fires: an undone/redone MutateEntityCommand
     // can change the currently-selected instance's Props out from under the property panel.
     [JSInvokable]
     public void OnUndoPressed()
@@ -447,10 +443,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // ADR 0008/0009: Ctrl+]/Ctrl+Shift+] and Ctrl+[/Ctrl+Shift+[. Layering reads through
-    // ExpandedSelection (ticket 44), so a selected Group's members are reordered independently,
+    // Ctrl+]/Ctrl+Shift+] and Ctrl+[/Ctrl+Shift+[. Layering reads through
+    // ExpandedSelection, so a selected Group's members are reordered independently,
     // same as any other multi-selection - a Group's own "bulk-write, preserve relative member
-    // order" layering behaviour is ticket 61's job, not this one's.
+    // order" layering behaviour is handled elsewhere, not here.
     [JSInvokable]
     public void OnBringToFrontPressed() => RestackSelection(toFront: true);
 
@@ -516,7 +512,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // computes each one's new ZIndex via the supplied rule - evaluated against the board's state
     // before any of this gesture's own writes, so a multi-selection's members never see each
     // other's in-progress changes - skips any that wouldn't actually change, and commits the rest
-    // as one undoable gesture (ADR 0007): one ChangeZIndexCommand per changed instance, wrapped in
+    // as one undoable gesture: one ChangeZIndexCommand per changed instance, wrapped in
     // a CompositeCommand, mirroring OnDeletePressed/OnUngroupPressed's own "build a list, wrap
     // once" shape.
     private void ApplyZIndexChange(Func<ComponentInstance, int?> computeNewZIndex)
@@ -553,7 +549,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 62/ADR 0009: right-click on a selection opens the menu; right-click on empty canvas
+    // Right-click on a selection opens the menu; right-click on empty canvas
     // (nothing selected) is a no-op here, leaving the @oncontextmenu:preventDefault binding false
     // for that render so the browser's own default menu shows instead.
     private bool HasContextMenuEligibleSelection =>
@@ -608,8 +604,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         action();
     }
 
-    // Ticket 44: a top-level entry in _selectedInstanceIds can be either a component instance id
-    // or a Group id (grouping/clicking a member collapses selection onto the Group - ADR 0006).
+    // A top-level entry in _selectedInstanceIds can be either a component instance id
+    // or a Group id (grouping/clicking a member collapses selection onto the Group).
     // This recursively flattens every entry down to the underlying component instance ids, so the
     // rest of DiagramCanvas's existing ad-hoc multi-select machinery (bounds/move/resize/delete)
     // handles a selected Group exactly like any other 2+ multi-selection, with no separate code
@@ -641,9 +637,9 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private bool IsSelected(Guid instanceId) => ExpandedSelection().Contains(instanceId);
 
-    // Ticket 33: distinguishes "selected" from "selected as part of a group of 2+" - only the
+    // Distinguishes "selected" from "selected as part of a group of 2+" - only the
     // latter suppresses a ComponentContainer's own resize handles in favour of the shared overlay's.
-    // Ticket 44: reads the expanded (flattened) selection, so a single selected Group of 2+
+    // Reads the expanded (flattened) selection, so a single selected Group of 2+
     // members counts the same as an ad-hoc 2+ multi-selection.
     private bool IsMultiSelected(Guid instanceId)
     {
@@ -651,20 +647,20 @@ public partial class DiagramCanvas : IAsyncDisposable
         return expanded.Count > 1 && expanded.Contains(instanceId);
     }
 
-    // Ticket 44: the shared bounding-box overlay (and its resize handles) must show for a
+    // The shared bounding-box overlay (and its resize handles) must show for a
     // selected Group of 2+ members too, not only an ad-hoc multi-selection.
     private bool HasMultiMemberSelection => ExpandedSelection().Count > 1;
 
-    // Ticket 44: an entity id's outermost containing group id, if it has one, else the id itself -
+    // An entity id's outermost containing group id, if it has one, else the id itself -
     // shared by SelectComponent (a click) and UpdateMarqueeSelection (a marquee drag), so
     // whichever gesture picks an entity up, selection converges onto its group the same way.
     private Guid EffectiveSelectionId(Guid id) => Board?.FindContainingGroup(id)?.Id ?? id;
 
-    // Ticket 32: a shift-click toggles the clicked instance's membership without disturbing the
+    // A shift-click toggles the clicked instance's membership without disturbing the
     // rest of the selection; a plain click always collapses the selection down to just this one.
-    // Ticket 44: clicking any member of a Group selects the whole group instead of just that one
-    // instance - selection and group membership converge (ADR 0006).
-    // Ticket 50: selecting a component always clears any edge selection - the two slots are
+    // Clicking any member of a Group selects the whole group instead of just that one
+    // instance - selection and group membership converge.
+    // Selecting a component always clears any edge selection - the two slots are
     // mutually exclusive.
     private void SelectComponent(Guid instanceId, bool addToSelection)
     {
@@ -686,10 +682,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         NotifySelectionChanged();
     }
 
-    // Ticket 30: fired once by ComponentContainer's OnMoved, on release - the whole
+    // Fired once by ComponentContainer's OnMoved, on release - the whole
     // press-to-release drag is one gesture, so Board is only ever mutated with the final Bounds,
     // never per intermediate mousemove tick.
-    // Ticket 33: when the dragged instance is part of a 2+ multi-selection, the delta between its
+    // When the dragged instance is part of a 2+ multi-selection, the delta between its
     // own before/after Bounds is applied to every selected member instead of just this one -
     // preserving relative offsets without needing ComponentContainer itself to know anything about
     // multi-selection (its own local drag-tracking is unchanged; only this receiving end differs).
@@ -715,7 +711,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // Shared by MoveComponent (member-drag trigger) and HandleMouseUp (empty-space-in-bbox
     // trigger) - applies the same board-space delta to every selected member in one write.
-    // Ticket 37: the whole gesture is one CompositeCommand (ADR 0007), so a single undo reverts
+    // The whole gesture is one CompositeCommand, so a single undo reverts
     // every member together rather than one at a time.
     private void CommitGroupMove(double deltaX, double deltaY)
     {
@@ -749,7 +745,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // Ticket 31: same shape as MoveComponent, fired once by ComponentContainer's OnResized. A
+    // Same shape as MoveComponent, fired once by ComponentContainer's OnResized. A
     // multi-selected instance never reaches here for resize (its own handles are suppressed while
     // IsMultiSelected - see ComponentContainer), so unlike MoveComponent this needs no group branch.
     private void ResizeComponent(Guid instanceId, Bounds bounds)
@@ -764,7 +760,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 48: fired by a ComponentContainer's own port mousedown (OnPortDragStart).
+    // Fired by a ComponentContainer's own port mousedown (OnPortDragStart).
     // _isConnectingPort must flip synchronously, in this same call - a real browser's very next
     // mousemove/mouseup can arrive before an awaited JS round-trip resolves (unlike bUnit's mock,
     // which completes synchronously), and ComponentContainer's own forwarding check would race
@@ -779,7 +775,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        // Ticket 49/55: a port that already anchors an edge starts a "reposition this edge's
+        // A port that already anchors an edge starts a "reposition this edge's
         // endpoint" gesture instead of creating a new edge - matches common diagramming-tool UX
         // (grabbing a connected point moves the connection; grabbing a bare port starts a new one).
         // Works the same for a custom port as a standard one - PortRef.ToEndpoint resolves either.
@@ -796,7 +792,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         _ = RefreshConnectContainerOrigin();
     }
 
-    // Ticket 49: grabbing a floating endpoint's own marker starts the same connector-drag gesture
+    // Grabbing a floating endpoint's own marker starts the same connector-drag gesture
     // as StartPortDrag, but always originates from an existing Edge - CompletePortDrag mutates
     // that edge's Source/Target in place rather than creating a new one. Unlike a port press
     // (nested inside a ComponentContainer, which needs the mousedown-bubbles-then-gate trick), this
@@ -827,7 +823,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         _connectContainerOrigin = (containerRect["left"], containerRect["top"]);
     }
 
-    // Ticket 48: called both by this class's own HandleMouseMove (pointer over empty canvas) and
+    // Called both by this class's own HandleMouseMove (pointer over empty canvas) and
     // by any ComponentContainer forwarding its own mousemove (pointer over an instance's body) -
     // either way, DiagramCanvas is the single owner of the gesture's live preview.
     public void UpdatePortDrag(double clientX, double clientY)
@@ -841,7 +837,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 48/49: resolves the drop point to a port within PortHitRadius, falling back to a
+    // Resolves the drop point to a port within PortHitRadius, falling back to a
     // FloatingEndpoint at the drop point itself when nothing is within tolerance - so a connector
     // drag always produces a valid endpoint, attached or not. Either creates a brand new Edge
     // (bare-port origin) or writes the resolved endpoint onto whichever side of an existing Edge
@@ -872,7 +868,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             // gesture always connects two distinct points. IEdgeEndpoint's implementations are all
             // record structs, so structural equality already covers every shape (standard port,
             // custom port) without a type-specific comparison - same as ApplyEdgeEndpointEdit below.
-            // Ticket 50: routed through AddEdgeCommand (ADR 0007) rather than a direct
+            // Routed through AddEdgeCommand rather than a direct
             // Board.AddEdge call, so undo removes the created edge and redo restores it with the
             // same attachments.
             if (!resolved.Equals(source))
@@ -884,7 +880,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         CancelPortDrag();
     }
 
-    // Ticket 49: writes the drag's resolved endpoint onto whichever side of the edge is being
+    // Writes the drag's resolved endpoint onto whichever side of the edge is being
     // edited - unless doing so would collapse the edge onto a single point (both ends resolving to
     // the same port, or both left floating at the same coordinate), in which case the edge is left
     // exactly as it was before this drag. IEdgeEndpoint's implementations are records, so structural
@@ -922,14 +918,14 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 43: generic commit point for a built-in's own inline WYSIWYG text edit (or any future
+    // Generic commit point for a built-in's own inline WYSIWYG text edit (or any future
     // opaque Props edit) - Sticky Note and Text call this from their own editor on blur, via the
     // ParentCanvas cascading parameter every built-in already has access to. MutateEntityCommand
-    // treats Props as opaque (ADR 0007), so this works without DiagramCanvas knowing any TProps
+    // treats Props as opaque, so this works without DiagramCanvas knowing any TProps
     // shape. The caller is trusted to have already skipped a no-op (unchanged) edit.
-    // Ticket 53: falls back to Board.FindEdgeLabel when the id isn't an ordinary Board.Components
+    // Falls back to Board.FindEdgeLabel when the id isn't an ordinary Board.Components
     // entry - an edge's Label is the same kind of editable built-in (Text, by default) but lives
-    // only on its owning Edge (ADR 0005), so its own inline edit reaches this exact commit point
+    // only on its owning Edge, so its own inline edit reaches this exact commit point
     // via the same cascaded InstanceId, just resolved through a different lookup.
     public void CommitPropsChange(Guid instanceId, object before, object after)
     {
@@ -943,9 +939,9 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 59/ADR 0008: the multi-instance counterpart to CommitPropsChange - a same-type or
+    // The multi-instance counterpart to CommitPropsChange - a same-type or
     // cross-type bulk property edit resolves to one MutateEntityCommand per instance that actually
-    // changed, wrapped in a single CompositeCommand (ADR 0007) so the whole gesture undoes/redoes
+    // changed, wrapped in a single CompositeCommand so the whole gesture undoes/redoes
     // as one atomic entry regardless of how many instances it touched. The caller is trusted to
     // have already skipped any instance whose value wouldn't actually change.
     public void CommitPropsChangeBatch(
@@ -971,15 +967,15 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 43/53/59: shared by CommitPropsChange and CommitPropsChangeBatch - an id is either an
-    // ordinary Board.Components entry or (ticket 53) an edge's Label, which lives only on its
-    // owning Edge (ADR 0005) rather than in Board's own component dictionary.
+    // Shared by CommitPropsChange and CommitPropsChangeBatch - an id is either an
+    // ordinary Board.Components entry or an edge's Label, which lives only on its
+    // owning Edge rather than in Board's own component dictionary.
     private ComponentInstance? ResolvePropsEntity(Guid id) =>
         Board?.GetComponent(id) ?? Board?.FindEdgeLabel(id);
 
-    // Ticket 52: the commit point for a routing-style/arrowhead change on a specific edge - the
-    // Edge counterpart to CommitPropsChange. No panel UI calls this yet (ticket 56 is still
-    // unbuilt), but the command/undo plumbing is independent of any UI and is exercised directly.
+    // The commit point for a routing-style/arrowhead change on a specific edge - the
+    // Edge counterpart to CommitPropsChange. No panel UI calls this yet, but the command/undo
+    // plumbing is independent of any UI and is exercised directly.
     public void CommitEdgeStyleChange(Guid edgeId, EdgeStyle before, EdgeStyle after)
     {
         var edge = Board?.GetEdge(edgeId);
@@ -992,8 +988,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 55/ADR 0005: the commit point for a border double-click adding a custom port - routed
-    // through AddCustomPortCommand (ADR 0007) so undo removes exactly the port that was added.
+    // The commit point for a border double-click adding a custom port - routed
+    // through AddCustomPortCommand so undo removes exactly the port that was added.
     private void AddCustomPort(Guid instanceId, PortDef port)
     {
         var instance = Board?.GetComponent(instanceId);
@@ -1006,12 +1002,12 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Ticket 53/ADR 0005: the component type a brand-new edge label defaults to - a plain Text
-    // instance, edited in place exactly like any board Text/Sticky Note (ticket 43). Any host using
+    // The component type a brand-new edge label defaults to - a plain Text
+    // instance, edited in place exactly like any board Text/Sticky Note. Any host using
     // D12Canvas's built-ins (BuiltInComponents.RegisterAll) always has this key registered.
     private const string DefaultEdgeLabelComponentTypeKey = "text";
 
-    // Ticket 53: an end user double-clicks an edge's line to add a label - a no-op if it already
+    // An end user double-clicks an edge's line to add a label - a no-op if it already
     // has one (double-clicking elsewhere on the line never clobbers an existing label; editing it
     // further goes through the label's own dblclick-to-edit, not this) or if the edge's own line
     // can't currently be resolved (a dangling endpoint). The new label is a default (empty) Text
@@ -1044,14 +1040,14 @@ public partial class DiagramCanvas : IAsyncDisposable
         (double X, double Y) to
     ) => ((from.X + to.X) / 2, (from.Y + to.Y) / 2);
 
-    // Ticket 53: an edge label's own rendered box - null when the edge has no label, or (like
+    // An edge label's own rendered box - null when the edge has no label, or (like
     // EdgeLine) when either endpoint can't currently be resolved. Recomputed every render from the
     // edge's CURRENT endpoints rather than anything stored on the label itself, so it rides along
     // for free as either endpoint moves or resizes - the label's own Bounds.X/Y are ignored for
     // positioning, only Width/Height are read. The anchor is the straight-line midpoint between the
     // two endpoints regardless of the edge's own RoutingStyle - a reasonable approximation for
     // Orthogonal/Curved too, not full on-path placement.
-    // Ticket 49/53: while THIS edge's endpoint is mid-drag (IsBeingEdited), its own normal line is
+    // While THIS edge's endpoint is mid-drag (IsBeingEdited), its own normal line is
     // suppressed in favour of ConnectPreviewLine - the label follows that same live preview instead
     // of the edge's last-committed (pre-drag) endpoints, so it doesn't visually detach and freeze
     // for the duration of the drag.
@@ -1074,7 +1070,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         return $"left: {midX - width / 2}px; top: {midY - height / 2}px; width: {width}px; height: {height}px;";
     }
 
-    // Ticket 33: armed by one of the group bounding-box overlay's own 8 handles (never an
+    // Armed by one of the group bounding-box overlay's own 8 handles (never an
     // individual instance's handles - those are suppressed while multi-selected). Snapshots each
     // member's own Bounds plus the bbox they currently form, both taken before this gesture flips
     // _isGroupResizing on, so EffectiveBounds still reads raw Board state for that one snapshot.
@@ -1106,8 +1102,8 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // The smallest the bbox's width/height can shrink to while every member's own proportionally-
     // scaled size stays at or above ResizeMath's per-instance floor - so a group resize can never
-    // shrink an individual member smaller than that same member's own handles ever could (ticket
-    // 31's invariant, extended to the group case). Derived per member (width/height independently,
+    // shrink an individual member smaller than that same member's own handles ever could (the same
+    // per-instance invariant, extended to the group case). Derived per member (width/height independently,
     // since they scale independently) and taken as the most restrictive (largest) requirement
     // across the whole selection.
     private static (double MinWidth, double MinHeight) MinBoundingBoxSizeFor(
@@ -1153,7 +1149,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    // Ticket 37: same one-CompositeCommand-per-gesture treatment as CommitGroupMove.
+    // Same one-CompositeCommand-per-gesture treatment as CommitGroupMove.
     private void CommitGroupResize()
     {
         if (Board is null)
@@ -1208,7 +1204,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         NotifySelectionChanged();
     }
 
-    // The registered TComponent's props parameter is a fixed contract (ADR 0001 addendum):
+    // The registered TComponent's props parameter is a fixed contract:
     // [Parameter] public TProps Props { get; set; }
     private const string PropsParameterName = "Props";
 
@@ -1260,7 +1256,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         if (PointIsWithinSelectionBounds(boardPoint))
         {
-            // Ticket 33: a drag starting on empty space inside the multi-selection's own combined
+            // A drag starting on empty space inside the multi-selection's own combined
             // bounding box moves the whole selection - no pan underneath it, no new marquee.
             _isGroupMoving = true;
             _groupMoveAnchor = boardPoint;
@@ -1275,7 +1271,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void HandleMouseMove(MouseEventArgs e)
     {
-        // Ticket 48: reached when the pointer is directly over empty canvas mid-connector-drag
+        // Reached when the pointer is directly over empty canvas mid-connector-drag
         // (over an instance's own body, ComponentContainer forwards here instead - see
         // UpdatePortDrag's other caller).
         if (_isConnectingPort)
@@ -1333,7 +1329,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void HandleMouseUp(MouseEventArgs e)
     {
-        // Ticket 48: same reasoning as the top of HandleMouseMove above - a drop landing
+        // Same reasoning as the top of HandleMouseMove above - a drop landing
         // directly on empty canvas reaches this handler natively.
         if (_isConnectingPort)
         {
@@ -1341,7 +1337,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        // Single-commit gestures (ticket 33): only write to Board once, here, and only if the
+        // Single-commit gestures: only write to Board once, here, and only if the
         // drag actually moved anything - a plain click that happened to land inside the bbox or on
         // a handle is a no-op, matching every other gesture's press-release-with-no-movement rule.
         if (_isGroupMoving && (_groupMoveDeltaX != 0 || _groupMoveDeltaY != 0))
@@ -1367,7 +1363,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // Screen (client) coordinates to board space, given the container's own page position -
-    // shared by the marquee gesture, HandleDrop below, and (ticket 48) the connector-drag
+    // shared by the marquee gesture, HandleDrop below, and the connector-drag
     // gesture, whose coordinates arrive as raw doubles rather than a MouseEventArgs when
     // forwarded from a ComponentContainer.
     private (double X, double Y) ToBoardPoint(
@@ -1387,10 +1383,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static Bounds MarqueeBoundsFrom((double X, double Y) a, (double X, double Y) b) =>
         new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
 
-    // Replaces the selection outright with whatever the marquee currently intersects (ADR 0006:
-    // intersection semantics, not full-containment) - not additive, so a marquee drag that ends up
+    // Replaces the selection outright with whatever the marquee currently intersects
+    // (intersection semantics, not full-containment) - not additive, so a marquee drag that ends up
     // over nothing empties the selection, the same as clicking empty canvas.
-    // Ticket 44: an intersected instance that belongs to a Group is added by that group's id, not
+    // An intersected instance that belongs to a Group is added by that group's id, not
     // its own - same convergence as a plain click - so _selectedInstanceIds never ends up holding
     // a "naked" grouped member id (which would let a later Ctrl+G create a second, overlapping
     // group over members already grouped).
@@ -1416,7 +1412,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // The combined bounding box of the current selection, or null when nothing is selected - used
-    // both to keep a plain drag starting there from panning underneath it, and (ticket 33) to
+    // both to keep a plain drag starting there from panning underneath it, and to
     // position the group bounding-box overlay. Reads through EffectiveBounds rather than each
     // instance's raw Bounds, so it live-tracks during an active group move/resize instead of only
     // updating once the gesture commits.
@@ -1435,7 +1431,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    // Ticket 33: an instance's Bounds as they should currently render - offset by the live
+    // An instance's Bounds as they should currently render - offset by the live
     // in-progress group-move delta, or scaled proportionally within an in-progress group-resize.
     // Board itself is never touched until the gesture commits (single-write discipline, matching
     // every other drag), so this is the only place mid-gesture visual feedback comes from.
@@ -1488,14 +1484,14 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    // Ticket 33's group-move-as-a-unit only applies once 2+ instances are selected - a lone
+    // Group-move-as-a-unit only applies once 2+ instances are selected - a lone
     // selected instance's own bounds already are its bounding box, so a drag just outside it (if
     // reachable at all) should pan like before, not move "a group of one".
     private bool PointIsWithinSelectionBounds((double X, double Y) point) =>
         HasMultiMemberSelection
         && (SelectedInstancesBounds()?.Intersects(new Bounds(point.X, point.Y, 0, 0)) ?? false);
 
-    // Ticket 48: an edge's rendered endpoints, resolved fresh from Board on every render - this
+    // An edge's rendered endpoints, resolved fresh from Board on every render - this
     // is what lets an attached edge track its instances through move/resize with no separate
     // update path. Null (skip rendering) if either endpoint's instance no longer exists.
     private ((double X, double Y) From, (double X, double Y) To)? EdgeLine(Edge edge)
@@ -1507,11 +1503,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // The in-progress connector drag-preview: from a fixed origin to wherever the pointer
-    // currently is in board space. Ticket 49: while repositioning an existing edge's endpoint,
+    // currently is in board space. While repositioning an existing edge's endpoint,
     // the fixed origin is the edge's OTHER endpoint (not the one being dragged) - that edge's own
     // normal line is suppressed for the duration (see IsBeingEdited), so this preview is the only
     // thing representing it. Otherwise (creating a brand new edge) the origin is the bare port
-    // the drag started from, same as ticket 48.
+    // the drag started from.
     private ((double X, double Y) From, (double X, double Y) To)? ConnectPreviewLine()
     {
         if (!_isConnectingPort || Board is null)
@@ -1538,7 +1534,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         return Board.ResolveEndpoint(other);
     }
 
-    // Ticket 50: an end user clicks an edge to select it - the edge counterpart to
+    // An end user clicks an edge to select it - the edge counterpart to
     // SelectComponent, but kept as its own exclusive slot (see _selectedEdgeId) since edges don't
     // participate in multi-select, grouping, or move/resize as a unit.
     private void SelectEdge(Guid edgeId)
@@ -1553,9 +1549,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     private string EdgeLineCssClass(Guid edgeId) =>
         IsEdgeSelected(edgeId) ? "edge-line selected" : "edge-line";
 
-    // Ticket 52: Orthogonal/Curved routing needs an SVG <path> (a <line> can only ever be
+    // Orthogonal/Curved routing needs an SVG <path> (a <line> can only ever be
     // straight), rendered via a computed `d`. Straight itself stays a plain <line> - see the
-    // markup - so every pre-52 test asserting x1/y1/x2/y2 on a default edge is untouched.
+    // markup - so every existing test asserting x1/y1/x2/y2 on a default edge is untouched.
     private static string EdgePathD(
         EdgeRouting routing,
         (double X, double Y) from,
@@ -1580,7 +1576,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             point.Y.ToString(CultureInfo.InvariantCulture)
         );
 
-    // Ticket 52: which <marker> (if any) an edge endpoint's ArrowStyle resolves to - null omits
+    // Which <marker> (if any) an edge endpoint's ArrowStyle resolves to - null omits
     // the marker-start/marker-end attribute entirely (Blazor's usual null-means-absent attribute
     // convention, same as aria-selected above). Selected edges use the selected-color marker so an
     // arrowhead never reads as a mismatched color against its own (now-blue) line.
@@ -1594,19 +1590,19 @@ public partial class DiagramCanvas : IAsyncDisposable
         return selected ? "url(#edge-arrow-selected)" : "url(#edge-arrow)";
     }
 
-    // Ticket 49: true while the given edge is being repositioned mid-drag (either endpoint) - its
+    // True while the given edge is being repositioned mid-drag (either endpoint) - its
     // normal line is suppressed for the duration in favour of the drag preview, since one <line>
     // element represents both ends together.
     private bool IsBeingEdited(Guid edgeId) => _isConnectingPort && _connectEditingEdgeId == edgeId;
 
-    // Ticket 49: true only while THIS SPECIFIC SIDE of the edge is the one being dragged - unlike
+    // True only while THIS SPECIFIC SIDE of the edge is the one being dragged - unlike
     // IsBeingEdited, this doesn't suppress the untouched side's own floating marker (each marker is
     // independent, so an edge with one attached and one floating end shouldn't hide the floating
     // one while the attached end is what's being re-dragged).
     private bool IsEndpointBeingEdited(Guid edgeId, bool isSource) =>
         IsBeingEdited(edgeId) && _connectEditingEdgeIsSource == isSource;
 
-    // Ticket 49: every persisted (not currently being dragged) floating endpoint across the whole
+    // Every persisted (not currently being dragged) floating endpoint across the whole
     // Board, each with a stable render key - an edge can have zero, one, or both ends floating.
     private IEnumerable<(Edge Edge, bool IsSource, double X, double Y)> FloatingEndpoints()
     {
@@ -1638,7 +1634,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // Ticket 33: positions the group bounding-box overlay - reads through SelectedInstancesBounds,
+    // Positions the group bounding-box overlay - reads through SelectedInstancesBounds,
     // so it live-tracks an in-progress group move/resize the same way the members themselves do.
     private string SelectionBoundingBoxStyle
     {
@@ -1705,9 +1701,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Shared by HandleDrop and ClickToAdd - both place a new instance centered on a board-space
     // point, differing only in how that point is derived. Callers are trusted to have already
     // checked Board is non-null (both do, before computing their center point).
-    // Ticket 38: routed through AddEntityCommand (ADR 0007) rather than a direct Board.AddComponent
+    // Routed through AddEntityCommand rather than a direct Board.AddComponent
     // call, so undo removes the placed instance and redo restores it with the same Id.
-    // Ticket 54: the Connector sentinel key never reaches NewCenteredInstance/Registry.Resolve -
+    // The Connector sentinel key never reaches NewCenteredInstance/Registry.Resolve -
     // there's no registration for it to resolve.
     private void PlaceComponent(string componentTypeKey, double centerX, double centerY)
     {
@@ -1721,11 +1717,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         _history.Do(new AddEntityCommand(Board!, instance));
     }
 
-    // Ticket 54: the palette's own way of dropping a new Edge, both ends floating, centered on the
-    // same drop point / viewport-center-plus-cascade point every other placement gesture uses (ADR
-    // 0009) - a fixed-length horizontal segment rather than a single point, so the new edge is
+    // The palette's own way of dropping a new Edge, both ends floating, centered on the
+    // same drop point / viewport-center-plus-cascade point every other placement gesture uses
+    // - a fixed-length horizontal segment rather than a single point, so the new edge is
     // immediately visible and grabbable rather than a zero-length line. Routed through AddEdgeCommand
-    // (ADR 0007) exactly like a connector drag's own edge creation (CompletePortDrag), so undo/redo
+    // exactly like a connector drag's own edge creation (CompletePortDrag), so undo/redo
     // treats it identically.
     private const double ConnectorDefaultHalfLength = 40;
 
@@ -1736,10 +1732,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         _history.Do(new AddEdgeCommand(Board!, new Edge(source, target)));
     }
 
-    // Ticket 53: extracted from PlaceComponent so AddEdgeLabel (which centers a label the same way,
+    // Extracted from PlaceComponent so AddEdgeLabel (which centers a label the same way,
     // but embeds it on an Edge instead of adding it to Board) doesn't duplicate the same
     // resolve-registration/fallback-size/center-on-a-point construction.
-    // Ticket 60/ADR 0008: a newly-placed instance always defaults to Board.NextZIndex(), i.e.
+    // A newly-placed instance always defaults to Board.NextZIndex(), i.e.
     // above every existing entity - never a fixed baseline that would bury it behind them.
     private ComponentInstance NewCenteredInstance(
         string componentTypeKey,

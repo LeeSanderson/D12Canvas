@@ -9,7 +9,6 @@ public abstract class ComponentTestBase : BunitContext
 {
     protected ComponentTestBase()
     {
-        // Add any common services or configurations here
         Services.AddScoped<IServiceProvider>(sp => sp);
         Services.AddSingleton<IComponentRegistry>(new ComponentRegistry());
     }

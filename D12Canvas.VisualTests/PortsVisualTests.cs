@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for standard ports (ticket 47): the four border-center port
-// affordances a hovered (but not necessarily selected) instance reveals. Any later ticket that
-// renders a new visual state on canvas should add a case here alongside its own.
 public sealed class PortsVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -71,7 +68,7 @@ public sealed class PortsVisualTests : IAsyncLifetime
         // Rectangle (160x100) and Image (240x180) have different DefaultSizes - placing both
         // and checking each one's ports against its *own* measured box proves the positioning is
         // a genuine fraction of that instance's Bounds, not a fixed offset that only happens to
-        // look right for one particular size ADR 0005 was written against.
+        // look right for one particular size.
         await _page.Locator("button[aria-label='Rectangle']").ClickAsync();
         await _page.Locator("button[aria-label='Image']").ClickAsync();
 

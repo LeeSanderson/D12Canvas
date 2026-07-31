@@ -5,9 +5,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 43: Sticky Note's own inline WYSIWYG text editor (ADR 0008), rendered standalone (no
-// ParentCanvas/InstanceId cascaded) - so these cover the editor's own UI mechanics only. The
-// actual Board/History commit is covered end-to-end in DiagramCanvasInlineTextEditingTests.
+// Sticky Note's own inline WYSIWYG text editor, rendered standalone (no ParentCanvas/InstanceId
+// cascaded) - so these cover the editor's own UI mechanics only. The actual Board/History commit
+// is covered end-to-end in DiagramCanvasInlineTextEditingTests.
 public class StickyNoteTests : ComponentTestBase
 {
     [Fact]

@@ -139,9 +139,9 @@ public class ComponentContainerTests : ComponentTestBase
     public void EveryInstanceRendersAllFourStandardPortsWithDirectionalClasses()
     {
         // bUnit has no real browser layout/pseudo-class engine, so "at their border centers" and
-        // "hidden otherwise" (ticket 47) aren't checkable here - the class names below are what
-        // the stylesheet keys its percentage-of-box positioning and hover/selection opacity off
-        // of, and PortsVisualTests.cs proves the resulting on-screen behavior in a real browser.
+        // "hidden otherwise" aren't checkable here - the class names below are what the
+        // stylesheet keys its percentage-of-box positioning and hover/selection opacity off of,
+        // and PortsVisualTests.cs proves the resulting on-screen behavior in a real browser.
         var container = Render<ComponentContainer>();
 
         Assert.Equal(4, container.FindAll(".port").Count);
@@ -175,10 +175,10 @@ public class ComponentContainerTests : ComponentTestBase
     [Fact]
     public void AZIndexOnlyChangeReRendersTheContainersStyle()
     {
-        // Ticket 60: a layering command changes only ZIndex, with Bounds/selection/Props/custom
-        // ports all unchanged - ComponentContainer's own ShouldRender override must still treat
-        // that as a real change, or a stacking change would silently fail to render (ADR 0008's
-        // "renders immediately") until some unrelated parameter happened to change too.
+        // A layering command changes only ZIndex, with Bounds/selection/Props/custom ports all
+        // unchanged - ComponentContainer's own ShouldRender override must still treat that as a
+        // real change, or a stacking change would silently fail to render immediately until some
+        // unrelated parameter happened to change too.
         var container = Render<ComponentContainer>(parameters => parameters.Add(p => p.ZIndex, 2));
 
         container.Render(parameters => parameters.Add(p => p.ZIndex, 9));

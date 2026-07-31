@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// Ticket 62/ADR 0009: a pure presentation component - it knows nothing about Board/Selection, only
+// A pure presentation component - it knows nothing about Board/Selection, only
 // the anchor point, Group/Ungroup eligibility (computed by DiagramCanvas), and the action callbacks
 // to invoke. DiagramCanvas wires every callback directly to the same OnXPressed method its own
 // keyboard shortcuts call, so a menu action is always the identical undoable command.
@@ -73,7 +73,7 @@ public partial class SelectionContextMenu : IAsyncDisposable
     [JSInvokable]
     public void OnClickOutside() => OnRequestClose.InvokeAsync();
 
-    // ADR 0009's addendum precedent (also used by Text/StickyNote's inline editor): stopping
+    // Same precedent as Text/StickyNote's inline editor: stopping
     // propagation here means this Escape never reaches DiagramCanvas's own window-level keydown
     // listener, so it closes only this menu rather than also clearing the board selection.
     // ArrowDown/ArrowUp roving focus fulfils the role="menu"/"menuitem" contract declared in the

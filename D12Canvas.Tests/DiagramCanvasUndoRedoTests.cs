@@ -8,11 +8,10 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 37: completing a move or resize gesture records one ChangeBoundsCommand in a
-// session-scoped CommandHistory (ADR 0007) - Ctrl+Z/Ctrl+Shift+Z (wired via JS, tested here by
-// invoking the JSInvokable handlers directly, matching DiagramCanvasDeleteSelectionTests) undo/
-// redo it. A multi-select move/resize commits as one CompositeCommand, so one undo reverts every
-// member at once.
+// Completing a move or resize gesture records one ChangeBoundsCommand in a session-scoped
+// CommandHistory - Ctrl+Z/Ctrl+Shift+Z (wired via JS, tested here by invoking the JSInvokable
+// handlers directly, matching DiagramCanvasDeleteSelectionTests) undo/redo it. A multi-select
+// move/resize commits as one CompositeCommand, so one undo reverts every member at once.
 public class DiagramCanvasUndoRedoTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -163,8 +162,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task UndoAfterAGroupResizeRevertsEveryMemberInOneStep()
     {
         var board = new Board();
-        var first = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
-        var second = AddInstance(board, 100, 0, 100, 50); // (100,0)-(200,50)
+        var first = AddInstance(board, 0, 0, 50, 50);
+        var second = AddInstance(board, 100, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
@@ -183,8 +182,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 0, 100, 50), second.Bounds);
     }
 
-    // Ticket 45: a persisted Group (Ctrl+G, not just an ad-hoc selection) moves/resizes through
-    // the exact same CompositeCommand-per-gesture path - one undo must revert every member here too.
+    // A persisted Group (Ctrl+G, not just an ad-hoc selection) moves/resizes through the exact
+    // same CompositeCommand-per-gesture path - one undo must revert every member here too.
     [Fact]
     public async Task UndoAfterAPersistedGroupMoveRevertsEveryMemberInOneStep()
     {
@@ -215,8 +214,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task UndoAfterAPersistedGroupResizeRevertsEveryMemberInOneStep()
     {
         var board = new Board();
-        var first = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
-        var second = AddInstance(board, 100, 0, 100, 50); // (100,0)-(200,50)
+        var first = AddInstance(board, 0, 0, 50, 50);
+        var second = AddInstance(board, 100, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
@@ -237,11 +236,11 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 0, 100, 50), second.Bounds);
     }
 
-    // Ticket 61: a persisted Group's layering commands bulk-write every member's ZIndex as one
+    // A persisted Group's layering commands bulk-write every member's ZIndex as one
     // CompositeCommand, exactly like its move/resize commands above - one undo must revert every
     // member here too. Bring to Front goes through RestackSelection; Bring Forward goes through
-    // the separate ApplyZIndexChange path (ticket 60) - covering both proves the undo entry holds
-    // for either code path a layering command can take.
+    // the separate ApplyZIndexChange path - covering both proves the undo entry holds for either
+    // code path a layering command can take.
     [Fact]
     public async Task UndoAfterAPersistedGroupLayeringCommandRevertsEveryMemberInOneStep()
     {
@@ -337,9 +336,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 100, 50, 50), instance.Bounds);
     }
 
-    // Ticket 38: click-to-add and drag-drop placement both route through PlaceComponent's
-    // AddEntityCommand (ADR 0007) - undo removes the placed instance, redo restores it under the
-    // same Id.
+    // Click-to-add and drag-drop placement both route through PlaceComponent's AddEntityCommand -
+    // undo removes the placed instance, redo restores it under the same Id.
     [Fact]
     public async Task UndoAfterAClickToAddRemovesThePlacedInstance()
     {
@@ -398,9 +396,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(placedId, Assert.Single(board.Components).Id);
     }
 
-    // Ticket 38: OnDeletePressed wraps every selected instance's RemoveEntityCommand in one
-    // CompositeCommand (ADR 0007) - single and multi-selection deletes both undo as one atomic
-    // entry, restoring each instance's identity, bounds, and props intact.
+    // OnDeletePressed wraps every selected instance's RemoveEntityCommand in one CompositeCommand -
+    // single and multi-selection deletes both undo as one atomic entry, restoring each instance's
+    // identity, bounds, and props intact.
     [Fact]
     public async Task UndoAfterASingleSelectionDeleteRestoresTheInstance()
     {
@@ -473,8 +471,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Empty(board.Components);
     }
 
-    // Ticket 50: the port-to-port drag gesture (ticket 48) now routes through AddEdgeCommand
-    // (ADR 0007) - undo removes the created edge, redo restores it with the same attachments.
+    // The port-to-port drag gesture routes through AddEdgeCommand - undo removes the created
+    // edge, redo restores it with the same attachments.
     [Fact]
     public async Task UndoAfterCreatingAnEdgeRemovesIt()
     {
@@ -523,8 +521,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new PortEndpoint(target.Id, PortId.Left), restored.Target);
     }
 
-    // Ticket 50: a selected edge's own RemoveEdgeCommand (ADR 0007) - undo restores the same
-    // Edge reference, so both endpoints (attached or floating) come back exactly as they were.
+    // A selected edge's own RemoveEdgeCommand - undo restores the same Edge reference, so both
+    // endpoints (attached or floating) come back exactly as they were.
     [Fact]
     public async Task UndoAfterDeletingASelectedEdgeRestoresItWithBothAttachedEndpointsIntact()
     {

@@ -13,8 +13,8 @@ public sealed record ComponentRegistration(
     string Role,
     ComponentSize? DefaultSize,
     string? Category,
-    // ADR 0008: null (the default for every pre-ticket-56 call site, including every existing
-    // test's ComponentRegistration) means "no editable properties" - D12CanvasOptions.RegisterComponent
+    // null (the default for every existing call site, including every existing test's
+    // ComponentRegistration) means "no editable properties" - D12CanvasOptions.RegisterComponent
     // always resolves this to a concrete (possibly empty) list before it reaches here.
     IReadOnlyList<EditableProperty>? EditableProperties = null
 );

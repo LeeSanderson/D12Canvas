@@ -6,7 +6,7 @@ using Xunit;
 namespace D12Canvas.VisualTests;
 
 // Boots the real D12Canvas.Demo WASM app once for the whole assembly so Playwright can drive it,
-// per the layered-testing-strategy decision (.scratch/d12canvas-next/issues/04-layered-testing-strategy.md).
+// per the project's layered testing strategy.
 public sealed class DemoAppFixture : IAsyncLifetime
 {
     public const string BaseUrl = "http://127.0.0.1:5299";

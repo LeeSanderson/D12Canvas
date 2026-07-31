@@ -7,12 +7,12 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 52: per-edge routing style (straight/orthogonal/curved) and arrowheads
-// (none/start/end/both), never board-wide. Straight stays a <line> (preserving the x1/y1/x2/y2
-// contract earlier tickets already depend on, e.g. DiagramCanvasPortDragTests); Orthogonal/Curved
-// render as a <path> with a computed `d`. Arrowheads are SVG <marker> refs on marker-start/
-// marker-end, switching to a selected-color marker while the edge is selected (mirroring
-// .edge-line.selected's own stroke swap).
+// Per-edge routing style (straight/orthogonal/curved) and arrowheads (none/start/end/both), never
+// board-wide. Straight stays a <line> (preserving the x1/y1/x2/y2 contract other tests already
+// depend on, e.g. DiagramCanvasPortDragTests); Orthogonal/Curved render as a <path> with a
+// computed `d`. Arrowheads are SVG <marker> refs on marker-start/marker-end, switching to a
+// selected-color marker while the edge is selected (mirroring .edge-line.selected's own stroke
+// swap).
 public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

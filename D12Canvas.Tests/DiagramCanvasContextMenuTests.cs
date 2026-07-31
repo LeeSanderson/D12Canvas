@@ -8,10 +8,10 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 62/ADR 0009: right-click on a selection opens a menu offering the same action set as the
-// baseline shortcut table (Delete; Group/Ungroup as applicable; the four layering commands), each
-// wired to invoke the exact same OnXPressed method its shortcut does. Right-click on empty canvas
-// (no selection) opens no custom menu at all.
+// Right-click on a selection opens a menu offering the same action set as the baseline shortcut
+// table (Delete; Group/Ungroup as applicable; the four layering commands), each wired to invoke
+// the exact same OnXPressed method its shortcut does. Right-click on empty canvas (no selection)
+// opens no custom menu at all.
 public class DiagramCanvasContextMenuTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

@@ -8,11 +8,11 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 34: Delete removes every currently selected instance from Board and clears the
-// selection - single and multi-selection are the same code path (unlike move/resize, deletion
-// has no "as one unit" delta to apply). Undo-wrapping is ticket 38's job.
-// Ticket 50: Delete also removes a selected edge - its own exclusive branch, since an edge
-// selection is never mixed into the instance-selection set.
+// Delete removes every currently selected instance from Board and clears the selection - single
+// and multi-selection are the same code path (unlike move/resize, deletion has no "as one unit"
+// delta to apply). Undo-wrapping is covered by DiagramCanvasUndoRedoTests.
+// Delete also removes a selected edge - its own exclusive branch, since an edge selection is
+// never mixed into the instance-selection set.
 public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

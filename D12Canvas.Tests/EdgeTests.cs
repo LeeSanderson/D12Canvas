@@ -3,8 +3,8 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 48: the Edge/PortEndpoint model itself (ADR 0005) - Board's use of it (ResolveEndpoint,
-// FindPortNear, Edges) is covered in BoardTests.
+// The Edge/PortEndpoint model itself - Board's use of it (ResolveEndpoint, FindPortNear, Edges)
+// is covered in BoardTests.
 public class EdgeTests
 {
     [Fact]
@@ -90,8 +90,8 @@ public class EdgeTests
         );
     }
 
-    // Ticket 52/ADR 0005: an edge not given explicit style defaults to the front-loaded
-    // single-directed-arrow case - straight routing, no arrow at the source, an arrow at the target.
+    // An edge not given explicit style defaults to the front-loaded single-directed-arrow case -
+    // straight routing, no arrow at the source, an arrow at the target.
     [Fact]
     public void EdgeDefaultsToStraightRoutingWithAnArrowOnlyAtTheTarget()
     {
@@ -145,8 +145,8 @@ public class EdgeTests
         Assert.Equal(ArrowStyle.Arrow, other.TargetArrow);
     }
 
-    // Ticket 53/ADR 0005: a label is a full embedded ComponentInstance, not a separate entity -
-    // absent by default, since not every edge has one.
+    // A label is a full embedded ComponentInstance, not a separate entity - absent by default,
+    // since not every edge has one.
     [Fact]
     public void EdgeDefaultsToNoLabel()
     {

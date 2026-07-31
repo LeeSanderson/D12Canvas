@@ -17,12 +17,12 @@
 </style>
 
 @code {
-    // Ticket 52: a dedicated page (rather than reusing BoardDemo, which other Playwright visual
-    // tests depend on starting with zero edges) pre-seeding every RoutingStyle/ArrowStyle
-    // combination directly via the Board API - no interactive UI exists yet to set these (ticket
-    // 56, the property panel, isn't built), so this is the only way to get them on screen for a
-    // screenshot. Each pair is offset diagonally (not aligned on either axis) so Orthogonal's
-    // right-angle bend and Curved's S-curve are both visually distinct from a straight line.
+    // A dedicated page (rather than reusing BoardDemo, which other Playwright visual tests depend
+    // on starting with zero edges) pre-seeding every RoutingStyle/ArrowStyle combination directly
+    // via the Board API - no interactive UI exists yet to set these (the property panel isn't
+    // built), so this is the only way to get them on screen for a screenshot. Each pair is offset
+    // diagonally (not aligned on either axis) so Orthogonal's right-angle bend and Curved's
+    // S-curve are both visually distinct from a straight line.
     private readonly Board _board = SeedBoard();
 
     private static ComponentInstance AddRectangle(Board board, double x, double y)

@@ -8,10 +8,10 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 54/ADR 0009: the built-in "Connector" palette entry - not a registry registration (Edge
-// isn't a component type) - flows through the exact same BeginPaletteDrag/ClickToAdd gesture
-// plumbing every other palette entry uses (tickets 27/28), but drops a new Edge with both endpoints
-// floating instead of a ComponentInstance.
+// The built-in "Connector" palette entry - not a registry registration (Edge isn't a component
+// type) - flows through the exact same BeginPaletteDrag/ClickToAdd gesture plumbing every other
+// palette entry uses, but drops a new Edge with both endpoints floating instead of a
+// ComponentInstance.
 public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -98,9 +98,9 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         Assert.Equal(new FloatingEndpoint(440, 300), edge.Target);
     }
 
-    // The cascade counter (ADR 0009) is shared, global, and never resets across gesture kinds
-    // (ticket 28) - a click-to-add connector right after a click-to-add shape still bumps the same
-    // counter, so neither stacks invisibly on the other.
+    // The cascade counter is shared, global, and never resets across gesture kinds - a
+    // click-to-add connector right after a click-to-add shape still bumps the same counter, so
+    // neither stacks invisibly on the other.
     [Fact]
     public async Task ConsecutiveClickToAddsCascadeTheConnectorPlacementTooSharingTheSameCounterAsComponents()
     {
@@ -135,9 +135,9 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         Assert.Single(board.Edges);
     }
 
-    // Ticket 49's own reattach gesture, exercised end-to-end starting from a connector-dropped edge
-    // rather than a port-drag-created one - the mechanics are identical either way, since both
-    // endpoints are already ordinary FloatingEndpoints once the edge exists.
+    // The reattach gesture, exercised end-to-end starting from a connector-dropped edge rather
+    // than a port-drag-created one - the mechanics are identical either way, since both endpoints
+    // are already ordinary FloatingEndpoints once the edge exists.
     [Fact]
     public void BothFloatingEndsOfADroppedConnectorCanLaterBeAttachedToAPort()
     {

@@ -5,9 +5,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 62/ADR 0009: a pure presentation component - every assertion here is about what it shows
-// and which callback a given action fires, never about Board/History (DiagramCanvas wires those
-// callbacks to its own OnXPressed methods - see DiagramCanvasContextMenuTests).
+// A pure presentation component - every assertion here is about what it shows and which
+// callback a given action fires, never about Board/History (DiagramCanvas wires those callbacks
+// to its own OnXPressed methods - see DiagramCanvasContextMenuTests).
 public class SelectionContextMenuTests : ComponentTestBase
 {
     public SelectionContextMenuTests()

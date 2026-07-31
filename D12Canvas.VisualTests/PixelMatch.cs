@@ -1,10 +1,10 @@
 namespace D12Canvas.VisualTests;
 
 // A .NET port of mapbox/pixelmatch v7.2.0 (https://github.com/mapbox/pixelmatch), ported to
-// absorb sub-pixel rendering noise between visually-identical screenshots (see ticket 79/80):
-// running the exact same pinned Docker image on different physical CI hardware produces
-// byte-different but visually-identical PNGs, which Verify's default byte-exact comparison can't
-// tell apart from a real regression.
+// absorb sub-pixel rendering noise between visually-identical screenshots: running the exact same
+// pinned Docker image on different physical CI hardware produces byte-different but
+// visually-identical PNGs, which Verify's default byte-exact comparison can't tell apart from a
+// real regression.
 //
 // Faithful to upstream's actual comparison decision (the OKLab/HyAB color-difference metric and
 // anti-aliasing detector) but deliberately drops the parts that only exist to render a

@@ -93,10 +93,9 @@ public class BuiltInComponentsTests
         Assert.False(string.IsNullOrEmpty(registration.Icon));
     }
 
-    // Ticket 57: every visual/style prop the four built-ins declare (per ticket 10) is
-    // panel-editable through one of the full built-in EditorKind set - Text content fields
-    // (StickyNote/Text's Text, Image's Url which is reserved for the ticket 58 Custom escape
-    // hatch) stay deliberately excluded.
+    // Every visual/style prop the four built-ins declare is panel-editable through one of the
+    // full built-in EditorKind set - Text content fields (StickyNote/Text's Text, Image's Url
+    // which is reserved for the Custom escape hatch) stay deliberately excluded.
     [Fact]
     public void RectangleEditablePropertiesCoverFillColorStrokeColorAndStrokeWidth()
     {

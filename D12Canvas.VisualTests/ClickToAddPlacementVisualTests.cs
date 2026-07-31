@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for click-to-add placement (ticket 28): the board after a click-to-add,
-// and after a second consecutive click showing the cascading offset. Any later ticket that renders a
-// new visual state on canvas should add a case here alongside its own.
 public sealed class ClickToAddPlacementVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

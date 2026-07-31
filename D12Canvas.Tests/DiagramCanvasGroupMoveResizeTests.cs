@@ -7,12 +7,12 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 45: a persisted Group moves/resizes as one unit exactly like an ad-hoc multi-selection
-// does (ticket 33) - ticket 44's ExpandedSelection() already flattens a selected Group (nested or
-// not) down to its raw leaf component instance ids before the existing move/resize machinery ever
-// sees it, so there is no separate group-move/resize code path to add. These tests exist to pin
-// that behaviour specifically for a *persisted* Group entity (including nesting), which ticket 33's
-// and 44's own tests never exercised together.
+// A persisted Group moves/resizes as one unit exactly like an ad-hoc multi-selection does -
+// ExpandedSelection() already flattens a selected Group (nested or not) down to its raw leaf
+// component instance ids before the existing move/resize machinery ever sees it, so there is no
+// separate group-move/resize code path to add. These tests exist to pin that behaviour
+// specifically for a *persisted* Group entity (including nesting), which the ad-hoc
+// multi-selection tests never exercised together.
 public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -109,8 +109,8 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
     public async Task ResizingAPersistedGroupViaTheBottomRightHandleScalesEveryMemberProportionally()
     {
         var board = new Board();
-        var first = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
-        var second = AddInstance(board, 100, 0, 100, 50); // (100,0)-(200,50)
+        var first = AddInstance(board, 0, 0, 50, 50);
+        var second = AddInstance(board, 100, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
@@ -127,15 +127,15 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
 
     // Undo/redo-specific coverage (the "one history entry... undo restores all members
     // atomically" checklist item) lives in DiagramCanvasUndoRedoTests.cs instead, alongside
-    // ticket 33's own UndoAfterAGroupMove/ResizeRevertsEveryMemberInOneStep - same convention,
-    // now proven for a persisted Group too.
+    // UndoAfterAGroupMove/ResizeRevertsEveryMemberInOneStep - same convention, now proven for a
+    // persisted Group too.
 
     [Fact]
     public async Task ResizingAPersistedGroupViaTheTopLeftHandleKeepsTheOppositeCornerAnchored()
     {
         var board = new Board();
-        var first = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
-        var second = AddInstance(board, 100, 0, 100, 50); // (100,0)-(200,50)
+        var first = AddInstance(board, 0, 0, 50, 50);
+        var second = AddInstance(board, 100, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
@@ -155,9 +155,9 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
     }
 
     // A nested group ([A, B] grouped into an inner Group, then [inner, C] grouped into an outer
-    // one) is exactly the ExpandedSelection recursion ticket 44 added - moving/resizing the outer
-    // group's selection must move/scale every leaf (A, B, and C), not just the outer group's
-    // immediate members.
+    // one) exercises the ExpandedSelection recursion - moving/resizing the outer group's
+    // selection must move/scale every leaf (A, B, and C), not just the outer group's immediate
+    // members.
     [Fact]
     public async Task MovingANestedGroupMovesEveryLeafMemberByTheSameDelta()
     {
@@ -191,9 +191,9 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
     public async Task ResizingANestedGroupScalesEveryLeafMemberProportionally()
     {
         var board = new Board();
-        var a = AddInstance(board, 0, 0, 50, 50); // (0,0)-(50,50)
-        var b = AddInstance(board, 100, 0, 50, 50); // (100,0)-(150,50)
-        var c = AddInstance(board, 300, 0, 100, 50); // (300,0)-(400,50)
+        var a = AddInstance(board, 0, 0, 50, 50);
+        var b = AddInstance(board, 100, 0, 50, 50);
+        var c = AddInstance(board, 300, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas); // selects A and B
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}

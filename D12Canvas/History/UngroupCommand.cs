@@ -2,8 +2,8 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// ADR 0007: the mirror image of GroupCommand - a thin wrapper over RemoveEntity acting on the
-// Group entity itself. Undo re-adds the same Group reference, restoring its MemberIds intact.
+// The mirror image of GroupCommand - a thin wrapper over RemoveEntity acting on the Group entity
+// itself. Undo re-adds the same Group reference, restoring its MemberIds intact.
 public sealed class UngroupCommand : ICommand
 {
     private readonly Board _board;

@@ -1,9 +1,9 @@
 namespace D12Canvas.Panel;
 
-// ADR 0008/ticket 59: two properties on different TProps types can't share a SharedTag unless they
-// agree in EditorKind and CLR property type - thrown by SharedPropertyValidator at registration
-// time, before the mismatched type ever reaches the registry, rather than letting the property
-// panel's cross-type merge silently pick one shape or the other.
+// Two properties on different TProps types can't share a SharedTag unless they agree in
+// EditorKind and CLR property type - thrown by SharedPropertyValidator at registration time,
+// before the mismatched type ever reaches the registry, rather than letting the property panel's
+// cross-type merge silently pick one shape or the other.
 public sealed class SharedPropertyMismatchException : Exception
 {
     public string SharedTag { get; }

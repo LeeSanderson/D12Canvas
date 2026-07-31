@@ -5,10 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for the connector drag-to-create-an-edge gesture (ticket 48): the
-// live drag-preview mid-drag, and the resulting edge once the drag completes on the target's
-// port. Any later ticket that renders a new visual state on canvas should add a case here
-// alongside its own.
 public sealed class PortDragVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

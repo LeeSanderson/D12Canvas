@@ -13,7 +13,7 @@ public sealed class ComponentRegistrationBuilder<TProps>
     public ComponentSize? DefaultSize { get; set; }
     public string? Category { get; set; }
 
-    // ADR 0008: null means "use whatever TProps's own [PanelEditable] attributes declare" - set
-    // this to add, override, or redefine the property panel's schema at registration time instead.
+    // null means "use whatever TProps's own [PanelEditable] attributes declare" - set this to add,
+    // override, or redefine the property panel's schema at registration time instead.
     public IReadOnlyList<EditableProperty>? EditableProperties { get; set; }
 }

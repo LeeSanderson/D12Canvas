@@ -5,14 +5,10 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for the property panel (ticket 56/ADR 0008): its empty state with
-// nothing selected, and its populated state once a Rectangle instance is selected (now also
-// covering Color, added by ticket 57 alongside Number). Ticket 57 also adds a Dropdown case
-// (Text's FontWeight/TextAlign). Checkbox has no bUnit-only coverage here since no built-in
-// declares a Checkbox-kind property yet - see PropertyPanelTests for its control-level coverage.
-// Ticket 58 adds a Custom case (Demo Note's swatch-picker Color editor).
-// Any later ticket that renders a new visual state on canvas chrome should add a case here
-// alongside its own.
+// Screenshot-diff baselines for the property panel: its empty state with nothing selected, and
+// its populated state for each property-editor kind (Number, Color, Dropdown, Custom). Checkbox
+// has no baseline here since no built-in declares a Checkbox-kind property yet - see
+// PropertyPanelTests for its control-level coverage.
 public sealed class PropertyPanelVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

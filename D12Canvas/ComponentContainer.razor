@@ -21,7 +21,7 @@
         @ChildContent
     </div>
 
-    @* Ticket 55/ADR 0005: a double-click anywhere along one of these four border strips adds a
+    @* A double-click anywhere along one of these four border strips adds a
        custom port there. Rendered before the ports below (and so painted underneath them, later
        markup wins the same stacking-context tie-break the ports/resize-handles comment below
        relies on) so a standard or custom port's own small hit circle always wins a click over the
@@ -35,13 +35,13 @@
         <div class="port-strip port-strip-left" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Left))" @ondblclick:stopPropagation></div>
     }
 
-    @* Ticket 47: the four standard ports are automatic on every instance (ADR 0005) - no
+    @* The four standard ports are automatic on every instance - no
        registration opt-in, so they're rendered unconditionally here rather than sourced from
        Props/registration. Fractional border-center placement (and staying there through move and
        resize) comes for free from positioning each one in plain CSS percentages of this container's
        own box - no per-instance computation needed. Visibility (hover/selection) is CSS-only too
        (see .port rules below), so no C# state or extra render is involved. *@
-    @* Ticket 48: each port's own mousedown starts a connector drag (StartPortDrag) - it doesn't
+    @* Each port's own mousedown starts a connector drag (StartPortDrag) - it doesn't
        stop propagation, so it still bubbles up to HandleMouseDown afterwards, matching how the
        resize handles below interact with that same handler. *@
     <div class="port port-top" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Top)))"></div>
@@ -49,7 +49,7 @@
     <div class="port port-bottom" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Bottom)))"></div>
     <div class="port port-left" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Left)))"></div>
 
-    @* Ticket 55: an instance's own runtime-added custom ports - the same drag-to-connect affordance
+    @* An instance's own runtime-added custom ports - the same drag-to-connect affordance
        as a standard port (StartPortDrag), just at a user-chosen fractional position instead of a
        fixed border-center one, so its own inline style (not a CSS class) positions it. *@
     @foreach (var port in CustomPorts)
@@ -102,12 +102,6 @@
         outline-offset: 2px;
     }
 
-    /* Ticket 47: standard ports, hidden until hover/selection. Rendered before the resize handles
-       below in markup order, so a selected instance's edge-midpoint resize handle (same
-       border-center point as its port) paints on top of it. Sized noticeably larger than the 10px
-       resize handle (box-sizing is border-box app-wide, via Bootstrap's reboot, so this 20px port's
-       own 2px border eats inward rather than adding outward) so its green fill still forms a
-       visible ring around the handle instead of being fully hidden behind it. */
     .port {
         position: absolute;
         width: 20px;
@@ -120,9 +114,6 @@
         cursor: crosshair;
     }
 
-    /* Ticket 48: a port only becomes interactive (pointer-events: auto) exactly when it's
-       visible - matches the opacity rule so a hidden port can never intercept a click meant for
-       the container underneath it. */
     .component-container:hover .port,
     .component-container.selected .port {
         opacity: 1;
@@ -149,11 +140,6 @@
         left: -10px;
     }
 
-    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
-       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
-       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
-       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
-       either in the DOM or it isn't. */
     .port-strip {
         position: absolute;
         cursor: copy;

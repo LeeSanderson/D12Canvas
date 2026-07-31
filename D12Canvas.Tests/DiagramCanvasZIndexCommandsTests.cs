@@ -9,9 +9,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 60/ADR 0008: four undoable layering commands (bring to front / send to back / bring
-// forward / send backward), each an arithmetic-only write to ComponentInstance.ZIndex - no
-// renumbering pass over other entities - with tie handling among neighbours sharing a ZIndex.
+// Four undoable layering commands (bring to front / send to back / bring forward / send
+// backward), each an arithmetic-only write to ComponentInstance.ZIndex - no renumbering pass over
+// other entities - with tie handling among neighbours sharing a ZIndex.
 public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

@@ -8,10 +8,10 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 50: edges join the selection model - clicking an edge selects it, with a visible
-// affordance and aria-selected, mirroring ticket 29's component-instance selection. An edge's
-// selection lives in its own exclusive slot (_selectedEdgeId), never mixed into
-// _selectedInstanceIds, since edges don't participate in multi-select/grouping (ADR 0006).
+// Edges join the selection model - clicking an edge selects it, with a visible affordance and
+// aria-selected, mirroring component-instance selection. An edge's selection lives in its own
+// exclusive slot (_selectedEdgeId), never mixed into _selectedInstanceIds, since edges don't
+// participate in multi-select/grouping.
 public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

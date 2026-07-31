@@ -1,5 +1,3 @@
-// D12Canvas JavaScript Interop functions
-
 export async function getContainerDimensions(element) {
     const rect = element.getBoundingClientRect();
     return {
@@ -16,12 +14,10 @@ export async function addResizeListener(element, dotnetRef) {
         dotnetRef.invokeMethodAsync("OnContainerResized", rect.width, rect.height);
     };
 
-    // Initial call
     handleResize();
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(element);
 
-    // Return cleanup function
     return () => {
         resizeObserver.disconnect();
     };
@@ -89,7 +85,7 @@ export async function addKeyboardListener(element, dotnetRef) {
             case "KeyZ":
                 // Ctrl+Z (undo) doubles as the OS/browser's own text-editing undo, so this
                 // guards against hijacking it while focus is on an editable host-page element -
-                // same reasoning as Delete/Backspace above (ADR 0009's Ctrl+Z/Ctrl+Shift+Z).
+                // same reasoning as Delete/Backspace above.
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
                     if (event.shiftKey) {
                         dotnetRef.invokeMethodAsync("OnRedoPressed");
@@ -99,9 +95,9 @@ export async function addKeyboardListener(element, dotnetRef) {
                 }
                 break;
             case "KeyG":
-                // Ctrl+G (group) / Ctrl+Shift+G (ungroup) - ticket 44. Guarded the same way as
+                // Ctrl+G (group) / Ctrl+Shift+G (ungroup). Guarded the same way as
                 // Ctrl+Z above: while focus is on an editable host-page element (e.g. mid inline
-                // WYSIWYG text edit, ticket 43), this must not hijack the keystroke.
+                // WYSIWYG text edit), this must not hijack the keystroke.
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
                     if (event.shiftKey) {
                         dotnetRef.invokeMethodAsync("OnUngroupPressed");
@@ -111,7 +107,6 @@ export async function addKeyboardListener(element, dotnetRef) {
                 }
                 break;
             case "BracketRight":
-                // Ctrl+] (bring forward) / Ctrl+Shift+] (bring to front) - ticket 60/ADR 0008/0009.
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
                     if (event.shiftKey) {
                         dotnetRef.invokeMethodAsync("OnBringToFrontPressed");
@@ -121,7 +116,6 @@ export async function addKeyboardListener(element, dotnetRef) {
                 }
                 break;
             case "BracketLeft":
-                // Ctrl+[ (send backward) / Ctrl+Shift+[ (send to back) - ticket 60/ADR 0008/0009.
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
                     if (event.shiftKey) {
                         dotnetRef.invokeMethodAsync("OnSendToBackPressed");
@@ -134,10 +128,8 @@ export async function addKeyboardListener(element, dotnetRef) {
         event.preventDefault();
     };
 
-    // Add event listener
     window.addEventListener('keydown', handleKeyDown);
 
-    // Return cleanup function
     return () => {
         window.removeEventListener('keydown', handleKeyDown);
     };

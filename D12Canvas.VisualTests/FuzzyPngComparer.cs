@@ -3,9 +3,9 @@ using VerifyTests;
 namespace D12Canvas.VisualTests;
 
 // Registers a tolerant PNG comparer with Verify so screenshot baselines survive imperceptible
-// rendering noise between hosts/runs (ticket 79/80) - the same pinned Docker image produces
-// byte-different but visually-identical PNGs depending on which physical machine runs it, which
-// Verify's default byte-exact comparison can't tell apart from a real regression.
+// rendering noise between hosts/runs - the same pinned Docker image produces byte-different but
+// visually-identical PNGs depending on which physical machine runs it, which Verify's default
+// byte-exact comparison can't tell apart from a real regression.
 public static class FuzzyPngComparer
 {
     // Calibrated against 13 real "should match" pairs pulled from two separate GitHub Actions

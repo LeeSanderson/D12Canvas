@@ -8,13 +8,13 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 61/ADR 0008: a Group has no z-position field of its own (Model/Group.cs carries none) -
-// layering a persisted Group bulk-writes every member's ZIndex, preserving their relative order.
-// Ticket 44's ExpandedSelection() already flattens a selected Group (nested or not) down to its
-// raw leaf ComponentInstance ids before ticket 60's RestackSelection/ApplyZIndexChange ever see the
-// selection, so there is no separate group-layering code path to add - these tests pin that
-// behaviour specifically for a *persisted* Group entity (including nesting), which ticket 60's own
-// tests (ad-hoc shift-click multi-selection only) never exercised.
+// A Group has no z-position field of its own (Model/Group.cs carries none) - layering a
+// persisted Group bulk-writes every member's ZIndex, preserving their relative order.
+// ExpandedSelection() already flattens a selected Group (nested or not) down to its raw leaf
+// ComponentInstance ids before RestackSelection/ApplyZIndexChange ever see the selection, so
+// there is no separate group-layering code path to add - these tests pin that behaviour
+// specifically for a *persisted* Group entity (including nesting), which the ad-hoc shift-click
+// multi-selection tests never exercised.
 public class DiagramCanvasGroupZIndexTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -145,9 +145,9 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
     }
 
     // A nested group ([A, B] grouped into an inner Group, then [inner, C] grouped into an outer
-    // one) is exactly the ExpandedSelection recursion ticket 44 added - layering the outer group's
-    // selection must bulk-write every leaf (A, B, and C), not just the outer group's immediate
-    // members, still preserving their relative order to each other.
+    // one) exercises the ExpandedSelection recursion - layering the outer group's selection must
+    // bulk-write every leaf (A, B, and C), not just the outer group's immediate members, still
+    // preserving their relative order to each other.
     [Fact]
     public async Task LayeringANestedGroupRewritesEveryLeafMembersZIndexPreservingRelativeOrder()
     {

@@ -5,10 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for the four layering commands (ticket 60/ADR 0008): two overlapping
-// instances before a layering command, and after Bring to Front moves the originally-underneath
-// one above the other. Any later ticket that renders a new visual state on canvas should add a
-// case here alongside its own.
 public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -47,8 +43,8 @@ public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
 
     // Click-to-adds the first palette entry and selects it while it's still the board's only
     // instance - avoiding any risk of a click landing on the second instance instead once it's
-    // placed on top (ticket 60/ADR 0008's new-on-top default) - then click-to-adds a second,
-    // different entry so the two overlap (the cascading +20,+20 offset from ticket 28).
+    // placed on top (new-on-top by default) - then click-to-adds a second, different entry so the
+    // two overlap (the cascading +20,+20 offset).
     private async Task PlaceTwoOverlappingInstancesWithTheFirstSelected()
     {
         var entries = _page.Locator(".d12-palette-entry-button");

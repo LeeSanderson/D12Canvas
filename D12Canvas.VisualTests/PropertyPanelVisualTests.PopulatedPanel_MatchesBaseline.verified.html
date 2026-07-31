@@ -162,12 +162,6 @@
         outline-offset: 2px;
     }
 
-    /* Ticket 47: standard ports, hidden until hover/selection. Rendered before the resize handles
-       below in markup order, so a selected instance's edge-midpoint resize handle (same
-       border-center point as its port) paints on top of it. Sized noticeably larger than the 10px
-       resize handle (box-sizing is border-box app-wide, via Bootstrap's reboot, so this 20px port's
-       own 2px border eats inward rather than adding outward) so its green fill still forms a
-       visible ring around the handle instead of being fully hidden behind it. */
     .port {
         position: absolute;
         width: 20px;
@@ -180,9 +174,6 @@
         cursor: crosshair;
     }
 
-    /* Ticket 48: a port only becomes interactive (pointer-events: auto) exactly when it's
-       visible - matches the opacity rule so a hidden port can never intercept a click meant for
-       the container underneath it. */
     .component-container:hover .port,
     .component-container.selected .port {
         opacity: 1;
@@ -209,11 +200,6 @@
         left: -10px;
     }
 
-    /* Ticket 55: one thin strip per side, spanning the whole side - a double-click anywhere along
-       it (away from a port/resize-handle's own small hit area, which paints on top of it) adds a
-       custom port there. Rendered only while ShowSelectionOverlay (same gate as the resize
-       handles), so there's no separate opacity/pointer-events visibility rule to write - it's
-       either in the DOM or it isn't. */
     .port-strip {
         position: absolute;
         cursor: copy;
@@ -329,14 +315,6 @@
         cursor: grabbing;
     }
 
-    /* A styled sibling element - not a box-shadow/outline on .diagram-canvas itself, and not
-       nested inside it either. .canvas-content is an opaque, oversized (3000x3000)
-       absolutely-positioned child that paints over any decoration on .diagram-canvas's own box,
-       so a decoration there never reads. Placed instead as a sibling of .diagram-canvas directly
-       in .diagram-container (the grid container): as an absolutely-positioned grid item with no
-       explicit grid-row/column, it sizes against the container's full padding box rather than
-       .diagram-canvas's own row track (whose CSS Grid "auto" sizing collapses toward the 400px
-       minimum, since .diagram-canvas has no in-flow content of its own to size the track by). */
     .drag-over-affordance {
         position: absolute;
         inset: 0;
@@ -352,14 +330,6 @@
         pointer-events: none;
     }
 
-    /* Ticket 33: the multi-selection's combined bounding box. The box itself lets clicks/drags
-       pass through to whatever's underneath (a member's own body, or empty canvas) - only its own
-       8 handles (each individually re-enabling pointer-events) are directly interactive.
-       Ticket 60 fix: needs an explicit z-index above any ComponentContainer's own - otherwise a
-       member sitting at a higher Board ZIndex paints over this box's handles and swallows their
-       mousedown/click, breaking group-resize hit-testing. 1000 is comfortably above anything
-       Board.NextZIndex() produces in practice; the handles (nested, no z-index of their own) stack
-       within this box's own context, so setting it here alone is enough. */
     .selection-bounding-box {
         position: absolute;
         border: 1px solid #2f80ed;
@@ -424,12 +394,6 @@
         cursor: ew-resize;
     }
 
-    /* Ticket 48: sits before the component-instance loop in markup order, so at the shared
-       default z-index:0 the instances (later in DOM) paint over it - edges tuck behind shapes,
-       matching common diagram-tool convention. width/height 100% resolves against
-       .canvas-content's own explicit inline px size (ContentStyle), which is expressed directly
-       in board-space units - same coordinate system ComponentContainer's own left/top already
-       use - so no separate scaling or viewBox is needed for the line coordinates below. */
     .edges-layer {
         position: absolute;
         top: 0;
@@ -440,12 +404,6 @@
         z-index: 0;
     }
 
-    /* Ticket 50: unlike the rest of .edges-layer (pointer-events: none), an edge line is always
-       clickable so it can be selected - it has no hover-to-reveal affordance the way a port does,
-       since the line itself already IS the visible affordance.
-       Ticket 52: fill:none matters once Orthogonal/Curved routing renders as an SVG path element -
-       an open multi-point path's implied closing segment would otherwise paint a filled wedge (a
-       plain SVG line element has no fill concept, so this was never visible before). */
     .edge-line {
         fill: none;
         stroke: #4a4a4a;
@@ -454,17 +412,11 @@
         cursor: pointer;
     }
 
-    /* Ticket 50: the selected-edge affordance - same selection blue as
-       .component-container.selected's outline, applied as the line's own stroke since an outline
-       doesn't apply to SVG shapes. */
     .edge-line.selected {
         stroke: #2f80ed;
         stroke-width: 3;
     }
 
-    /* Ticket 52: arrowhead fill matching each of .edge-line's two stroke colors - kept as its own
-       rule (rather than `fill: context-stroke`) since that CSS Color 4 keyword isn't reliable
-       enough yet across the browsers this library targets. */
     .edge-arrowhead {
         fill: #4a4a4a;
     }
@@ -473,10 +425,6 @@
         fill: #2f80ed;
     }
 
-    /* Ticket 53: an edge's embedded label (ADR 0005) - a plain absolutely-positioned HTML box in
-       the same board-space pixel coordinate system every ComponentContainer already uses, sitting
-       alongside (not inside) .edges-layer's SVG since a label is an ordinary DynamicComponent-
-       rendered built-in (Text by default), not an SVG shape. */
     .edge-label {
         position: absolute;
         cursor: default;
@@ -488,10 +436,6 @@
         stroke-dasharray: 6 4;
     }
 
-    /* Ticket 49: a floating (unattached) edge endpoint. Filled distinctly from both the gray
-       edge line and the green port affordance so it doesn't read as either. Always interactive
-       (pointer-events overriding the layer's own none, same trick .port uses) since - unlike a
-       port - a floating endpoint has no other affordance revealing it can be grabbed. */
     .floating-endpoint {
         fill: #f39c12;
         stroke: #ffffff;

@@ -8,9 +8,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 44: Ctrl+G promotes a 2+ selection into a persistent Group entity (ADR 0006/0007), which
-// becomes the new selection; Ctrl+Shift+G dissolves it back. Once a Group exists, clicking any one
-// of its members selects the whole group as a unit - selection and group membership converge.
+// Ctrl+G promotes a 2+ selection into a persistent Group entity, which becomes the new selection;
+// Ctrl+Shift+G dissolves it back. Once a Group exists, clicking any one of its members selects
+// the whole group as a unit - selection and group membership converge.
 public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -109,7 +109,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
-        canvas.Find(".diagram-canvas").Click(); // clear the selection first
+        canvas.Find(".diagram-canvas").Click();
 
         // A plain click on just the second member - not shift-click - still selects both, since
         // it now belongs to a Group.
@@ -134,7 +134,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 
         Assert.Empty(board.Groups);
 
-        canvas.Find(".diagram-canvas").Click(); // clear the selection first
+        canvas.Find(".diagram-canvas").Click();
         canvas.FindAll(".component-container")[0].Click();
 
         var containers = canvas.FindAll(".component-container");

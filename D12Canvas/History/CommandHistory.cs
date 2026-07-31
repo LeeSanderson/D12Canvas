@@ -1,8 +1,8 @@
 namespace D12Canvas.History;
 
-// ADR 0007: a session-scoped, in-memory, capped stack of Commands backing undo/redo for the
-// current Board - never part of the persisted envelope, never tracked across a reload. Do() both
-// applies a command and records it, so a caller can't record a mutation it forgot to apply.
+// A session-scoped, in-memory, capped stack of Commands backing undo/redo for the current Board -
+// never part of the persisted envelope, never tracked across a reload. Do() both applies a
+// command and records it, so a caller can't record a mutation it forgot to apply.
 public sealed class CommandHistory
 {
     public const int DefaultCapacity = 1000;

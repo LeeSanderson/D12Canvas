@@ -5,8 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for the rendered palette (ticket 26). Any later ticket that renders a
-// new visual state on canvas chrome should add a case here alongside its own.
 public sealed class PaletteVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

@@ -1,13 +1,12 @@
 namespace D12Canvas.Model;
 
-// ADR 0005: a Board entity connecting two endpoints. Each endpoint is either attached to a port or
-// floating at a fixed point (ticket 49) - Source/Target can independently be either shape, and can
-// change shape after creation (an attached endpoint dragged off its port becomes floating, and vice
-// versa). Routing style and arrowheads (ticket 52) are per-edge, never board-wide, and default to
-// the single-directed-arrow case ADR 0005 front-loads (Straight, no arrow at Source, arrow at Target).
-// Ticket 53: Label is a full ComponentInstance embedded directly here (not a Board.Components
-// entry) - it has no existence independent of the edge that owns it, so deleting the edge removes
-// the label by construction, with no separate cleanup needed.
+// A Board entity connecting two endpoints. Each endpoint is either attached to a port or floating
+// at a fixed point - Source/Target can independently be either shape, and can change shape after
+// creation (an attached endpoint dragged off its port becomes floating, and vice versa). Routing
+// style and arrowheads are per-edge, never board-wide, and default to the single-directed-arrow
+// case (Straight, no arrow at Source, arrow at Target). Label is a full ComponentInstance embedded
+// directly here (not a Board.Components entry) - it has no existence independent of the edge that
+// owns it, so deleting the edge removes the label by construction, with no separate cleanup needed.
 public sealed class Edge
 {
     public Guid Id { get; }

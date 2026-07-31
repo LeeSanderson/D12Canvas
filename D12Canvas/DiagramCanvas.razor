@@ -27,13 +27,13 @@
             <svg class="edges-layer">
                 @if (Board is not null)
                 {
-                    @* Ticket 52: one pair of arrowhead markers per selection state (not per edge) -
+                    @* One pair of arrowhead markers per selection state (not per edge) -
                        orient="auto-start-reverse" lets the same marker point correctly whether
                        it's used as marker-start or marker-end. Gated on there being at least one
                        edge (rather than unconditional) so a board with none renders byte-identical
-                       markup to before this ticket - every other visual test's own baseline
-                       already depends on that (ticket 50's own comment: any edit to this shared
-                       markup/CSS re-triggers every Playwright HTML snapshot). *@
+                       markup to before - every other visual test's own baseline
+                       already depends on that, since any edit to this shared
+                       markup/CSS re-triggers every Playwright HTML snapshot. *@
                     if (Board.Edges.Count > 0)
                     {
                         <defs>
@@ -81,7 +81,7 @@
                             }
                         }
                     }
-                    @* Ticket 49: a draggable marker for each unattached edge endpoint - dropping it
+                    @* A draggable marker for each unattached edge endpoint - dropping it
                        on a port attaches that side; dropping a port that already anchors an edge
                        here instead (StartPortDrag) detaches that side back to floating. *@
                     @foreach (var floating in FloatingEndpoints())
@@ -124,7 +124,7 @@
                                         OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
                                         CustomPorts="instance.CustomPorts"
                                         OnAddCustomPort="@((port) => AddCustomPort(instance.Id, port))">
-                        @* Ticket 43: lets a text-carrying built-in (Sticky Note, Text) identify
+                        @* Lets a text-carrying built-in (Sticky Note, Text) identify
                            itself back to ParentCanvas when committing its own inline WYSIWYG edit -
                            see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
                         <CascadingValue Value="instance.Id" Name="InstanceId">
@@ -132,7 +132,7 @@
                         </CascadingValue>
                     </ComponentContainer>
                 }
-                @* Ticket 53/ADR 0005: a label is embedded on its Edge, not a Board.Components
+                @* A label is embedded on its Edge, not a Board.Components
                    entry, so it's rendered here directly rather than via VisibleComponents/
                    ComponentContainer (it's never independently selectable, movable, or resizable).
                    Its box is fully live-derived every render (EdgeLabelStyle) - skipped entirely
@@ -180,7 +180,7 @@
     {
         <div class="drag-over-affordance"></div>
     }
-    @* Ticket 62/ADR 0009: a sibling of .diagram-canvas (like .drag-over-affordance above), not
+    @* A sibling of .diagram-canvas (like .drag-over-affordance above), not
        nested inside .canvas-content - canvas chrome (CONTEXT.md) must not pan/zoom with board
        content, so its anchor (_contextMenu.X/Y) is plain container-relative pixels, not board space. *@
     @if (_contextMenu is not null)
@@ -221,14 +221,6 @@
         cursor: grabbing;
     }
 
-    /* A styled sibling element - not a box-shadow/outline on .diagram-canvas itself, and not
-       nested inside it either. .canvas-content is an opaque, oversized (3000x3000)
-       absolutely-positioned child that paints over any decoration on .diagram-canvas's own box,
-       so a decoration there never reads. Placed instead as a sibling of .diagram-canvas directly
-       in .diagram-container (the grid container): as an absolutely-positioned grid item with no
-       explicit grid-row/column, it sizes against the container's full padding box rather than
-       .diagram-canvas's own row track (whose CSS Grid "auto" sizing collapses toward the 400px
-       minimum, since .diagram-canvas has no in-flow content of its own to size the track by). */
     .drag-over-affordance {
         position: absolute;
         inset: 0;
@@ -244,14 +236,6 @@
         pointer-events: none;
     }
 
-    /* Ticket 33: the multi-selection's combined bounding box. The box itself lets clicks/drags
-       pass through to whatever's underneath (a member's own body, or empty canvas) - only its own
-       8 handles (each individually re-enabling pointer-events) are directly interactive.
-       Ticket 60 fix: needs an explicit z-index above any ComponentContainer's own - otherwise a
-       member sitting at a higher Board ZIndex paints over this box's handles and swallows their
-       mousedown/click, breaking group-resize hit-testing. 1000 is comfortably above anything
-       Board.NextZIndex() produces in practice; the handles (nested, no z-index of their own) stack
-       within this box's own context, so setting it here alone is enough. */
     .selection-bounding-box {
         position: absolute;
         border: 1px solid #2f80ed;
@@ -316,12 +300,6 @@
         cursor: ew-resize;
     }
 
-    /* Ticket 48: sits before the component-instance loop in markup order, so at the shared
-       default z-index:0 the instances (later in DOM) paint over it - edges tuck behind shapes,
-       matching common diagram-tool convention. width/height 100% resolves against
-       .canvas-content's own explicit inline px size (ContentStyle), which is expressed directly
-       in board-space units - same coordinate system ComponentContainer's own left/top already
-       use - so no separate scaling or viewBox is needed for the line coordinates below. */
     .edges-layer {
         position: absolute;
         top: 0;
@@ -332,12 +310,6 @@
         z-index: 0;
     }
 
-    /* Ticket 50: unlike the rest of .edges-layer (pointer-events: none), an edge line is always
-       clickable so it can be selected - it has no hover-to-reveal affordance the way a port does,
-       since the line itself already IS the visible affordance.
-       Ticket 52: fill:none matters once Orthogonal/Curved routing renders as an SVG path element -
-       an open multi-point path's implied closing segment would otherwise paint a filled wedge (a
-       plain SVG line element has no fill concept, so this was never visible before). */
     .edge-line {
         fill: none;
         stroke: #4a4a4a;
@@ -346,17 +318,11 @@
         cursor: pointer;
     }
 
-    /* Ticket 50: the selected-edge affordance - same selection blue as
-       .component-container.selected's outline, applied as the line's own stroke since an outline
-       doesn't apply to SVG shapes. */
     .edge-line.selected {
         stroke: #2f80ed;
         stroke-width: 3;
     }
 
-    /* Ticket 52: arrowhead fill matching each of .edge-line's two stroke colors - kept as its own
-       rule (rather than `fill: context-stroke`) since that CSS Color 4 keyword isn't reliable
-       enough yet across the browsers this library targets. */
     .edge-arrowhead {
         fill: #4a4a4a;
     }
@@ -365,10 +331,6 @@
         fill: #2f80ed;
     }
 
-    /* Ticket 53: an edge's embedded label (ADR 0005) - a plain absolutely-positioned HTML box in
-       the same board-space pixel coordinate system every ComponentContainer already uses, sitting
-       alongside (not inside) .edges-layer's SVG since a label is an ordinary DynamicComponent-
-       rendered built-in (Text by default), not an SVG shape. */
     .edge-label {
         position: absolute;
         cursor: default;
@@ -380,10 +342,6 @@
         stroke-dasharray: 6 4;
     }
 
-    /* Ticket 49: a floating (unattached) edge endpoint. Filled distinctly from both the gray
-       edge line and the green port affordance so it doesn't read as either. Always interactive
-       (pointer-events overriding the layer's own none, same trick .port uses) since - unlike a
-       port - a floating endpoint has no other affordance revealing it can be grabbed. */
     .floating-endpoint {
         fill: #f39c12;
         stroke: #ffffff;

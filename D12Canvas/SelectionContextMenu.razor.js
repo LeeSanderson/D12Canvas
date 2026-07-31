@@ -1,4 +1,4 @@
-// Ticket 62: dismiss-on-outside-click, the same technique ComponentContainer.razor.js already uses
+// Dismiss-on-outside-click, the same technique ComponentContainer.razor.js already uses
 // for exiting inline-edit mode - a capture-phase mousedown listener on document, so it fires before
 // any other handler on the clicked element itself.
 let handler = null;
@@ -20,7 +20,7 @@ export function unregisterClickOutside() {
     }
 }
 
-// ADR 0009/role="menu": arrow-key roving focus between this menu's own items - the actual
+// Arrow-key roving focus between this menu's own items - the actual
 // keyboard contract role="menuitem" signals to assistive tech, on top of the native Tab order
 // every plain <button> already gives for free. Wraps at either end.
 export function focusAdjacentItem(menuElement, direction) {

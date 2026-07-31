@@ -6,8 +6,8 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 35: Board -> versioned JSON envelope -> Board. Props round-trip via two-phase
-// deserialize (registry-resolved bind by ComponentTypeKey), never a CLR-type discriminator.
+// Board -> versioned JSON envelope -> Board. Props round-trip via two-phase deserialize
+// (registry-resolved bind by ComponentTypeKey), never a CLR-type discriminator.
 public class BoardJsonSerializerTests
 {
     private const string TestComponentKey = "test-props";
@@ -111,9 +111,8 @@ public class BoardJsonSerializerTests
         Assert.DoesNotContain(typeof(TestProps).AssemblyQualifiedName!, json);
     }
 
-    // Ticket 55/ADR 0005: a custom port round-trips alongside the rest of ComponentInstance's
-    // own envelope - not a separate Board array, since it's instance-scoped state, not a
-    // first-class board entity.
+    // A custom port round-trips alongside the rest of ComponentInstance's own envelope - not a
+    // separate Board array, since it's instance-scoped state, not a first-class board entity.
     [Fact]
     public void SerializeIncludesAnInstancesCustomPorts()
     {
@@ -157,8 +156,8 @@ public class BoardJsonSerializerTests
         Assert.Equal(new[] { port }, restoredInstance!.CustomPorts);
     }
 
-    // A board saved before this ticket has no "CustomPorts" property on its components at all -
-    // same "field didn't exist yet" tolerance every other ticket's own envelope addition relies on.
+    // A board saved before this property existed has no "CustomPorts" on its components at all -
+    // same "field didn't exist yet" tolerance every other envelope addition relies on.
     [Fact]
     public void DeserializeDefaultsAnOlderInstanceMissingCustomPortsToAnEmptyList()
     {
@@ -234,8 +233,8 @@ public class BoardJsonSerializerTests
         );
     }
 
-    // Ticket 46: Groups join the envelope alongside Components, round-tripping identity and
-    // MemberIds - including membership that nests one Group inside another.
+    // Groups join the envelope alongside Components, round-tripping identity and MemberIds -
+    // including membership that nests one Group inside another.
     [Fact]
     public void SerializeProducesAnEnvelopeWithAGroupsArray()
     {
@@ -378,8 +377,8 @@ public class BoardJsonSerializerTests
         );
     }
 
-    // Ticket 51: Edges join the envelope alongside Components and Groups. Attached endpoints
-    // round-trip as instance + port references; floating endpoints as board points.
+    // Edges join the envelope alongside Components and Groups. Attached endpoints round-trip as
+    // instance + port references; floating endpoints as board points.
     [Fact]
     public void SerializeProducesAnEnvelopeWithAnEdgesArray()
     {
@@ -466,9 +465,9 @@ public class BoardJsonSerializerTests
         Assert.Equal(new FloatingEndpoint(123, 456), restoredEdge!.Target);
     }
 
-    // Ticket 52: RoutingStyle/SourceArrow/TargetArrow round-trip through the same envelope,
-    // including non-default values - proving the round-trip isn't just an artifact of every edge
-    // happening to keep its default style.
+    // RoutingStyle/SourceArrow/TargetArrow round-trip through the same envelope, including
+    // non-default values - proving the round-trip isn't just an artifact of every edge happening
+    // to keep its default style.
     [Fact]
     public void DeserializeRebuildsAnEdgesNonDefaultRoutingAndArrowStyles()
     {
@@ -504,10 +503,10 @@ public class BoardJsonSerializerTests
         Assert.Equal(ArrowStyle.None, restoredEdge.TargetArrow);
     }
 
-    // Ticket 52: a board saved before this ticket has no RoutingStyle/SourceArrow/TargetArrow
-    // properties in its JSON at all - same "field didn't exist yet" tolerance Groups/Edges
-    // themselves already rely on (BoardEnvelope.Groups/Edges being nullable). Every edge from such
-    // a board should come back with Edge's own ADR 0005 defaults, not throw or leave a null style.
+    // A board saved before these properties existed has no RoutingStyle/SourceArrow/TargetArrow
+    // in its JSON at all - same "field didn't exist yet" tolerance Groups/Edges themselves
+    // already rely on (BoardEnvelope.Groups/Edges being nullable). Every edge from such a board
+    // should come back with Edge's own defaults, not throw or leave a null style.
     [Fact]
     public void DeserializeDefaultsAnOlderEdgesMissingRoutingAndArrowStylesToTheAdr0005Defaults()
     {
@@ -535,9 +534,10 @@ public class BoardJsonSerializerTests
         Assert.Equal(ArrowStyle.Arrow, restoredEdge.TargetArrow);
     }
 
-    // Ticket 53: an edge's embedded Label round-trips through the same envelope as an ordinary
-    // ComponentInstanceEnvelope (Props/Bounds/ComponentTypeKey) - it's not a separate Board.Components
-    // entry, so it isn't in the Components array at all, just nested on its owning edge.
+    // An edge's embedded Label round-trips through the same envelope as an ordinary
+    // ComponentInstanceEnvelope (Props/Bounds/ComponentTypeKey) - it's not a separate
+    // Board.Components entry, so it isn't in the Components array at all, just nested on its
+    // owning edge.
     [Fact]
     public void SerializeIncludesTheEdgesLabelWhenPresent()
     {
@@ -633,7 +633,7 @@ public class BoardJsonSerializerTests
         Assert.Null(restoredEdge!.Label);
     }
 
-    // A board saved before this ticket has no "Label" property on its edges at all - same
+    // A board saved before this property existed has no "Label" on its edges at all - same
     // "field didn't exist yet" tolerance RoutingStyle/SourceArrow/TargetArrow already rely on.
     [Fact]
     public void DeserializeDefaultsAnOlderEdgesMissingLabelToNull()
@@ -693,9 +693,9 @@ public class BoardJsonSerializerTests
         Assert.Equal(restoredFirst.Bounds.PointAtFraction(1, 0.5), sourcePoint);
     }
 
-    // Ticket 55/ADR 0005: an edge attached to a custom port round-trips exactly like one attached
-    // to a standard port - same envelope shape, distinguished by which field pair is populated
-    // (see EdgeEndpointEnvelope), and still tracks its instance's Bounds afterwards.
+    // An edge attached to a custom port round-trips exactly like one attached to a standard port
+    // - same envelope shape, distinguished by which field pair is populated (see
+    // EdgeEndpointEnvelope), and still tracks its instance's Bounds afterwards.
     [Fact]
     public void ACustomPortAttachedEdgeRoundTripsAndStaysAttached()
     {

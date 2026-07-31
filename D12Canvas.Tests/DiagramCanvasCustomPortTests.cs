@@ -7,9 +7,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 55/ADR 0005: custom ports - instance-scoped runtime state an end user adds via a
-// double-click on one of the four border strips (ComponentContainer.razor), fractionally
-// positioned so they survive move/resize, attachable exactly like a standard port.
+// Custom ports - instance-scoped runtime state an end user adds via a double-click on one of the
+// four border strips (ComponentContainer.razor), fractionally positioned so they survive
+// move/resize, attachable exactly like a standard port.
 public class DiagramCanvasCustomPortTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

@@ -2,9 +2,8 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// ADR 0007: deletion of an Edge, undoable - the mirror image of AddEdgeCommand. Undo re-adds the
-// same Edge reference, restoring both endpoints (attached or floating) exactly as they were
-// (ticket 50).
+// Deletion of an Edge, undoable - the mirror image of AddEdgeCommand. Undo re-adds the same Edge
+// reference, restoring both endpoints (attached or floating) exactly as they were.
 public sealed class RemoveEdgeCommand : ICommand
 {
     private readonly Board _board;

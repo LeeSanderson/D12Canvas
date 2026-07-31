@@ -2,8 +2,8 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// ADR 0008: layering is a plain field write on ComponentInstance.ZIndex, mirroring
-// ChangeBoundsCommand's before/after shape.
+// Layering is a plain field write on ComponentInstance.ZIndex, mirroring ChangeBoundsCommand's
+// before/after shape.
 public sealed class ChangeZIndexCommand : ICommand
 {
     private readonly ComponentInstance _instance;

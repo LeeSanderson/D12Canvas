@@ -26,10 +26,10 @@ builder.Services.AddD12Canvas(options =>
             b.DefaultSize = new ComponentSize(200, 150);
             b.Icon = "📝";
             b.Category = "Notes";
-            // Ticket 58: Color demonstrates the EditorKind.Custom escape hatch (a curated swatch
-            // picker, not expressible by the built-in Color/Dropdown kinds) - it can only be
-            // declared here, via the builder override, since [PanelEditable] attributes can't
-            // carry a RenderFragment.
+            // Color demonstrates the EditorKind.Custom escape hatch (a curated swatch picker, not
+            // expressible by the built-in Color/Dropdown kinds) - it can only be declared here,
+            // via the builder override, since [PanelEditable] attributes can't carry a
+            // RenderFragment.
             b.EditableProperties = new[]
             {
                 new EditableProperty(

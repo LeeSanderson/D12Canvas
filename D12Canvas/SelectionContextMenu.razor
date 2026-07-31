@@ -31,9 +31,6 @@
 <style>
     .d12-context-menu {
         position: absolute;
-        /* Ticket 60's dynamic ZIndex means a ComponentContainer can sit above any small fixed
-           value here (already true for the second instance placed on any board) - matches
-           .selection-bounding-box's own fix in DiagramCanvas.razor. */
         z-index: 1000;
         display: flex;
         flex-direction: column;

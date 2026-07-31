@@ -89,11 +89,11 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         return new PartialBoardDeserializeResult(board, warnings);
     }
 
-    // Ticket 51: an edge referencing a missing instance is tolerated, not fatal - Board.ResolveEndpoint
+    // An edge referencing a missing instance is tolerated, not fatal - Board.ResolveEndpoint
     // already tolerates a dangling PortEndpoint componentId at read time (Model/Board.cs), so a
     // warning is recorded but the edge still loads, mirroring how a group's missing member is
-    // handled just above. Edges never reference Groups (ticket 15), so no group-membership check
-    // is needed here.
+    // handled just above. Edges never reference Groups, so no group-membership check is needed
+    // here.
     private void DeserializeEdgesPartial(
         JsonElement edgesElement,
         Board board,
@@ -199,13 +199,13 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         }
     }
 
-    // Ticket 51: the shared "iterate a JSON array, describe each entry for error reporting,
-    // deserialize it, and turn any failure into a warning instead of aborting the load" shape -
-    // duplicated across Components/Groups/Edges once Edges arrived as a third occurrence (ticket
-    // 46 deliberately deferred this extraction until then). `onEntry` does whatever each entity
-    // kind needs with a successfully-parsed envelope (bind and add to the board, or - for Groups -
-    // stash it for a second, cross-referencing pass); anything `onEntry` throws is still caught
-    // here and reported the same way as a parse failure.
+    // The shared "iterate a JSON array, describe each entry for error reporting, deserialize it,
+    // and turn any failure into a warning instead of aborting the load" shape - duplicated across
+    // Components/Groups/Edges once Edges arrived as a third occurrence (the extraction was
+    // deliberately deferred until then). `onEntry` does whatever each entity kind needs with a
+    // successfully-parsed envelope (bind and add to the board, or - for Groups - stash it for a
+    // second, cross-referencing pass); anything `onEntry` throws is still caught here and reported
+    // the same way as a parse failure.
     private static void ParseEntries<TEnvelope>(
         JsonElement arrayElement,
         string idPropertyName,

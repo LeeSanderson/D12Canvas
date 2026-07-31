@@ -279,9 +279,9 @@ public class BoardTests
         Assert.Empty(visible);
     }
 
-    // Ticket 44: Group/ungroup lifecycle - Board stores Group entities alongside components,
-    // resolves a group's bounds from its members on demand (never stored), and can find the
-    // outermost group containing a given member id.
+    // Group/ungroup lifecycle - Board stores Group entities alongside components, resolves a
+    // group's bounds from its members on demand (never stored), and can find the outermost
+    // group containing a given member id.
     [Fact]
     public void AddedGroupIsRetrievableByItsId()
     {
@@ -447,7 +447,7 @@ public class BoardTests
         Assert.Null(board.FindContainingGroup(instance.Id));
     }
 
-    // Ticket 48: Board.Edges (ADR 0005) - mirrors the Groups add/remove/get coverage above.
+    // Board.Edges mirrors the Groups add/remove/get coverage above.
     [Fact]
     public void AddedEdgeIsRetrievableByItsId()
     {
@@ -504,8 +504,8 @@ public class BoardTests
         Assert.Equal(new[] { first, second }, board.Edges, ReferenceEqualityComparer.Instance);
     }
 
-    // Ticket 48: ResolveEndpoint resolves an attached endpoint's live board point from its
-    // referenced instance's current Bounds - what lets an edge track move/resize for free.
+    // ResolveEndpoint resolves an attached endpoint's live board point from its referenced
+    // instance's current Bounds - what lets an edge track move/resize for free.
     [Fact]
     public void ResolveEndpointReturnsThePortsCurrentBoardPoint()
     {
@@ -570,8 +570,8 @@ public class BoardTests
         Assert.Null(point);
     }
 
-    // Ticket 49: a FloatingEndpoint resolves to its own fixed point regardless of Board contents -
-    // it tracks nothing, unlike a PortEndpoint.
+    // A FloatingEndpoint resolves to its own fixed point regardless of Board contents - it
+    // tracks nothing, unlike a PortEndpoint.
     [Fact]
     public void ResolveEndpointReturnsAFloatingEndpointsOwnFixedPoint()
     {
@@ -595,9 +595,9 @@ public class BoardTests
         Assert.Equal((500.0, 500.0), point);
     }
 
-    // Ticket 55: a CustomPortEndpoint resolves its own fraction against the instance's Bounds -
-    // the same "derived, never stored" trick a standard port's PortEndpoint already relies on, so
-    // it tracks move/resize for free too.
+    // A CustomPortEndpoint resolves its own fraction against the instance's Bounds - the same
+    // "derived, never stored" trick a standard port's PortEndpoint already relies on, so it
+    // tracks move/resize for free too.
     [Fact]
     public void ResolveEndpointForACustomPortReturnsItsFractionalPositionOnTheInstancesBounds()
     {
@@ -661,8 +661,8 @@ public class BoardTests
         Assert.Null(point);
     }
 
-    // Ticket 48: FindPortNear - the connector-drag drop hit-test. ADR 0005 settled on discrete
-    // named ports, so this only resolves within a tolerance of an instance's actual port points.
+    // FindPortNear is the connector-drag drop hit-test. Ports are discrete named points, so this
+    // only resolves within a tolerance of an instance's actual port points.
     [Fact]
     public void FindPortNearReturnsThePortWithinTolerance()
     {
@@ -726,8 +726,8 @@ public class BoardTests
         Assert.Null(board.FindPortNear((0, 0), tolerance: 1000));
     }
 
-    // Ticket 55: a custom port is hit-tested exactly like a standard one - ADR 0005's "attaches
-    // exactly as to standard ports" requirement.
+    // A custom port is hit-tested exactly like a standard one - it must attach exactly as
+    // standard ports do.
     [Fact]
     public void FindPortNearReturnsACustomPortWithinTolerance()
     {
@@ -766,8 +766,8 @@ public class BoardTests
         Assert.Equal(new PortEndpoint(instance.Id, PortId.Right), found);
     }
 
-    // Ticket 49: FindEdgeAttachedTo - distinguishes "start a new edge" from "reposition this
-    // edge's existing endpoint" (DiagramCanvas.StartPortDrag).
+    // FindEdgeAttachedTo distinguishes "start a new edge" from "reposition this edge's existing
+    // endpoint" (DiagramCanvas.StartPortDrag).
     [Fact]
     public void FindEdgeAttachedToFindsTheEdgeWhosSourceIsThisPort()
     {
@@ -818,8 +818,8 @@ public class BoardTests
         Assert.Null(board.FindEdgeAttachedTo(new PortEndpoint(Guid.NewGuid(), PortId.Top)));
     }
 
-    // Ticket 55: FindEdgeAttachedTo works for a custom port exactly as it does for a standard one -
-    // needed so re-grabbing an already-connected custom port starts a "reposition" drag rather than
+    // FindEdgeAttachedTo works for a custom port exactly as it does for a standard one - needed
+    // so re-grabbing an already-connected custom port starts a "reposition" drag rather than
     // creating a second edge (DiagramCanvas.StartPortDrag).
     [Fact]
     public void FindEdgeAttachedToFindsTheEdgeWhoseSourceIsACustomPort()
@@ -849,8 +849,8 @@ public class BoardTests
         Assert.Null(found);
     }
 
-    // Ticket 53: FindEdgeLabel - the lookup DiagramCanvas.CommitPropsChange falls back to when an
-    // edited instance isn't a Board.Components entry (a label lives only on its owning Edge).
+    // FindEdgeLabel is the lookup DiagramCanvas.CommitPropsChange falls back to when an edited
+    // instance isn't a Board.Components entry (a label lives only on its owning Edge).
     [Fact]
     public void FindEdgeLabelFindsTheLabelByItsOwnId()
     {
@@ -890,8 +890,8 @@ public class BoardTests
         Assert.Null(board.FindEdgeLabel(Guid.NewGuid()));
     }
 
-    // Ticket 60/ADR 0008: layering query primitives - arithmetic-only (max/min +-1, or the next
-    // distinct value on either side), never a renumbering pass over other entities.
+    // Layering query primitives are arithmetic-only (max/min +-1, or the next distinct value on
+    // either side), never a renumbering pass over other entities.
     [Fact]
     public void NextZIndexOnAnEmptyBoardIsZero()
     {

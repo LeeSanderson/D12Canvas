@@ -10,11 +10,11 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 43: Sticky Note/Text edit their own content inline, WYSIWYG, on the canvas (ADR 0008) -
-// committing on blur records exactly one MutateEntityCommand (ADR 0007); Escape cancels with no
-// history entry at all. Exercised here through the real DiagramCanvas/ComponentContainer/
-// StickyNote stack, since that's where the ParentCanvas/InstanceId cascading parameters that
-// route the commit back to Board/History actually get populated.
+// Sticky Note/Text edit their own content inline, WYSIWYG, on the canvas - committing on blur
+// records exactly one MutateEntityCommand; Escape cancels with no history entry at all. Exercised
+// here through the real DiagramCanvas/ComponentContainer/StickyNote stack, since that's where the
+// ParentCanvas/InstanceId cascading parameters that route the commit back to Board/History
+// actually get populated.
 public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
 {
     public DiagramCanvasInlineTextEditingTests()
@@ -70,9 +70,9 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         Assert.Equal("Original", ((StickyNoteProps)instance.Props).Text);
     }
 
-    // Ticket 75: ComponentContainer.ShouldRender() previously only compared Bounds/selection, so
-    // an in-place Props edit at unchanged Bounds never reached the nested built-in - the Board was
-    // correct but the screen stayed stale. Fixed alongside ticket 43 by comparing Props too.
+    // ComponentContainer.ShouldRender() previously only compared Bounds/selection, so an
+    // in-place Props edit at unchanged Bounds never reached the nested built-in - the Board was
+    // correct but the screen stayed stale. Fixed by comparing Props too.
     [Fact]
     public void BlurAfterEditingUpdatesTheRenderedText()
     {

@@ -2,9 +2,9 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// ADR 0007: named for readability in a history/log context, but a thin wrapper over AddEntity
-// acting on the Group entity itself - Group.MemberIds is a reference list held by the group, so
-// grouping never mutates the member entities.
+// Named for readability in a history/log context, but a thin wrapper over AddEntity acting on the
+// Group entity itself - Group.MemberIds is a reference list held by the group, so grouping never
+// mutates the member entities.
 public sealed class GroupCommand : ICommand
 {
     private readonly Board _board;

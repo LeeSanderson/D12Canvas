@@ -18,9 +18,9 @@ public class PaletteTests : ComponentTestBase
         Services.AddSingleton<IComponentRegistry>(_registry);
     }
 
-    // Finds one palette entry button by its aria-label - every test past ticket 54 needs to scope
-    // past the always-present built-in Connector entry rather than assume there's only one button
-    // on the page.
+    // Finds one palette entry button by its aria-label - tests need to scope past the
+    // always-present built-in Connector entry rather than assume there's only one button on the
+    // page.
     private static IElement EntryButton(IRenderedComponent<Palette> palette, string ariaLabel) =>
         palette
             .FindAll(".d12-palette-entry-button")
@@ -58,8 +58,8 @@ public class PaletteTests : ComponentTestBase
 
         var palette = Render<Palette>();
 
-        // The built-in Connector entry (ticket 54) always renders alongside registered types -
-        // excluded here since this test is only about registrations.
+        // The built-in Connector entry always renders alongside registered types - excluded
+        // here since this test is only about registrations.
         var entries = palette
             .FindAll(".d12-palette-entry-button")
             .Where(e => e.GetAttribute("aria-label") != "Connector")
@@ -238,9 +238,9 @@ public class PaletteTests : ComponentTestBase
         Assert.Null(exception);
     }
 
-    // Ticket 54/ADR 0009: the built-in "Connector" entry - not a registry registration - appears
-    // regardless of what (if anything) is registered, and is never grouped into a
-    // .d12-palette-category heading (see GroupsEntriesUnderTheirRegisteredCategoryHeading /
+    // The built-in "Connector" entry - not a registry registration - appears regardless of what
+    // (if anything) is registered, and is never grouped into a .d12-palette-category heading
+    // (see GroupsEntriesUnderTheirRegisteredCategoryHeading /
     // RendersNoCategoriesWhenNothingIsRegistered above, both unaffected by its presence).
     [Fact]
     public void TheConnectorEntryAppearsEvenWhenNothingIsRegistered()

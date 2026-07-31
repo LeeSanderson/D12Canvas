@@ -5,8 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for rendered board content (ticket 23). Any later ticket that renders
-// a new visual state on canvas should add a case here alongside its own.
 public sealed class BoardRenderingVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

@@ -8,9 +8,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 29: click select, escape, and aria-selected. Selection is transient view state (ADR
-// 0006) - these tests exercise it entirely through DiagramCanvas/ComponentContainer, never
-// through Board, since it has no selection concept of its own.
+// Click select, escape, and aria-selected. Selection is transient view state - these tests
+// exercise it entirely through DiagramCanvas/ComponentContainer, never through Board, since it
+// has no selection concept of its own.
 public class DiagramCanvasSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -116,7 +116,7 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
     }
 
-    // Ticket 32: a plain drag on empty canvas still pans (Shift+drag draws a marquee instead - see
+    // A plain drag on empty canvas still pans (Shift+drag draws a marquee instead - see
     // DiagramCanvasMarqueeSelectTests). A pan drag starts and ends with mousedown/mouseup on the
     // same element, so the browser's native click fires right after it - without the _dragMoved
     // guard, panning after selecting something would immediately clear the selection as an

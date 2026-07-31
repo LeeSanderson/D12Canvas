@@ -5,8 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for ticket 53: an edge label (ADR 0005) - added by double-clicking an
-// edge's line, then edited in place exactly like any other Text built-in.
 public sealed class EdgeLabelVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -91,7 +89,6 @@ public sealed class EdgeLabelVisualTests : IAsyncLifetime
         await _page.Mouse.DblClickAsync((float)midpoint.Item1, (float)midpoint.Item2);
         await Expect(_page.Locator(".edge-label")).ToHaveCountAsync(1);
 
-        // Give the label some visible text, matching how an end user would actually use it.
         await _page.Locator(".edge-label p.d12-text").DblClickAsync();
         await _page.Locator(".edge-label textarea.d12-text-editor").FillAsync("Connects to");
         await _page.Locator(".edge-label textarea.d12-text-editor").BlurAsync();

@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for ticket 49: an edge left with a floating (unattached) endpoint -
-// the marker rendered at the point a connector drag was released on empty canvas, rather than on
-// a port.
 public sealed class FloatingEndpointVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

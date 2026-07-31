@@ -3,10 +3,10 @@ using Xunit;
 
 namespace D12Canvas.VisualTests;
 
-// Correctness coverage for the PixelMatch/Png port (ticket 79/80) - not a Playwright visual test
-// itself, just unit-level checks on the ported algorithm's own decisions, since a subtly wrong
-// OKLab/HyAB port would silently make the fuzzy comparer either too strict (defeating the point)
-// or too lenient (masking real regressions).
+// Correctness coverage for the PixelMatch/Png port - not a Playwright visual test itself, just
+// unit-level checks on the ported algorithm's own decisions, since a subtly wrong OKLab/HyAB port
+// would silently make the fuzzy comparer either too strict (defeating the point) or too lenient
+// (masking real regressions).
 public class PixelMatchTests
 {
     private static byte[] SolidImage(int width, int height, byte r, byte g, byte b, byte a = 255)

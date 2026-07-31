@@ -7,9 +7,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 48: drag port-to-port creates an edge (ADR 0005). A connector drag is a distinct gesture
-// from drag-move/resize - it never mutates Bounds, and Board only ever learns about the new Edge
-// once the gesture resolves against a target port on release.
+// Drag port-to-port creates an edge. A connector drag is a distinct gesture from drag-move/resize
+// - it never mutates Bounds, and Board only ever learns about the new Edge once the gesture
+// resolves against a target port on release.
 public class DiagramCanvasPortDragTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -121,9 +121,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         Assert.Equal("125", line.GetAttribute("y2"));
     }
 
-    // Ticket 49: dropping on empty canvas now creates the edge with a floating endpoint at the
-    // release point, rather than cancelling the gesture (ticket 48's original placeholder
-    // behaviour) - see DiagramCanvasFloatingEndpointTests for the rest of ticket 49's coverage.
+    // Dropping on empty canvas now creates the edge with a floating endpoint at the release
+    // point, rather than cancelling the gesture (the original placeholder behaviour) - see
+    // DiagramCanvasFloatingEndpointTests for the rest of that coverage.
     [Fact]
     public void DroppingOnEmptyCanvasCreatesAnEdgeWithAFloatingEndpoint()
     {
@@ -216,7 +216,6 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
         Assert.Single(board.Edges);
 
-        // Select and drag-move the source instance (ticket 30's established gesture).
         canvas.FindAll(".component-container")[0].Click();
         var sourceContainer = canvas.FindAll(".component-container")[0];
         sourceContainer.MouseDown(new MouseEventArgs { ClientX = 120, ClientY = 120 });
@@ -247,8 +246,6 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
         Assert.Single(board.Edges);
 
-        // Select and resize the source instance via its bottom-right handle (ticket 31's
-        // established gesture).
         canvas.FindAll(".component-container")[0].Click();
         var handle = canvas
             .FindAll(".component-container")[0]

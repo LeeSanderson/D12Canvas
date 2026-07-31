@@ -10,16 +10,16 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 56/ADR 0008: the property panel is chrome - standalone and host-positioned, wired to its
-// DiagramCanvas the same explicit way Palette is (ADR 0002) - built generically from whatever
-// [PanelEditable] the selection's registered TProps declares. Exercised through the real
-// DiagramCanvas/ComponentContainer stack (not a bare Board) since selection itself is
-// DiagramCanvas's own transient view state (ADR 0006) - there's no other way to select an instance.
+// The property panel is chrome - standalone and host-positioned, wired to its DiagramCanvas the
+// same explicit way Palette is - built generically from whatever [PanelEditable] the selection's
+// registered TProps declares. Exercised through the real DiagramCanvas/ComponentContainer stack
+// (not a bare Board) since selection itself is DiagramCanvas's own transient view state - there's
+// no other way to select an instance.
 public class PropertyPanelTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "panel-test-component";
 
-    // Ticket 59: a second, distinct registered type - PanelTestPropsSecondary.AccentColor shares
+    // A second, distinct registered type - PanelTestPropsSecondary.AccentColor shares
     // PanelTestProps.Tint's "color" SharedTag (matching Kind/CLR type), so the two combine into one
     // cross-type row; PanelTestPropsSecondary.Note carries no tag, so it must never surface there.
     private const string SecondaryComponentTypeKey = "panel-test-component-secondary";
@@ -43,9 +43,9 @@ public class PropertyPanelTests : ComponentTestBase
                 Role: "group",
                 DefaultSize: null,
                 Category: null,
-                // CustomValue carries no [PanelEditable] (ticket 58) - a Custom-kind property can
-                // only come from the builder override, so it's appended here rather than being
-                // picked up by DiscoverFrom like every other kind above.
+                // CustomValue carries no [PanelEditable] - a Custom-kind property can only come
+                // from the builder override, so it's appended here rather than being picked up by
+                // DiscoverFrom like every other kind above.
                 EditableProperties: EditablePropertySchema
                     .DiscoverFrom(typeof(PanelTestProps))
                     .Append(
@@ -136,8 +136,8 @@ public class PropertyPanelTests : ComponentTestBase
         Assert.Empty(panel.FindAll(".d12-property-panel-field"));
     }
 
-    // Ticket 59: a same-type 2+ multi-selection now edits that type's full declared schema, rather
-    // than showing the empty state ticket 56 originally locked in for any multi-selection.
+    // A same-type 2+ multi-selection now edits that type's full declared schema, rather than
+    // showing the empty state that any multi-selection used to trigger.
     [Fact]
     public void SameTypeMultiSelectionRendersTheFullDeclaredSchema()
     {
@@ -201,9 +201,9 @@ public class PropertyPanelTests : ComponentTestBase
         Assert.Equal("#000000", ((PanelTestProps)second.Props).Tint);
     }
 
-    // Ticket 59: only the properties an author has explicitly tagged as shared (matching
-    // SharedTag) surface for a cross-type selection - PanelTestProps.Label and
-    // PanelTestPropsSecondary.Note carry no tag at all, and must not appear.
+    // Only the properties an author has explicitly tagged as shared (matching SharedTag)
+    // surface for a cross-type selection - PanelTestProps.Label and PanelTestPropsSecondary.Note
+    // carry no tag at all, and must not appear.
     [Fact]
     public void CrossTypeMultiSelectionSurfacesOnlyExplicitlySharedTaggedProperties()
     {
@@ -267,9 +267,9 @@ public class PropertyPanelTests : ComponentTestBase
         Assert.Equal("#000000", ((PanelTestPropsSecondary)second.Props).AccentColor);
     }
 
-    // Grouping (ADR 0006) collapses a multi-selection onto a single Group id in
-    // DiagramCanvas's selection set - SinglySelectedComponent must still read this as "nothing to
-    // edit" (a Group has no Props of its own), not mistake the lone selected id for a component.
+    // Grouping collapses a multi-selection onto a single Group id in DiagramCanvas's selection
+    // set - SinglySelectedComponent must still read this as "nothing to edit" (a Group has no
+    // Props of its own), not mistake the lone selected id for a component.
     [Fact]
     public async Task ShowsAnEmptyStateWhenTheSelectionIsAGroup()
     {
@@ -289,8 +289,8 @@ public class PropertyPanelTests : ComponentTestBase
         Assert.NotNull(panel.Find(".d12-property-panel-empty"));
     }
 
-    // Ticket 44/59: a shift-click can mix a grouped member's own group id (EffectiveSelectionId)
-    // with a standalone instance's plain id in the same ad-hoc selection - that must still read as
+    // A shift-click can mix a grouped member's own group id (EffectiveSelectionId) with a
+    // standalone instance's plain id in the same ad-hoc selection - that must still read as
     // "nothing to edit" (SelectedComponents), the same as a lone selected Group, rather than
     // collapsing to "edit just the standalone instance".
     [Fact]

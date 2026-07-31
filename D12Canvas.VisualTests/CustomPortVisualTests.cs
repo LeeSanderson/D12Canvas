@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for ticket 55/ADR 0005: an instance with a custom port (added via a
-// double-click on one of its four border strips) and an edge attached to it, exactly like a
-// standard port's own drag-to-connect affordance.
 public sealed class CustomPortVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

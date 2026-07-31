@@ -40,7 +40,7 @@ else
     [Parameter]
     public TextProps Props { get; set; } = new("", "#000000", 16, "normal", "left");
 
-    // Ticket 43: the editing built-in's own route back to Board/History - both are supplied by
+    // The editing built-in's own route back to Board/History - both are supplied by
     // DiagramCanvas via cascading parameters every built-in has access to (ParentCanvas already
     // did for ComponentContainer; InstanceId is new, added alongside it).
     [CascadingParameter(Name = "ParentCanvas")]
@@ -58,7 +58,7 @@ else
     private string Style =>
         $"color: {Props.Color}; font-size: {Props.FontSize}px; font-weight: {Props.FontWeight}; text-align: {Props.TextAlign};";
 
-    // ADR 0008: a Text-type field is edited inline/WYSIWYG on the canvas, never through the
+    // A Text-type field is edited inline/WYSIWYG on the canvas, never through the
     // property panel. stopPropagation keeps this double-click from also reaching
     // ComponentContainer's own unrelated legacy edit mode (drag/resize without prior selection).
     private void BeginEdit()
@@ -77,7 +77,7 @@ else
         }
     }
 
-    // ADR 0007: Escape cancels without touching history at all - not even a no-op Do/Undo pair.
+    // Escape cancels without touching history at all - not even a no-op Do/Undo pair.
     // Removing the textarea from the DOM (by flipping _isEditing back off) fires a native blur
     // right after this, so the flag tells CommitEdit to skip its own commit for that blur.
     private void HandleEditorKeyDown(KeyboardEventArgs e)
@@ -89,7 +89,7 @@ else
         }
     }
 
-    // Committing on blur is exactly one MutateEntityCommand (ADR 0007), routed through
+    // Committing on blur is exactly one MutateEntityCommand, routed through
     // ParentCanvas.CommitPropsChange - a no-op edit (blur with no change) records nothing,
     // matching ComponentContainer's own no-movement guard for OnMoved/OnResized.
     private void CommitEdit()

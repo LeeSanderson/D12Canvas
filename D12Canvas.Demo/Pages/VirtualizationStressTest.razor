@@ -1,10 +1,8 @@
 @* Dev tool, not a demoed feature (same role as ZoomPanTest/ChildComponentTest) — kept
-   permanently to manually verify that future changes don't regress render performance
-   against a large synthetic component set. Originated from the wayfinder ticket
-   "Virtualization/windowing mitigation stress test", which validated viewport windowing
-   plus ShouldRender/throttling against the real ComponentContainer/DiagramCanvas. The
-   "windowed" variant now exercises DiagramCanvas's own built-in Board windowing (ticket
-   25) rather than a standalone prototype of it.
+   permanently to manually verify that future changes don't regress render performance against a
+   large synthetic component set, validating viewport windowing plus ShouldRender/throttling
+   against the real ComponentContainer/DiagramCanvas. The "windowed" variant now exercises
+   DiagramCanvas's own built-in Board windowing rather than a standalone prototype of it.
    Pan (drag) and zoom (wheel) the canvas and watch the HUD. Switch variants at the bottom. *@
 @page "/virtualization-stress-test"
 @using D12Canvas

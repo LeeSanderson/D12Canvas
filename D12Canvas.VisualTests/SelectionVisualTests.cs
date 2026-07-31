@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for click-select (ticket 29): the visible selection affordance on a
-// selected instance. Any later ticket that renders a new visual state on canvas should add a
-// case here alongside its own.
 public sealed class SelectionVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

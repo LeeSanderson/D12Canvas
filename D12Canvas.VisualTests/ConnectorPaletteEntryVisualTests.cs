@@ -5,10 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baseline for the built-in "Connector" palette entry (ticket 54): dropping it onto
-// the board renders a floating-to-floating edge, the same visual state ticket 49's own
-// FloatingEndpointVisualTests captures for a port-drag-created edge. Any later ticket that renders
-// a new visual state on canvas should add a case here alongside its own.
 public sealed class ConnectorPaletteEntryVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

@@ -41,47 +41,47 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public bool IsSelected { get; set; }
 
-    // Ticket 43/75: never rendered directly by ComponentContainer itself (ChildContent stays an
+    // Never rendered directly by ComponentContainer itself (ChildContent stays an
     // opaque RenderFragment) - carried purely so ShouldRender can detect an in-place Props edit at
     // otherwise-unchanged Bounds/selection, which none of its other compared fields would catch.
     [Parameter]
     public object? Props { get; set; }
 
-    // Ticket 33: true when this instance is one of 2+ currently selected together. Its own resize
+    // True when this instance is one of 2+ currently selected together. Its own resize
     // handles are suppressed in that case - the multi-selection's combined bounding box (rendered
     // by DiagramCanvas) grows its own handles instead, so a group resize doesn't collide with 8
     // more handles per member underneath it.
     [Parameter]
     public bool IsMultiSelected { get; set; }
 
-    // Ticket 32: carries the click's shift-key state so DiagramCanvas can toggle this instance's
+    // Carries the click's shift-key state so DiagramCanvas can toggle this instance's
     // membership in a multi-selection instead of always collapsing to single-select.
     [Parameter]
     public EventCallback<bool> OnSelect { get; set; }
 
-    // Ticket 30: fired once, on release, with the instance's final Bounds - a drag-move is one
-    // gesture (ADR 0007's "recorded once on gesture commit, never per intermediate frame"), so
+    // Fired once, on release, with the instance's final Bounds - a drag-move is one
+    // gesture (recorded once on gesture commit, never per intermediate frame), so
     // Board only needs to hear about the end state, not every intermediate mousemove tick.
     [Parameter]
     public EventCallback<Bounds> OnMoved { get; set; }
 
-    // Ticket 31: same contract as OnMoved but for a handle-drag resize - fired once, on release,
+    // Same contract as OnMoved but for a handle-drag resize - fired once, on release,
     // with the instance's final Bounds.
     [Parameter]
     public EventCallback<Bounds> OnResized { get; set; }
 
-    // Ticket 48: fired the instant a port is pressed - DiagramCanvas owns the rest of the
+    // Fired the instant a port is pressed - DiagramCanvas owns the rest of the
     // connector-drag gesture (live preview, drop hit-test) from there, since a completed
     // connection spans two different instances.
     [Parameter]
     public EventCallback<PortDragStartEventArgs> OnPortDragStart { get; set; }
 
-    // Ticket 55/ADR 0005: this instance's own runtime-added ports - instance-scoped state that
+    // This instance's own runtime-added ports - instance-scoped state that
     // lives on ComponentInstance itself, passed down the same way Props is.
     [Parameter]
     public IReadOnlyList<PortDef> CustomPorts { get; set; } = Array.Empty<PortDef>();
 
-    // Ticket 55: fired when a double-click on one of the four border strips adds a custom port -
+    // Fired when a double-click on one of the four border strips adds a custom port -
     // DiagramCanvas owns turning this into an undoable AddCustomPortCommand, since it alone knows
     // which ComponentInstance this container renders.
     [Parameter]
@@ -113,7 +113,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private double _moveStartX;
     private double _moveStartY;
 
-    // Ticket 48: true for the span of a single mousedown - set synchronously in StartPortDrag
+    // True for the span of a single mousedown - set synchronously in StartPortDrag
     // (before OnPortDragStart's async invocation, so it's already true by the time this same
     // mousedown bubbles up from the port) and consumed/cleared immediately in HandleMouseDown.
     // Deliberately not left true for the gesture's whole duration: the connector drag's eventual
@@ -133,7 +133,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private object? _lastRenderedProps;
     private int _lastRenderedZIndex;
 
-    // Ticket 55: CustomPorts is the same mutable List<PortDef> reference across renders (a port is
+    // CustomPorts is the same mutable List<PortDef> reference across renders (a port is
     // added/undone in place on ComponentInstance), so reference equality can't detect a change -
     // count is a cheap enough proxy since a port is only ever added or removed wholesale, never
     // repositioned in place.
@@ -164,16 +164,16 @@ public partial class ComponentContainer : IAsyncDisposable
             || _editMode != _lastRenderedEditMode
             || IsSelected != _lastRenderedIsSelected
             || IsMultiSelected != _lastRenderedIsMultiSelected
-            // Ticket 75: an in-place Props edit (ticket 43's inline text editing, or any future
+            // An in-place Props edit (inline text editing, or any future
             // property-panel edit) at unchanged Bounds/selection would otherwise never reach
             // ChildContent - Props types are records, so this is a cheap structural comparison.
             || !Equals(Props, _lastRenderedProps)
-            // Ticket 55: a custom port added (or undone) since the last render, at otherwise
+            // A custom port added (or undone) since the last render, at otherwise
             // unchanged Bounds/selection.
             || CustomPorts.Count != _lastRenderedCustomPortsCount
-            // Ticket 60: a layering command changes ZIndex alone, at otherwise unchanged
+            // A layering command changes ZIndex alone, at otherwise unchanged
             // Bounds/selection - without this check, a stacking change wouldn't render until some
-            // unrelated parameter also changed, violating ADR 0008's "renders immediately."
+            // unrelated parameter also changed, when it should render immediately.
             || ZIndex != _lastRenderedZIndex;
     }
 
@@ -204,7 +204,7 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseDown(MouseEventArgs e)
     {
-        // Ticket 48: _isPortDragging only needs to survive from the port's own mousedown handler
+        // _isPortDragging only needs to survive from the port's own mousedown handler
         // to this same event's bubble arriving here - captured and cleared immediately so it
         // can't leak into a later, unrelated mousedown on this same container (this container may
         // never see the connector-drag gesture's own eventual mouseup/mousemove at all, since
@@ -238,7 +238,7 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseMove(MouseEventArgs e)
     {
-        // Ticket 48: while a connector drag is in progress (started here or on any other
+        // While a connector drag is in progress (started here or on any other
         // instance), DiagramCanvas owns the whole gesture - forward raw client coordinates
         // rather than running this container's own move/resize logic. Needed even when the
         // cursor never leaves this container's own bounding box (e.g. still near the source
@@ -302,7 +302,7 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseUp(MouseEventArgs e)
     {
-        // Ticket 48: same forwarding as HandleMouseMove above - this may be the source
+        // Same forwarding as HandleMouseMove above - this may be the source
         // instance's own port drag ending on itself, or a drop landing on a different instance's
         // body (its own @onmouseup:stopPropagation would otherwise swallow the release).
         if (ParentCanvas?.IsConnectingPort == true)
@@ -348,12 +348,9 @@ public partial class ComponentContainer : IAsyncDisposable
         _startY = Y;
         _startWidth = Width;
         _startHeight = Height;
-
-        // Stop the event from propagating to prevent dragging
-        // e.StopPropagation();
     }
 
-    // Ticket 48/55: a port's own mousedown (standard or custom - PortRef covers both). Doesn't
+    // A port's own mousedown (standard or custom - PortRef covers both). Doesn't
     // stop propagation, so it bubbles up to HandleMouseDown afterwards (same ordering the resize
     // handles above rely on) - setting _isPortDragging first stops that handler from also arming
     // an instance move.
@@ -363,7 +360,7 @@ public partial class ComponentContainer : IAsyncDisposable
         OnPortDragStart.InvokeAsync(new PortDragStartEventArgs(port, e.ClientX, e.ClientY));
     }
 
-    // Ticket 55/ADR 0005: a double-click anywhere along one of the four border strips (rendered
+    // A double-click anywhere along one of the four border strips (rendered
     // only while ShowSelectionOverlay, see the .razor markup) adds a custom port there. OffsetX/
     // OffsetY (relative to the strip's own box, which spans the container's full width or height
     // on its axis - see .port-strip CSS) gives the fraction along that side directly; the
@@ -385,8 +382,8 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private static double Clamp01(double value) => Math.Clamp(value, 0, 1);
 
-    // Ticket 55: the shared visibility gate for the border strips and the resize handles - both
-    // are selection-driven overlay affordances, suppressed for a multi-selected member (ticket 33's
+    // The shared visibility gate for the border strips and the resize handles - both
+    // are selection-driven overlay affordances, suppressed for a multi-selected member (the
     // shared bounding-box overlay grows its own handles instead) but shown during edit mode too,
     // same as resize handles always have been.
     private bool ShowSelectionOverlay => (IsSelected && !IsMultiSelected) || _editMode;
@@ -490,7 +487,7 @@ public enum ResizeDirection
     Left,
 }
 
-// Ticket 55: which of the four border strips a double-click-to-add-a-custom-port landed on.
+// Which of the four border strips a double-click-to-add-a-custom-port landed on.
 public enum PortStripSide
 {
     Top,

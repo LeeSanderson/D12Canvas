@@ -7,9 +7,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ticket 49: floating endpoints (ADR 0005). Releasing a connector drag on empty canvas creates an
-// edge with a floating endpoint (extending ticket 48's port-to-port-only gesture); an existing
-// edge's endpoint - attached or floating - can be re-dragged to reattach or detach it.
+// Floating endpoints. Releasing a connector drag on empty canvas creates an edge with a floating
+// endpoint (extending the port-to-port-only gesture); an existing edge's endpoint - attached or
+// floating - can be re-dragged to reattach or detach it.
 public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -72,10 +72,10 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         Assert.Equal("400", marker.GetAttribute("cy"));
     }
 
-    // Ticket 49 checkbox: "stays at its board point through pan/zoom." The marker lives in
-    // board-space cx/cy inside the same .canvas-content ancestor whose CSS transform carries
-    // pan/zoom (same mechanism ticket 48 already relies on for .edge-line) - so zooming must move
-    // only that ancestor's transform, never the marker's own coordinates.
+    // Verifies the marker stays at its board point through pan/zoom: it lives in board-space
+    // cx/cy inside the same .canvas-content ancestor whose CSS transform carries pan/zoom (the
+    // same mechanism .edge-line already relies on) - so zooming must move only that ancestor's
+    // transform, never the marker's own coordinates.
     [Fact]
     public void AFloatingEndpointsBoardPointIsUnaffectedByZoom()
     {
