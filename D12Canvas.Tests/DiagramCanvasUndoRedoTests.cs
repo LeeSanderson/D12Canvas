@@ -45,13 +45,15 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         double x,
         double y,
         double width = 50,
-        double height = 50
+        double height = 50,
+        int zIndex = 0
     )
     {
         var instance = new ComponentInstance(
             ComponentTypeKey,
             new TestProps(),
-            new Bounds(x, y, width, height)
+            new Bounds(x, y, width, height),
+            zIndex
         );
         board.AddComponent(instance);
         return instance;
@@ -233,6 +235,56 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
 
         Assert.Equal(new Bounds(0, 0, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(100, 0, 100, 50), second.Bounds);
+    }
+
+    // Ticket 61: a persisted Group's layering commands bulk-write every member's ZIndex as one
+    // CompositeCommand, exactly like its move/resize commands above - one undo must revert every
+    // member here too. Bring to Front goes through RestackSelection; Bring Forward goes through
+    // the separate ApplyZIndexChange path (ticket 60) - covering both proves the undo entry holds
+    // for either code path a layering command can take.
+    [Fact]
+    public async Task UndoAfterAPersistedGroupLayeringCommandRevertsEveryMemberInOneStep()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 0, 0, zIndex: 2);
+        var second = AddInstance(board, 300, 0, zIndex: 3);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnBringToFrontPressed());
+        Assert.Equal(4, first.ZIndex);
+        Assert.Equal(5, second.ZIndex);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal(2, first.ZIndex);
+        Assert.Equal(3, second.ZIndex);
+    }
+
+    [Fact]
+    public async Task UndoAfterAPersistedGroupBringForwardLayeringCommandRevertsEveryMemberInOneStep()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 0, 0, zIndex: 1);
+        var second = AddInstance(board, 300, 0, zIndex: 2);
+        AddInstance(board, 600, 0, zIndex: 3); // untouched, outside the group
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnBringForwardPressed());
+        Assert.Equal(2, first.ZIndex);
+        Assert.Equal(3, second.ZIndex);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal(1, first.ZIndex);
+        Assert.Equal(2, second.ZIndex);
     }
 
     [Fact]
