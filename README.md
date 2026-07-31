@@ -39,8 +39,15 @@ build artifacts first:
 ```bash
 find . -type d \( -name obj -o -name bin \) -exec rm -rf {} +
 docker run --rm -v "$PWD:/workspace" -w /workspace mcr.microsoft.com/playwright/dotnet:v1.61.0-noble \
-  bash -c "dotnet tool restore && dotnet test --project D12Canvas.VisualTests/D12Canvas.VisualTests.csproj"
+  bash -c "dotnet tool restore && dotnet build D12Canvas.VisualTests/D12Canvas.VisualTests.csproj && ./D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none"
 ```
+
+Always pass `-parallel none`: the suite opens many Playwright browser contexts against one shared
+`D12Canvas.Demo` process, and under default parallelism tests fail with symptoms that look like
+real regressions (large pixel/HTML diffs, a Locator timing out at 0 elements, a click intercepted
+by an overlapping element) but aren't. Reproduce any failure under `-parallel none` before trusting
+it. See `docs/agents/testing.md` for the full CLI reference (including the Git-Bash-on-Windows
+volume-path quoting this command needs, and a Podman fallback if Docker Desktop won't start).
 
 ### Updating baselines
 
