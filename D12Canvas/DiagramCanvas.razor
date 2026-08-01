@@ -125,6 +125,8 @@
                                             OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
                                             OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))"
                                             OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
+                                            FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
+                                            FocusedCustomPortId="@FocusedCustomPortIdFor(instance.Id)"
                                             CustomPorts="instance.CustomPorts"
                                             OnAddCustomPort="@((port) => AddCustomPort(instance.Id, port))">
                             @* Lets a text-carrying built-in (Sticky Note, Text) identify

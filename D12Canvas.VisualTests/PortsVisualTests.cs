@@ -47,6 +47,18 @@ public sealed class PortsVisualTests : IAsyncLifetime
         await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
         var target = _page.Locator(".component-container");
 
+        // ClickToAdd now selects the instance it just placed - deselect it first (a click on
+        // an empty canvas corner) so hover alone, not selection, is what reveals the ports below.
+        await _page
+            .Locator(".diagram-canvas")
+            .ClickAsync(
+                new LocatorClickOptions
+                {
+                    Position = new Position { X = 10, Y = 10 },
+                }
+            );
+        await Expect(target).Not.ToHaveAttributeAsync("aria-selected", "true");
+
         // Hover alone (no click/select) is enough to reveal ports - proves they're an
         // independent affordance from the resize handles, which need selection.
         await target.HoverAsync();

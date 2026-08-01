@@ -193,6 +193,26 @@ public partial class DiagramCanvas : IAsyncDisposable
     private Guid? _connectEditingEdgeId;
     private bool _connectEditingEdgeIsSource;
 
+    // Keyboard-driven connector attachment - the keyboard equivalent of
+    // StartPortDrag/CompletePortDrag above, built entirely from Enter/arrow-key/Space focus
+    // navigation rather than a continuous pointer gesture. _portFocusInstanceId/_portFocusEndpoint
+    // is the port currently being picked on whichever instance Enter was most recently pressed on
+    // (entered/exited by Enter alone - see OnEnterPressed - defaulting each entry to that instance's
+    // Top port; an arrow key jumps directly to one of the four standard ports, Space instead steps
+    // to the next port in Board.AllPorts's own order so a custom port is reachable too - see
+    // OnSpacePressed). Represented as a real PortEndpoint/CustomPortEndpoint (never a
+    // FloatingEndpoint) rather than a bare PortId, so both port kinds share one representation and
+    // OnEnterPressed can hand it straight to a new Edge with no reconstruction step.
+    // _pendingConnectorSource is the already-armed source, set by the FIRST Enter while picking and
+    // persisting across the Tab/Shift+Tab navigation a keyboard user relies on to reach the target
+    // instance - native Tab is never intercepted (see DiagramCanvas.razor.js), so there is no
+    // keydown hook to clear stale picking state on an ordinary Tab press; FocusEntity does that
+    // instead, the one place every focus-changing navigation (Tab, click, Ctrl+Tab) already passes
+    // through.
+    private Guid? _portFocusInstanceId;
+    private IEdgeEndpoint _portFocusEndpoint = new PortEndpoint(Guid.Empty, PortId.Top);
+    private IEdgeEndpoint? _pendingConnectorSource;
+
     // Board-space radius a connector-drag release must land within one of an instance's own
     // standard ports to attach - matches that port affordance's own authored radius
     // (ComponentContainer.razor: a 20px-diameter circle in the same, zoom-independent local
@@ -330,6 +350,20 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnArrowKeyPressed(string code, bool shiftKey)
     {
+        // While picking a port (see OnEnterPressed), arrow keys jump directly to one of the
+        // focused instance's four standard ports instead of nudging/panning - Top/Right/Bottom/Left
+        // already read as Up/Right/Down/Left, so this takes over the same keys rather than adding
+        // new ones. A custom port is reached via Space instead (OnSpacePressed).
+        if (_portFocusInstanceId is { } focusedInstanceId)
+        {
+            if (PortIdForArrow(code) is { } portId)
+            {
+                _portFocusEndpoint = new PortEndpoint(focusedInstanceId, portId);
+                StateHasChanged();
+            }
+            return;
+        }
+
         if (_selectedInstanceIds.Count > 0)
         {
             NudgeSelection(code, shiftKey);
@@ -339,6 +373,16 @@ public partial class DiagramCanvas : IAsyncDisposable
             PanFor(code);
         }
     }
+
+    private static PortId? PortIdForArrow(string code) =>
+        code switch
+        {
+            "ArrowUp" => PortId.Top,
+            "ArrowRight" => PortId.Right,
+            "ArrowDown" => PortId.Bottom,
+            "ArrowLeft" => PortId.Left,
+            _ => null,
+        };
 
     [JSInvokable]
     public void OnArrowKeyReleased()
@@ -427,7 +471,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnAltArrowKeyPressed(string code, bool shiftKey)
     {
-        if (Board is null || _selectedInstanceIds.Count != 1)
+        // Also a no-op while picking a port (see OnEnterPressed) - Alt+Arrow must not resize
+        // whichever instance is currently being navigated for its connector attachment mid-gesture.
+        if (Board is null || _portFocusInstanceId is not null || _selectedInstanceIds.Count != 1)
         {
             return;
         }
@@ -503,7 +549,11 @@ public partial class DiagramCanvas : IAsyncDisposable
                 .ToList();
 
     // Escape clears the selection, and cancels an in-progress connector
-    // drag rather than letting it resolve against wherever the pointer happens to be.
+    // drag rather than letting it resolve against wherever the pointer happens to be. Also cancels
+    // a half-built KEYBOARD connection in one press, whether it's still mid-pick
+    // (_portFocusInstanceId) or already has an armed source waiting for a target
+    // (_pendingConnectorSource) - a single, full reset rather than a staged one, matching how every
+    // other piece of state this method already touches resets in one press.
     [JSInvokable]
     public void OnEscapePressed()
     {
@@ -512,12 +562,113 @@ public partial class DiagramCanvas : IAsyncDisposable
             CancelPortDrag();
         }
 
+        _portFocusInstanceId = null;
+        _pendingConnectorSource = null;
+
         _selectedInstanceIds.Clear();
         _selectedEdgeId = null;
         _contextMenu = null;
         NotifySelectionChanged();
         StateHasChanged();
     }
+
+    // Enter enters/advances the keyboard connector-attachment gesture. Not currently picking
+    // a port: enters port-focus mode on whichever instance currently has keyboard focus, defaulting
+    // the pick to its Top port - a no-op for anything that isn't a real ComponentInstance (nothing
+    // focused yet, or focus is on a Group's own tab stop; groups have no ports). Already picking:
+    // the FIRST Enter arms the currently-highlighted port as this connection's source (mirroring
+    // StartPortDrag) and exits port-focus mode so Tab/Shift+Tab can reach the target instance; a
+    // SECOND Enter (reached once a source is already armed) instead completes the connection
+    // exactly like CompletePortDrag's own bare-port branch - including its same "landing back on
+    // the exact port the drag started from creates no edge" rule. Only ever reached with the DOM
+    // focus actually on a `.component-container` (see the target-scoped guard in
+    // DiagramCanvas.razor.js), so it never fires while a Palette button's own native
+    // Enter-to-activate is what the user meant.
+    [JSInvokable]
+    public void OnEnterPressed()
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        if (_portFocusInstanceId is not { } focusedInstanceId)
+        {
+            if (_focusedTabStopId is not { } id || Board.GetComponent(id) is null)
+            {
+                return;
+            }
+
+            _portFocusInstanceId = id;
+            _portFocusEndpoint = new PortEndpoint(id, PortId.Top);
+            StateHasChanged();
+            return;
+        }
+
+        var chosenEndpoint = _portFocusEndpoint;
+        _portFocusInstanceId = null;
+
+        if (_pendingConnectorSource is not { } sourceEndpoint)
+        {
+            _pendingConnectorSource = chosenEndpoint;
+            StateHasChanged();
+            return;
+        }
+
+        // The source instance may have been deleted in the (arbitrarily long) span between
+        // arming it and confirming a target - a keyboard gesture, unlike a continuous mouse drag,
+        // spans multiple discrete key presses with other commands possible in between.
+        if (
+            EndpointComponentId(sourceEndpoint) is { } sourceComponentId
+            && Board.GetComponent(sourceComponentId) is not null
+            && !chosenEndpoint.Equals(sourceEndpoint)
+        )
+        {
+            _history.Do(new AddEdgeCommand(Board, new Edge(sourceEndpoint, chosenEndpoint)));
+        }
+
+        _pendingConnectorSource = null;
+        StateHasChanged();
+    }
+
+    // Shared by OnEnterPressed (the armed source's own instance may since have been deleted)
+    // and CyclePortFocus (Board.AllPorts needs a live ComponentInstance) - a PortEndpoint/
+    // CustomPortEndpoint's ComponentId, pulled out via the same pattern-match idiom
+    // Board.ResolveEndpoint already uses. Never a FloatingEndpoint - _portFocusEndpoint and
+    // _pendingConnectorSource are never assigned one.
+    private static Guid? EndpointComponentId(IEdgeEndpoint endpoint) =>
+        endpoint switch
+        {
+            PortEndpoint port => port.ComponentId,
+            CustomPortEndpoint custom => custom.ComponentId,
+            _ => null,
+        };
+
+    // The port currently highlighted for a given instance - either it's mid-pick
+    // (_portFocusInstanceId) or it's the already-armed connector source waiting for a target to be
+    // picked on some other instance (_pendingConnectorSource), which stays highlighted across the
+    // Tab navigation between the two so a keyboard user can still see where the connection started.
+    // Null (no highlight) the rest of the time.
+    private IEdgeEndpoint? FocusedPortEndpointFor(Guid instanceId)
+    {
+        if (_portFocusInstanceId == instanceId)
+        {
+            return _portFocusEndpoint;
+        }
+
+        return _pendingConnectorSource is { } source && EndpointComponentId(source) == instanceId
+            ? source
+            : null;
+    }
+
+    // Fed to ComponentContainer's own FocusedPortId/FocusedCustomPortId parameters - split from
+    // FocusedPortEndpointFor's single IEdgeEndpoint? since a standard and a custom port render as
+    // two distinct markup shapes (four fixed border-center divs vs. one div per CustomPorts entry).
+    private PortId? FocusedStandardPortIdFor(Guid instanceId) =>
+        FocusedPortEndpointFor(instanceId) is PortEndpoint port ? port.PortId : null;
+
+    private Guid? FocusedCustomPortIdFor(Guid instanceId) =>
+        FocusedPortEndpointFor(instanceId) is CustomPortEndpoint custom ? custom.PortId : null;
 
     // Ctrl+Tab moves DOM focus to the next entity in reading order without selecting it - a
     // one-off suspension of focus-follows-selection for this chord only, so Space (see
@@ -557,15 +708,42 @@ public partial class DiagramCanvas : IAsyncDisposable
     // resulting multi-selection is indistinguishable from a pointer-built one. A no-op once nothing
     // is focused, or the focused id's own tab stop is gone (deleted, or newly grouped into a member
     // with no tab stop of its own).
+    // While picking a port (see OnEnterPressed), Space means something else entirely - it
+    // steps to the next port in Board.AllPorts's own order instead, the only way to reach a custom
+    // port (arrow keys only ever jump to one of the four standard ones).
     [JSInvokable]
     public void OnSpacePressed()
     {
+        if (_portFocusInstanceId is { } focusedInstanceId)
+        {
+            CyclePortFocus(focusedInstanceId);
+            return;
+        }
+
         if (_focusedTabStopId is not { } id || !FocusableTabStopIds().Contains(id))
         {
             return;
         }
 
         SelectComponent(id, addToSelection: true);
+        StateHasChanged();
+    }
+
+    // Advances _portFocusEndpoint to the next port in Board.AllPorts's own order (every standard
+    // port, then every custom one), wrapping back to the first - a no-op if the instance has
+    // meanwhile been deleted. IndexOf relies on PortEndpoint/CustomPortEndpoint's record structural
+    // equality (via IEdgeEndpoint, same as Board.FindEdgeAttachedTo's own edge.Source.Equals(...)
+    // check) to find the currently-picked port's position in that list.
+    private void CyclePortFocus(Guid instanceId)
+    {
+        if (Board?.GetComponent(instanceId) is not { } instance)
+        {
+            return;
+        }
+
+        var ports = Board.AllPorts(instance).Select(p => p.Endpoint).ToList();
+        var currentIndex = ports.IndexOf(_portFocusEndpoint);
+        _portFocusEndpoint = ports[(currentIndex + 1) % ports.Count];
         StateHasChanged();
     }
 
@@ -1533,6 +1711,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void FocusEntity(Guid id)
     {
         _focusedTabStopId = id;
+
+        // Any genuine focus-changing navigation (Tab, Shift+Tab, a click's own focusElement
+        // round-trip, Ctrl+Tab) invalidates an in-progress port pick (see OnEnterPressed) - it only
+        // makes sense for whichever instance real DOM focus is currently on. Enter/arrow-key port
+        // picking never itself moves DOM focus, so this is never cleared out from under a pick still
+        // in progress on the same instance.
+        _portFocusInstanceId = null;
 
         if (_suppressFocusSelect)
         {

@@ -95,6 +95,19 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public IReadOnlyList<PortDef> CustomPorts { get; set; } = Array.Empty<PortDef>();
 
+    // Which of this instance's four standard ports (if any) DiagramCanvas's keyboard
+    // connector-attachment gesture currently has highlighted - either mid-pick, or already armed as
+    // that connection's source and waiting on a target chosen elsewhere. Null (the common case)
+    // renders no highlight. A highlighted custom port instead comes through FocusedCustomPortId
+    // below - the two are mutually exclusive (see DiagramCanvas.FocusedPortEndpointFor).
+    [Parameter]
+    public PortId? FocusedPortId { get; set; }
+
+    // The custom-port counterpart to FocusedPortId above - the Id of one of this instance's own
+    // CustomPorts entries, or null.
+    [Parameter]
+    public Guid? FocusedCustomPortId { get; set; }
+
     // Fired when a double-click on one of the four border strips adds a custom port -
     // DiagramCanvas owns turning this into an undoable AddCustomPortCommand, since it alone knows
     // which ComponentInstance this container renders.
@@ -154,6 +167,9 @@ public partial class ComponentContainer : IAsyncDisposable
     // repositioned in place.
     private int _lastRenderedCustomPortsCount;
 
+    private PortId? _lastRenderedFocusedPortId;
+    private Guid? _lastRenderedFocusedCustomPortId;
+
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
 
@@ -194,7 +210,13 @@ public partial class ComponentContainer : IAsyncDisposable
             // A layering command changes ZIndex alone, at otherwise unchanged
             // Bounds/selection - without this check, a stacking change wouldn't render until some
             // unrelated parameter also changed, when it should render immediately.
-            || ZIndex != _lastRenderedZIndex;
+            || ZIndex != _lastRenderedZIndex
+            // The keyboard connector-attachment gesture changes which port is highlighted
+            // (an arrow-key/Space pick, or arming/confirming a source) at otherwise unchanged
+            // Bounds/selection - without this check the highlight wouldn't move until some
+            // unrelated parameter also changed.
+            || FocusedPortId != _lastRenderedFocusedPortId
+            || FocusedCustomPortId != _lastRenderedFocusedCustomPortId;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -210,6 +232,8 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedProps = Props;
         _lastRenderedCustomPortsCount = CustomPorts.Count;
         _lastRenderedZIndex = ZIndex;
+        _lastRenderedFocusedPortId = FocusedPortId;
+        _lastRenderedFocusedCustomPortId = FocusedCustomPortId;
 
         if (firstRender)
         {
@@ -419,6 +443,31 @@ public partial class ComponentContainer : IAsyncDisposable
     }
 
     private static double Clamp01(double value) => Math.Clamp(value, 0, 1);
+
+    // A standard port's own CSS class, plus the highlight class while the keyboard
+    // connector-attachment gesture has this exact port as FocusedPortId. The side class is derived
+    // from portId itself rather than taken as a separate parameter, so a call site can't hand in a
+    // mismatched pair.
+    private string StandardPortCssClass(PortId portId) =>
+        FocusedPortId == portId
+            ? $"port {StandardPortSideClass(portId)} port-focused"
+            : $"port {StandardPortSideClass(portId)}";
+
+    private static string StandardPortSideClass(PortId portId) =>
+        portId switch
+        {
+            PortId.Top => "port-top",
+            PortId.Right => "port-right",
+            PortId.Bottom => "port-bottom",
+            PortId.Left => "port-left",
+            _ => throw new ArgumentOutOfRangeException(nameof(portId)),
+        };
+
+    // The custom-port counterpart to StandardPortCssClass - every custom port already renders
+    // via the single shared "custom-port" class (CustomPortStyle positions each one individually by
+    // inline style, not a per-port CSS class), so only the highlight needs conditional logic here.
+    private string CustomPortCssClass(Guid portId) =>
+        FocusedCustomPortId == portId ? "port custom-port port-focused" : "port custom-port";
 
     // The shared visibility gate for the border strips and the resize handles - both
     // are selection-driven overlay affordances, suppressed for a multi-selected member (the

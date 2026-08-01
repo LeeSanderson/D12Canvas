@@ -109,7 +109,7 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 199px; width: 200px; height: 200px; z-index: 0;" role="group" aria-label="Sticky Note" tabindex="0" _bl_3="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-sticky-note" style="background-color: #FFEB3B;"><textarea class="d12-sticky-note-text d12-sticky-note-editor" style="color: rgb(0, 0, 0); font-size: 14px; caret-color: transparent !important;" _bl_4=""></textarea></div><!--!-->
+    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="width: 3000px; height: 3000px; transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 199px; width: 200px; height: 200px; z-index: 0;" role="group" aria-label="Sticky Note" aria-selected="true" tabindex="0" _bl_3=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-sticky-note" style="background-color: #FFEB3B;"><textarea class="d12-sticky-note-text d12-sticky-note-editor" style="color: rgb(0, 0, 0); font-size: 14px; caret-color: transparent !important;" _bl_4=""></textarea></div><!--!-->
 
 <!--!--><style>
     .d12-sticky-note {
@@ -200,6 +200,12 @@
     .component-container.selected .port {
         opacity: 1;
         pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
     }
 
     .port-top {

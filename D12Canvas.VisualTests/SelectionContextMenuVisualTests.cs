@@ -55,33 +55,38 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }
 
-    // Places the first instance and selects it while it's still the board's only one - same
-    // reasoning as ZIndexLayeringVisualTests' own helper: the cascading +20,+20 click-to-add offset
-    // doesn't fully clear a default-sized instance, and the second one renders above the first
-    // (new-on-top by default), so a click landing on the first's own on-screen spot after the
-    // second exists would hit the second instead.
+    // Places two cascaded, overlapping instances (the +20,+20 click-to-add offset doesn't fully
+    // clear a default-sized instance) and selects both. ClickToAdd selects whichever instance it
+    // just placed, so after both exist only the second (now-on-top) one is still selected - the
+    // first is shift-clicked back in at a point 5,5 inside its own top-left corner, a spot the
+    // second instance's own +20,+20-offset box can never reach regardless of either instance's
+    // actual size, rather than trying to reach it anywhere the second, topmost instance covers it.
     [Fact]
     public async Task RightClickOnATwoInstanceSelectionOffersGroup_MatchesBaseline()
     {
         var entries = _page.Locator(".d12-palette-entry-button");
         await entries.Nth(0).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
-        await _page.Locator(".component-container").ClickAsync();
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(1);
 
         await entries.Nth(1).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(2);
 
-        // The second, now-on-top instance is the only one reachable by a real click - shift-click
-        // adds it to the existing selection instead of trying to reach the now-covered first one.
-        var topInstance = _page.Locator(".component-container").Nth(1);
-        await topInstance.ClickAsync(
-            new LocatorClickOptions { Modifiers = [KeyboardModifier.Shift] }
+        var firstInstance = _page.Locator(".component-container").First;
+        await firstInstance.ClickAsync(
+            new LocatorClickOptions
+            {
+                Modifiers = [KeyboardModifier.Shift],
+                Position = new Position { X = 5, Y = 5 },
+            }
         );
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(2);
 
+        // The second, now-on-top instance is the only one reachable by a real click at its own
+        // default (center) position.
+        var topInstance = _page.Locator(".component-container").Nth(1);
         await topInstance.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
 
         await Expect(_page.GetByRole(AriaRole.Menuitem, new() { Name = "Group" }))

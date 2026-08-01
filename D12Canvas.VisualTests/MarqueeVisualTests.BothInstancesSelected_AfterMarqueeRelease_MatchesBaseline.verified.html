@@ -181,6 +181,12 @@
         pointer-events: auto;
     }
 
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
+    }
+
     .port-top {
         top: -10px;
         left: calc(50% - 10px);
@@ -291,7 +297,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Stress item" tabindex="0" _bl_4="" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
+</style><!--!--><div class="component-container view-mode selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Stress item" aria-selected="true" tabindex="0" _bl_4=""><div class="container-content"><!--!--><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
 
 <!--!--><style>
     .stress-item {
@@ -359,6 +365,12 @@
     .component-container.selected .port {
         opacity: 1;
         pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
     }
 
     .port-top {

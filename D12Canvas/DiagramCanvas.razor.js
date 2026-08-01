@@ -73,6 +73,16 @@ function isEditableTarget(target) {
     );
 }
 
+// Enter also doubles as the native activation key for a focused button (a Palette entry) -
+// pressing it there must reach the browser's own default "click the button" behavior, not this
+// listener's preventDefault. Unlike every other key case below (none of which have a competing
+// native meaning on a button), Enter is scoped to firing only when DOM focus is actually on one of
+// the canvas's own instance tab stops - the one place OnEnterPressed's keyboard connector-
+// attachment gesture is meaningful.
+function isComponentContainerTarget(target) {
+    return target instanceof Element && target.classList.contains("component-container");
+}
+
 export async function addKeyboardListener(element, dotnetRef) {
     const handleKeyDown = (event) => {
         // preventDefault is called only from inside a branch that actually invokes a
@@ -135,6 +145,12 @@ export async function addKeyboardListener(element, dotnetRef) {
             case "Escape":
                 event.preventDefault();
                 dotnetRef.invokeMethodAsync("OnEscapePressed");
+                break;
+            case "Enter":
+                if (isComponentContainerTarget(event.target)) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnEnterPressed");
+                }
                 break;
             case "Delete":
             case "Backspace":

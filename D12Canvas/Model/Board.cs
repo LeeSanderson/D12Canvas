@@ -102,12 +102,11 @@ public sealed class Board
 
     // Every port an instance exposes, standard and custom alike, each already paired with the
     // IEdgeEndpoint it resolves to - lets FindPortNear hit-test both kinds with a single loop
-    // body instead of repeating it once per kind.
-    private static IEnumerable<(
-        IEdgeEndpoint Endpoint,
-        double FractionX,
-        double FractionY
-    )> AllPorts(ComponentInstance instance)
+    // body instead of repeating it once per kind. Also the ordered list DiagramCanvas's keyboard
+    // connector-attachment gesture cycles through (Space, once a port is being picked).
+    public IEnumerable<(IEdgeEndpoint Endpoint, double FractionX, double FractionY)> AllPorts(
+        ComponentInstance instance
+    )
     {
         foreach (var portId in StandardPorts.All)
         {

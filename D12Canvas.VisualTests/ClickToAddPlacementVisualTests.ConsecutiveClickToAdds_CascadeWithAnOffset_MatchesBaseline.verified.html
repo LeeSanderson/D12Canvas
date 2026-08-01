@@ -181,6 +181,12 @@
         pointer-events: auto;
     }
 
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
+    }
+
     .port-top {
         top: -10px;
         left: calc(50% - 10px);
@@ -291,7 +297,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Demo note" tabindex="0" _bl_4=""><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
+</style><!--!--><div class="component-container view-mode selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Demo note" aria-selected="true" tabindex="0" _bl_4=""><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
 
 <!--!--><style>
     .demo-note {
@@ -306,10 +312,20 @@
     .demo-note p {
         margin: 0;
     }
-</style></div><div class="port port-top"></div><!--!-->
+</style></div><div class="port-strip port-strip-top"></div><!--!-->
+        <div class="port-strip port-strip-right"></div><!--!-->
+        <div class="port-strip port-strip-bottom"></div><!--!-->
+        <div class="port-strip port-strip-left"></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
     <div class="port port-bottom"></div><!--!-->
-    <div class="port port-left"></div></div><!--!-->
+    <div class="port port-left"></div><div class="resize-handle top-left"></div><!--!-->
+        <div class="resize-handle top"></div><!--!-->
+        <div class="resize-handle top-right"></div><!--!-->
+        <div class="resize-handle right"></div><!--!-->
+        <div class="resize-handle bottom-right"></div><!--!-->
+        <div class="resize-handle bottom"></div><!--!-->
+        <div class="resize-handle bottom-left"></div><!--!-->
+        <div class="resize-handle left"></div></div><!--!-->
 
 <!--!--><style>
     .component-container {
@@ -361,6 +377,12 @@
     .component-container.selected .port {
         opacity: 1;
         pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
     }
 
     .port-top {

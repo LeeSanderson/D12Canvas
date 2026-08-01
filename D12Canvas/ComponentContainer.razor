@@ -47,17 +47,17 @@
     @* Each port's own mousedown starts a connector drag (StartPortDrag) - it doesn't
        stop propagation, so it still bubbles up to HandleMouseDown afterwards, matching how the
        resize handles below interact with that same handler. *@
-    <div class="port port-top" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Top)))"></div>
-    <div class="port port-right" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Right)))"></div>
-    <div class="port port-bottom" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Bottom)))"></div>
-    <div class="port port-left" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Left)))"></div>
+    <div class="@StandardPortCssClass(PortId.Top)" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Top)))"></div>
+    <div class="@StandardPortCssClass(PortId.Right)" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Right)))"></div>
+    <div class="@StandardPortCssClass(PortId.Bottom)" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Bottom)))"></div>
+    <div class="@StandardPortCssClass(PortId.Left)" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Left)))"></div>
 
     @* An instance's own runtime-added custom ports - the same drag-to-connect affordance
        as a standard port (StartPortDrag), just at a user-chosen fractional position instead of a
        fixed border-center one, so its own inline style (not a CSS class) positions it. *@
     @foreach (var port in CustomPorts)
     {
-        <div class="port custom-port" style="@CustomPortStyle(port)"
+        <div class="@CustomPortCssClass(port.Id)" style="@CustomPortStyle(port)"
              @onmousedown="@((e) => StartPortDrag(e, PortRef.Custom(port.Id)))"
              @key="port.Id"></div>
     }
@@ -125,6 +125,12 @@
     .component-container.selected .port {
         opacity: 1;
         pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
     }
 
     .port-top {
