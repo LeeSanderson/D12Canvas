@@ -86,8 +86,15 @@ export async function addKeyboardListener(element, dotnetRef) {
                 // (a contenteditable host element), so this must not hijack it - same guard as
                 // Delete/Ctrl+Z/Ctrl+G below.
                 if (!isEditableTarget(event.target)) {
+                    // preventDefault unconditionally, even for Alt+Arrow combos the C# side ends up
+                    // treating as a no-op (nothing/multiple selected) - Alt+Left/Right is the
+                    // browser's own back/forward navigation shortcut, which must never fire here.
                     event.preventDefault();
-                    dotnetRef.invokeMethodAsync("OnArrowKeyPressed", event.code, event.shiftKey);
+                    if (event.altKey) {
+                        dotnetRef.invokeMethodAsync("OnAltArrowKeyPressed", event.code, event.shiftKey);
+                    } else {
+                        dotnetRef.invokeMethodAsync("OnArrowKeyPressed", event.code, event.shiftKey);
+                    }
                 }
                 break;
             case "Escape":

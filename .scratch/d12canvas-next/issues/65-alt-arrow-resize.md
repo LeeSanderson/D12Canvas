@@ -4,10 +4,10 @@
 
 **Blocked by:** 37 (History core: undo/redo move & resize), 63 (Tab stops + focus-follows-selection)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Alt+Right/Left grows/shrinks horizontally; Alt+Down/Up grows/shrinks vertically
-- [ ] The anchor stays stable — resizing never moves the anchored edge
-- [ ] Steps are zoom-relative; bounds can never invert or go negative
-- [ ] Resize steps record undoable history entries
-- [ ] bUnit coverage of anchoring and step behaviour
+- [x] Alt+Right/Left grows/shrinks horizontally; Alt+Down/Up grows/shrinks vertically
+- [x] The anchor stays stable — resizing never moves the anchored edge
+- [x] Steps are zoom-relative; bounds can never invert or go negative
+- [x] Resize steps record undoable history entries
+- [x] bUnit coverage of anchoring and step behaviour

@@ -314,7 +314,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     [JSInvokable]
-    public void OnArrowKeyReleased() => _activeNudgeCommand = null;
+    public void OnArrowKeyReleased()
+    {
+        _activeNudgeCommand = null;
+        _activeResizeCommand = null;
+    }
 
     private void NudgeSelection(string code, bool shiftKey)
     {
@@ -377,6 +381,87 @@ public partial class DiagramCanvas : IAsyncDisposable
         var (dirX, dirY) = ArrowDirection(code);
         _zoomPanTracker.Pan(-dirX * PanStep, -dirY * PanStep);
         StateHasChanged();
+    }
+
+    // Zoom-relative resize step - always 1 screen pixel regardless of zoom, same as
+    // NudgeStep. Unlike nudge, Shift is fully repurposed as the anchor-flip modifier (see
+    // ResizeDirectionFor) rather than a coarser-step modifier, so there is no separate coarse value.
+    private const double ResizeStep = 1;
+
+    // The most recent Alt+Arrow resize's own command, kept only long enough to extend it while a
+    // burst of repeat keydowns (a held key) is still in progress - cleared by OnArrowKeyReleased
+    // exactly like _activeNudgeCommand, so the next press starts a fresh undoable entry.
+    private ResizeStepCommand? _activeResizeCommand;
+
+    // Alt+Arrow resizes the single selected instance instead of nudging - single-instance
+    // only: an ad-hoc multi-selection or a selected Group (whose id never resolves through
+    // Board.GetComponent) has no keyboard resize, that stays mouse-only, so both cases fall
+    // through as a no-op here rather than falling back to any other behaviour.
+    [JSInvokable]
+    public void OnAltArrowKeyPressed(string code, bool shiftKey)
+    {
+        if (Board is null || _selectedInstanceIds.Count != 1)
+        {
+            return;
+        }
+
+        var instance = Board.GetComponent(_selectedInstanceIds.Single());
+        var direction = ResizeDirectionFor(code, shiftKey);
+        if (instance is null || direction is null)
+        {
+            return;
+        }
+
+        var (deltaX, deltaY) = ResizeStepDeltaFor(code, _zoomPanTracker.Scale);
+
+        // Same burst-coalescing shape as NudgeSelection, kept separate rather than shared - a
+        // resize's Match also has to agree on direction (a Shift toggle mid-burst flips the anchor,
+        // so it must start a fresh gesture rather than resuming one anchored to the wrong edge),
+        // where a nudge's Match only ever cares about the target set.
+        if (
+            _activeResizeCommand is not null
+            && ReferenceEquals(_history.PeekUndo, _activeResizeCommand)
+            && _activeResizeCommand.Matches(instance, direction.Value)
+        )
+        {
+            _activeResizeCommand.Extend(deltaX, deltaY);
+        }
+        else
+        {
+            _activeResizeCommand = new ResizeStepCommand(instance, direction.Value, deltaX, deltaY);
+            _history.Do(_activeResizeCommand);
+        }
+
+        StateHasChanged();
+    }
+
+    // Per axis, the edge matching the arrow's direction moves outward (growing) with the opposite
+    // edge anchored - Shift flips that: the edge matching the arrow's direction becomes the anchor
+    // and the opposite edge moves toward it (shrinking) instead. Null for any code that isn't an
+    // arrow key.
+    private static ResizeDirection? ResizeDirectionFor(string code, bool shiftKey) =>
+        code switch
+        {
+            "ArrowRight" => shiftKey ? ResizeDirection.Left : ResizeDirection.Right,
+            "ArrowLeft" => shiftKey ? ResizeDirection.Right : ResizeDirection.Left,
+            "ArrowDown" => shiftKey ? ResizeDirection.Top : ResizeDirection.Bottom,
+            "ArrowUp" => shiftKey ? ResizeDirection.Bottom : ResizeDirection.Top,
+            _ => null,
+        };
+
+    // The delta handed to ResizeMath.Apply - its sign is fixed per arrow key regardless of Shift
+    // (Shift only changes which direction/anchor that delta is applied against, above).
+    private static (double X, double Y) ResizeStepDeltaFor(string code, double scale)
+    {
+        var step = ResizeStep / scale;
+        return code switch
+        {
+            "ArrowRight" => (step, 0),
+            "ArrowLeft" => (-step, 0),
+            "ArrowDown" => (0, step),
+            "ArrowUp" => (0, -step),
+            _ => (0, 0),
+        };
     }
 
     // Shared by NudgeSelection and RestackSelection - resolves ExpandedSelection's ids to live
