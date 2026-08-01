@@ -216,6 +216,17 @@ public partial class DiagramCanvas : IAsyncDisposable
     // OnAfterRenderAsync (guaranteed to run after that render lands) rather than firing inline.
     private bool _pendingGroupFocus;
 
+    // Whichever entity currently has real DOM focus - kept in sync by FocusEntity (every native
+    // Tab/Shift+Tab landing, and the click-driven focusElement round-trip), and advanced without
+    // selecting by OnCtrlTabPressed. Tracked separately from _selectedInstanceIds because Ctrl+Tab
+    // must move focus without touching selection at all.
+    private Guid? _focusedTabStopId;
+
+    // Set immediately before OnCtrlTabPressed's own JS focus() call - consumed by the very next
+    // FocusEntity invocation that call triggers (the native onfocus round-trip a real .focus() call
+    // fires), so that one focus move skips the hard-select every other focus arrival performs.
+    private bool _suppressFocusSelect;
+
     protected override void OnInitialized()
     {
         _zoomPanTracker.Changed += OnZoomPanChanged;
@@ -489,6 +500,56 @@ public partial class DiagramCanvas : IAsyncDisposable
         _selectedEdgeId = null;
         _contextMenu = null;
         NotifySelectionChanged();
+        StateHasChanged();
+    }
+
+    // Ctrl+Tab moves DOM focus to the next entity in reading order without selecting it - a
+    // one-off suspension of focus-follows-selection for this chord only, so Space (see
+    // OnSpacePressed below) has a target to toggle that's independent of the current selection.
+    // Starts over from the first tab stop whenever _focusedTabStopId is null or no longer among
+    // the current stops (nothing focused yet, or the previously-focused entity was deleted or
+    // scrolled out of the windowed-mounting viewport) - IndexOf's -1 plus one wraps to 0 for free.
+    // A no-op when the only stop available is the one already focused (nowhere else to move to) -
+    // calling .focus() on an already-focused element fires no new onfocus in a real browser, which
+    // would otherwise leave _suppressFocusSelect set and silently swallow the hard-select an
+    // unrelated, later focus arrival should have performed.
+    [JSInvokable]
+    public async Task OnCtrlTabPressed()
+    {
+        var stops = FocusableTabStopIds();
+        if (stops.Count == 0)
+        {
+            return;
+        }
+
+        var currentIndex = _focusedTabStopId is { } focused ? stops.IndexOf(focused) : -1;
+        var nextIndex = (currentIndex + 1) % stops.Count;
+        var nextId = stops[nextIndex];
+
+        if (nextId == _focusedTabStopId)
+        {
+            return;
+        }
+
+        _focusedTabStopId = nextId;
+        _suppressFocusSelect = true;
+        await _jsModule!.InvokeVoidAsync("focusTabStopAt", ContainerElement, nextIndex);
+    }
+
+    // Space toggles the currently-focused entity's membership in the ad-hoc selection - the
+    // keyboard equivalent of a shift-click, reusing SelectComponent's own toggle branch so the
+    // resulting multi-selection is indistinguishable from a pointer-built one. A no-op once nothing
+    // is focused, or the focused id's own tab stop is gone (deleted, or newly grouped into a member
+    // with no tab stop of its own).
+    [JSInvokable]
+    public void OnSpacePressed()
+    {
+        if (_focusedTabStopId is not { } id || !FocusableTabStopIds().Contains(id))
+        {
+            return;
+        }
+
+        SelectComponent(id, addToSelection: true);
         StateHasChanged();
     }
 
@@ -1434,14 +1495,37 @@ public partial class DiagramCanvas : IAsyncDisposable
         return stops.OrderBy(s => s.Bounds.Y).ThenBy(s => s.Bounds.X).ToList();
     }
 
+    // The ids a keyboard user can actually land on, in the same order OrderedTabStops renders
+    // them - a grouped member has an entry in that list too (so it still paints inside its group)
+    // but no tabindex of its own (see IsGrouped/ComponentContainer.Focusable), so Ctrl+Tab must
+    // skip it exactly the way native Tab already does.
+    private List<Guid> FocusableTabStopIds() =>
+        OrderedTabStops()
+            .Where(stop => stop.Instance is null || !IsGrouped(stop.Instance.Id))
+            .Select(stop => stop.Instance?.Id ?? stop.Group!.Id)
+            .ToList();
+
     // The sole entry point for the "focusing selects" half of focus-follows-selection - reached
     // only via a tab stop's own @onfocus (native Tab/Shift+Tab navigation, or the click-driven
     // focusElement call below), never wired to any keyboard shortcut directly. Always a hard
     // single-select, matching "landing focus on an entity selects it outright - there is no
     // separate commit step"; a grouped member is never the id passed here (it has no tab stop of
     // its own), and a top-level Group's own id needs no EffectiveSelectionId resolution
-    // (SelectComponent already handles that uniformly for both cases).
-    private void FocusEntity(Guid id) => SelectComponent(id, addToSelection: false);
+    // (SelectComponent already handles that uniformly for both cases). Ctrl+Tab's own focus move
+    // (OnCtrlTabPressed) is the one exception - it sets _suppressFocusSelect first so its resulting
+    // onfocus round-trip only updates _focusedTabStopId here, without the hard-select.
+    private void FocusEntity(Guid id)
+    {
+        _focusedTabStopId = id;
+
+        if (_suppressFocusSelect)
+        {
+            _suppressFocusSelect = false;
+            return;
+        }
+
+        SelectComponent(id, addToSelection: false);
+    }
 
     private static string GroupTabStopStyle(Bounds bounds) =>
         $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";

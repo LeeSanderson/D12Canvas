@@ -50,6 +50,17 @@ export function focusGroupTabStop(container) {
     }
 }
 
+// Ctrl+Tab's own DOM-focus move - targets the Nth currently-focusable tab stop by position, in
+// the same document order DiagramCanvas.FocusableTabStopIds computes its own index against
+// (every rendered tab stop carries tabindex="0"; a grouped member's container carries none, so
+// it's naturally excluded here the same way it's excluded there).
+export function focusTabStopAt(container, index) {
+    const stops = container.querySelectorAll('[tabindex="0"]');
+    if (index >= 0 && index < stops.length) {
+        stops[index].focus();
+    }
+}
+
 // Backspace/Delete double as the browser's own text-editing keys, so unlike this listener's other
 // codes they must not fire while focus is on an editable host-page element (an <input>/<textarea>
 // elsewhere on the embedding page, or a future in-canvas editable field) - otherwise typing
@@ -95,6 +106,30 @@ export async function addKeyboardListener(element, dotnetRef) {
                     } else {
                         dotnetRef.invokeMethodAsync("OnArrowKeyPressed", event.code, event.shiftKey);
                     }
+                }
+                break;
+            case "Tab":
+                // Plain Tab is never intercepted (native browser traversal, per OrderedTabStops'
+                // own reading-order/tabindex setup) - only the exact Ctrl+Tab chord reaches here,
+                // moving focus without selecting (see OnCtrlTabPressed). Ctrl+Shift+Tab is left
+                // alone rather than treated the same as plain Ctrl+Tab - there's no reverse
+                // traversal implemented for it, unlike every other modifier-branching chord below.
+                if (
+                    (event.ctrlKey || event.metaKey) &&
+                    !event.shiftKey &&
+                    !isEditableTarget(event.target)
+                ) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnCtrlTabPressed");
+                }
+                break;
+            case "Space":
+                // Doubles as the browser's own default "scroll the page" action on a focused
+                // non-form-control element, and as a literal space character while typing during
+                // inline WYSIWYG editing - guarded the same way Delete/Backspace are above.
+                if (!isEditableTarget(event.target)) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnSpacePressed");
                 }
                 break;
             case "Escape":

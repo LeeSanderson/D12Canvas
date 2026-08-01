@@ -30,6 +30,7 @@ public abstract class ComponentTestBase : BunitContext
         module.Setup<Action>("addResizeListener", _ => true).SetResult(() => { });
         module.Setup<Action>("addKeyboardListener", _ => true).SetResult(() => { });
         module.SetupVoid("focusGroupTabStop", _ => true).SetVoidResult();
+        module.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();
     }
 
     // Every test that renders a ComponentContainer needs this - a plain click always attempts
