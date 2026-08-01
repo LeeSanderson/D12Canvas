@@ -216,6 +216,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     // OnAfterRenderAsync (guaranteed to run after that render lands) rather than firing inline.
     private bool _pendingGroupFocus;
 
+    // Set by ClickToAdd - same reasoning as _pendingGroupFocus, but keyed by id rather
+    // than a flag: the newly placed instance's own index among tab stops isn't known until the
+    // render that adds it to the Board actually commits (its on-screen position, and therefore its
+    // reading-order slot, can depend on what else is already on the board).
+    private Guid? _pendingPlacementFocusId;
+
     // Whichever entity currently has real DOM focus - kept in sync by FocusEntity (every native
     // Tab/Shift+Tab landing, and the click-driven focusElement round-trip), and advanced without
     // selecting by OnCtrlTabPressed. Tracked separately from _selectedInstanceIds because Ctrl+Tab
@@ -272,6 +278,16 @@ public partial class DiagramCanvas : IAsyncDisposable
         {
             _pendingGroupFocus = false;
             await _jsModule!.InvokeVoidAsync("focusGroupTabStop", ContainerElement);
+        }
+
+        if (_pendingPlacementFocusId is { } placedId)
+        {
+            _pendingPlacementFocusId = null;
+            var index = FocusableTabStopIds().IndexOf(placedId);
+            if (index >= 0)
+            {
+                await _jsModule!.InvokeVoidAsync("focusTabStopAt", ContainerElement, index);
+            }
         }
     }
 
@@ -1994,6 +2010,13 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // Also the sole entry point a keyboard user's Enter/Space on a palette button reaches -
+    // native button semantics synthesize the same click event a pointer would, so there is no
+    // separate keyboard code path to wire. What a keyboard user needs that a mouse click-to-add
+    // doesn't: the newly placed instance is selected, and real DOM focus moves to it (once its tab
+    // stop exists post-render, see _pendingPlacementFocusId/OnAfterRenderAsync) - a keyboard user
+    // has no other way to reach what they just placed, since there's no cursor already sitting on
+    // it the way a mouse click leaves one.
     public void ClickToAdd(string componentTypeKey)
     {
         if (Board is null)
@@ -2005,11 +2028,17 @@ public partial class DiagramCanvas : IAsyncDisposable
         _clickToAddCascadeCount++;
 
         var viewport = _zoomPanTracker.Viewport;
-        PlaceComponent(
+        var placed = PlaceComponent(
             componentTypeKey,
             viewport.X + viewport.Width / 2 + offset,
             viewport.Y + viewport.Height / 2 + offset
         );
+
+        if (placed is not null)
+        {
+            SelectComponent(placed.Id, addToSelection: false);
+            _pendingPlacementFocusId = placed.Id;
+        }
 
         StateHasChanged();
     }
@@ -2020,17 +2049,25 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Routed through AddEntityCommand rather than a direct Board.AddComponent
     // call, so undo removes the placed instance and redo restores it with the same Id.
     // The Connector sentinel key never reaches NewCenteredInstance/Registry.Resolve -
-    // there's no registration for it to resolve.
-    private void PlaceComponent(string componentTypeKey, double centerX, double centerY)
+    // there's no registration for it to resolve. Returns the placed instance (null for a
+    // Connector, which produces an Edge instead) so ClickToAdd can select/focus it - HandleDrop
+    // discards the return value, leaving drag-and-drop placement's own (lack of) selection
+    // behaviour unchanged.
+    private ComponentInstance? PlaceComponent(
+        string componentTypeKey,
+        double centerX,
+        double centerY
+    )
     {
         if (componentTypeKey == ConnectorPaletteKey)
         {
             PlaceConnector(centerX, centerY);
-            return;
+            return null;
         }
 
         var instance = NewCenteredInstance(componentTypeKey, centerX, centerY);
         _history.Do(new AddEntityCommand(Board!, instance));
+        return instance;
     }
 
     // The palette's own way of dropping a new Edge, both ends floating, centered on the

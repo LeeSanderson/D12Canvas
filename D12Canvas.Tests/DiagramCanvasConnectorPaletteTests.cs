@@ -118,6 +118,23 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         Assert.Equal(new FloatingEndpoint(460, 320), edge.Target);
     }
 
+    // A connector never has its own tab stop (it's an Edge, tracked via _selectedEdgeId, never
+    // mixed into the instance-focused selection/tab-stop machinery ClickToAdd's own select/focus
+    // addition relies on) - so unlike a component placement, this leaves no instance selected and
+    // makes no focusTabStopAt call.
+    [Fact]
+    public async Task ClickToAddingAConnectorSelectsAndFocusesNothing()
+    {
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        await canvas.InvokeAsync(
+            () => canvas.Instance.ClickToAdd(DiagramCanvas.ConnectorPaletteKey)
+        );
+
+        Assert.Empty(JSInterop.Invocations["focusTabStopAt"]);
+    }
+
     [Fact]
     public async Task DroppingTheConnectorIsAnUndoableGesture()
     {

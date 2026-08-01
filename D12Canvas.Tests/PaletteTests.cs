@@ -226,6 +226,22 @@ public class PaletteTests : ComponentTestBase
     }
 
     [Fact]
+    public void ClickingAnEntrySelectsTheNewlyPlacedInstance()
+    {
+        RegisterComponent("rectangle", "Rectangle", "Rectangle");
+        SetupDiagramCanvasJsModule();
+        SetupComponentContainerJsModule();
+
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
+
+        EntryButton(palette, "Rectangle").Click();
+
+        Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
+    }
+
+    [Fact]
     public void ClickIsANoOpWhenNoCanvasIsWired()
     {
         RegisterComponent("rectangle", "Rectangle", "Rectangle");
