@@ -285,33 +285,110 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
+    // Zoom-relative arrow-key nudge: 1 screen pixel per press regardless of current zoom
+    // (1 / Scale board units) - Shift+Arrow's coarser ~10 screen px. With nothing selected
+    // there's no instance to nudge, so this falls back to the pre-existing arrow-key pan instead
+    // (an edge-only selection - _selectedEdgeId, never mixed into _selectedInstanceIds - has no
+    // Bounds either, so it takes the same pan fallback).
+    private const double NudgeStep = 1;
+    private const double NudgeStepCoarse = 10;
+    private const double PanStep = 50;
+
+    // The most recent nudge's own command, kept only long enough to extend it while a burst of
+    // repeat keydowns (a held arrow key) is still in progress - OnArrowKeyReleased clears it once
+    // the matching keyup arrives, so the NEXT press starts a fresh undoable entry rather than
+    // resuming a burst that already ended.
+    private NudgeCommand? _activeNudgeCommand;
+
     [JSInvokable]
-    public void OnPanLeft()
+    public void OnArrowKeyPressed(string code, bool shiftKey)
     {
-        _zoomPanTracker.Pan(50, 0);
-        StateHasChanged();
+        if (_selectedInstanceIds.Count > 0)
+        {
+            NudgeSelection(code, shiftKey);
+        }
+        else
+        {
+            PanFor(code);
+        }
     }
 
     [JSInvokable]
-    public void OnPanRight()
+    public void OnArrowKeyReleased() => _activeNudgeCommand = null;
+
+    private void NudgeSelection(string code, bool shiftKey)
     {
-        _zoomPanTracker.Pan(-50, 0);
+        if (Board is null)
+        {
+            return;
+        }
+
+        var (dirX, dirY) = ArrowDirection(code);
+        if (dirX == 0 && dirY == 0)
+        {
+            return;
+        }
+
+        var targets = ResolvedSelection();
+        if (targets.Count == 0)
+        {
+            return;
+        }
+
+        var step = (shiftKey ? NudgeStepCoarse : NudgeStep) / _zoomPanTracker.Scale;
+        var deltaX = dirX * step;
+        var deltaY = dirY * step;
+
+        // Extending in place only when this is still the top of the undo stack (nothing else was
+        // pushed or undone since) and the selection hasn't changed - either failing means this
+        // press starts a new gesture rather than silently reusing a stale one.
+        if (
+            _activeNudgeCommand is not null
+            && ReferenceEquals(_history.PeekUndo, _activeNudgeCommand)
+            && _activeNudgeCommand.Matches(targets)
+        )
+        {
+            _activeNudgeCommand.Extend(deltaX, deltaY);
+        }
+        else
+        {
+            _activeNudgeCommand = new NudgeCommand(targets, deltaX, deltaY);
+            _history.Do(_activeNudgeCommand);
+        }
+
         StateHasChanged();
     }
 
-    [JSInvokable]
-    public void OnPanUp()
+    private static (double X, double Y) ArrowDirection(string code) =>
+        code switch
+        {
+            "ArrowLeft" => (-1, 0),
+            "ArrowRight" => (1, 0),
+            "ArrowUp" => (0, -1),
+            "ArrowDown" => (0, 1),
+            _ => (0, 0),
+        };
+
+    // Pans the opposite way from a nudge's own direction vector - an arrow key "moves the
+    // viewport" in the pressed direction, which is the same as translating its content the
+    // other way.
+    private void PanFor(string code)
     {
-        _zoomPanTracker.Pan(0, 50);
+        var (dirX, dirY) = ArrowDirection(code);
+        _zoomPanTracker.Pan(-dirX * PanStep, -dirY * PanStep);
         StateHasChanged();
     }
 
-    [JSInvokable]
-    public void OnPanDown()
-    {
-        _zoomPanTracker.Pan(0, -50);
-        StateHasChanged();
-    }
+    // Shared by NudgeSelection and RestackSelection - resolves ExpandedSelection's ids to live
+    // ComponentInstances, dropping any that no longer resolve.
+    private List<ComponentInstance> ResolvedSelection() =>
+        Board is null
+            ? new List<ComponentInstance>()
+            : ExpandedSelection()
+                .Select(id => Board.GetComponent(id))
+                .Where(instance => instance is not null)
+                .Cast<ComponentInstance>()
+                .ToList();
 
     // Escape clears the selection, and cancels an in-progress connector
     // drag rather than letting it resolve against wherever the pointer happens to be.
@@ -489,12 +566,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var selected = ExpandedSelection()
-            .Select(id => Board.GetComponent(id))
-            .Where(instance => instance is not null)
-            .Cast<ComponentInstance>()
-            .OrderBy(instance => instance.ZIndex)
-            .ToList();
+        var selected = ResolvedSelection().OrderBy(instance => instance.ZIndex).ToList();
 
         if (selected.Count == 0)
         {

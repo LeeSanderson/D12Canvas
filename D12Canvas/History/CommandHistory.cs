@@ -19,6 +19,11 @@ public sealed class CommandHistory
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
+    // The most recently done/redone command, or null once it's been undone or the stack is
+    // empty - lets a caller (arrow-key nudge's burst-coalescing) confirm nothing else has been
+    // pushed or undone since a command it's holding a reference to, before mutating it in place.
+    public ICommand? PeekUndo => _undoStack.Last?.Value;
+
     public void Do(ICommand command)
     {
         command.Apply();

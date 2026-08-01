@@ -79,20 +79,16 @@ export async function addKeyboardListener(element, dotnetRef) {
                 dotnetRef.invokeMethodAsync("OnZoomOut");
                 break;
             case "ArrowLeft":
-                event.preventDefault();
-                dotnetRef.invokeMethodAsync("OnPanLeft");
-                break;
             case "ArrowRight":
-                event.preventDefault();
-                dotnetRef.invokeMethodAsync("OnPanRight");
-                break;
             case "ArrowUp":
-                event.preventDefault();
-                dotnetRef.invokeMethodAsync("OnPanUp");
-                break;
             case "ArrowDown":
-                event.preventDefault();
-                dotnetRef.invokeMethodAsync("OnPanDown");
+                // Doubles as the text cursor's own movement key during inline WYSIWYG editing
+                // (a contenteditable host element), so this must not hijack it - same guard as
+                // Delete/Ctrl+Z/Ctrl+G below.
+                if (!isEditableTarget(event.target)) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnArrowKeyPressed", event.code, event.shiftKey);
+                }
                 break;
             case "Escape":
                 event.preventDefault();
@@ -154,9 +150,27 @@ export async function addKeyboardListener(element, dotnetRef) {
         }
     };
 
+    // Ends an arrow-key nudge burst (see OnArrowKeyReleased) - a held key fires many rapid
+    // repeat keydowns before this fires once on release, so the whole press-to-release span
+    // reads as one undoable gesture rather than one entry per repeat.
+    const handleKeyUp = (event) => {
+        switch (event.code) {
+            case "ArrowLeft":
+            case "ArrowRight":
+            case "ArrowUp":
+            case "ArrowDown":
+                if (!isEditableTarget(event.target)) {
+                    dotnetRef.invokeMethodAsync("OnArrowKeyReleased");
+                }
+                break;
+        }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
     return () => {
         window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
     };
 }
