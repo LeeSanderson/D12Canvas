@@ -43,6 +43,21 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Parameter]
     public double LodSizeThreshold { get; set; } = DefaultLodSizeThreshold;
 
+    // Off by default - an editing preference, not a board or persisted setting (see
+    // CONTEXT.md's Snap-to-grid term). Component-owned like an <InputBase>'s own bindable value:
+    // OnToggleSnapToGridPressed below flips it directly and notifies SnapToGridChanged, so a host
+    // using @bind-SnapToGrid stays in sync with the built-in Ctrl+' shortcut too.
+    [Parameter]
+    public bool SnapToGrid { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> SnapToGridChanged { get; set; }
+
+    // Lets a host disable the built-in Ctrl+' chord independently of the bindable SnapToGrid
+    // parameter itself, in case it conflicts with the host's own keybindings.
+    [Parameter]
+    public bool EnableSnapToGridShortcut { get; set; } = true;
+
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
@@ -914,6 +929,21 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void OnSendBackwardPressed() =>
         ApplyZIndexChange(instance => Board!.ZIndexBelow(instance.ZIndex));
 
+    // Ctrl+'. No-op while a host has disabled the built-in chord (EnableSnapToGridShortcut) -
+    // the bindable SnapToGrid parameter itself is still settable directly by the host either way.
+    [JSInvokable]
+    public void OnToggleSnapToGridPressed()
+    {
+        if (!EnableSnapToGridShortcut)
+        {
+            return;
+        }
+
+        SnapToGrid = !SnapToGrid;
+        SnapToGridChanged.InvokeAsync(SnapToGrid);
+        StateHasChanged();
+    }
+
     // Bring to Front / Send to Back move the whole selection above/below every other entity in
     // one gesture - unlike Forward/Backward, every selected instance needs to land on its own
     // distinct value (not all tied at the same Board.NextZIndex()/PreviousZIndex()), so their
@@ -1143,6 +1173,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     // own before/after Bounds is applied to every selected member instead of just this one -
     // preserving relative offsets without needing ComponentContainer itself to know anything about
     // multi-selection (its own local drag-tracking is unchanged; only this receiving end differs).
+    // Snap-to-grid only applies to this single-instance branch - a multi-selection move keeps every
+    // member's own relative offset intact rather than snapping each one independently.
     private void MoveComponent(Guid instanceId, Bounds bounds)
     {
         var instance = Board?.GetComponent(instanceId);
@@ -1157,7 +1189,14 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
         else
         {
-            _history.Do(new ChangeBoundsCommand(instance, instance.Bounds, bounds));
+            // Snapping a small drag can round it right back to where the instance already was -
+            // skipped rather than pushing a no-op entry onto the undo stack, matching how
+            // RestackSelection/ApplyZIndexChange already skip a computed-but-unchanged value.
+            var snapped = SnapBounds(bounds);
+            if (snapped != instance.Bounds)
+            {
+                _history.Do(new ChangeBoundsCommand(instance, instance.Bounds, snapped));
+            }
         }
 
         StateHasChanged();
@@ -1786,22 +1825,56 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private readonly record struct GridLayer(int Level, double Opacity);
 
-    // At most two layers are ever rendered: the same "blend between two adjacent mip levels"
-    // technique continuous LOD texture filtering uses, so panning/zooming crossfades smoothly
-    // between 10x-apart spacings rather than popping between discrete grids. `level` is the
-    // (fractional) layer index whose on-screen spacing would exactly equal GridBaseSpacing at the
-    // current scale; the two neighbouring integer layers share its weight via linear interpolation.
-    private IEnumerable<GridLayer> VisibleGridLayers()
+    // Shared by VisibleGridLayers and DominantGridSpacing - `level` is the (fractional) layer
+    // index whose on-screen spacing would exactly equal GridBaseSpacing at the current scale;
+    // lowerLevel/upperWeight split it into the two neighbouring integer layers and how much of the
+    // blend belongs to the upper one.
+    private (int LowerLevel, double UpperWeight) GridLevelSplit()
     {
         var level = -Math.Log10(_zoomPanTracker.Scale);
         var lowerLevel = (int)Math.Floor(level);
-        var upperWeight = level - lowerLevel;
+        return (lowerLevel, level - lowerLevel);
+    }
+
+    // At most two layers are ever rendered: the same "blend between two adjacent mip levels"
+    // technique continuous LOD texture filtering uses, so panning/zooming crossfades smoothly
+    // between 10x-apart spacings rather than popping between discrete grids.
+    private IEnumerable<GridLayer> VisibleGridLayers()
+    {
+        var (lowerLevel, upperWeight) = GridLevelSplit();
 
         yield return new GridLayer(lowerLevel, 1 - upperWeight);
         if (upperWeight > 0)
         {
             yield return new GridLayer(lowerLevel + 1, upperWeight);
         }
+    }
+
+    // Snap-to-grid always targets whichever single layer is currently the more opaque (visually
+    // dominant) of the two VisibleGridLayers ever renders - an exact tie (upperWeight == 0.5)
+    // deterministically favours the lower layer.
+    private double DominantGridSpacing()
+    {
+        var (lowerLevel, upperWeight) = GridLevelSplit();
+        var dominantLevel = upperWeight > 0.5 ? lowerLevel + 1 : lowerLevel;
+        return GridBaseSpacing * Math.Pow(GridSpacingStep, dominantLevel);
+    }
+
+    // A no-op (returns bounds unchanged) whenever SnapToGrid is off - callers apply this
+    // unconditionally rather than branching themselves.
+    private Bounds SnapBounds(Bounds bounds)
+    {
+        if (!SnapToGrid)
+        {
+            return bounds;
+        }
+
+        var spacing = DominantGridSpacing();
+        return bounds with
+        {
+            X = Math.Round(bounds.X / spacing) * spacing,
+            Y = Math.Round(bounds.Y / spacing) * spacing,
+        };
     }
 
     // background-size/position are computed here (rather than relying on canvas-content's own CSS
@@ -2367,11 +2440,13 @@ public partial class DiagramCanvas : IAsyncDisposable
         return new ComponentInstance(
             registration.Key,
             registration.DefaultProps,
-            new Bounds(
-                centerX - size.Width / 2,
-                centerY - size.Height / 2,
-                size.Width,
-                size.Height
+            SnapBounds(
+                new Bounds(
+                    centerX - size.Width / 2,
+                    centerY - size.Height / 2,
+                    size.Width,
+                    size.Height
+                )
             ),
             Board!.NextZIndex()
         );

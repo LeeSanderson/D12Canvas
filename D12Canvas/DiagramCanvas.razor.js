@@ -205,6 +205,12 @@ export async function addKeyboardListener(element, dotnetRef) {
                     }
                 }
                 break;
+            case "Quote":
+                if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnToggleSnapToGridPressed");
+                }
+                break;
         }
     };
 
