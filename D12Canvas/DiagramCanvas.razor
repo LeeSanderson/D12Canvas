@@ -108,34 +108,55 @@
                     if (stop.Instance is { } instance)
                     {
                         var registration = Registry.Resolve(instance.ComponentTypeKey);
-                        <ComponentContainer @key="instance.Id"
-                                            X="stop.Bounds.X"
-                                            Y="stop.Bounds.Y"
-                                            Width="stop.Bounds.Width"
-                                            Height="stop.Bounds.Height"
-                                            ZIndex="instance.ZIndex"
-                                            AccessibleName="@registration.AccessibleName"
-                                            Role="@registration.Role"
-                                            IsSelected="@IsSelected(instance.Id)"
-                                            IsMultiSelected="@IsMultiSelected(instance.Id)"
-                                            Focusable="@(!IsGrouped(instance.Id))"
-                                            Props="instance.Props"
-                                            OnSelect="@((shiftKey) => SelectComponent(instance.Id, shiftKey))"
-                                            OnFocus="@(() => FocusEntity(instance.Id))"
-                                            OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
-                                            OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))"
-                                            OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
-                                            FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
-                                            FocusedCustomPortId="@FocusedCustomPortIdFor(instance.Id)"
-                                            CustomPorts="instance.CustomPorts"
-                                            OnAddCustomPort="@((port) => AddCustomPort(instance.Id, port))">
-                            @* Lets a text-carrying built-in (Sticky Note, Text) identify
-                               itself back to ParentCanvas when committing its own inline WYSIWYG edit -
-                               see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
-                            <CascadingValue Value="instance.Id" Name="InstanceId">
-                                <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
-                            </CascadingValue>
-                        </ComponentContainer>
+                        @* Below the on-screen-size threshold, swap the whole
+                           ComponentContainer/DynamicComponent tree for a plain, non-interactive box
+                           built from the registration's own DisplayName/Icon - avoids mounting cost
+                           entirely rather than mounting it small, and needs no change to what the
+                           registration contract requires of a component type. *@
+                        if (IsBelowLodThreshold(stop.Bounds))
+                        {
+                            <div @key="instance.Id"
+                                 class="lod-placeholder"
+                                 style="@LodPlaceholderStyle(stop.Bounds, instance.ZIndex)"
+                                 aria-hidden="true">
+                                @if (!string.IsNullOrEmpty(registration.Icon))
+                                {
+                                    <span class="lod-placeholder-icon">@registration.Icon</span>
+                                }
+                                <span class="lod-placeholder-label">@registration.DisplayName</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <ComponentContainer @key="instance.Id"
+                                                X="stop.Bounds.X"
+                                                Y="stop.Bounds.Y"
+                                                Width="stop.Bounds.Width"
+                                                Height="stop.Bounds.Height"
+                                                ZIndex="instance.ZIndex"
+                                                AccessibleName="@registration.AccessibleName"
+                                                Role="@registration.Role"
+                                                IsSelected="@IsSelected(instance.Id)"
+                                                IsMultiSelected="@IsMultiSelected(instance.Id)"
+                                                Focusable="@(!IsGrouped(instance.Id))"
+                                                Props="instance.Props"
+                                                OnSelect="@((shiftKey) => SelectComponent(instance.Id, shiftKey))"
+                                                OnFocus="@(() => FocusEntity(instance.Id))"
+                                                OnMoved="@((bounds) => MoveComponent(instance.Id, bounds))"
+                                                OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))"
+                                                OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
+                                                FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
+                                                FocusedCustomPortId="@FocusedCustomPortIdFor(instance.Id)"
+                                                CustomPorts="instance.CustomPorts"
+                                                OnAddCustomPort="@((port) => AddCustomPort(instance.Id, port))">
+                                @* Lets a text-carrying built-in (Sticky Note, Text) identify
+                                   itself back to ParentCanvas when committing its own inline WYSIWYG edit -
+                                   see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
+                                <CascadingValue Value="instance.Id" Name="InstanceId">
+                                    <DynamicComponent Type="registration.ComponentType" Parameters="GetComponentParameters(instance)" />
+                                </CascadingValue>
+                            </ComponentContainer>
+                        }
                     }
                     else if (stop.Group is { } group)
                     {
@@ -381,6 +402,35 @@
         stroke-width: 1.5px;
         pointer-events: auto;
         cursor: grab;
+    }
+
+    .lod-placeholder {
+        position: absolute;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #e0e0e0;
+        border: 1px solid #b0b0b0;
+        color: #555;
+        pointer-events: none;
+    }
+
+    .lod-placeholder-icon {
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .lod-placeholder-label {
+        max-width: 100%;
+        padding: 0 2px;
+        overflow: hidden;
+        font-size: 10px;
+        line-height: 1.2;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     .canvas-content {

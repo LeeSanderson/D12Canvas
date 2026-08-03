@@ -64,11 +64,14 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
     {
         RegisterTestComponent();
         var board = new Board();
+        // 50x50, not the smaller size used elsewhere in this file - below the default LOD
+        // threshold an instance renders as a placeholder div instead, which isn't this test's
+        // concern (see DiagramCanvasLodPlaceholderTests).
         board.AddComponent(
-            new ComponentInstance(ComponentTypeKey, new TestProps("a"), new Bounds(0, 0, 10, 10))
+            new ComponentInstance(ComponentTypeKey, new TestProps("a"), new Bounds(0, 0, 50, 50))
         );
         board.AddComponent(
-            new ComponentInstance(ComponentTypeKey, new TestProps("b"), new Bounds(20, 20, 10, 10))
+            new ComponentInstance(ComponentTypeKey, new TestProps("b"), new Bounds(60, 60, 50, 50))
         );
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));

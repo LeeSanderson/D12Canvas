@@ -2014,6 +2014,35 @@
         cursor: grab;
     }
 
+    .lod-placeholder {
+        position: absolute;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #e0e0e0;
+        border: 1px solid #b0b0b0;
+        color: #555;
+        pointer-events: none;
+    }
+
+    .lod-placeholder-icon {
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .lod-placeholder-label {
+        max-width: 100%;
+        padding: 0 2px;
+        overflow: hidden;
+        font-size: 10px;
+        line-height: 1.2;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
     .canvas-content {
         position: absolute;
         top: 0;

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/app.css">
     <link rel="icon" type="image/png" href="favicon.png">
     <link href="D12Canvas.Demo.styles.css" rel="stylesheet">
-<!--!--><!--!--><!--!--><title>Property Panel Demo</title><!--!--><!--!--><!--!--></head>
+<!--!--><!--!--><!--!--><title>Board Demo</title><!--!--><!--!--><!--!--></head>
 
 <body>
     <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
@@ -22,7 +22,7 @@
             <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
                 Component Container Demo
             </a><!--!-->
-            <!--!--><a href="board-demo" class="nav-link"><!--!-->
+            <!--!--><a href="board-demo" class="nav-link active" aria-current="page"><!--!-->
                 Board Demo
             </a><!--!-->
             <!--!--><a href="palette-demo" class="nav-link"><!--!-->
@@ -40,76 +40,7 @@
 
     <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="property-panel-demo-layout"><div class="palette-slot"><!--!--><div class="d12-palette" role="region" aria-label="Component palette"><div class="d12-palette-category"><h3 class="d12-palette-category-title">Notes</h3><!--!-->
-            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Demo note" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">📝</span><span class="d12-palette-entry-name">Demo Note</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Stress Test</h3><!--!-->
-            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Stress item" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">▦</span><span class="d12-palette-entry-name">Stress Item</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Basic Shapes</h3><!--!-->
-            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Rectangle" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">▭</span><span class="d12-palette-entry-name">Rectangle</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Sticky Note" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🗒️</span><span class="d12-palette-entry-name">Sticky Note</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Text" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🔤</span><span class="d12-palette-entry-name">Text</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Image" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🖼️</span><span class="d12-palette-entry-name">Image</span></button></li></ul></div><button type="button" class="d12-palette-entry-button" aria-label="Connector" draggable="true"><!--!--><span class="d12-palette-entry-name">Connector</span></button></div><!--!-->
-
-<!--!--><style>
-    .d12-palette {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        font-family:
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 12px;
-        box-sizing: border-box;
-    }
-
-    .d12-palette-category-title {
-        margin: 0 0 6px;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        color: #666;
-    }
-
-    .d12-palette-entries {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .d12-palette-entry-button {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        padding: 6px 8px;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        background: transparent;
-        cursor: pointer;
-        text-align: left;
-        font: inherit;
-        color: inherit;
-    }
-
-    .d12-palette-entry-button:hover {
-        background: #f0f0f0;
-        border-color: #ccc;
-    }
-
-    .d12-palette-entry-icon {
-        font-size: 16px;
-        line-height: 1;
-    }
-
-    .d12-palette-entry-name {
-        font-size: 13px;
-    }
-</style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg></div></div></div><!--!-->
+<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(0.10000000000000014);"><!--!--><svg class="edges-layer"></svg><div class="lod-placeholder" style="left: 460px; top: 20px; width: 240px; height: 180px; z-index: 6;" aria-hidden="true"><span class="lod-placeholder-icon">🖼️</span><span class="lod-placeholder-label">Image</span></div><div class="lod-placeholder" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" aria-hidden="true"><span class="lod-placeholder-icon">📝</span><span class="lod-placeholder-label">Demo Note</span></div><div class="lod-placeholder" style="left: 700px; top: 120px; width: 160px; height: 100px; z-index: 3;" aria-hidden="true"><span class="lod-placeholder-icon">▭</span><span class="lod-placeholder-label">Rectangle</span></div><div class="lod-placeholder" style="left: 420px; top: 220px; width: 220px; height: 140px; z-index: 2;" aria-hidden="true"><span class="lod-placeholder-icon">📝</span><span class="lod-placeholder-label">Demo Note</span></div><div class="lod-placeholder" style="left: 700px; top: 260px; width: 200px; height: 200px; z-index: 4;" aria-hidden="true"><span class="lod-placeholder-icon">🗒️</span><span class="lod-placeholder-label">Sticky Note</span></div><div class="lod-placeholder" style="left: 220px; top: 340px; width: 240px; height: 140px; z-index: 0;" aria-hidden="true"><span class="lod-placeholder-icon">📝</span><span class="lod-placeholder-label">Demo Note</span></div><div class="lod-placeholder" style="left: 700px; top: 480px; width: 200px; height: 40px; z-index: 5;" aria-hidden="true"><span class="lod-placeholder-icon">🔤</span><span class="lod-placeholder-label">Text</span></div></div></div></div><!--!-->
 
 <!--!--><style>
     .diagram-container {
@@ -317,96 +248,11 @@
         background-position: 0 0;
     }
 </style></div><!--!-->
-    <div class="panel-slot"><!--!--><div class="d12-property-panel" role="region" aria-label="Property panel"><!--!--><p class="d12-property-panel-empty">No selection</p></div><!--!-->
 
 <!--!--><style>
-    .d12-property-panel {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        font-family:
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 12px;
-        box-sizing: border-box;
-    }
-
-    .d12-property-panel-empty {
-        margin: 0;
-        font-size: 13px;
-        color: #666;
-    }
-
-    .d12-property-panel-fields {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .d12-property-panel-field {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .d12-property-panel-label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #666;
-    }
-
-    .d12-property-panel-input {
-        font: inherit;
-        padding: 4px 6px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-    }
-
-    .d12-property-panel-color {
-        padding: 2px;
-        height: 28px;
-    }
-
-    .d12-property-panel-checkbox {
-        width: 16px;
-        height: 16px;
-        align-self: flex-start;
-    }
-
-    .d12-property-panel-custom {
-        display: flex;
-    }
-</style></div></div><!--!-->
-
-<!--!--><style>
-    .property-panel-demo-layout {
-        display: flex;
-        gap: 16px;
-    }
-
-    .palette-slot {
-        width: 260px;
-        padding: 16px;
-    }
-
     .canvas-container {
-        flex: 1;
         height: 600px;
         border: 1px solid #ccc;
-    }
-
-    .panel-slot {
-        width: 260px;
-        padding: 16px;
     }
 </style></article></main></div><!--!-->
         <!--!--></div>

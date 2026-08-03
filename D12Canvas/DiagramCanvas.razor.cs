@@ -35,6 +35,14 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Parameter]
     public double? MaxZoom { get; set; }
 
+    // Small enough that no built-in's default size ever crosses it at a normal (near-1.0) zoom
+    // level - it only bites once zooming out far enough actually shrinks an instance past
+    // legibility.
+    public const double DefaultLodSizeThreshold = 32;
+
+    [Parameter]
+    public double LodSizeThreshold { get; set; } = DefaultLodSizeThreshold;
+
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
@@ -1665,6 +1673,15 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private bool IsGrouped(Guid instanceId) => Board?.FindContainingGroup(instanceId) is not null;
 
+    // An instance's on-screen size, taken as its larger dimension rather than area or the
+    // smaller dimension - so a naturally thin-but-wide shape (e.g. a divider bar) isn't
+    // perpetually placeholdered at a normal zoom just because one axis is small.
+    private bool IsBelowLodThreshold(Bounds bounds) =>
+        Math.Max(bounds.Width, bounds.Height) * _zoomPanTracker.Scale < LodSizeThreshold;
+
+    private static string LodPlaceholderStyle(Bounds bounds, int zIndex) =>
+        $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px; z-index: {zIndex};";
+
     // One entry per keyboard tab stop: either a rendered ComponentInstance or a top-level Group's
     // own single stop - never both for a grouped member, which has no tab stop of its own (see
     // IsGrouped/ComponentContainer.Focusable). Ordered by current on-screen position (top-left to
@@ -1704,10 +1721,15 @@ public partial class DiagramCanvas : IAsyncDisposable
     // The ids a keyboard user can actually land on, in the same order OrderedTabStops renders
     // them - a grouped member has an entry in that list too (so it still paints inside its group)
     // but no tabindex of its own (see IsGrouped/ComponentContainer.Focusable), so Ctrl+Tab must
-    // skip it exactly the way native Tab already does.
+    // skip it exactly the way native Tab already does. An LOD-placeholdered instance (see
+    // IsBelowLodThreshold) is excluded the same way - it renders as a plain, non-interactive div
+    // with no tabindex of its own either.
     private List<Guid> FocusableTabStopIds() =>
         OrderedTabStops()
-            .Where(stop => stop.Instance is null || !IsGrouped(stop.Instance.Id))
+            .Where(stop =>
+                stop.Instance is null
+                || (!IsGrouped(stop.Instance.Id) && !IsBelowLodThreshold(stop.Bounds))
+            )
             .Select(stop => stop.Instance?.Id ?? stop.Group!.Id)
             .ToList();
 
@@ -1919,6 +1941,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     // its own - same convergence as a plain click - so _selectedInstanceIds never ends up holding
     // a "naked" grouped member id (which would let a later Ctrl+G create a second, overlapping
     // group over members already grouped).
+    // An LOD-placeholdered instance is skipped the same way FocusableTabStopIds skips one -
+    // unlike a click or Ctrl+Tab, a marquee reads raw Bounds intersection rather than going through
+    // any per-instance element, so it needs its own check to keep that instance's own non-
+    // interactivity from being bypassed by this gesture.
     private void UpdateMarqueeSelection()
     {
         if (Board is null)
@@ -1931,7 +1957,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         _selectedEdgeId = null;
         foreach (var instance in Board.Components)
         {
-            if (instance.Bounds.Intersects(marquee))
+            if (!IsBelowLodThreshold(instance.Bounds) && instance.Bounds.Intersects(marquee))
             {
                 _selectedInstanceIds.Add(EffectiveSelectionId(instance.Id));
             }
