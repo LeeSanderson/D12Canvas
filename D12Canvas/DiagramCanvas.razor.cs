@@ -1779,6 +1779,48 @@ public partial class DiagramCanvas : IAsyncDisposable
     private string ContentStyle =>
         $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
 
+    // board units - layer 0's spacing, and (at scale 1.0) also its on-screen px spacing, matching
+    // the legacy fixed grid's look at the default zoom level.
+    private const double GridBaseSpacing = 20;
+    private const int GridSpacingStep = 10;
+
+    private readonly record struct GridLayer(int Level, double Opacity);
+
+    // At most two layers are ever rendered: the same "blend between two adjacent mip levels"
+    // technique continuous LOD texture filtering uses, so panning/zooming crossfades smoothly
+    // between 10x-apart spacings rather than popping between discrete grids. `level` is the
+    // (fractional) layer index whose on-screen spacing would exactly equal GridBaseSpacing at the
+    // current scale; the two neighbouring integer layers share its weight via linear interpolation.
+    private IEnumerable<GridLayer> VisibleGridLayers()
+    {
+        var level = -Math.Log10(_zoomPanTracker.Scale);
+        var lowerLevel = (int)Math.Floor(level);
+        var upperWeight = level - lowerLevel;
+
+        yield return new GridLayer(lowerLevel, 1 - upperWeight);
+        if (upperWeight > 0)
+        {
+            yield return new GridLayer(lowerLevel + 1, upperWeight);
+        }
+    }
+
+    // background-size/position are computed here (rather than relying on canvas-content's own CSS
+    // transform, the way the old single-layer grid did) because grid layers live outside
+    // canvas-content - they must cover the whole viewport, not just its finite backdrop box, to read
+    // correctly at arbitrary pan distance. PositiveMod keeps the pattern's phase locked to board
+    // coordinate 0 (where component Bounds are anchored) regardless of how far PanX/PanY have moved.
+    private string GridLayerStyle(GridLayer layer)
+    {
+        var boardSpacing = GridBaseSpacing * Math.Pow(GridSpacingStep, layer.Level);
+        var onScreenSpacing = boardSpacing * _zoomPanTracker.Scale;
+        var offsetX = PositiveMod(_zoomPanTracker.PanX, onScreenSpacing);
+        var offsetY = PositiveMod(_zoomPanTracker.PanY, onScreenSpacing);
+        return $"background-size: {onScreenSpacing}px {onScreenSpacing}px; background-position: {offsetX}px {offsetY}px; opacity: {layer.Opacity};";
+    }
+
+    private static double PositiveMod(double value, double modulus) =>
+        ((value % modulus) + modulus) % modulus;
+
     private async Task HandleMouseDown(MouseEventArgs e)
     {
         if (e.Button != 0) // Left mouse button only

@@ -40,7 +40,7 @@
 
     <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"><!--!--><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead"></path></marker>
+<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"><!--!--><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead"></path></marker>
                             <marker id="edge-arrow-selected" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead selected"></path></marker></defs><line x1="780" y1="220" x2="800" y2="260" class="edge-line" marker-end="url(#edge-arrow)"></line></svg><!--!--><div class="component-container view-mode" style="left: 460px; top: 20px; width: 240px; height: 180px; z-index: 6;" role="group" aria-label="Image" tabindex="0" _bl_4=""><div class="container-content"><!--!--><!--!--><!--!--><img class="d12-image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAASSURBVBhXY3DMfPgfGTOQLgAAUD8ooVtGnUoAAAAASUVORK5CYII=" alt="Image built-in" style="object-fit: cover;"><!--!--><style>
     .d12-image {
         width: 100%;
@@ -1571,12 +1571,29 @@
         height: 3000px;
         transform-origin: top left;
         transition: transform 0.1s ease-out;
+    }
+
+    .grid-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
         background: #f0f0f0;
-        background-image: 
+    }
+
+    .grid-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        background-color: #f0f0f0;
+        background-image:
             linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
-        background-size: 20px 20px;
-        background-position: 0 0;
     }
 </style></div><!--!-->
 

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/app.css">
     <link rel="icon" type="image/png" href="favicon.png">
     <link href="D12Canvas.Demo.styles.css" rel="stylesheet">
-<!--!--><!--!--><!--!--><title>Edge Styles Demo</title><!--!--><!--!--><!--!--></head>
+<!--!--><!--!--><!--!--><title>Board Demo</title><!--!--><!--!--><!--!--></head>
 
 <body>
     <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
@@ -22,7 +22,7 @@
             <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
                 Component Container Demo
             </a><!--!-->
-            <!--!--><a href="board-demo" class="nav-link"><!--!-->
+            <!--!--><a href="board-demo" class="nav-link active" aria-current="page"><!--!-->
                 Board Demo
             </a><!--!-->
             <!--!--><a href="palette-demo" class="nav-link"><!--!-->
@@ -40,8 +40,391 @@
 
     <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"><!--!--><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead"></path></marker>
-                            <marker id="edge-arrow-selected" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead selected"></path></marker></defs><line x1="160" y1="110" x2="300" y2="170" class="edge-line" marker-end="url(#edge-arrow)"></line><line x1="560" y1="110" x2="700" y2="170" class="edge-line" marker-start="url(#edge-arrow)" marker-end="url(#edge-arrow)"></line><line x1="960" y1="110" x2="1100" y2="170" class="edge-line"></line><path d="M 160 310 L 230 310 L 230 410 L 300 410" class="edge-line" marker-end="url(#edge-arrow)"></path><path d="M 160 510 C 230 510 230 610 300 610" class="edge-line" marker-end="url(#edge-arrow)"></path></svg><!--!--><div class="component-container view-mode" style="left: 60px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_3=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
+<div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 10.000000000000002px 10.000000000000002px; background-position: 0px 0px; opacity: 0.698970004336019;"></div><div class="grid-layer" style="background-size: 100.00000000000003px 100.00000000000003px; background-position: 0px 0px; opacity: 0.3010299956639811;"></div><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(0.5000000000000001);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode" style="left: 460px; top: 20px; width: 240px; height: 180px; z-index: 6;" role="group" aria-label="Image" tabindex="0" _bl_4=""><div class="container-content"><!--!--><!--!--><!--!--><img class="d12-image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAASSURBVBhXY3DMfPgfGTOQLgAAUD8ooVtGnUoAAAAASUVORK5CYII=" alt="Image built-in" style="object-fit: cover;"><!--!--><style>
+    .d12-image {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        display: block;
+    }
+
+    .d12-image-placeholder {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        background-color: #f0f0f0;
+        border: 1px dashed #999999;
+        color: #666666;
+        font-size: 12px;
+        text-align: center;
+    }
+</style></div><div class="port port-top"></div><!--!-->
+    <div class="port port-right"></div><!--!-->
+    <div class="port port-bottom"></div><!--!-->
+    <div class="port port-left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
+    }
+
+    .component-container:focus {
+        outline: none;
+    }
+
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        cursor: crosshair;
+    }
+
+    .component-container:hover .port,
+    .component-container.selected .port {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
+    }
+
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><!--!--><div class="component-container view-mode" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" role="group" aria-label="Demo note" tabindex="0" _bl_3=""><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>Welcome to D12Canvas</p></div><!--!-->
+
+<!--!--><style>
+    .demo-note {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .demo-note p {
+        margin: 0;
+    }
+</style></div><div class="port port-top"></div><!--!-->
+    <div class="port port-right"></div><!--!-->
+    <div class="port port-bottom"></div><!--!-->
+    <div class="port port-left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.edit-mode {
+        border: 2px solid #3498db;
+        padding: 2px;
+    }
+
+    .component-container.view-mode {
+        border: 1px solid transparent;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
+    }
+
+    .component-container:focus {
+        outline: none;
+    }
+
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        cursor: crosshair;
+    }
+
+    .component-container:hover .port,
+    .component-container.selected .port {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
+    }
+
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><!--!--><div class="component-container view-mode" style="left: 700px; top: 120px; width: 160px; height: 100px; z-index: 3;" role="group" aria-label="Rectangle" tabindex="0" _bl_5=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -222,13 +605,20 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 460px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_4=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
+</style><!--!--><div class="component-container view-mode" style="left: 420px; top: 220px; width: 220px; height: 140px; z-index: 2;" role="group" aria-label="Demo note" tabindex="0" _bl_6=""><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #a3d9a5;"><p>Rendered from a seeded Board</p></div><!--!-->
 
 <!--!--><style>
-    .d12-rectangle {
+    .demo-note {
         width: 100%;
         height: 100%;
         box-sizing: border-box;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .demo-note p {
+        margin: 0;
     }
 </style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
@@ -403,13 +793,31 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 860px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_5=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
+</style><!--!--><div class="component-container view-mode" style="left: 700px; top: 260px; width: 200px; height: 200px; z-index: 4;" role="group" aria-label="Sticky Note" tabindex="0" _bl_7=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-sticky-note" style="background-color: #FFEB3B;"><p class="d12-sticky-note-text" style="color: #000000; font-size: 14px;">Sticky note built-in</p></div><!--!-->
 
 <!--!--><style>
-    .d12-rectangle {
+    .d12-sticky-note {
         width: 100%;
         height: 100%;
         box-sizing: border-box;
+        padding: 10px;
+    }
+
+    .d12-sticky-note-text {
+        display: block;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+    .d12-sticky-note-editor {
+        font-family: inherit;
+        border: none;
+        outline: 1px dashed rgba(0, 0, 0, 0.4);
+        resize: none;
+        background: transparent;
+        padding: 0;
     }
 </style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
@@ -584,13 +992,20 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 300px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_6=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
+</style><!--!--><div class="component-container view-mode" style="left: 220px; top: 340px; width: 240px; height: 140px; z-index: 0;" role="group" aria-label="Demo note" tabindex="0" _bl_8=""><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #9ec5fe;"><p>Resolved through the component registry</p></div><!--!-->
 
 <!--!--><style>
-    .d12-rectangle {
+    .demo-note {
         width: 100%;
         height: 100%;
         box-sizing: border-box;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .demo-note p {
+        margin: 0;
     }
 </style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
@@ -765,918 +1180,22 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 700px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_7=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
-
-<!--!--><style>
-    .d12-rectangle {
+</style><!--!--><div class="component-container view-mode" style="left: 700px; top: 480px; width: 200px; height: 40px; z-index: 5;" role="group" aria-label="Text" tabindex="0" _bl_9=""><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="color: #1565c0; font-size: 20px; font-weight: bold; text-align: center;">Text built-in</p><!--!--><style>
+    .d12-text {
         width: 100%;
         height: 100%;
         box-sizing: border-box;
-    }
-</style></div><div class="port port-top"></div><!--!-->
-    <div class="port port-right"></div><!--!-->
-    <div class="port port-bottom"></div><!--!-->
-    <div class="port port-left"></div></div><!--!-->
-
-<!--!--><style>
-    .component-container {
-        position: absolute;
-        min-width: 100px;
-        min-height: 100px;
-        box-sizing: border-box;
-        cursor: move;
-    }
-
-    .container-content {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
-    }
-
-    .component-container.selected {
-        outline: 2px solid #2f80ed;
-        outline-offset: 2px;
-    }
-
-    .component-container:focus {
-        outline: none;
-    }
-
-    .port {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: #2ecc71;
-        border: 2px solid #ffffff;
-        opacity: 0;
-        pointer-events: none;
-        cursor: crosshair;
-    }
-
-    .component-container:hover .port,
-    .component-container.selected .port {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .port.port-focused {
-        opacity: 1;
-        outline: 3px solid #f39c12;
-        outline-offset: 2px;
-    }
-
-    .port-top {
-        top: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-right {
-        top: calc(50% - 10px);
-        right: -10px;
-    }
-
-    .port-bottom {
-        bottom: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-left {
-        top: calc(50% - 10px);
-        left: -10px;
-    }
-
-    .port-strip {
-        position: absolute;
-        cursor: copy;
-    }
-
-    .port-strip-top,
-    .port-strip-bottom {
-        left: 0;
-        right: 0;
-        height: 14px;
-    }
-
-    .port-strip-top {
-        top: -7px;
-    }
-
-    .port-strip-bottom {
-        bottom: -7px;
-    }
-
-    .port-strip-left,
-    .port-strip-right {
-        top: 0;
-        bottom: 0;
-        width: 14px;
-    }
-
-    .port-strip-left {
-        left: -7px;
-    }
-
-    .port-strip-right {
-        right: -7px;
-    }
-
-    .resize-handle {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: #3498db;
-        border-radius: 50%;
-    }
-
-    .top-left {
-        top: -5px;
-        left: -5px;
-        cursor: nwse-resize;
-    }
-
-    .top {
-        top: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .top-right {
-        top: -5px;
-        right: -5px;
-        cursor: nesw-resize;
-    }
-
-    .right {
-        top: calc(50% - 5px);
-        right: -5px;
-        cursor: ew-resize;
-    }
-
-    .bottom-right {
-        bottom: -5px;
-        right: -5px;
-        cursor: nwse-resize;
-    }
-
-    .bottom {
-        bottom: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .bottom-left {
-        bottom: -5px;
-        left: -5px;
-        cursor: nesw-resize;
-    }
-
-    .left {
-        top: calc(50% - 5px);
-        left: -5px;
-        cursor: ew-resize;
-    }
-</style><!--!--><div class="component-container view-mode" style="left: 1100px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_8=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
-
-<!--!--><style>
-    .d12-rectangle {
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
-    }
-</style></div><div class="port port-top"></div><!--!-->
-    <div class="port port-right"></div><!--!-->
-    <div class="port port-bottom"></div><!--!-->
-    <div class="port port-left"></div></div><!--!-->
-
-<!--!--><style>
-    .component-container {
-        position: absolute;
-        min-width: 100px;
-        min-height: 100px;
-        box-sizing: border-box;
-        cursor: move;
-    }
-
-    .container-content {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
-    }
-
-    .component-container.selected {
-        outline: 2px solid #2f80ed;
-        outline-offset: 2px;
-    }
-
-    .component-container:focus {
-        outline: none;
-    }
-
-    .port {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: #2ecc71;
-        border: 2px solid #ffffff;
-        opacity: 0;
-        pointer-events: none;
-        cursor: crosshair;
-    }
-
-    .component-container:hover .port,
-    .component-container.selected .port {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .port.port-focused {
-        opacity: 1;
-        outline: 3px solid #f39c12;
-        outline-offset: 2px;
-    }
-
-    .port-top {
-        top: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-right {
-        top: calc(50% - 10px);
-        right: -10px;
-    }
-
-    .port-bottom {
-        bottom: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-left {
-        top: calc(50% - 10px);
-        left: -10px;
-    }
-
-    .port-strip {
-        position: absolute;
-        cursor: copy;
-    }
-
-    .port-strip-top,
-    .port-strip-bottom {
-        left: 0;
-        right: 0;
-        height: 14px;
-    }
-
-    .port-strip-top {
-        top: -7px;
-    }
-
-    .port-strip-bottom {
-        bottom: -7px;
-    }
-
-    .port-strip-left,
-    .port-strip-right {
-        top: 0;
-        bottom: 0;
-        width: 14px;
-    }
-
-    .port-strip-left {
-        left: -7px;
-    }
-
-    .port-strip-right {
-        right: -7px;
-    }
-
-    .resize-handle {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: #3498db;
-        border-radius: 50%;
-    }
-
-    .top-left {
-        top: -5px;
-        left: -5px;
-        cursor: nwse-resize;
-    }
-
-    .top {
-        top: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .top-right {
-        top: -5px;
-        right: -5px;
-        cursor: nesw-resize;
-    }
-
-    .right {
-        top: calc(50% - 5px);
-        right: -5px;
-        cursor: ew-resize;
-    }
-
-    .bottom-right {
-        bottom: -5px;
-        right: -5px;
-        cursor: nwse-resize;
-    }
-
-    .bottom {
-        bottom: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .bottom-left {
-        bottom: -5px;
-        left: -5px;
-        cursor: nesw-resize;
-    }
-
-    .left {
-        top: calc(50% - 5px);
-        left: -5px;
-        cursor: ew-resize;
-    }
-</style><!--!--><div class="component-container view-mode" style="left: 60px; top: 280px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_9=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
-
-<!--!--><style>
-    .d12-rectangle {
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
-    }
-</style></div><div class="port port-top"></div><!--!-->
-    <div class="port port-right"></div><!--!-->
-    <div class="port port-bottom"></div><!--!-->
-    <div class="port port-left"></div></div><!--!-->
-
-<!--!--><style>
-    .component-container {
-        position: absolute;
-        min-width: 100px;
-        min-height: 100px;
-        box-sizing: border-box;
-        cursor: move;
-    }
-
-    .container-content {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
-    }
-
-    .component-container.selected {
-        outline: 2px solid #2f80ed;
-        outline-offset: 2px;
-    }
-
-    .component-container:focus {
-        outline: none;
-    }
-
-    .port {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: #2ecc71;
-        border: 2px solid #ffffff;
-        opacity: 0;
-        pointer-events: none;
-        cursor: crosshair;
-    }
-
-    .component-container:hover .port,
-    .component-container.selected .port {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .port.port-focused {
-        opacity: 1;
-        outline: 3px solid #f39c12;
-        outline-offset: 2px;
-    }
-
-    .port-top {
-        top: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-right {
-        top: calc(50% - 10px);
-        right: -10px;
-    }
-
-    .port-bottom {
-        bottom: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-left {
-        top: calc(50% - 10px);
-        left: -10px;
-    }
-
-    .port-strip {
-        position: absolute;
-        cursor: copy;
-    }
-
-    .port-strip-top,
-    .port-strip-bottom {
-        left: 0;
-        right: 0;
-        height: 14px;
-    }
-
-    .port-strip-top {
-        top: -7px;
-    }
-
-    .port-strip-bottom {
-        bottom: -7px;
-    }
-
-    .port-strip-left,
-    .port-strip-right {
-        top: 0;
-        bottom: 0;
-        width: 14px;
-    }
-
-    .port-strip-left {
-        left: -7px;
-    }
-
-    .port-strip-right {
-        right: -7px;
-    }
-
-    .resize-handle {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: #3498db;
-        border-radius: 50%;
-    }
-
-    .top-left {
-        top: -5px;
-        left: -5px;
-        cursor: nwse-resize;
-    }
-
-    .top {
-        top: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .top-right {
-        top: -5px;
-        right: -5px;
-        cursor: nesw-resize;
-    }
-
-    .right {
-        top: calc(50% - 5px);
-        right: -5px;
-        cursor: ew-resize;
-    }
-
-    .bottom-right {
-        bottom: -5px;
-        right: -5px;
-        cursor: nwse-resize;
-    }
-
-    .bottom {
-        bottom: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .bottom-left {
-        bottom: -5px;
-        left: -5px;
-        cursor: nesw-resize;
-    }
-
-    .left {
-        top: calc(50% - 5px);
-        left: -5px;
-        cursor: ew-resize;
-    }
-</style><!--!--><div class="component-container view-mode" style="left: 300px; top: 380px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_10=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
-
-<!--!--><style>
-    .d12-rectangle {
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
-    }
-</style></div><div class="port port-top"></div><!--!-->
-    <div class="port port-right"></div><!--!-->
-    <div class="port port-bottom"></div><!--!-->
-    <div class="port port-left"></div></div><!--!-->
-
-<!--!--><style>
-    .component-container {
-        position: absolute;
-        min-width: 100px;
-        min-height: 100px;
-        box-sizing: border-box;
-        cursor: move;
-    }
-
-    .container-content {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
-    }
-
-    .component-container.selected {
-        outline: 2px solid #2f80ed;
-        outline-offset: 2px;
-    }
-
-    .component-container:focus {
-        outline: none;
-    }
-
-    .port {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: #2ecc71;
-        border: 2px solid #ffffff;
-        opacity: 0;
-        pointer-events: none;
-        cursor: crosshair;
-    }
-
-    .component-container:hover .port,
-    .component-container.selected .port {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .port.port-focused {
-        opacity: 1;
-        outline: 3px solid #f39c12;
-        outline-offset: 2px;
-    }
-
-    .port-top {
-        top: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-right {
-        top: calc(50% - 10px);
-        right: -10px;
-    }
-
-    .port-bottom {
-        bottom: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-left {
-        top: calc(50% - 10px);
-        left: -10px;
-    }
-
-    .port-strip {
-        position: absolute;
-        cursor: copy;
-    }
-
-    .port-strip-top,
-    .port-strip-bottom {
-        left: 0;
-        right: 0;
-        height: 14px;
-    }
-
-    .port-strip-top {
-        top: -7px;
-    }
-
-    .port-strip-bottom {
-        bottom: -7px;
-    }
-
-    .port-strip-left,
-    .port-strip-right {
-        top: 0;
-        bottom: 0;
-        width: 14px;
-    }
-
-    .port-strip-left {
-        left: -7px;
-    }
-
-    .port-strip-right {
-        right: -7px;
-    }
-
-    .resize-handle {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: #3498db;
-        border-radius: 50%;
-    }
-
-    .top-left {
-        top: -5px;
-        left: -5px;
-        cursor: nwse-resize;
-    }
-
-    .top {
-        top: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .top-right {
-        top: -5px;
-        right: -5px;
-        cursor: nesw-resize;
-    }
-
-    .right {
-        top: calc(50% - 5px);
-        right: -5px;
-        cursor: ew-resize;
-    }
-
-    .bottom-right {
-        bottom: -5px;
-        right: -5px;
-        cursor: nwse-resize;
-    }
-
-    .bottom {
-        bottom: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .bottom-left {
-        bottom: -5px;
-        left: -5px;
-        cursor: nesw-resize;
-    }
-
-    .left {
-        top: calc(50% - 5px);
-        left: -5px;
-        cursor: ew-resize;
-    }
-</style><!--!--><div class="component-container view-mode" style="left: 60px; top: 480px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_11=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
-
-<!--!--><style>
-    .d12-rectangle {
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
-    }
-</style></div><div class="port port-top"></div><!--!-->
-    <div class="port port-right"></div><!--!-->
-    <div class="port port-bottom"></div><!--!-->
-    <div class="port port-left"></div></div><!--!-->
-
-<!--!--><style>
-    .component-container {
-        position: absolute;
-        min-width: 100px;
-        min-height: 100px;
-        box-sizing: border-box;
-        cursor: move;
-    }
-
-    .container-content {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
-    }
-
-    .component-container.selected {
-        outline: 2px solid #2f80ed;
-        outline-offset: 2px;
-    }
-
-    .component-container:focus {
-        outline: none;
-    }
-
-    .port {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: #2ecc71;
-        border: 2px solid #ffffff;
-        opacity: 0;
-        pointer-events: none;
-        cursor: crosshair;
-    }
-
-    .component-container:hover .port,
-    .component-container.selected .port {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .port.port-focused {
-        opacity: 1;
-        outline: 3px solid #f39c12;
-        outline-offset: 2px;
-    }
-
-    .port-top {
-        top: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-right {
-        top: calc(50% - 10px);
-        right: -10px;
-    }
-
-    .port-bottom {
-        bottom: -10px;
-        left: calc(50% - 10px);
-    }
-
-    .port-left {
-        top: calc(50% - 10px);
-        left: -10px;
-    }
-
-    .port-strip {
-        position: absolute;
-        cursor: copy;
-    }
-
-    .port-strip-top,
-    .port-strip-bottom {
-        left: 0;
-        right: 0;
-        height: 14px;
-    }
-
-    .port-strip-top {
-        top: -7px;
-    }
-
-    .port-strip-bottom {
-        bottom: -7px;
-    }
-
-    .port-strip-left,
-    .port-strip-right {
-        top: 0;
-        bottom: 0;
-        width: 14px;
-    }
-
-    .port-strip-left {
-        left: -7px;
-    }
-
-    .port-strip-right {
-        right: -7px;
-    }
-
-    .resize-handle {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: #3498db;
-        border-radius: 50%;
-    }
-
-    .top-left {
-        top: -5px;
-        left: -5px;
-        cursor: nwse-resize;
-    }
-
-    .top {
-        top: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .top-right {
-        top: -5px;
-        right: -5px;
-        cursor: nesw-resize;
-    }
-
-    .right {
-        top: calc(50% - 5px);
-        right: -5px;
-        cursor: ew-resize;
-    }
-
-    .bottom-right {
-        bottom: -5px;
-        right: -5px;
-        cursor: nwse-resize;
-    }
-
-    .bottom {
-        bottom: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .bottom-left {
-        bottom: -5px;
-        left: -5px;
-        cursor: nesw-resize;
-    }
-
-    .left {
-        top: calc(50% - 5px);
-        left: -5px;
-        cursor: ew-resize;
-    }
-</style><!--!--><div class="component-container view-mode" style="left: 300px; top: 580px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" _bl_12=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="background-color: #e3f2fd; border: 3px solid #1565c0;"></div><!--!-->
-
-<!--!--><style>
-    .d12-rectangle {
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
+        margin: 0;
+    }
+
+    .d12-text-editor {
+        display: block;
+        font-family: inherit;
+        border: none;
+        outline: 1px dashed rgba(0, 0, 0, 0.4);
+        resize: none;
+        background: transparent;
+        padding: 0;
     }
 </style></div><div class="port port-top"></div><!--!-->
     <div class="port port-right"></div><!--!-->
@@ -2079,7 +1598,7 @@
 
 <!--!--><style>
     .canvas-container {
-        height: 900px;
+        height: 600px;
         border: 1px solid #ccc;
     }
 </style></article></main></div><!--!-->

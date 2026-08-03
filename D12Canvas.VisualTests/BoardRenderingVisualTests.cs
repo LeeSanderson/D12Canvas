@@ -76,8 +76,8 @@ public sealed class BoardRenderingVisualTests : IAsyncLifetime
 
     // Sanity check: zoom has no built-in ceiling by default, so a host can drive it well past the
     // prototype's old fixed 6.0x limit and rendering must stay well-formed - no NaN in the CSS
-    // transform, no broken layout - rather than actually depicting anything legible at this scale
-    // (that's the LOD placeholder's job, a separate concern).
+    // transform, no broken layout. The adaptive grid stays legible even here (AdaptiveGridVisualTests
+    // covers that specifically); component instances this small are the LOD placeholder's job instead.
     [Fact]
     public async Task ExtremeZoomIn_MatchesBaseline()
     {
