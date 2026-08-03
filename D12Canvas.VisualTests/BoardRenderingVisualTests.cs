@@ -73,4 +73,27 @@ public sealed class BoardRenderingVisualTests : IAsyncLifetime
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }
+
+    // Sanity check: zoom has no built-in ceiling by default, so a host can drive it well past the
+    // prototype's old fixed 6.0x limit and rendering must stay well-formed - no NaN in the CSS
+    // transform, no broken layout - rather than actually depicting anything legible at this scale
+    // (that's the LOD placeholder's job, a separate concern).
+    [Fact]
+    public async Task ExtremeZoomIn_MatchesBaseline()
+    {
+        await _page
+            .Locator(".diagram-canvas")
+            .ClickAsync(
+                new LocatorClickOptions
+                {
+                    Position = new Position { X = 5, Y = 5 },
+                }
+            );
+        for (var i = 0; i < 90; i++)
+        {
+            await _page.Keyboard.PressAsync("PageUp"); // zoom in - scale ends at 10.0x
+        }
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
 }

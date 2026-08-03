@@ -27,6 +27,14 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Parameter]
     public double Overscan { get; set; } = DefaultOverscan;
 
+    // Both default to unbounded - a host sets either independently to cap zoom in, zoom out, or
+    // both.
+    [Parameter]
+    public double? MinZoom { get; set; }
+
+    [Parameter]
+    public double? MaxZoom { get; set; }
+
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
@@ -259,6 +267,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         _dotNetObjectRef = DotNetObjectReference.Create(this);
     }
 
+    protected override void OnParametersSet()
+    {
+        _zoomPanTracker.SetZoomLimits(MinZoom, MaxZoom);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -274,7 +287,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             );
 
             _zoomPanTracker.SetContainerSize((int)dimensions["width"], (int)dimensions["height"]);
-            _zoomPanTracker.SetCanvasSize(3000, 3000);
 
             var resizeCleanup = await _jsModule.InvokeAsync<Action>(
                 "addResizeListener",
@@ -1743,7 +1755,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void HandleDragLeave(DragEventArgs e) => _isDragOverBoard = false;
 
     private string ContentStyle =>
-        $"width: {_zoomPanTracker.CanvasWidth}px; height: {_zoomPanTracker.CanvasHeight}px; transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
+        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
 
     private async Task HandleMouseDown(MouseEventArgs e)
     {

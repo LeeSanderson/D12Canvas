@@ -228,6 +228,43 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
         Assert.Single(canvas.FindAll(".component-container"));
     }
 
+    // No fixed board extent: an instance placed and panned to well past the old prototype's
+    // 3000x3000 boundary (and the pan distance the old extent-based clamp would have capped at)
+    // still mounts once brought into view.
+    [Fact]
+    public void AnInstanceFarBeyondTheOldFixedExtentStillMountsOncePannedIntoView()
+    {
+        RegisterTestComponent();
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(
+                ComponentTypeKey,
+                new TestProps("far"),
+                new Bounds(10_000, 10_000, 50, 50)
+            )
+        );
+
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        Assert.Empty(canvas.FindAll(".component-container"));
+
+        canvas
+            .Find(".diagram-canvas")
+            .MouseDown(
+                new MouseEventArgs
+                {
+                    Button = 0,
+                    ClientX = 0,
+                    ClientY = 0,
+                }
+            );
+        canvas
+            .Find(".diagram-canvas")
+            .MouseMove(new MouseEventArgs { ClientX = -9_950, ClientY = -9_950 });
+
+        Assert.Single(canvas.FindAll(".component-container"));
+    }
+
     [Fact]
     public void AnInstanceUnmountsOncePanMovesItOutOfTheWindowedViewport()
     {
