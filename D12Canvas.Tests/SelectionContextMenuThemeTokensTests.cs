@@ -95,4 +95,15 @@ public class SelectionContextMenuThemeTokensTests : ComponentTestBase
         var rootRule = ExtractBlock(css, ".d12-context-menu {");
         Assert.Contains("color: var(--d12-text)", rootRule);
     }
+
+    [Fact]
+    public void DropShadowReadsItsOwnEscapeHatchTokenExclusively()
+    {
+        var menu = Render<SelectionContextMenu>();
+        var css = StyleBlockText(menu);
+
+        var rootRule = ExtractBlock(css, ".d12-context-menu {");
+        Assert.Contains("--d12-shadow", rootRule);
+        Assert.Contains("box-shadow: 0 2px 8px var(--d12-shadow)", rootRule);
+    }
 }

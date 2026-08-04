@@ -84,3 +84,14 @@ before promoting.
 
 Full suite verified in the pinned container from a clean `obj`/`bin` state: 718 bUnit tests passed
 (1 pre-existing skip), 71/71 Playwright tests passed. `dotnet csharpier --check .` clean.
+
+`/code-review`'s Spec pass flagged one real gap against the checklist's literal "reads tokens
+exclusively": `SelectionContextMenu`'s drop shadow was still a bare `rgba(0, 0, 0, 0.15)` literal
+(shadow isn't one of ADR 0012's four enumerated generic categories, so it had been left alone).
+Fixed the same way as the connector-preview escape hatch — a one-off `--d12-shadow` custom
+property declared once on `.d12-context-menu`'s root (theme-invariant, not redeclared per
+light/dark) — rather than leaving a bare literal or forcing it into one of the four shared tokens.
+The Spec pass's other observation (`--d12-accent` declared on `Palette`/`SelectionContextMenu` but
+not yet consumed by either) was left as-is: it matches the exact precedent ticket 73 itself set
+(`--d12-muted-text` shipped with zero consumers until this ticket), and inventing a new visual use
+for accent in either component would be scope creep this ticket's checklist doesn't ask for.

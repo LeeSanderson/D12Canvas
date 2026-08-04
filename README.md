@@ -22,10 +22,12 @@ with plain CSS; no host-side registration or parameter is required.
 Component-instance visuals (the props a registered component reads to draw itself) are never
 themed through this layer — they stay ordinary `TProps` fields, per ADR 0008.
 
-One element diverges from the shared set on purpose: the connector drag-preview's color is a
-deliberate departure from `--d12-accent` (which already means "selected"), so it's driven by its
-own escape-hatch custom property, `--d12-connector-preview`, declared alongside the shared tokens
-on `DiagramCanvas`'s own root rather than reusing accent.
+Two elements use a one-off escape-hatch custom property instead of the shared set: the connector
+drag-preview's color is a deliberate departure from `--d12-accent` (which already means
+"selected"), driven by `--d12-connector-preview` on `DiagramCanvas`'s own root; the context menu's
+drop shadow isn't one of the shared set's generic categories, so it's driven by `--d12-shadow` on
+`SelectionContextMenu`'s own root. Both stay theme-invariant (declared once, not redeclared per
+light/dark) rather than being a bare literal in the rule that uses them.
 
 `DiagramCanvas`, `Palette`, and `SelectionContextMenu` each declare their own light and dark
 defaults for these tokens on their own root (`.diagram-container`, `.d12-palette`,
