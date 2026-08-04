@@ -13,8 +13,8 @@ public abstract class ComponentTestBase : BunitContext
         Services.AddSingleton<IComponentRegistry>(new ComponentRegistry());
     }
 
-    // The shared theme-token layer (ADR 0012) every independently-mounted chrome root declares
-    // its own copy of.
+    // The shared theme-token layer every independently-mounted chrome root declares its own
+    // copy of.
     protected static readonly string[] ThemeTokens =
     [
         "--d12-surface",

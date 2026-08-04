@@ -6,8 +6,8 @@ using static Microsoft.Playwright.Assertions;
 namespace D12Canvas.VisualTests;
 
 // Two independently-mounted DiagramCanvas+Palette pairs, each under its own data-d12-theme
-// override, on a single page - proving ADR 0012's core promise that two chrome instances can
-// carry different themes simultaneously, with no shared global state.
+// override, on a single page - proving the token layer's core promise that two chrome instances
+// can carry different themes simultaneously, with no shared global state.
 public sealed class TwoThemesVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()

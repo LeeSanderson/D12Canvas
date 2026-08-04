@@ -102,9 +102,9 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
     }
 
     // The connector drag-preview's green is a deliberate departure from the shared accent (which
-    // already means "selected") - the escape hatch ADR 0012 allows for an element that genuinely
-    // needs to diverge, routed through its own custom property rather than a bare literal so it
-    // still counts as "reading a token."
+    // already means "selected") - an escape hatch for an element that genuinely needs to diverge,
+    // routed through its own custom property rather than a bare literal so it still counts as
+    // "reading a token."
     [Fact]
     public void ConnectorDragPreviewReadsItsOwnEscapeHatchTokenExclusively()
     {
