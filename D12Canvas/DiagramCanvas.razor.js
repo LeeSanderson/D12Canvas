@@ -8,6 +8,9 @@ export async function getContainerDimensions(element) {
     };
 }
 
+// Returns a disposable handle object rather than a bare function - a JS function isn't
+// JSON-serializable, so InvokeAsync<IJSObjectReference> would marshal it back as null. A plain
+// object with a named "dispose" method is a real, invokable object reference instead.
 export async function addResizeListener(element, dotnetRef) {
     const handleResize = () => {
         const rect = element.getBoundingClientRect();
@@ -18,8 +21,8 @@ export async function addResizeListener(element, dotnetRef) {
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(element);
 
-    return () => {
-        resizeObserver.disconnect();
+    return {
+        dispose: () => resizeObserver.disconnect()
     };
 }
 
@@ -233,8 +236,11 @@ export async function addKeyboardListener(element, dotnetRef) {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('keyup', handleKeyUp);
+    // See addResizeListener above - a disposable handle object, not a bare function.
+    return {
+        dispose: () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        }
     };
 }

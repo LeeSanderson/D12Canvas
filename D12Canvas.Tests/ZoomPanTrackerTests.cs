@@ -35,6 +35,19 @@ namespace D12Canvas.Tests
         }
 
         [Fact]
+        public void HasKnownContainerSizeIsFalseBeforeSetContainerSizeIsCalled()
+        {
+            var freshTracker = new ZoomPanTracker();
+            Assert.False(freshTracker.HasKnownContainerSize);
+        }
+
+        [Fact]
+        public void HasKnownContainerSizeIsTrueOnceSetContainerSizeIsCalledWithRealDimensions()
+        {
+            Assert.True(_tracker.HasKnownContainerSize);
+        }
+
+        [Fact]
         public void CanZoomIn()
         {
             var result = _tracker.Zoom(true);

@@ -73,10 +73,19 @@ public abstract class ComponentTestBase : BunitContext
                     ["top"] = 0,
                 }
             );
-        module.Setup<Action>("addResizeListener", _ => true).SetResult(() => { });
-        module.Setup<Action>("addKeyboardListener", _ => true).SetResult(() => { });
+        SetupDisposableCleanupHandle(module, "addResizeListener");
+        SetupDisposableCleanupHandle(module, "addKeyboardListener");
+
         module.SetupVoid("focusGroupTabStop", _ => true).SetVoidResult();
         module.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();
+    }
+
+    // Mocks a call that returns a disposable IJSObjectReference handle (a "dispose"-shaped object,
+    // not a bare function - see DiagramCanvas.razor.js) - shared by both cleanup-registering calls
+    // DiagramCanvas.OnAfterRenderAsync makes.
+    private static void SetupDisposableCleanupHandle(BunitJSModuleInterop module, string identifier)
+    {
+        module.SetupModule(identifier, _ => true).SetupVoid("dispose", _ => true).SetVoidResult();
     }
 
     // Every test that renders a ComponentContainer needs this - a plain click always attempts

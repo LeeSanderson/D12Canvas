@@ -52,6 +52,10 @@ public class ZoomPanTracker
     public double ContainerWidth => _containerWidth;
     public double ContainerHeight => _containerHeight;
 
+    // False during the brief window between first render and OnAfterRenderAsync's async
+    // container-size JS round trip resolving - both dimensions default to 0 until then.
+    public bool HasKnownContainerSize => _containerWidth > 0 && _containerHeight > 0;
+
     // Canvas-space rect currently visible in the container - the inverse of the
     // pan/scale transform CSS applies to .canvas-content.
     public Bounds Viewport =>

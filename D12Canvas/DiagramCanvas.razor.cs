@@ -259,7 +259,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private ElementReference ContainerElement;
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
-    private List<Action> _cleanupFunctions = new List<Action>();
+    private List<IJSObjectReference> _cleanupHandles = new List<IJSObjectReference>();
     private IJSObjectReference? _jsModule;
 
     // Set by OnGroupPressed - the new group's own tab stop doesn't exist in the DOM until the
@@ -311,20 +311,20 @@ public partial class DiagramCanvas : IAsyncDisposable
 
             _zoomPanTracker.SetContainerSize((int)dimensions["width"], (int)dimensions["height"]);
 
-            var resizeCleanup = await _jsModule.InvokeAsync<Action>(
+            var resizeCleanup = await _jsModule.InvokeAsync<IJSObjectReference>(
                 "addResizeListener",
                 ContainerElement,
                 _dotNetObjectRef
             );
 
-            var keyboardCleanup = await _jsModule.InvokeAsync<Action>(
+            var keyboardCleanup = await _jsModule.InvokeAsync<IJSObjectReference>(
                 "addKeyboardListener",
                 ContainerElement,
                 _dotNetObjectRef
             );
 
-            _cleanupFunctions.Add(resizeCleanup);
-            _cleanupFunctions.Add(keyboardCleanup);
+            _cleanupHandles.Add(resizeCleanup);
+            _cleanupHandles.Add(keyboardCleanup);
 
             StateHasChanged();
         }
@@ -2357,7 +2357,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     // it the way a mouse click leaves one.
     public void ClickToAdd(string componentTypeKey)
     {
-        if (Board is null)
+        // Also a no-op before the first-render container-size JS round trip has resolved, which
+        // would otherwise center the new instance on the board origin instead of the viewport.
+        if (Board is null || !_zoomPanTracker.HasKnownContainerSize)
         {
             return;
         }
@@ -2470,8 +2472,12 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        _cleanupFunctions.ForEach(f => f());
-        _cleanupFunctions.Clear();
+        foreach (var handle in _cleanupHandles)
+        {
+            await handle.InvokeVoidAsync("dispose");
+            await handle.DisposeAsync();
+        }
+        _cleanupHandles.Clear();
 
         _zoomPanTracker.Changed -= OnZoomPanChanged;
         _dotNetObjectRef?.Dispose();

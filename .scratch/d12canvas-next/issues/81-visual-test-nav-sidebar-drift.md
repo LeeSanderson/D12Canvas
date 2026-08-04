@@ -7,7 +7,7 @@ baseline shows it. This affects both the HTML snapshot and the pixel screenshot,
 ticket 80's fuzzy PNG comparer (this isn't sub-pixel jitter; it's a structural layout difference the
 comparer correctly still flags).
 
-**Status:** needs-triage
+**Status:** resolved
 
 **How it was found:** While implementing ticket 52 (per-edge routing/arrowheads), several
 pre-existing baselines needed regenerating because the ticket's new default arrowhead changes their
@@ -39,3 +39,28 @@ since ticket 78 pinned things; or something else entirely). Same family of "this
 render doesn't match CI/another host" issue as tickets 78-80, but a different symptom (missing
 layout chrome, not color/AA drift) - worth checking whether a clean `dotnet build` + fresh
 `D12Canvas.Demo` wwwroot output resolves it before assuming it's environmental.
+
+**Resolution:** confirmed environmental, not a product bug - and specifically tested the "Not yet
+investigated" hypothesis above rather than assuming it. Three runs, each wiping every `obj`/`bin`
+directory first (ticket 78's own precedent):
+
+1. Clean build inside the pinned `mcr.microsoft.com/playwright/dotnet:v1.61.0-noble` image via
+   Podman: all 71 tests in the full suite passed, byte-identical, nav sidebar included - no
+   baseline updates needed.
+2. A clean `dotnet build` + fresh `D12Canvas.Demo` output, run directly on this host (no Docker at
+   all) - exactly the hypothesis this ticket asked to check: `PaletteVisualTests` still failed, but
+   *not* with a missing nav sidebar. The captured HTML has the full `<nav class="nav
+   flex-column">...` sidebar markup, byte-for-byte identical to the baseline's, under a different
+   scoped-CSS hash prefix (`b-52l6hnzelf` vs `b-k7rv4lobv5`) - i.e. ticket 78's already-diagnosed
+   SDK-feature-band hash skew, not this ticket's claimed symptom.
+3. A first attempt at (2) without wiping artifacts between an earlier Docker run and the host build
+   produced the same hash-mismatch failure, confirming it's that contamination (also ticket 78's
+   territory), not something new.
+
+So a clean build - on this host, exactly as the ticket asked - does not reproduce "nav sidebar
+entirely absent." The only failure mode reproducible on this machine at all is ticket 78's
+already-fixed-elsewhere symptom, and running inside the pinned Docker image (as
+`docs/agents/testing.md` already mandates) eliminates even that. Whatever produced the originally
+reported symptom is not reproducible via any route tried here, including the specific one this
+ticket named. No code change made - closing as a reinforcement of the existing "always run inside
+Docker/Podman" rule rather than a new fix.
