@@ -25,13 +25,18 @@ public sealed class PaletteVisualTests : IAsyncLifetime
         _browser = playwright.Browser;
     }
 
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
+
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+
+    private async Task NewPageAsync(ColorScheme colorScheme)
     {
         _context = await _browser.NewContextAsync(
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
                 ViewportSize = new ViewportSize { Width = 400, Height = 400 },
+                ColorScheme = colorScheme,
             }
         );
         _page = await _context.NewPageAsync();
@@ -39,9 +44,19 @@ public sealed class PaletteVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(6);
     }
 
-    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+    [Fact]
+    public async Task RenderedPalette_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Light);
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
 
     [Fact]
-    public async Task RenderedPalette_MatchesBaseline() =>
+    public async Task RenderedPalette_DarkColorScheme_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
 }

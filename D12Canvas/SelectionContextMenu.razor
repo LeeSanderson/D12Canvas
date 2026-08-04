@@ -30,6 +30,11 @@
 
 <style>
     .d12-context-menu {
+        --d12-surface: #fff;
+        --d12-border: #ccc;
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #666;
+        --d12-text: #212529;
         position: absolute;
         z-index: 1000;
         display: flex;
@@ -40,12 +45,41 @@
             BlinkMacSystemFont,
             "Segoe UI",
             sans-serif;
-        background: #fff;
-        border: 1px solid #ccc;
+        background: var(--d12-surface);
+        border: 1px solid var(--d12-border);
         border-radius: 6px;
         padding: 4px;
         box-sizing: border-box;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        color: var(--d12-text);
+    }
+
+    @@media (prefers-color-scheme: dark) {
+        .d12-context-menu {
+            --d12-surface: #2a2a2a;
+            --d12-border: rgba(255, 255, 255, 0.12);
+            --d12-accent: #2f80ed;
+            --d12-muted-text: #a0a0a0;
+            --d12-text: #e8e8e8;
+        }
+    }
+
+    .d12-context-menu[data-d12-theme="light"],
+    [data-d12-theme="light"] .d12-context-menu {
+        --d12-surface: #fff;
+        --d12-border: #ccc;
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #666;
+        --d12-text: #212529;
+    }
+
+    .d12-context-menu[data-d12-theme="dark"],
+    [data-d12-theme="dark"] .d12-context-menu {
+        --d12-surface: #2a2a2a;
+        --d12-border: rgba(255, 255, 255, 0.12);
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #a0a0a0;
+        --d12-text: #e8e8e8;
     }
 
     .d12-context-menu-item {
@@ -63,13 +97,13 @@
     }
 
     .d12-context-menu-item:hover {
-        background: #f0f0f0;
-        border-color: #ccc;
+        background: color-mix(in srgb, var(--d12-border) 25%, var(--d12-surface));
+        border-color: var(--d12-border);
     }
 
     .d12-context-menu-separator {
         height: 1px;
         margin: 4px 6px;
-        background: #ccc;
+        background: var(--d12-border);
     }
 </style>

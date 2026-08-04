@@ -25,13 +25,16 @@ public sealed class PortDragVisualTests : IAsyncLifetime
         _browser = playwright.Browser;
     }
 
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
+
+    private async Task NewPageAsync(ColorScheme colorScheme)
     {
         _context = await _browser.NewContextAsync(
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
                 ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
+                ColorScheme = colorScheme,
             }
         );
         _page = await _context.NewPageAsync();
@@ -73,20 +76,37 @@ public sealed class PortDragVisualTests : IAsyncLifetime
         return (await BottomPortOf(rectangle), await TopPortOf(stickyNote));
     }
 
-    [Fact]
-    public async Task ConnectorDragInProgress_MatchesBaseline()
+    // A plain mouse drag (not native HTML5 drag-and-drop) - same reasoning as
+    // DragMoveVisualTests. Stops halfway rather than at the target port, so this is
+    // unambiguously the in-progress preview and not the completed edge.
+    private async Task DragHalfwayBetweenPorts()
     {
         var (from, to) = await RectangleToStickyNotePorts();
 
-        // A plain mouse drag (not native HTML5 drag-and-drop) - same reasoning as
-        // DragMoveVisualTests. Stops halfway rather than at the target port, so this is
-        // unambiguously the in-progress preview and not the completed edge.
         await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)((from.X + to.X) / 2), (float)((from.Y + to.Y) / 2));
 
         await Expect(_page.Locator(".connector-drag-preview")).ToHaveCountAsync(1);
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task ConnectorDragInProgress_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Light);
+        await DragHalfwayBetweenPorts();
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+
+        await _page.Mouse.UpAsync();
+    }
+
+    [Fact]
+    public async Task ConnectorDragInProgress_DarkColorScheme_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+        await DragHalfwayBetweenPorts();
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
 
@@ -96,6 +116,7 @@ public sealed class PortDragVisualTests : IAsyncLifetime
     [Fact]
     public async Task ConnectedEdge_MatchesBaseline()
     {
+        await NewPageAsync(ColorScheme.Light);
         var (from, to) = await RectangleToStickyNotePorts();
 
         await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);

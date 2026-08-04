@@ -47,6 +47,11 @@
 
 <!--!--><style>
     .d12-palette {
+        --d12-surface: #fff;
+        --d12-border: #ccc;
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #666;
+        --d12-text: #212529;
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -55,11 +60,40 @@
             BlinkMacSystemFont,
             "Segoe UI",
             sans-serif;
-        background: #fff;
-        border: 1px solid #ccc;
+        background: var(--d12-surface);
+        border: 1px solid var(--d12-border);
         border-radius: 6px;
         padding: 12px;
         box-sizing: border-box;
+        color: var(--d12-text);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .d12-palette {
+            --d12-surface: #2a2a2a;
+            --d12-border: rgba(255, 255, 255, 0.12);
+            --d12-accent: #2f80ed;
+            --d12-muted-text: #a0a0a0;
+            --d12-text: #e8e8e8;
+        }
+    }
+
+    .d12-palette[data-d12-theme="light"],
+    [data-d12-theme="light"] .d12-palette {
+        --d12-surface: #fff;
+        --d12-border: #ccc;
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #666;
+        --d12-text: #212529;
+    }
+
+    .d12-palette[data-d12-theme="dark"],
+    [data-d12-theme="dark"] .d12-palette {
+        --d12-surface: #2a2a2a;
+        --d12-border: rgba(255, 255, 255, 0.12);
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #a0a0a0;
+        --d12-text: #e8e8e8;
     }
 
     .d12-palette-category-title {
@@ -68,7 +102,7 @@
         font-weight: 600;
         letter-spacing: 0.03em;
         text-transform: uppercase;
-        color: #666;
+        color: var(--d12-muted-text);
     }
 
     .d12-palette-entries {
@@ -96,8 +130,8 @@
     }
 
     .d12-palette-entry-button:hover {
-        background: #f0f0f0;
-        border-color: #ccc;
+        background: color-mix(in srgb, var(--d12-border) 25%, var(--d12-surface));
+        border-color: var(--d12-border);
     }
 
     .d12-palette-entry-icon {
@@ -118,6 +152,8 @@
         --d12-border: rgba(0, 0, 0, 0.1);
         --d12-accent: #2f80ed;
         --d12-muted-text: #6b6b6b;
+        --d12-text: #212529;
+        --d12-connector-preview: #2ecc71;
         width: 100%;
         height: 100%;
         display: grid;
@@ -133,6 +169,7 @@
             --d12-border: rgba(255, 255, 255, 0.12);
             --d12-accent: #2f80ed;
             --d12-muted-text: #a0a0a0;
+            --d12-text: #e8e8e8;
         }
     }
 
@@ -142,6 +179,7 @@
         --d12-border: rgba(0, 0, 0, 0.1);
         --d12-accent: #2f80ed;
         --d12-muted-text: #6b6b6b;
+        --d12-text: #212529;
     }
 
     .diagram-container[data-d12-theme="dark"],
@@ -150,6 +188,7 @@
         --d12-border: rgba(255, 255, 255, 0.12);
         --d12-accent: #2f80ed;
         --d12-muted-text: #a0a0a0;
+        --d12-text: #e8e8e8;
     }
 
     .diagram-canvas {
@@ -289,7 +328,7 @@
     }
 
     .connector-drag-preview {
-        stroke: #2ecc71;
+        stroke: var(--d12-connector-preview);
         stroke-width: 2;
         stroke-dasharray: 6 4;
     }
@@ -310,9 +349,9 @@
         align-items: center;
         justify-content: center;
         overflow: hidden;
-        background: #e0e0e0;
-        border: 1px solid #b0b0b0;
-        color: #555;
+        background: var(--d12-surface);
+        border: 1px solid var(--d12-border);
+        color: var(--d12-muted-text);
         pointer-events: none;
     }
 

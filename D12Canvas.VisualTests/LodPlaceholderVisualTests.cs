@@ -27,13 +27,18 @@ public sealed class LodPlaceholderVisualTests : IAsyncLifetime
         _browser = playwright.Browser;
     }
 
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
+
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+
+    private async Task NewPageAsync(ColorScheme colorScheme)
     {
         _context = await _browser.NewContextAsync(
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
                 ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
+                ColorScheme = colorScheme,
             }
         );
         _page = await _context.NewPageAsync();
@@ -41,10 +46,10 @@ public sealed class LodPlaceholderVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(7);
     }
 
-    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
-
-    [Fact]
-    public async Task DenseZoomedOutBoard_MatchesBaseline()
+    // Board demo's largest instance is 240x180 (the image built-in) - its larger dimension
+    // crosses the default 32px LOD threshold once scale drops below 32/240 (~0.133). Nine
+    // zoom-out notches (-0.1 each) lands at 0.1, well past that for every seeded instance.
+    private async Task ZoomOutUntilEveryInstanceIsBelowLodThreshold()
     {
         await _page
             .Locator(".diagram-canvas")
@@ -55,9 +60,6 @@ public sealed class LodPlaceholderVisualTests : IAsyncLifetime
                 }
             );
 
-        // Board demo's largest instance is 240x180 (the image built-in) - its larger dimension
-        // crosses the default 32px LOD threshold once scale drops below 32/240 (~0.133). Nine
-        // zoom-out notches (-0.1 each) lands at 0.1, well past that for every seeded instance.
         for (var i = 0; i < 9; i++)
         {
             await _page.Keyboard.PressAsync("PageDown");
@@ -65,6 +67,22 @@ public sealed class LodPlaceholderVisualTests : IAsyncLifetime
 
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(0);
         await Expect(_page.Locator(".lod-placeholder")).ToHaveCountAsync(7);
+    }
+
+    [Fact]
+    public async Task DenseZoomedOutBoard_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Light);
+        await ZoomOutUntilEveryInstanceIsBelowLodThreshold();
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
+    [Fact]
+    public async Task DenseZoomedOutBoard_DarkColorScheme_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+        await ZoomOutUntilEveryInstanceIsBelowLodThreshold();
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }

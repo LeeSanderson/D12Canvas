@@ -6,32 +6,39 @@ To use Hot Reload with this Blazor WebAssembly project:
 
 # Theming
 
-Canvas chrome (the grid and the selection marquee, so far — see
-`docs/adr/0012-canvas-chrome-theming-contract.md`) is styled through a small set of CSS custom
-properties rather than a C# theming API. Override them with plain CSS; no host-side registration
-or parameter is required.
+All library-owned chrome (the grid, selection marquee, LOD placeholder, connector drag-preview,
+palette, and selection context menu — see `docs/adr/0012-canvas-chrome-theming-contract.md`) is
+styled through a small set of CSS custom properties rather than a C# theming API. Override them
+with plain CSS; no host-side registration or parameter is required.
 
 | Token | Used for |
 | --- | --- |
-| `--d12-surface` | Grid background |
-| `--d12-border` | Grid line color |
+| `--d12-surface` | Grid background, LOD placeholder fill, palette/context-menu background |
+| `--d12-border` | Grid line color, LOD placeholder border, palette/context-menu border and hover state |
 | `--d12-accent` | Selection marquee outline and fill |
-| `--d12-muted-text` | Muted/secondary chrome text |
+| `--d12-muted-text` | Muted/secondary chrome text (category titles, LOD placeholder label) |
+| `--d12-text` | Primary chrome text (palette entry names, context-menu item labels) |
 
-`DiagramCanvas` declares its own light and dark defaults for these tokens on its own root
-(`.diagram-container`), not a global `:root`, so it renders correctly themed even standalone, and
-two canvas instances on the same page can carry different themes.
+Component-instance visuals (the props a registered component reads to draw itself) are never
+themed through this layer — they stay ordinary `TProps` fields, per ADR 0008.
+
+One element diverges from the shared set on purpose: the connector drag-preview's color is a
+deliberate departure from `--d12-accent` (which already means "selected"), so it's driven by its
+own escape-hatch custom property, `--d12-connector-preview`, declared alongside the shared tokens
+on `DiagramCanvas`'s own root rather than reusing accent.
+
+`DiagramCanvas`, `Palette`, and `SelectionContextMenu` each declare their own light and dark
+defaults for these tokens on their own root (`.diagram-container`, `.d12-palette`,
+`.d12-context-menu` respectively), not a global `:root`, so each renders correctly themed even
+standalone, and independent instances on the same page can carry different themes.
 
 - **Automatic**: `prefers-color-scheme: dark` switches to the dark defaults with no host code
   required.
-- **Explicit override**: set `data-d12-theme="light"` or `data-d12-theme="dark"` on the canvas's
-  own container element or any ancestor to force that theme regardless of the OS preference. Nesting
-  two conflicting values (a `data-d12-theme="dark"` ancestor inside a `data-d12-theme="light"` one,
-  or vice versa) is unsupported — the theme that wins is whichever value's CSS rule happens to be
-  declared later, not necessarily the nearer ancestor.
-
-Remaining chrome (palette, LOD placeholder, connector drag-preview, selection context menu) is
-tracked separately for token adoption.
+- **Explicit override**: set `data-d12-theme="light"` or `data-d12-theme="dark"` on a chrome
+  element's own container or any ancestor to force that theme regardless of the OS preference.
+  Nesting two conflicting values (a `data-d12-theme="dark"` ancestor inside a
+  `data-d12-theme="light"` one, or vice versa) is unsupported — the theme that wins is whichever
+  value's CSS rule happens to be declared later, not necessarily the nearer ancestor.
 
 # Testing
 

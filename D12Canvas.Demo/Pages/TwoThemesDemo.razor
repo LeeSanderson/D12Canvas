@@ -1,0 +1,55 @@
+@page "/two-themes-demo"
+@using D12Canvas
+@using D12Canvas.Model
+
+<PageTitle>Two Themes Demo</PageTitle>
+
+<div class="two-themes-layout">
+    <div class="theme-pane" data-d12-theme="light">
+        <div class="palette-slot">
+            <Palette />
+        </div>
+        <div class="canvas-container">
+            <DiagramCanvas Board="_lightBoard" />
+        </div>
+    </div>
+    <div class="theme-pane" data-d12-theme="dark">
+        <div class="palette-slot">
+            <Palette />
+        </div>
+        <div class="canvas-container">
+            <DiagramCanvas Board="_darkBoard" />
+        </div>
+    </div>
+</div>
+
+<style>
+    .two-themes-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .theme-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1;
+    }
+
+    .palette-slot {
+        padding: 16px;
+    }
+
+    .canvas-container {
+        height: 500px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    // Two boards, not one shared instance, so each pane's DiagramCanvas is a fully independent
+    // mount - proving simultaneous, per-instance theming rather than relying on any state the two
+    // panes might otherwise share.
+    private readonly Board _lightBoard = new();
+    private readonly Board _darkBoard = new();
+}

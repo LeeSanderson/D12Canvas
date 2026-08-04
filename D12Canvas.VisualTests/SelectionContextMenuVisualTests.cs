@@ -25,13 +25,18 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
         _browser = playwright.Browser;
     }
 
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
+
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+
+    private async Task NewPageAsync(ColorScheme colorScheme)
     {
         _context = await _browser.NewContextAsync(
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
                 ViewportSize = new ViewportSize { Width = 1000, Height = 700 },
+                ColorScheme = colorScheme,
             }
         );
         _page = await _context.NewPageAsync();
@@ -39,10 +44,7 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(6);
     }
 
-    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
-
-    [Fact]
-    public async Task RightClickOnASelectedInstanceOpensTheMenu_MatchesBaseline()
+    private async Task OpenContextMenuOnASelectedInstance()
     {
         await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
         var instance = _page.Locator(".component-container");
@@ -52,6 +54,23 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
         await instance.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
 
         await Expect(_page.Locator(".d12-context-menu")).ToBeVisibleAsync();
+    }
+
+    [Fact]
+    public async Task RightClickOnASelectedInstanceOpensTheMenu_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Light);
+        await OpenContextMenuOnASelectedInstance();
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
+    [Fact]
+    public async Task RightClickOnASelectedInstanceOpensTheMenu_DarkColorScheme_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+        await OpenContextMenuOnASelectedInstance();
+
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
     }
 
@@ -64,6 +83,8 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
     [Fact]
     public async Task RightClickOnATwoInstanceSelectionOffersGroup_MatchesBaseline()
     {
+        await NewPageAsync(ColorScheme.Light);
+
         var entries = _page.Locator(".d12-palette-entry-button");
         await entries.Nth(0).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
@@ -97,6 +118,8 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
     [Fact]
     public async Task RightClickOnEmptyCanvasOpensNoMenu()
     {
+        await NewPageAsync(ColorScheme.Light);
+
         await _page
             .Locator(".diagram-canvas")
             .ClickAsync(

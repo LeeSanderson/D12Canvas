@@ -10,48 +10,6 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         SetupDiagramCanvasJsModule();
     }
 
-    private static readonly string[] Tokens =
-    [
-        "--d12-surface",
-        "--d12-border",
-        "--d12-accent",
-        "--d12-muted-text",
-    ];
-
-    private static string StyleBlockText(IRenderedComponent<DiagramCanvas> canvas) =>
-        canvas.Find("style").InnerHtml;
-
-    // Extracts the (possibly nested) `{ ... }` block immediately following the first occurrence of
-    // `marker` - used both for a plain rule's own declaration block and for an @media block's whole
-    // body (braces included), by counting nesting depth rather than matching the first `}`.
-    private static string ExtractBlock(string css, string marker)
-    {
-        var markerIndex = css.IndexOf(marker, StringComparison.Ordinal);
-        Assert.True(markerIndex >= 0, $"Expected to find `{marker}` in the style block.");
-
-        var openIndex = css.IndexOf('{', markerIndex);
-        Assert.True(openIndex >= 0, $"Expected `{{` after `{marker}`.");
-
-        var depth = 0;
-        for (var i = openIndex; i < css.Length; i++)
-        {
-            if (css[i] == '{')
-            {
-                depth++;
-            }
-            else if (css[i] == '}')
-            {
-                depth--;
-                if (depth == 0)
-                {
-                    return css.Substring(openIndex + 1, i - openIndex - 1);
-                }
-            }
-        }
-
-        throw new Xunit.Sdk.XunitException($"Unbalanced braces after `{marker}`.");
-    }
-
     [Fact]
     public void TokenDefaultsAreDeclaredOnTheCanvasOwnRootNotGlobalRoot()
     {
@@ -59,7 +17,7 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         var css = StyleBlockText(canvas);
 
         var rootRule = ExtractBlock(css, ".diagram-container {");
-        foreach (var token in Tokens)
+        foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, rootRule);
         }
@@ -74,7 +32,7 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         var css = StyleBlockText(canvas);
 
         var darkMediaBlock = ExtractBlock(css, "@media (prefers-color-scheme: dark)");
-        foreach (var token in Tokens)
+        foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, darkMediaBlock);
         }
@@ -93,7 +51,7 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
             $"[data-d12-theme=\"{theme}\"] .diagram-container {{"
         );
         Assert.Contains($".diagram-container[data-d12-theme=\"{theme}\"]", css);
-        foreach (var token in Tokens)
+        foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, overrideBlock);
         }
@@ -127,5 +85,38 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         Assert.Contains("var(--d12-accent)", marquee);
         Assert.DoesNotContain("#", marquee);
         Assert.DoesNotContain("rgba(", marquee);
+    }
+
+    [Fact]
+    public void LodPlaceholderReadsTokensExclusively()
+    {
+        var canvas = Render<DiagramCanvas>();
+        var css = StyleBlockText(canvas);
+
+        var placeholder = ExtractBlock(css, ".lod-placeholder {");
+        Assert.Contains("var(--d12-surface)", placeholder);
+        Assert.Contains("var(--d12-border)", placeholder);
+        Assert.Contains("var(--d12-muted-text)", placeholder);
+        Assert.DoesNotContain("#", placeholder);
+        Assert.DoesNotContain("rgba(", placeholder);
+    }
+
+    // The connector drag-preview's green is a deliberate departure from the shared accent (which
+    // already means "selected") - the escape hatch ADR 0012 allows for an element that genuinely
+    // needs to diverge, routed through its own custom property rather than a bare literal so it
+    // still counts as "reading a token."
+    [Fact]
+    public void ConnectorDragPreviewReadsItsOwnEscapeHatchTokenExclusively()
+    {
+        var canvas = Render<DiagramCanvas>();
+        var css = StyleBlockText(canvas);
+
+        var rootRule = ExtractBlock(css, ".diagram-container {");
+        Assert.Contains("--d12-connector-preview", rootRule);
+
+        var preview = ExtractBlock(css, ".connector-drag-preview {");
+        Assert.Contains("var(--d12-connector-preview)", preview);
+        Assert.DoesNotContain("#", preview);
+        Assert.DoesNotContain("rgba(", preview);
     }
 }
