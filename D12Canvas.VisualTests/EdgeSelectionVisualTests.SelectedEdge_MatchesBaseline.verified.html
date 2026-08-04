@@ -1375,6 +1375,10 @@
 
 <!--!--><style>
     .diagram-container {
+        --d12-surface: #f0f0f0;
+        --d12-border: rgba(0, 0, 0, 0.1);
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #6b6b6b;
         width: 100%;
         height: 100%;
         display: grid;
@@ -1383,7 +1387,32 @@
         overflow: hidden;
         border: 1px solid #ccc;
     }
-    
+
+    @media (prefers-color-scheme: dark) {
+        .diagram-container {
+            --d12-surface: #1e1e1e;
+            --d12-border: rgba(255, 255, 255, 0.12);
+            --d12-accent: #2f80ed;
+            --d12-muted-text: #a0a0a0;
+        }
+    }
+
+    .diagram-container[data-d12-theme="light"],
+    [data-d12-theme="light"] .diagram-container {
+        --d12-surface: #f0f0f0;
+        --d12-border: rgba(0, 0, 0, 0.1);
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #6b6b6b;
+    }
+
+    .diagram-container[data-d12-theme="dark"],
+    [data-d12-theme="dark"] .diagram-container {
+        --d12-surface: #1e1e1e;
+        --d12-border: rgba(255, 255, 255, 0.12);
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #a0a0a0;
+    }
+
     .diagram-canvas {
         width: 100%;
         height: 100%;
@@ -1406,8 +1435,8 @@
 
     .marquee-select {
         position: absolute;
-        border: 1px dashed #2f80ed;
-        background-color: rgba(47, 128, 237, 0.08);
+        border: 1px dashed var(--d12-accent);
+        background-color: color-mix(in srgb, var(--d12-accent) 8%, transparent);
         pointer-events: none;
     }
 
@@ -1580,7 +1609,7 @@
         width: 100vw;
         height: 100vh;
         pointer-events: none;
-        background: #f0f0f0;
+        background: var(--d12-surface);
     }
 
     .grid-layer {
@@ -1590,10 +1619,10 @@
         width: 100vw;
         height: 100vh;
         pointer-events: none;
-        background-color: #f0f0f0;
+        background-color: var(--d12-surface);
         background-image:
-            linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+            linear-gradient(to right, var(--d12-border) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--d12-border) 1px, transparent 1px);
     }
 </style></div><!--!-->
 

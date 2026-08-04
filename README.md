@@ -4,6 +4,35 @@ To use Hot Reload with this Blazor WebAssembly project:
 
 1. Run the app using Visual Studio 2022+ or `dotnet watch`:
 
+# Theming
+
+Canvas chrome (the grid and the selection marquee, so far — see
+`docs/adr/0012-canvas-chrome-theming-contract.md`) is styled through a small set of CSS custom
+properties rather than a C# theming API. Override them with plain CSS; no host-side registration
+or parameter is required.
+
+| Token | Used for |
+| --- | --- |
+| `--d12-surface` | Grid background |
+| `--d12-border` | Grid line color |
+| `--d12-accent` | Selection marquee outline and fill |
+| `--d12-muted-text` | Muted/secondary chrome text |
+
+`DiagramCanvas` declares its own light and dark defaults for these tokens on its own root
+(`.diagram-container`), not a global `:root`, so it renders correctly themed even standalone, and
+two canvas instances on the same page can carry different themes.
+
+- **Automatic**: `prefers-color-scheme: dark` switches to the dark defaults with no host code
+  required.
+- **Explicit override**: set `data-d12-theme="light"` or `data-d12-theme="dark"` on the canvas's
+  own container element or any ancestor to force that theme regardless of the OS preference. Nesting
+  two conflicting values (a `data-d12-theme="dark"` ancestor inside a `data-d12-theme="light"` one,
+  or vice versa) is unsupported — the theme that wins is whichever value's CSS rule happens to be
+  declared later, not necessarily the nearer ancestor.
+
+Remaining chrome (palette, LOD placeholder, connector drag-preview, selection context menu) is
+tracked separately for token adoption.
+
 # Testing
 
 Two layers, per the project's [layered testing strategy](.scratch/d12canvas-next/issues/04-layered-testing-strategy.md):
