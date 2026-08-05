@@ -76,6 +76,14 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void NotifySelectionChanged() => SelectionChanged?.Invoke(this, EventArgs.Empty);
 
+    // Re-exposes CommandHistory.Changed for host/chrome code (e.g. a Save button's
+    // disabled-when-clean state) - same "internal signal re-raised as a public event" shape as
+    // SelectionChanged, wired via subscribe/unsubscribe the same way OnZoomPanChanged is below.
+    public event EventHandler? Changed;
+
+    private void OnHistoryChanged(object? sender, EventArgs e) =>
+        Changed?.Invoke(this, EventArgs.Empty);
+
     // The property panel's selection surface - every top-level selected id resolved
     // to a ComponentInstance, deliberately NOT expanded through group membership (unlike
     // ExpandedSelection, which move/resize/delete use). A selected Group's own id lives in Board's
@@ -287,6 +295,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     protected override void OnInitialized()
     {
         _zoomPanTracker.Changed += OnZoomPanChanged;
+        _history.Changed += OnHistoryChanged;
         _dotNetObjectRef = DotNetObjectReference.Create(this);
     }
 
@@ -2480,6 +2489,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         _cleanupHandles.Clear();
 
         _zoomPanTracker.Changed -= OnZoomPanChanged;
+        _history.Changed -= OnHistoryChanged;
         _dotNetObjectRef?.Dispose();
 
         if (_jsModule != null)

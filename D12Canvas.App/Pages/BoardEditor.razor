@@ -1,0 +1,199 @@
+@page "/board/{Id:guid}"
+@implements IDisposable
+@using D12Canvas
+@using D12Canvas.App.Storage
+@using D12Canvas.Model
+@inject IBoardStore BoardStore
+@inject NavigationManager Navigation
+
+<PageTitle>@(_name ?? "Board")</PageTitle>
+
+<div class="board-editor-page">
+    <div class="board-editor-header">
+        <button @onclick="GoBack">&larr; Boards</button>
+        <h1>@_name</h1>
+        <label class="autosave-toggle">
+            <input type="checkbox" @bind="_autosaveEnabled" />
+            Autosave
+        </label>
+        <button @onclick="Save" disabled="@(!_isDirty)">Save</button>
+    </div>
+
+    @if (_board is not null)
+    {
+        <div class="board-editor-body">
+            <div class="board-editor-palette">
+                <Palette Canvas="_canvas" />
+            </div>
+            <div class="board-editor-canvas">
+                <DiagramCanvas @ref="_canvas" Board="_board" />
+            </div>
+        </div>
+    }
+    else if (_notFound)
+    {
+        <p role="alert">No board found with that id.</p>
+    }
+</div>
+
+<style>
+    .board-editor-page {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .board-editor-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 8px 16px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .board-editor-header h1 {
+        flex: 1;
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .autosave-toggle {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .board-editor-body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+    }
+
+    .board-editor-palette {
+        width: 220px;
+        padding: 16px;
+        overflow-y: auto;
+        border-right: 1px solid #ddd;
+    }
+
+    .board-editor-canvas {
+        flex: 1;
+        min-height: 0;
+    }
+</style>
+
+@code {
+    private static readonly TimeSpan AutosaveDebounce = TimeSpan.FromSeconds(1);
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private Board? _board;
+    private string? _name;
+    private bool _notFound;
+    private DiagramCanvas? _canvas;
+    private DiagramCanvas? _subscribedCanvas;
+    private bool _isDirty;
+    private bool _autosaveEnabled;
+    private CancellationTokenSource? _autosaveCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var saved = await BoardStore.LoadAsync(Id);
+            _board = saved.Board;
+            _name = saved.Name;
+        }
+        catch (BoardNotFoundException)
+        {
+            _notFound = true;
+        }
+    }
+
+    // DiagramCanvas is only rendered once _board finishes loading, so its @ref isn't captured
+    // until a render after this page's own first one - re-checked on every render (cheap: a
+    // reference comparison) rather than gated to firstRender, the same "subscribe once the
+    // reference actually changes" shape PropertyPanel uses for its own Canvas parameter. Palette
+    // is declared before DiagramCanvas in the markup above, so its own Canvas parameter is still
+    // stale (null) on the render where _canvas is first captured (same wrinkle
+    // PropertyPanelDemo's own layout documents) - the extra StateHasChanged forces the one more
+    // render pass Palette needs to pick up the now-non-null reference.
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (ReferenceEquals(_subscribedCanvas, _canvas))
+        {
+            return;
+        }
+
+        if (_subscribedCanvas is not null)
+        {
+            _subscribedCanvas.Changed -= HandleBoardChanged;
+        }
+
+        _subscribedCanvas = _canvas;
+
+        if (_subscribedCanvas is not null)
+        {
+            _subscribedCanvas.Changed += HandleBoardChanged;
+        }
+
+        StateHasChanged();
+    }
+
+    private void HandleBoardChanged(object? sender, EventArgs e)
+    {
+        _isDirty = true;
+        StateHasChanged();
+
+        if (_autosaveEnabled)
+        {
+            ScheduleAutosave();
+        }
+    }
+
+    // Coalesces a burst of rapid gestures (several quick nudges) into a single save: each new
+    // Changed firing cancels whatever autosave was already pending and starts the debounce over.
+    private void ScheduleAutosave()
+    {
+        _autosaveCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _autosaveCts = cts;
+        _ = RunDebouncedAutosave(cts.Token);
+    }
+
+    private async Task RunDebouncedAutosave(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(AutosaveDebounce, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        await InvokeAsync(Save);
+    }
+
+    private async Task Save()
+    {
+        if (_board is not null)
+        {
+            await BoardStore.SaveAsync(Id, _board);
+            _isDirty = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/");
+
+    public void Dispose()
+    {
+        _autosaveCts?.Cancel();
+        if (_subscribedCanvas is not null)
+        {
+            _subscribedCanvas.Changed -= HandleBoardChanged;
+        }
+    }
+}

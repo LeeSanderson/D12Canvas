@@ -42,9 +42,30 @@ A written spec (PRD) for the next version of D12Canvas, backed by a set of locke
 - [Theme-token layer + light/dark switching](issues/73-theme-token-layer-light-dark.md) — the grid and selection marquee become the first consumers of a shared `--d12-*` token set (`surface`/`border`/`accent`/`muted-text`) declared on `DiagramCanvas`'s own root (`.diagram-container`), not a global `:root`; light defaults reproduce the pre-existing hard-coded colors byte-for-byte, dark defaults are new. `prefers-color-scheme: dark` switches automatically; a `data-d12-theme="light"|"dark"` attribute (on the canvas's own root or any ancestor) overrides it via a higher-specificity rule targeting `.diagram-container` directly, so it wins regardless of stylesheet load order. Seeded no new ADR (implements ADR 0012, already seeded by ticket 18).
 - [Token adoption across all remaining chrome](issues/74-token-adoption-remaining-chrome.md) — `Palette` and `SelectionContextMenu` each gain their own copy of the shared tokens on their own root (`.d12-palette`, `.d12-context-menu`), same light/dark/override pattern as `DiagramCanvas`; the LOD placeholder and connector drag-preview (both rendered inside `DiagramCanvas`'s own subtree) just swap hard-coded colors for `var(--d12-*)`. The connector-preview's intentionally-distinct green is an escape-hatch custom property (`--d12-connector-preview`), not the shared accent. Surfaced and fixed a real pre-existing gap: entry/menu-item text relied on inherited ambient body color rather than a token, which stayed invisible while those components were always white but became illegible near-black-on-near-black the moment they could go dark — fixed with a new fifth shared token, `--d12-text`, added to all three independently-mounted roots. Seeded no new ADR (implements ADR 0012).
 
+- [D12Canvas.App: a showcase board-list example project](issues/82-d12canvas-app-showcase.md) — a
+  new standalone `D12Canvas.App` project (sibling to `D12Canvas.Demo`, distinct purpose): a
+  board-list page (Create/Open/Rename/Delete, Delete confirms first) plus a board-editor page
+  pairing `DiagramCanvas` with a `Palette` (added beyond the ticket's own text - without one a
+  created board could never gain content), backed by a new app-level `IBoardStore` abstraction
+  (list/create/load/save/rename/delete) with one implementation via hand-rolled IndexedDB JS
+  interop living in the app's own `wwwroot/js` (not ticket 19's `_content/` colocated-library URL
+  scheme, which solves a different problem than an app owning its own `wwwroot`). No new
+  core-library surface (ADR 0004's storage boundary holds) and no automated test suite (playground
+  code) - verified instead via a headless-Chromium Playwright smoke run.
+- [CommandHistory.Changed event + optional autosave](issues/83-commandhistory-changed-event-autosave.md)
+  — a new parameterless `Changed` event on `CommandHistory`, firing from inside `Do`/`Undo`/`Redo`
+  themselves (skipped on a no-op `Undo`/`Redo`), re-exposed by `DiagramCanvas` via the same
+  subscribe/re-raise/unsubscribe wiring `ZoomPanTracker.Changed` already uses (matching
+  `SelectionChanged`'s plain-event shape, no library-side dirty tracking). `D12Canvas.App`'s board
+  editor subscribes the same reference-tracking way `PropertyPanel` subscribes to its own `Canvas`
+  parameter, driving a disabled-when-clean Save button and an optional debounced autosave
+  (cancel-and-restart `CancellationTokenSource`) on top of it. Implemented in the same pass as
+  ticket 82, so the Save button lands directly in this final shape rather than 82's own
+  unconditionally-enabled intermediate description.
+
 ## Not yet specified
 
-(none — the frontier is clear)
+None - every ticket above is resolved.
 
 ## Out of scope
 

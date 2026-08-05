@@ -1,0 +1,205 @@
+@page "/"
+@using D12Canvas.App.Storage
+@inject IBoardStore BoardStore
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>D12Canvas.App</PageTitle>
+
+<div class="board-list-page">
+    <h1>Boards</h1>
+
+    <div class="new-board-row">
+        <input
+            @bind="_newBoardName"
+            @bind:event="oninput"
+            placeholder="New board name"
+            @onkeydown="HandleNewBoardKeyDown"
+        />
+        <button @onclick="CreateBoard" disabled="@string.IsNullOrWhiteSpace(_newBoardName)">
+            Create
+        </button>
+    </div>
+
+    @if (_boards is null)
+    {
+        <p>Loading...</p>
+    }
+    else if (_boards.Count == 0)
+    {
+        <p>No boards yet - create one above.</p>
+    }
+    else
+    {
+        <table class="board-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var board in _boards)
+                {
+                    <tr>
+                        <td>
+                            @if (_renamingId == board.Id)
+                            {
+                                <input
+                                    @bind="_renameValue"
+                                    @bind:event="oninput"
+                                    @onkeydown="args => HandleRenameKeyDown(args, board.Id)"
+                                />
+                            }
+                            else
+                            {
+                                @board.Name
+                            }
+                        </td>
+                        <td>@board.CreatedAt.LocalDateTime.ToString("g")</td>
+                        <td>@board.UpdatedAt.LocalDateTime.ToString("g")</td>
+                        <td class="board-actions">
+                            @if (_renamingId == board.Id)
+                            {
+                                <button @onclick="() => CommitRename(board.Id)">Save</button>
+                                <button @onclick="CancelRename">Cancel</button>
+                            }
+                            else
+                            {
+                                <button @onclick="() => OpenBoard(board.Id)">Open</button>
+                                <button @onclick="() => StartRename(board)">Rename</button>
+                                <button @onclick="() => DeleteBoard(board.Id)">Delete</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<style>
+    .board-list-page {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px;
+    }
+
+    .new-board-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+    }
+
+    .new-board-row input {
+        flex: 1;
+        padding: 6px 8px;
+    }
+
+    .board-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .board-table th,
+    .board-table td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .board-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+</style>
+
+@code {
+    private IReadOnlyList<BoardSummary>? _boards;
+    private string _newBoardName = "";
+    private Guid? _renamingId;
+    private string _renameValue = "";
+
+    protected override async Task OnInitializedAsync() => await RefreshBoards();
+
+    private async Task RefreshBoards()
+    {
+        var boards = await BoardStore.ListAsync();
+        _boards = boards.OrderByDescending(b => b.UpdatedAt).ToList();
+    }
+
+    private async Task CreateBoard()
+    {
+        if (string.IsNullOrWhiteSpace(_newBoardName))
+        {
+            return;
+        }
+
+        var saved = await BoardStore.CreateAsync(_newBoardName.Trim());
+        Navigation.NavigateTo($"/board/{saved.Id}");
+    }
+
+    private async Task HandleNewBoardKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await CreateBoard();
+        }
+    }
+
+    private void OpenBoard(Guid id) => Navigation.NavigateTo($"/board/{id}");
+
+    private void StartRename(BoardSummary board)
+    {
+        _renamingId = board.Id;
+        _renameValue = board.Name;
+    }
+
+    private void CancelRename()
+    {
+        _renamingId = null;
+        _renameValue = "";
+    }
+
+    private async Task CommitRename(Guid id)
+    {
+        if (!string.IsNullOrWhiteSpace(_renameValue))
+        {
+            await BoardStore.RenameAsync(id, _renameValue.Trim());
+        }
+
+        _renamingId = null;
+        await RefreshBoards();
+    }
+
+    private async Task HandleRenameKeyDown(KeyboardEventArgs e, Guid id)
+    {
+        switch (e.Key)
+        {
+            case "Enter":
+                await CommitRename(id);
+                break;
+            case "Escape":
+                CancelRename();
+                break;
+        }
+    }
+
+    private async Task DeleteBoard(Guid id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            "Delete this board? This cannot be undone."
+        );
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await BoardStore.DeleteAsync(id);
+        await RefreshBoards();
+    }
+}

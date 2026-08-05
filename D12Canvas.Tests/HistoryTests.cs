@@ -156,6 +156,43 @@ public class HistoryTests
     }
 
     [Fact]
+    public void ChangedFiresOnDoUndoAndRedo()
+    {
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 50, 50)
+        );
+        var history = new CommandHistory();
+        var changedCount = 0;
+        history.Changed += (_, _) => changedCount++;
+
+        history.Do(
+            new ChangeBoundsCommand(instance, new Bounds(0, 0, 50, 50), new Bounds(10, 10, 50, 50))
+        );
+        Assert.Equal(1, changedCount);
+
+        history.Undo();
+        Assert.Equal(2, changedCount);
+
+        history.Redo();
+        Assert.Equal(3, changedCount);
+    }
+
+    [Fact]
+    public void ChangedDoesNotFireOnANoOpUndoOrRedo()
+    {
+        var history = new CommandHistory();
+        var changedCount = 0;
+        history.Changed += (_, _) => changedCount++;
+
+        history.Undo();
+        history.Redo();
+
+        Assert.Equal(0, changedCount);
+    }
+
+    [Fact]
     public void CanUndoAndCanRedoReflectStackState()
     {
         var instance = new ComponentInstance(

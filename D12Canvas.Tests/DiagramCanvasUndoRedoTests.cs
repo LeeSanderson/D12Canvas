@@ -58,6 +58,31 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         return instance;
     }
 
+    // DiagramCanvas.Changed re-exposes CommandHistory.Changed (see CommandHistory's own
+    // ChangedFiresOnDoUndoAndRedo test for the underlying firing rules) - this covers only the
+    // re-exposure wiring itself.
+    [Fact]
+    public async Task ChangedFiresOnAMoveAndOnUndo()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var changedCount = 0;
+        canvas.Instance.Changed += (_, _) => changedCount++;
+
+        var container = canvas.Find(".component-container");
+        container.Click();
+        container = canvas.Find(".component-container");
+        container.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
+        container.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        container.MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        Assert.Equal(1, changedCount);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal(2, changedCount);
+    }
+
     [Fact]
     public async Task UndoAfterAMoveRestoresThePriorBounds()
     {
