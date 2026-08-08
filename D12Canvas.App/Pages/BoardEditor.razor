@@ -10,13 +10,29 @@
 
 <div class="board-editor-page">
     <div class="board-editor-header">
-        <button @onclick="GoBack">&larr; Boards</button>
-        <h1>@_name</h1>
+        <button class="btn btn-secondary btn-sm" @onclick="GoBack">&larr; Boards</button>
+
+        @if (_isEditingName)
+        {
+            <input
+                class="board-title-input"
+                @ref="_titleInputRef"
+                value="@_nameDraft"
+                @oninput="args => _nameDraft = args.Value?.ToString() ?? string.Empty"
+                @onkeydown="HandleTitleKeyDown"
+                @onblur="CommitRenameTitle"
+            />
+        }
+        else
+        {
+            <h1 class="board-title" @onclick="StartRenameTitle" title="Click to rename">@_name</h1>
+        }
+
         <label class="autosave-toggle">
             <input type="checkbox" @bind="_autosaveEnabled" />
             Autosave
         </label>
-        <button @onclick="Save" disabled="@(!_isDirty)">Save</button>
+        <button class="btn btn-primary btn-sm" @onclick="Save" disabled="@(!_isDirty)">Save</button>
     </div>
 
     @if (_board is not null)
@@ -47,20 +63,45 @@
         display: flex;
         align-items: center;
         gap: 16px;
-        padding: 8px 16px;
-        border-bottom: 1px solid #ddd;
+        padding: 10px 16px;
+        background: var(--app-surface);
+        border-bottom: 1px solid var(--app-border);
     }
 
-    .board-editor-header h1 {
+    .board-title,
+    .board-title-input {
         flex: 1;
         margin: 0;
         font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--app-text);
+    }
+
+    .board-title {
+        padding: 4px 8px;
+        border-radius: var(--app-radius-sm);
+        cursor: pointer;
+    }
+
+    .board-title:hover {
+        background: var(--app-bg);
+    }
+
+    .board-title-input {
+        padding: 3px 7px;
+        font-family: inherit;
+        border: 1px solid var(--app-accent);
+        border-radius: var(--app-radius-sm);
+        background: var(--app-surface);
+        outline: none;
     }
 
     .autosave-toggle {
         display: flex;
         align-items: center;
         gap: 4px;
+        color: var(--app-muted-text);
+        font-size: 0.9rem;
     }
 
     .board-editor-body {
@@ -73,7 +114,8 @@
         width: 220px;
         padding: 16px;
         overflow-y: auto;
-        border-right: 1px solid #ddd;
+        border-right: 1px solid var(--app-border);
+        background: var(--app-surface);
     }
 
     .board-editor-canvas {
@@ -96,6 +138,10 @@
     private bool _isDirty;
     private bool _autosaveEnabled;
     private CancellationTokenSource? _autosaveCts;
+    private bool _isEditingName;
+    private string _nameDraft = "";
+    private bool _focusTitleInputPending;
+    private ElementReference _titleInputRef;
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,6 +167,12 @@
     // render pass Palette needs to pick up the now-non-null reference.
     protected override void OnAfterRender(bool firstRender)
     {
+        if (_focusTitleInputPending)
+        {
+            _focusTitleInputPending = false;
+            _ = _titleInputRef.FocusAsync();
+        }
+
         if (ReferenceEquals(_subscribedCanvas, _canvas))
         {
             return;
@@ -187,6 +239,55 @@
     }
 
     private void GoBack() => Navigation.NavigateTo("/");
+
+    private void StartRenameTitle()
+    {
+        if (_board is null)
+        {
+            return;
+        }
+
+        _nameDraft = _name ?? "";
+        _isEditingName = true;
+        _focusTitleInputPending = true;
+    }
+
+    private async Task CommitRenameTitle()
+    {
+        if (!_isEditingName)
+        {
+            return;
+        }
+
+        _isEditingName = false;
+        var trimmed = _nameDraft.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed) || trimmed == _name)
+        {
+            return;
+        }
+
+        _name = trimmed;
+        await BoardStore.RenameAsync(Id, trimmed);
+    }
+
+    private void CancelRenameTitle()
+    {
+        _isEditingName = false;
+        _nameDraft = _name ?? "";
+    }
+
+    private async Task HandleTitleKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "Enter":
+                await CommitRenameTitle();
+                break;
+            case "Escape":
+                CancelRenameTitle();
+                break;
+        }
+    }
 
     public void Dispose()
     {

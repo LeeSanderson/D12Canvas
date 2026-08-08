@@ -1,0 +1,72 @@
+<div class="modal-backdrop" @onclick="Cancel">
+    <div class="modal-card" @onclick:stopPropagation="true">
+        <h2 class="modal-title">Rename board</h2>
+        <input
+            class="modal-input"
+            @ref="_inputRef"
+            value="@_value"
+            @oninput="args => _value = args.Value?.ToString() ?? string.Empty"
+            @onkeydown="HandleKeyDown"
+        />
+        <div class="modal-actions">
+            <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+            <button
+                class="btn btn-primary"
+                @onclick="Confirm"
+                disabled="@string.IsNullOrWhiteSpace(_value)"
+            >
+                Save
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string InitialName { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<string> OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private string _value = "";
+    private ElementReference _inputRef;
+
+    protected override void OnInitialized() => _value = InitialName;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _inputRef.FocusAsync();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "Enter":
+                await Confirm();
+                break;
+            case "Escape":
+                await Cancel();
+                break;
+        }
+    }
+
+    private async Task Confirm()
+    {
+        var trimmed = _value.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return;
+        }
+
+        await OnSave.InvokeAsync(trimmed);
+    }
+
+    private async Task Cancel() => await OnCancel.InvokeAsync();
+}

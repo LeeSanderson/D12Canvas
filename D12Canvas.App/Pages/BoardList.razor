@@ -6,96 +6,126 @@
 
 <PageTitle>D12Canvas.App</PageTitle>
 
-<div class="board-list-page">
-    <h1>Boards</h1>
-
-    <div class="new-board-row">
-        <input
-            @bind="_newBoardName"
-            @bind:event="oninput"
-            placeholder="New board name"
-            @onkeydown="HandleNewBoardKeyDown"
-        />
-        <button @onclick="CreateBoard" disabled="@string.IsNullOrWhiteSpace(_newBoardName)">
-            Create
+<div class="boards-page">
+    <header class="boards-header">
+        <div>
+            <h1>Boards</h1>
+            <p class="boards-subtitle">Create and manage your diagramming boards.</p>
+        </div>
+        <button class="btn btn-primary" @onclick="CreateBoard" disabled="@_isCreating">
+            <span aria-hidden="true">+</span> New board
         </button>
-    </div>
+    </header>
 
-    @if (_boards is null)
-    {
-        <p>Loading...</p>
-    }
-    else if (_boards.Count == 0)
-    {
-        <p>No boards yet - create one above.</p>
-    }
-    else
-    {
-        <table class="board-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Created</th>
-                    <th>Updated</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var board in _boards)
-                {
+    <div class="boards-content card">
+        @if (_boards is null)
+        {
+            <div class="boards-skeleton" aria-hidden="true">
+                <div class="skeleton-row"></div>
+                <div class="skeleton-row"></div>
+                <div class="skeleton-row"></div>
+            </div>
+        }
+        else if (_boards.Count == 0)
+        {
+            <div class="empty-state">
+                <svg
+                    class="empty-state-icon"
+                    viewBox="0 0 48 48"
+                    width="48"
+                    height="48"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <rect x="6" y="10" width="36" height="28" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M6 18h36" stroke="currentColor" stroke-width="2" />
+                    <circle cx="16" cy="28" r="3" stroke="currentColor" stroke-width="2" />
+                    <path
+                        d="M24 30l4-4 6 6"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                </svg>
+                <h2>No boards yet</h2>
+                <p>Create your first board to start diagramming.</p>
+                <button class="btn btn-primary" @onclick="CreateBoard" disabled="@_isCreating">
+                    <span aria-hidden="true">+</span> New board
+                </button>
+            </div>
+        }
+        else
+        {
+            <table class="board-table">
+                <thead>
                     <tr>
-                        <td>
-                            @if (_renamingId == board.Id)
-                            {
-                                <input
-                                    @bind="_renameValue"
-                                    @bind:event="oninput"
-                                    @onkeydown="args => HandleRenameKeyDown(args, board.Id)"
-                                />
-                            }
-                            else
-                            {
-                                @board.Name
-                            }
-                        </td>
-                        <td>@board.CreatedAt.LocalDateTime.ToString("g")</td>
-                        <td>@board.UpdatedAt.LocalDateTime.ToString("g")</td>
-                        <td class="board-actions">
-                            @if (_renamingId == board.Id)
-                            {
-                                <button @onclick="() => CommitRename(board.Id)">Save</button>
-                                <button @onclick="CancelRename">Cancel</button>
-                            }
-                            else
-                            {
-                                <button @onclick="() => OpenBoard(board.Id)">Open</button>
-                                <button @onclick="() => StartRename(board)">Rename</button>
-                                <button @onclick="() => DeleteBoard(board.Id)">Delete</button>
-                            }
-                        </td>
+                        <th>Name</th>
+                        <th>Created</th>
+                        <th>Updated</th>
+                        <th></th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    }
+                </thead>
+                <tbody>
+                    @foreach (var board in _boards)
+                    {
+                        <tr>
+                            <td>
+                                <button class="board-name-link" @onclick="() => OpenBoard(board.Id)">
+                                    @board.Name
+                                </button>
+                            </td>
+                            <td class="board-table-date">@board.CreatedAt.LocalDateTime.ToString("g")</td>
+                            <td class="board-table-date">@board.UpdatedAt.LocalDateTime.ToString("g")</td>
+                            <td class="board-actions">
+                                <button class="btn btn-secondary btn-sm" @onclick="() => StartRename(board)">
+                                    Rename
+                                </button>
+                                <button class="btn btn-danger btn-sm" @onclick="() => DeleteBoard(board.Id)">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
 </div>
 
+@if (_renamingBoard is not null)
+{
+    <RenameBoardModal InitialName="@_renamingBoard.Name" OnSave="SaveRename" OnCancel="CancelRename" />
+}
+
 <style>
-    .board-list-page {
-        max-width: 720px;
+    .boards-page {
+        max-width: 840px;
         margin: 0 auto;
-        padding: 24px;
+        padding: 32px 24px;
     }
 
-    .new-board-row {
+    .boards-header {
         display: flex;
-        gap: 8px;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
         margin-bottom: 24px;
     }
 
-    .new-board-row input {
-        flex: 1;
-        padding: 6px 8px;
+    .boards-header h1 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .boards-subtitle {
+        margin: 4px 0 0;
+        color: var(--app-muted-text);
+        font-size: 0.9rem;
+    }
+
+    .boards-content {
+        min-height: 240px;
     }
 
     .board-table {
@@ -106,8 +136,44 @@
     .board-table th,
     .board-table td {
         text-align: left;
-        padding: 8px;
-        border-bottom: 1px solid #ddd;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--app-border);
+    }
+
+    .board-table th {
+        color: var(--app-muted-text);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .board-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .board-table tbody tr:hover {
+        background: var(--app-bg);
+    }
+
+    .board-table-date {
+        color: var(--app-muted-text);
+        font-size: 0.9rem;
+    }
+
+    .board-name-link {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--app-text);
+        text-align: left;
+    }
+
+    .board-name-link:hover {
+        color: var(--app-accent);
+        text-decoration: underline;
     }
 
     .board-actions {
@@ -115,13 +181,62 @@
         gap: 8px;
         justify-content: flex-end;
     }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 64px 24px;
+        color: var(--app-muted-text);
+    }
+
+    .empty-state-icon {
+        color: var(--app-muted-text);
+        margin-bottom: 16px;
+    }
+
+    .empty-state h2 {
+        margin: 0 0 4px;
+        color: var(--app-text);
+        font-size: 1.1rem;
+    }
+
+    .empty-state p {
+        margin: 0 0 20px;
+    }
+
+    .boards-skeleton {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .skeleton-row {
+        height: 44px;
+        border-radius: var(--app-radius-sm);
+        background: linear-gradient(90deg, var(--app-bg) 25%, var(--app-border) 37%, var(--app-bg) 63%);
+        background-size: 400% 100%;
+        animation: skeleton-shimmer 1.4s ease infinite;
+    }
+
+    @@keyframes skeleton-shimmer {
+        0% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
 </style>
 
 @code {
+    private const string DefaultBoardName = "Untitled board";
+
     private IReadOnlyList<BoardSummary>? _boards;
-    private string _newBoardName = "";
-    private Guid? _renamingId;
-    private string _renameValue = "";
+    private bool _isCreating;
+    private BoardSummary? _renamingBoard;
 
     protected override async Task OnInitializedAsync() => await RefreshBoards();
 
@@ -133,59 +248,39 @@
 
     private async Task CreateBoard()
     {
-        if (string.IsNullOrWhiteSpace(_newBoardName))
+        if (_isCreating)
         {
             return;
         }
 
-        var saved = await BoardStore.CreateAsync(_newBoardName.Trim());
-        Navigation.NavigateTo($"/board/{saved.Id}");
-    }
-
-    private async Task HandleNewBoardKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
+        _isCreating = true;
+        try
         {
-            await CreateBoard();
+            var saved = await BoardStore.CreateAsync(DefaultBoardName);
+            Navigation.NavigateTo($"/board/{saved.Id}");
+        }
+        finally
+        {
+            _isCreating = false;
         }
     }
 
     private void OpenBoard(Guid id) => Navigation.NavigateTo($"/board/{id}");
 
-    private void StartRename(BoardSummary board)
-    {
-        _renamingId = board.Id;
-        _renameValue = board.Name;
-    }
+    private void StartRename(BoardSummary board) => _renamingBoard = board;
 
-    private void CancelRename()
-    {
-        _renamingId = null;
-        _renameValue = "";
-    }
+    private void CancelRename() => _renamingBoard = null;
 
-    private async Task CommitRename(Guid id)
+    private async Task SaveRename(string newName)
     {
-        if (!string.IsNullOrWhiteSpace(_renameValue))
+        if (_renamingBoard is null)
         {
-            await BoardStore.RenameAsync(id, _renameValue.Trim());
+            return;
         }
 
-        _renamingId = null;
+        await BoardStore.RenameAsync(_renamingBoard.Id, newName);
+        _renamingBoard = null;
         await RefreshBoards();
-    }
-
-    private async Task HandleRenameKeyDown(KeyboardEventArgs e, Guid id)
-    {
-        switch (e.Key)
-        {
-            case "Enter":
-                await CommitRename(id);
-                break;
-            case "Escape":
-                CancelRename();
-                break;
-        }
     }
 
     private async Task DeleteBoard(Guid id)
