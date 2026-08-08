@@ -1,7 +1,7 @@
 # Interaction teardown of reference tools
 
 Type: research
-Status: open
+Status: claimed
 
 ## Question
 

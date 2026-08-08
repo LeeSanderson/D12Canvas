@@ -1,7 +1,7 @@
 # What the browser actually delivers for trackpad input
 
 Type: research
-Status: open
+Status: claimed
 
 ## Question
 
