@@ -20,6 +20,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 <!-- one line per closed ticket: enough to judge relevance, then open the link for the detail -->
 
+- [What the browser actually delivers for trackpad input](issues/02-trackpad-input-research.md) — the pinch → `wheel` + synthesised `ctrlKey` convention is real in all three engines, but nothing distinguishes it from a genuine Ctrl+scroll and nothing needs to: both mean "zoom about the cursor", and deriving zoom multiplicatively from `deltaY` (`exp(-deltaY/100)`, Chromium's own inverse) rather than a fixed ±0.1 step handles both device classes in one path. No "gesture ended" signal exists in any engine — a short idle timeout is the portable answer, and it matters for undo granularity, not smoothness. Headline: **`@onwheel:preventDefault` is a silent no-op on the pinned .NET 9 runtime** (Blazor delegates to a passive-by-default `document` listener; the fix landed in 10.0-preview7 and was not backported), so the wheel listener moves into `DiagramCanvas.razor.js` as a non-passive listener on the container — which is the better design regardless of runtime. Pointer Events cannot see a trackpad gesture at all; `gesturestart` would double-count on Safari. Surfaced [Wheel-driven pan and zoom model](issues/17-wheel-pan-and-zoom-model.md).
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.

@@ -1,0 +1,26 @@
+# Wheel-driven pan and zoom model
+
+Type: prototype
+Status: open
+Blocked by: 03
+
+## Question
+
+Decide what a wheel event does to the viewport — which gesture it maps to, how far it moves, and what it feels like.
+
+Ticket 02 established the input contract from engine source, and in doing so exposed that no ticket on this map owns the *output* side of it. Ticket 01 arbitrates pointer presses, and a wheel is not a press; ticket 13 owns viewport *commands* (fit, zoom-to-selection, minimap), not continuous input. Today `DiagramCanvas` binds `@onwheel="HandleMouseWheel"` and treats every wheel event as zoom via `ZoomPanTracker.SetScale(_scale ± 0.1)`: `DeltaX` is discarded, magnitude is discarded, `CtrlKey` is never read, and nothing calls `preventDefault`, so the browser's own scroll and Ctrl-zoom still run underneath.
+
+Ticket 02 settles the mechanism and it is not up for re-litigation here: the listener moves into `DiagramCanvas.razor.js` as a non-passive listener on the container element (the `@onwheel` binding cannot cancel anything on .NET 9), and pinch is not distinguishable from Ctrl+scroll, so no attempt is made. What remains is the behaviour.
+
+Decide:
+
+- **What plain wheel does.** Zoom, as today, or vertical pan with ctrl-wheel reserved for zoom — the trackpad-native reading, and what ticket 03's teardown of Miro/FigJam/tldraw/Excalidraw should be read for directly. These give opposite answers for mouse-wheel users, so this is a real choice, not a default.
+- **Whether `deltaX` pans horizontally**, and whether a shift-wheel horizontal convention is worth having for mouse users who have no horizontal axis.
+- **The zoom response curve.** Ticket 02 recommends `scale *= exp(-deltaY / 100)` — Chromium's own documented inverse — over a fixed step, but a raw mouse notch's ±100 delta becomes a ~2.7× jump, so a damping constant has to be chosen and *felt*, not reasoned about. This is why the ticket is a prototype.
+- **Whether zoom anchors on the pointer** rather than the viewport centre. Anchored zoom is what makes a pinch feel attached to the content; `ClientX`/`ClientY` and `ToBoardPoint` are already available. This changes ADR 0011's zoom model behaviourally, so decide whether it amends or supersedes.
+- **Where a wheel gesture starts and ends.** There is no browser signal (ticket 02), so a short idle timeout, with `momentum === true` as an optional early terminator where present. The consumer is undo granularity: `CONTEXT.md` defines a Gesture as exactly one history entry, and a momentum tail delivers dozens of events after the user has let go. Decide the timeout, and whether zoom/pan enter history at all.
+- **Whether the canvas swallows every wheel event or lets some fall through** to a host page's own scrolling — an embeddable library pinned inside a scrolling host page is a real deployment, and `preventDefault`-always forecloses it.
+
+Feeds `(anchorPoint, scaleFactor)` and `(dx, dy)` into whatever ticket 01 produces, per ticket 02's recommendation — never a `WheelEventArgs`.
+
+Worth ten minutes while prototyping: ticket 02 flagged that the `Keyboard.DownAsync("Control")` + `Mouse.WheelAsync` → `ctrlKey: true` chain is verified through Playwright's source but never actually executed. A throwaway spec asserting `ctrlKey`, `deltaY` sign and `defaultPrevented` settles it before ticket 15 commits to a testing approach.
