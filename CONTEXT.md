@@ -43,6 +43,9 @@ _Avoid_: connector, link — "edge" is the established term (already anticipated
 **Port**:
 A named attachment point on a component instance that an edge can connect to, positioned as a fraction of the instance's bounds so it stays correct across resize. Every instance gets four standard ports (top/right/bottom/left, at border centers) automatically; an end user may add further custom ports to a specific instance at runtime — this is instance-scoped runtime state, not something a component type's developer declares at registration.
 
+**Interior edge**:
+An edge both of whose endpoints resolve to component instances inside a given set of entities — the test for whether an edge belongs to that set rather than merely touching it. Applied when a selection is copied (only interior edges travel) and again when a payload is pasted (against what actually materialised, so an edge that lost an endpoint to an unresolvable component type is dropped rather than left dangling).
+
 **Canvas chrome**:
 UI anchored to a canvas's viewport rather than its pannable/zoomable board surface — it doesn't move when the board pans and isn't part of persisted board content. The palette is the first example; a minimap would be another.
 _Avoid_: overlay, widget.
@@ -68,6 +71,9 @@ _Avoid_: inventing a new command type per feature — a generic primitive (espec
 
 **History**:
 The local, in-memory, session-scoped stack of `Command`s backing undo/redo for the current `Board` — capped at a fixed depth (a circular buffer), never persisted, and never tracked across a reload. Distinct from `Selection`, which is also transient view state but isn't tracked here at all.
+
+**Paste anchor**:
+The board point a pasted payload's bounding box is centred on — the pointer's board position when the pointer is over the canvas, the viewport centre otherwise. The payload translates as a rigid body relative to it, so internal relative geometry survives. Successive pastes onto an unchanged anchor cascade by a fixed offset; a changed anchor resets the cascade.
 
 **Grid**:
 The canvas's visual position/scale reference — concurrent layers stepping by 10x spacing, crossfading in and out as zoom crosses each layer's legibility threshold to simulate infinite depth in either zoom direction. Purely a `DiagramCanvas` rendering concern; not part of `Board`, not persisted.

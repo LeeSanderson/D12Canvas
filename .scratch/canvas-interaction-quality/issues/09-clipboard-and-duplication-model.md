@@ -1,7 +1,7 @@
 # Clipboard and duplication model
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -20,3 +20,27 @@ Decide:
 - **Shortcut bindings**, and how they pass the existing `isEditableTarget` guard so they do not fire while inline text editing is active.
 
 Feeds the context menu's item set (10) and keyboard parity (16).
+
+## Answer
+
+Seeded ADR [0013](../../../docs/adr/0013-clipboard-and-duplication-model.md), with addenda on ADR 0009 (the parked shortcut rejection, now resolved rather than reversed) and ADR 0006 (select-all, edges-excluded, stale-id pruning), and two new `CONTEXT.md` terms — **Interior edge** and **Paste anchor**.
+
+**There is no internal clipboard.** The system clipboard is the only one, which removes the staleness hole that any two-clipboard design carries: copy on the canvas, copy something else in another app, paste back, and an "internal wins" rule pastes what the user has since replaced. The payload is **ADR 0004's board envelope verbatim** as `IBoardSerializer` produces it, in `text/plain`, recognised structurally rather than by a marker — no new format, no second serializer, and no reimplementation of the two-phase `Props` round-trip. A clipboard payload *is* a board, which falls out of ADR 0003's flat ID-keyed model rather than being a coincidence, and pasting the text of a saved board file therefore merges it in. Access is via the DOM `copy`/`cut`/`paste` events, not the async Clipboard API: the `paste` event's `clipboardData` is the only permission-free read path in every engine. **So `Ctrl+C`/`X`/`V` are not rows in ADR 0009's keydown table at all** — only `Ctrl+D` and `Ctrl+A` are.
+
+**What travels is the explicit selection closed over interior edges** — both endpoints inside the copied set, groups expanded to members recursively. Half-attached edges are dropped: floating the outside end produces a stub the paste offset drags along so it aims at nothing, and preserving the outside `ComponentId` silently wires the copy back to the *original* instance in-board and dangles across boards. Groups travel as entities, nested ones included. A structural finding drives the odd case: `_selectedEdgeId` is an **exclusive** slot, so an edge selection never mixes with an instance selection — an edge can only ever ride along implicitly, and copying a lone selected edge is a no-op that leaves the clipboard untouched.
+
+**Ids are always regenerated**, same-board and cross-board — same-board forces it anyway (`Board.AddComponent` throws on a duplicate key), and ADR 0003 chose GUIDs precisely so two boards never name one entity. Five references must remap consistently, and the easy one to miss is **`PortDef.Id` on `CustomPorts`**, because `CustomPortEndpoint` references the port's own GUID, not just the instance's — miss it and pasted edges silently detach. `Edge.Label` needs one too: it is a full `ComponentInstance` with no `Board.Components` entry, resolved by id through `Board.FindEdgeLabel`.
+
+**Paste lands on the paste anchor** — the pointer when it is over the canvas, the viewport centre otherwise, which is a path ADR 0010's keyboard model requires regardless. The payload translates as a rigid body, so `FloatingEndpoint` coordinates and all internal geometry survive. Successive pastes onto an **unchanged** anchor cascade `+20, +20` and a changed anchor resets — stating the rule over the anchor rather than the device covers pointer and keyboard with one sentence and avoids the invisible-pile bug ticket 28 of `d12canvas-next` already fixed once for click-to-add. **Duplicate never touches the clipboard** — a direct board operation, because copy-then-paste would clobber the user's real system clipboard as a side effect of duplicating a shape — and uses the same `+20, +20`, so one constant serves click-to-add, repeat-paste and duplicate.
+
+**Select-all takes top-level entities only** — instances in no group plus outermost `Group`s — the only shape consistent with the invariant `EffectiveSelectionId` maintains for click and marquee alike. **Edges cannot join a multi-selection**, so select-all-then-delete does not clear a board; recorded as a limitation rather than fixed, since widening the exclusive slot amends ADR 0006 and belongs with tickets 01/18.
+
+**No new command type**, confirmed against the real set rather than assumed: paste and duplicate are each one `CompositeCommand` of `AddEntityCommand`/`GroupCommand`/`AddEdgeCommand`. Cut is the clipboard write plus the identical composite `OnDeletePressed` already builds, one entry, and undoing it restores the entities without un-writing the clipboard. **Cut on a lone edge is a no-op, not a delete** — copy no-ops there, and a naive cut-as-copy-then-delete would destroy content it never captured. Paste and duplicate select their result; selection stays out of history, and instead **a selection id that no longer resolves is dropped when the selection is read**, which clears phantom chrome after an undone paste and after an undone delete alike.
+
+**Foreign content:** plain text becomes a `"text"` instance and a bitmap an `"image"` instance — both always registered, since `BuiltInComponents.RegisterAll` runs unconditionally from `AddD12Canvas`. An unresolvable `ComponentTypeKey` uses ADR 0004's **partial** deserialize, then re-applies the interior rule against what actually materialised, dropping edges that lost an endpoint and pruning `MemberIds`; warnings surface on a host-subscribable event in the shape of the existing `SelectionChanged`/`Changed` pair. Guarding all five bindings is `isEditableTarget` **plus focus within the canvas container** — stricter than the existing rows, because `isEditableTarget` alone does not stop the canvas hijacking a host page user's `Ctrl+C` over its own selected text. No host opt-out parameter; the focus rule is the whole guard, and reconciling the looser older rows is ticket 16's.
+
+**Scope change:** deciding where a pasted image's *bytes* live would amend ADR 0004, which this map listed as settled. Rather than accept a known-heavy format by default, ADR 0004 moves to the map's **reopenable** list and the seam gets its own ticket — [Asset storage seam: where binary content lives](23-asset-storage-seam.md). This ticket therefore decides *that* a bitmap becomes an `"image"` instance and deliberately leaves byte storage to it.
+
+The teardown's counter-finding recorded for this ticket held up and changed the answer: **duplicate-with-offset is not one convention**. Excalidraw uses a flat `DEFAULT_GRID_SIZE / 2`; tldraw remembers the last Alt-drag clone's offset in `duplicateProps` and replays it on each `Ctrl+D`, chaining and invalidated on selection change; Figma does the same and repeats rotation too. Chaining is the better interaction, but it needs a reliable "a move just committed, by this delta" signal — and ticket 04 proved the current one is broken, since a drag released past the clip edge never fires `OnMoved` at all. Taken as fog rather than decided, so it does not spec ahead of tickets 01 and 05.
+
+Surfaced [Asset storage seam: where binary content lives](23-asset-storage-seam.md).
