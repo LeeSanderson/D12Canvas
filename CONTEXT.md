@@ -47,11 +47,14 @@ A named attachment point on a component instance that an edge can connect to, po
 An edge both of whose endpoints resolve to component instances inside a given set of entities — the test for whether an edge belongs to that set rather than merely touching it. Applied when a selection is copied (only interior edges travel) and again when a payload is pasted (against what actually materialised, so an edge that lost an endpoint to an unresolvable component type is dropped rather than left dangling).
 
 **Canvas chrome**:
-UI anchored to a canvas's viewport rather than its pannable/zoomable board surface — it doesn't move when the board pans and isn't part of persisted board content. The palette is the first example; a minimap would be another.
+UI anchored to a canvas's viewport rather than its pannable/zoomable board surface — it doesn't move when the board pans and isn't part of persisted board content. The palette and the minimap are the examples; each is a standalone component the host places and positions itself, so `DiagramCanvas` stays ignorant of both.
 _Avoid_: overlay, widget.
 
 **Palette**:
 The default canvas chrome component that lists registered component types for the user to pick from.
+
+**Minimap**:
+The canvas chrome component showing the whole board at a glance plus a rect marking the current viewport, so content that has been panned away from stays locatable. Renders one plain box per component instance — never a mounted component or an `LOD placeholder`, and never edges — and maps the union of `Content extent` and the current viewport, so it shows both where content is and where the user is even when those no longer overlap. Holds its own `ZoomPanTracker` and reaches its scale through the same `Framing` computation the viewport commands use. Navigation only: clicking or dragging pans, and never selects or zooms.
 
 **Property panel**:
 The canvas-chrome component that surfaces editable `TProps` fields for the current selection, built generically from each component type's declared editable properties rather than one bespoke panel per type. A component's `Text`-type content is excluded — edited inline/WYSIWYG on the canvas instead.
@@ -80,6 +83,14 @@ The canvas's visual position/scale reference — concurrent layers stepping by 1
 
 **Snap-to-grid**:
 An optional, off-by-default toggle causing placement/move to snap to the currently-dominant `Grid` layer's spacing. Ephemeral view state, like `Selection` — never part of `Board`, never persisted, regardless of the grid layer it currently tracks.
+
+**Content extent**:
+The smallest `Bounds` enclosing everything on a board — every component instance's bounds unioned with every resolvable edge endpoint, since an `Edge` with floating endpoints is content that no component's bounds covers. Derived on demand from `Board`, never stored, and null for a genuinely empty board. Restricting the same computation to a `Selection` is what zoom-to-selection frames.
+_Avoid_: board extent — ADR 0011 abolished a fixed board size; this is measured from content, not a configured limit.
+
+**Framing**:
+Moving the viewport so a given board rect fills it — the shared operation behind zoom-to-fit, zoom-to-selection and the `Minimap`'s own scale, and the inverse of `ZoomPanTracker.Viewport`. Sets scale and pan together in one change, contain-not-cover, centred, inset by a fixed fraction, and never magnifying past 1.0. The destination is computed rather than interpolated: state arrives at once and the browser animates the transform, so nothing in the model has a notion of time.
+_Avoid_: zoom — framing always sets pan as well, and is a discrete destination rather than an increment.
 
 **LOD placeholder**:
 The generic, non-interactive stand-in rendered for a component instance once its on-screen size (`Bounds` × current zoom scale) drops below a configurable threshold — swaps out the full Razor component tree for a plain box built from data the registration contract already requires (`DisplayName`/`Icon`), rather than mounting every instance at full cost regardless of how small it renders.

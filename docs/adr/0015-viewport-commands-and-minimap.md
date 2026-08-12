@@ -1,0 +1,115 @@
+# Viewport commands frame an absolute destination derived from content extent, and the minimap is a second transform over the same board
+
+Not getting lost on an unbounded canvas is discharged by three commands and one piece of chrome. The commands are **zoom to fit** (frame all board content), **zoom to selection** (frame the current selection) and **zoom to 100%** (set scale to 1.0, preserving the viewport centre). There is deliberately **no reset-view**: a reset would mean scale 1.0 at pan origin, and ADR 0011 removed board extent, so the origin holds no privileged relationship to content — a board authored at (50000, 50000) would have reset-view dump the user onto empty canvas, which is the exact hazard these commands exist to discharge. Zoom to 100% survives that objection only because it is a pure zoom that leaves the centre alone, and it earns its place as the one canonical rung on a ladder that is otherwise unbounded in both directions.
+
+**These commands own where the viewport lands; the continuous-input decision owns how zoom changes.** Fit, selection and 100% are absolute destinations computed from board content. A wheel notch and a discrete step-zoom key are relative increments sharing one response curve and one anchor choice, so the existing `PageUp`/`PageDown` bindings — which appear in no ADR, including ADR 0009's table — belong to that decision and are untouched here. Without the split, a zoom curve would be settled twice.
+
+## Framing is the inverse of `Viewport`, and lives with it
+
+`ZoomPanTracker` gains the framing primitive: given a target `Bounds`, produce the scale and pan that frame it. `Viewport` already maps scale and pan to the visible board rect, so this is the same algebra inverted, in the class that owns it and is already unit-tested without a renderer.
+
+The decisive reason is not tidiness. `SetScale` and `SetPanPosition` each raise `Changed` independently, so framing built from two calls emits two events, and every listener — the host's zoom/pan callback, the re-render, the minimap — observes one intermediate state pairing the new scale with the old pan. That is a visible one-frame lurch on every fit, worse the further the viewport started from content. One framing call raises `Changed` once. Framing also has to know what the clamps did to it: a fit wanting 8× on a host that capped zoom at 4× must compute its pan against the scale it received rather than the one it asked for, which outside the class is a read-back-and-recompute dance and inside it is one path. The accepted cost is that `ZoomPanTracker` stops being a pure transform holder and starts computing destinations; the alternative — a stateless helper returning a scale/pan triple plus an atomic combined setter — was rejected as a second home for coordinate algebra that already has one.
+
+## Content extent is components unioned with resolvable edge endpoints
+
+`Board` gains an O(n) scan producing the smallest `Bounds` enclosing all board content, built on the existing `Bounds.Union` and sitting alongside `GetBounds(Group)` and `GetVisible`.
+
+Content is **every component instance's bounds, unioned with every resolvable edge endpoint**. Edges are content in their own right and not merely decoration between components: ADR 0009's palette carries a built-in connector entry creating an `Edge` with both endpoints floating, so a board can legitimately hold edges and no components at all, and a components-only extent would report that board empty while the user is looking at a connector. A dragged floating endpoint can also sit outside every component's box on an ordinary board, cropping content out of a "fit" that claimed to include everything. Groups need no handling — their bounds are computed from members (ADR 0003) — and edge labels are themselves component instances, so both are already counted.
+
+Two imprecisions are deliberate. **An unresolvable endpoint is skipped, never treated as the origin**, so an endpoint whose instance was deleted cannot drag a fit toward (0,0). And **an orthogonally-routed edge bows outside its endpoints' bounding box**, as do arrowheads; computing that exactly means running the router, which lives in the renderer rather than the model, and the error is bounded by the routing detour and absorbed by the framing margin.
+
+**The same scan, restricted to a set of entities, is what zoom to selection frames.** ADR 0003 deferred subset-visibility queries while naming the intended path — extract the scan into a small stateless core over any bounds-bearing sequence rather than duplicating the loop — and this is that extraction. It is also what closes a hole that would otherwise have shipped: `_selectedEdgeId` is an exclusive slot never mixed into `_selectedInstanceIds`, and the arrow-key nudge already notes such a selection "has no `Bounds`", so a selection-bounds implementation reading only instances would make zoom-to-selection silently do nothing on a selected edge, with no visible reason. Reading the slot the selection model already has does **not** widen ADR 0006: edges still cannot join a multi-selection.
+
+## Margin, and the zoom ceiling
+
+**The target is scaled to fit within 0.9 of the viewport, contain-not-cover, and centred** — `min(containerWidth / targetWidth, containerHeight / targetHeight) × 0.9`. A fractional margin rather than a fixed board-space one, which is a constant in the very unit the command is choosing, and rather than a fixed screen-pixel inset, which reads correctly at desktop size but takes over half the width of a canvas embedded in a 240px side panel. A fraction degrades proportionally by construction. The constant is internal and **not host-configurable**, following ADR 0011's rejection of an extent knob added for symmetry alone.
+
+**Framing never zooms in past 1.0, and is free to zoom out as far as the clamps allow.** Fitting a single 100×100 instance to a 1200×800 viewport wants 7.2×, at which the instance fills the screen and every neighbour is gone — a command whose purpose is orientation would have destroyed it. So the rule is: compute the fit scale, cap it at 100%, centre the target either way. On small content the command degenerates into "centre it, at 100%", which is the useful behaviour, because the request was to *find* the thing, not to magnify it. The ceiling is 1.0 rather than an arbitrary 2× or 3× so that the system has one privileged zoom level rather than two unrelated constants.
+
+Host clamps compose on top. A host capping zoom at 0.5× gets fits capped there; a host flooring zoom at 0.5× on a board too large to fit gets 0.5× and sees part of the content, **centred on the target's centre, showing as much as possible** — the clamp-then-centre behaviour that framing inside `ZoomPanTracker` makes free. The accepted consequence is that zoom to selection can zoom the user *out*: framing a small selection while deliberately at 4× lands at 1.0. Capping at the larger of 1.0 and the current scale would avoid the yank, but makes the result depend on where the user happened to be, so the destination is no longer predictable — and predictability is worth more than local optimality for a recovery command.
+
+## Both degenerate cases are no-ops
+
+**Zoom to fit on an empty board changes nothing** — no pan, no scale, no event. Any destination would be invented, and the argument against a privileged origin is stronger on an empty board, not weaker, because there is not even content to argue about. **Zoom to selection with an empty selection changes nothing either, and explicitly does not fall back to fit.** An empty selection is not visually distinguishable from a selection scrolled off-screen, which is the situation in which the command is most likely to be pressed, so a fallback silently converts "frame my selection" into "frame everything" — an enormous unrequested zoom-out, and precisely the disorientation being designed against.
+
+Where a command has a menu row it is **hidden rather than disabled** when unavailable, following ADR 0014 and the existing group/ungroup items. From the keyboard it is a silent no-op, which is tolerable because an empty board and an empty selection are both states the user can see.
+
+## Motion: the state jumps, the pixels interpolate
+
+Framing **animates, and `ZoomPanTracker` never learns about time.** The transform reaches its destination in one `Changed`; `.canvas-content` already carries a CSS transition on `transform`, so the browser interpolates the pixels on the compositor. There is no interpolation home to build, no per-frame interop and — decisively — no per-frame Blazor re-render, which prior work established as this canvas's real bottleneck.
+
+A class applied for the duration of a framing flight overrides the ambient transition with roughly **250ms**: long enough to read as continuous motion so the eye tracks where content came from, short enough not to feel like waiting. Being CSS, `prefers-reduced-motion` costs one media query rather than plumbing a preference through C#, which matters for a whole-viewport translate-and-scale. **Pointer events are suppressed on the container for the flight**, because C# state reaches the destination while the pixels are still in transit, so an unguarded click mid-flight would hit what is about to be under the cursor rather than what appears to be — one property, and it forecloses a whole class of defect rather than leaving it to be found.
+
+Two consequences are accepted. **Grid-layer crossfade and LOD swap resolve instantly at the destination**, mid-flight, because both are computed in C# from the new scale; teaching the grid about time is a far larger change than the wobble justifies. And visual tests must run the reduced-motion path rather than racing a transition, so baselines capture the jump.
+
+Separately, and not changed here: the ambient transition applies to *every* transform write, so pointer-driven pan currently eases toward the cursor by up to 100ms instead of being locked to it. That is a feel defect belonging to the continuous-input decision, which owns the response curve.
+
+## The minimap renders boxes, and maps content unioned with the viewport
+
+The minimap is an ordinary standalone chrome component wired to a canvas by reference, per ADR 0002 — placement is the host's CSS, and `DiagramCanvas` stays ignorant of it.
+
+**It renders one plain, absolutely-positioned element per component instance: no text, no icon, no mounted component, and no edges.** Mounting real components would mount every instance a second time, defeating the LOD cutoff that ADR 0011 introduced for exactly that cost; LOD placeholders are cheaper but still a component per entity, rendering `DisplayName` and `Icon` that are illegible at minimap scale. Fill comes from the same accent the LOD placeholder already takes from the registration contract, falling back to an ADR 0012 theme token, which gives colour coding with no new contract field. Edges are omitted because the minimap answers *where is content and where am I*, not *what is this diagram*; the accepted inconsistency is that a board of only floating connectors has a non-empty content extent and a blank minimap.
+
+**The minimap maps the union of content extent and the current viewport**, so it always shows both the content and where the user is. A content-only mapping would let the viewport rect leave the minimap entirely, abandoning its main job at the moment it is most needed. The union is self-quiescent in ordinary use: while panning within content the viewport is inside the content extent, so the mapping does not move at all, and scale only begins changing once the user pans outside content — which is when the feedback is wanted. At extreme distance content genuinely compresses toward a dot, which is an honest picture and, being clickable, the recovery route; no minimum content size, because a floor would misrepresent the distance.
+
+**The minimap holds its own `ZoomPanTracker`**, sized to its own box, and frames that union with the same primitive — no second implementation of the algebra, and it inherits the 0.9 margin so the viewport rect is not flush against its border. **Its boxes live in board coordinates inside a single transformed wrapper**, exactly as `.canvas-content` does, which is what makes the viewport-dependent mapping affordable: a pan is one transform write on one element, not a re-layout of every box. The boxes are split from the viewport rect and sit behind a `ShouldRender` keyed on board revision — the trick `ComponentContainer` already uses, whose own comment names canvas panning as the trigger it defends against — so navigating a dense board costs one rect and content costs only on edit. There is **no cap and no internal LOD**: omitting content is the one thing a minimap must never do, since "is there anything over there" is the question it answers, and if box count ever becomes the ceiling the honest fix is a rasterised surface, which means reopening a decision this effort holds out of scope rather than silently dropping content.
+
+**The minimap is interactive: click-to-jump and drag-the-rect, pan only.** A click centres the viewport on that board point leaving zoom untouched; a drag pans continuously and a click is a zero-distance drag, so it is one gesture rather than two. Click-to-jump animates and dragging does not, which is the same discrete-versus-continuous split that governs the framing class. There is no zoom from the minimap — resize-the-rect competes for the same pixels as rect-drag to provide a fourth route to something three surfaces already cover — and no selection, which is a different concept on chrome entirely.
+
+**The minimap drag takes its press and release mechanism from the pointer-arbitration model, and does not add its own mouse-up handler.** Every existing canvas gesture terminates via a mouse-up on one element and every one of them leaks; the minimap is a small box, so releasing outside it is the common case rather than the edge case, and hand-rolling the gesture would reproduce that defect in its worst possible shape. This makes the minimap's *display* independent of arbitration and its *drag* dependent on it, and makes the minimap the first thing in this effort to exercise arbitration over chrome rather than board content.
+
+## Surfaces
+
+**`Shift+1` frames all content, `Shift+2` frames the selection, `Shift+0` sets 100%** — the convention in three of the four reference tools, with Miro the lone outlier on `Alt`. All three are free against ADR 0009's table, and because the existing key handler switches on `event.code` these are `Digit1`/`Digit2`/`Digit0` plus a shift test, so they are layout-independent rather than matching a shifted character. They require focus within the canvas container — the stricter guard ADR 0009's clipboard addendum introduced rather than the table's `isEditableTarget`, since an embedded canvas that is not focused must not eat a host page's `Shift+1`; reconciling that guard across the whole table remains the keyboard-parity decision's.
+
+**These commands are what make a right-click menu on empty canvas viable, retiring ADR 0009's premise that "there is no decided action that would belong there."** The actions are supplied here; how the menu is composed is the context-menu decision's, exactly as ADR 0014 handled its eight.
+
+**No zoom-control cluster is introduced.** ADR 0002 makes chrome placement the host's CSS, so every new control component is something hosts must position, and whether the host's board editor needs a chrome-layout rework is already an open question that this accumulation feeds. Siting fit and 100% buttons *on* the minimap was rejected for the same reason: it would turn a view into a control panel and bake a layout decision ADR 0002 deliberately left to hosts.
+
+## Nothing here is board state
+
+No home view, no persisted zoom or pan; ADR 0003 stands unamended and ADR 0004's envelope gains nothing. The argument is not merely that ADR 0003 is settled — it is that **fit is derived, so there is nothing to store.** A saved home view is only necessary when the wanted view cannot be computed, and because content extent comes from the board itself, zoom to fit reconstitutes a canonical view on every load for free. Minimap visibility is the host's markup, not board content.
+
+**The consequence is that the canvas frames all content when a `Board` is first set.** Without persisted view state, opening a saved board otherwise starts at scale 1.0 and pan origin — and the origin has no relationship to content — so a board authored away from the origin opens onto empty canvas on every single load, reaching this ADR's hazard without the user panning anywhere. The initial fit is unconditional and has no host opt-out, following ADR 0011's precedent against speculative knobs and because hosts currently have no way to express an initial view at all; it is unanimated, there being no meaningful state to interpolate out of.
+
+Two ordering constraints are part of the decision rather than implementation detail. It must wait for a known container size — framing against a 0×0 viewport otherwise — which the existing click-to-add path already models by no-oping until the container-size round trip resolves, and which is the same seam whose await ordering produced this codebase's worst gesture leak. And it must fire on a **new** `Board` instance rather than on every parameter set, or an unrelated re-render would yank the user back to a fit mid-work.
+
+## Two traps recorded rather than fixed
+
+`.canvas-content` still declares `width: 3000px; height: 3000px`, a leftover of the fixed canvas ADR 0011 abolished. It is vestigial for rendering — children are absolutely positioned and the clip lives on the container — but it looks like a board coordinate space and is not one, which is exactly the wrong thing to have in view while building a minimap.
+
+The initial fit changes the opening view of every visual-test baseline that mounts a board, so landing it requires a full Playwright run with baseline updates folded in.
+
+**Considered and rejected:**
+- **A reset-view command** (scale 1.0 at pan origin) — the origin is not privileged after ADR 0011, so it can land the user on empty canvas, which is the hazard rather than the cure.
+- **Owning discrete step-zoom here** — the same response curve and anchor as wheel input, so it would settle a zoom curve that the continuous-input decision is already taking.
+- **A stateless framing helper plus an atomic scale-and-pan setter**, keeping `ZoomPanTracker` a pure transform holder — fixes the double-`Changed` artefact but puts coordinate algebra in a second place, and leaves the clamp read-back outside the class that clamps.
+- **Framing by separate `SetScale` and `SetPanPosition` calls** — emits two `Changed` events, so every listener sees a frame pairing the new scale with the old pan.
+- **Content extent from component bounds alone** — reports a board of floating connectors as empty, and crops dragged floating endpoints out of a fit.
+- **Treating an unresolvable endpoint as the origin** — drags a fit toward (0,0) because something was deleted.
+- **Running the router to get exact edge extents** — renderer knowledge in a model query, for an error the framing margin already absorbs.
+- **A fixed board-space framing margin** — a constant in the unit the command is choosing.
+- **A fixed screen-pixel framing margin** — consistent at desktop size, but consumes most of the width of a canvas embedded in a narrow panel, and this is an embeddable library.
+- **A host-configurable margin** — an unused knob added for symmetry, which ADR 0011 rejected in the same terms.
+- **Unclamped framing zoom** — magnifies a single small instance to fill the viewport, destroying the context the command exists to restore.
+- **Capping framing at the larger of 1.0 and the current scale** — avoids being zoomed out by zoom-to-selection, at the cost of a destination that depends on where the user already was.
+- **Zoom to selection falling back to fit on an empty selection** — an empty selection looks identical to an off-screen one, so the fallback silently becomes an unrequested zoom-out to the whole board.
+- **Resetting zoom to 1.0 as the empty-board behaviour** — a second rule for a case whose honest answer is that there is nothing to frame.
+- **Disabling rather than hiding unavailable menu rows** — a greyed row with no tooltip surface explains nothing, per ADR 0014.
+- **A C# animation loop driven from `requestAnimationFrame`** — a per-frame interop call and a per-frame re-render on the path prior work identified as the bottleneck, to reproduce what the compositor already does, and it would have to plumb reduced-motion by hand.
+- **Teaching the grid and LOD cutoff about the animation** so they interpolate too — removes a one-off wobble at the cost of giving two rendering concerns a notion of time.
+- **Real components or LOD placeholders in the minimap** — mounts every instance a second time, defeating ADR 0011's cutoff, to render text illegible at that scale.
+- **A single rasterised minimap surface** — genuinely cheapest at scale, but D12Canvas is a DOM/CSS canvas by definition and changing the rendering strategy for chrome is held out of scope.
+- **Edges in the minimap** — doubles the element count and needs the router, for structure the minimap is not there to convey.
+- **A cap or internal LOD on minimap boxes** — omitting content is the one thing a minimap must never do.
+- **Mapping the minimap to content extent alone** — stable, but lets the viewport rect leave the minimap exactly when the user is lost.
+- **A floor on how small content may compress in the minimap** — misrepresents distance, and the recovery gesture is already there.
+- **Positioning minimap boxes in minimap coordinates** — makes every box's position depend on the viewport, so every pan re-renders every box.
+- **Zoom by resizing the minimap's viewport rect** — competes with rect-drag for the same pixels, for a fourth route to zoom.
+- **Selecting entities by clicking minimap boxes** — selection semantics on chrome, well past this effort's destination.
+- **A hand-rolled mouse-up on the minimap drag** — reproduces the leak every existing gesture has, in the shape where release-outside is the common case.
+- **`Alt+1`/`Alt+2`** (Miro's bindings) — the outlier against three tools that agree.
+- **Deferring the shortcut bindings to the keyboard-parity decision**, as ADR 0014 did — right for eight actions needing contested chords, but these three have one unambiguous convention that would only be re-derived from the same evidence.
+- **A zoom-control cluster, or buttons on the minimap** — new chrome hosts must position, feeding an unresolved chrome-layout question and baking a placement decision ADR 0002 left to hosts.
+- **A persisted home view** — would need an explicit exception in settled ADR 0003, to store what fit already derives.
+- **A host parameter to suppress the initial fit** — speculative until a host has any way to express an initial view at all.
