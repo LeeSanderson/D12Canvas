@@ -8,6 +8,8 @@ D12Canvas ships two built-in default value sets for the token layer — a light 
 
 `DiagramCanvas` and `Palette` mount as independent components (ADR 0002) rather than sharing a DOM subtree, so each declares its own copy of the token defaults on its own root element rather than at a single global `:root`. Every component is correctly themed standalone, and two independent canvas instances on one page can carry different themes. A host wanting one consistent theme across both simply overrides the tokens on a shared ancestor; ordinary CSS inheritance carries the override down into both components with no bespoke wiring required.
 
+**Extended by ADR 0016**, which establishes that the boundary here is *who renders the pixels* rather than chrome versus content, and admits library-painted board content (an `Edge`) as a token consumer. Nothing in this ADR is reversed; the case simply did not exist when it was written.
+
 **Considered and rejected:**
 - **A C# `CanvasTheme` object as a cascading parameter** — rejected; the rendering approach is already DOM/CSS, so a parallel C# theming API would just duplicate what plain CSS custom properties already do natively, adding surface area for something purely cosmetic.
 - **Folding this into ADR 0008** — rejected; ADR 0008 decided instance styling gets no separate theming model, the opposite shape of this decision. Keeping the two ADRs separate keeps each one's rationale unambiguous.
