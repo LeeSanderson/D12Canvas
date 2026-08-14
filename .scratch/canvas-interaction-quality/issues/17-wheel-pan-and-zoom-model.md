@@ -1,8 +1,9 @@
 # Wheel-driven pan and zoom model
 
 Type: prototype
-Status: open
+Status: claimed
 Blocked by: 03
+Prototype: branch `prototype/wheel-pan-zoom` — `dotnet run --project D12Canvas.Demo`, then `/prototype-wheel-pan-zoom`
 
 ## Question
 
