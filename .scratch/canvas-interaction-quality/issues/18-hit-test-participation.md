@@ -1,7 +1,7 @@
 # Hit-test participation and hit-region geometry
 
 Type: grilling
-Status: open
+Status: claimed
 
 ## Question
 
