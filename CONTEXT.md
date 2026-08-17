@@ -69,7 +69,7 @@ The kind of control an editable property renders as in the property panel — a 
 One completed user-facing action on the board — a drag from press to release, a resize, a prop edit committed on blur, a create, a delete, a group, an ungroup. The unit undo/redo operates on: a gesture becomes exactly one history entry, never one per intermediate frame.
 
 **Command**:
-A recorded, invertible board mutation produced by a gesture — knows how to apply and undo itself. A small closed set (`AddEntity`, `RemoveEntity`, `ChangeBoundsCommand`, `ChangeEdgeStyleCommand`, `ChangeEdgeLabelCommand`, `ChangeZIndexCommand`, `MutateEntity`, `GroupCommand`, `UngroupCommand`, `CompositeCommand`), not one bespoke class per gesture type.
+A recorded, invertible board mutation produced by a gesture — knows how to apply and undo itself. A small closed set (`AddEntity`, `RemoveEntity`, `ChangeBoundsCommand`, `ChangeEdgeStyleCommand`, `ChangeEdgeLabelCommand`, `ChangeZIndexCommand`, `ChangeLockedCommand`, `MutateEntity`, `GroupCommand`, `UngroupCommand`, `CompositeCommand`), not one bespoke class per gesture type. Every one of them refuses a `Locked` entity — skipping it rather than failing, so a command over a mixed selection still acts on the rest.
 _Avoid_: inventing a new command type per feature — a generic primitive (especially `MutateEntity` for opaque `Props`) should cover it first.
 
 **History**:
@@ -93,7 +93,20 @@ Moving the viewport so a given board rect fills it — the shared operation behi
 _Avoid_: zoom — framing always sets pan as well, and is a discrete destination rather than an increment.
 
 **LOD placeholder**:
-The generic, non-interactive stand-in rendered for a component instance once its on-screen size (`Bounds` × current zoom scale) drops below a configurable threshold — swaps out the full Razor component tree for a plain box built from data the registration contract already requires (`DisplayName`/`Icon`), rather than mounting every instance at full cost regardless of how small it renders.
+The generic stand-in rendered for a component instance once its on-screen size (`Bounds` × current zoom scale) drops below a configurable threshold — swaps out the full Razor component tree for a plain box built from data the registration contract already requires (`DisplayName`/`Icon`), rather than mounting every instance at full cost regardless of how small it renders. Cheap to render, not inert: it is a full `Hit target` and an ordinary tab stop, since the cost it exists to avoid is *mounting*, and a board whose content stopped being selectable when zoomed out would be unusable at exactly the zoom where grabbing a cluster matters most (ADR 0017).
+_Avoid_: reading it as non-interactive — ADR 0011 swaps the mounted component tree, never the entity's reachability.
+
+**Hit target**:
+What a pointer press resolves to — a `(role, entity, part)` classification produced once, at press, by walking up the DOM from the event's own target to the nearest marked element. The role is a closed set (`instance`, `resize-handle`, `port`, `port-strip`, `edge`, `edge-endpoint`, `edge-label`, `selection-bounds`, `selection-handle`, `author-content`, `canvas`), and `canvas` means the walk found nothing rather than that nothing was there. Resolved in JavaScript because Blazor's `MouseEventArgs` carries no event target, which is why arbitration is otherwise forced out into per-element handlers.
+_Avoid_: hit result, pick — "target" is the reference-tool term and the one the classification's own role names describe.
+
+**Hit region**:
+The area that resolves to a `Hit target`, expressed as a real element and deliberately not the same shape as what is drawn — an edge's visible stroke is 2 units wide while its region is 20 screen pixels. Where the two differ, the region is the participating element and the visual is painted by a non-participant. Sized against `--d12-scale` so it stays constant in *screen* pixels at any zoom, and always attached to something visible: a region may exceed its visual, but nothing is hittable with no visual at all. Whether an entity has a region at all is one predicate in C#, read both by the markup that emits the region and by the marquee, so the two cannot drift.
+_Avoid_: hit box — regions are not all rectangular (an edge's is a stroke).
+
+**Locked**:
+An entity's opt-in protection from change — no `Command` modifies a locked `Component instance` or `Edge`, and it takes no part in pointer hit-testing or marquee selection. A `Group` holds no flag of its own: locking one is a bulk write across its members and "is this group locked?" is derived from them, exactly as its bounds are. Persisted, undoable, and absent by default. Deliberately orthogonal to keyboard reachability — a locked entity stays tab-reachable and appears in the `Property panel` with its fields disabled and an unlock control live, which is what stops it being locked forever.
+_Avoid_: keying pointer participation and keyboard reachability off one condition — ADR 0017 separates them precisely so locking cannot become an accessibility failure.
 
 **Theme token**:
 A named CSS custom property in the shared set that everything the library itself paints reads for its default visual values (surface, border, accent, muted text, …), rather than each element declaring one-off properties. Every canvas-chrome element (`Grid`, `LOD placeholder`, `Palette`, selection marquee, connector drag-preview, context menu) reads them, and so does library-painted *board content* — an `Edge`, which has no author component behind it. Declared independently on each chrome component's own root — not a single global `:root` — so every component works standalone and two canvas instances can carry different themes; a host overriding tokens on a shared ancestor gets one consistent theme across both via ordinary CSS inheritance.
