@@ -1,7 +1,7 @@
 # Pointer gesture arbitration model
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 02, 03, 04, 18
 
 ## Question
