@@ -171,3 +171,9 @@ Expressed as declared `z-index` values on hit elements in **one CSS block**, so 
 - **Locking via `MutateEntityCommand`** — that command swaps opaque `Props`; `Locked` is a field, not business data.
 - **Deferring locking to its own later ticket** — the participation predicate makes the semantics nearly free, and splitting them would record the same decision twice.
 - **Reaching a locked entity through the context menu** — the natural surface, but it depends on decisions not yet taken, and the panel route needs nothing new.
+
+## Addendum (surfaced while resolving the pointer gesture arbitration ticket)
+
+The classification is **wider than the `(role, entityId, part)` triple above**. ADR 0018 needs the press to carry **press count** (from `event.detail`), **`pointerType`**, **buttons** and **modifiers** as well: click and double-click dispatch off the classification rather than off the browser's own `click`/`dblclick` events, the movement threshold varies by `pointerType`, and the press-to-gesture mapping reads buttons and modifiers. Recorded here explicitly so the triple is not read as the whole payload.
+
+Everything else holds unchanged, and two of this ADR's rules turned out to be load-bearing in ways it did not state. First, the four synchronous decisions ADR 0018 makes in JS — `preventDefault`, `setPointerCapture`, focus transfer and the threshold — all derive from the **role alone**, which is what keeps selection state out of JS entirely. Second, `author-content` presses select their enclosing instance **additively** (never removing anything from the selection), which is the question this ADR explicitly deferred.
