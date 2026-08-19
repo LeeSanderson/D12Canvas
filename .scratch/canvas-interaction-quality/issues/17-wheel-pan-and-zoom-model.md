@@ -1,7 +1,7 @@
 # Wheel-driven pan and zoom model
 
 Type: prototype
-Status: claimed
+Status: resolved
 Blocked by: 03
 Prototype: branch `prototype/wheel-pan-zoom` — `dotnet run --project D12Canvas.Demo`, then `/prototype-wheel-pan-zoom`
 
@@ -70,3 +70,82 @@ The ergonomic objection points the same way and is still unanswered: under A, **
 ### Still untouched
 
 Nothing below has been put to the human yet: the zoom damping constant K (at the recommended 100, one mouse notch is a 3.32x jump — the readout computes this live next to the slider); whether `deltaX` pans horizontally and whether shift-wheel is worth having; whether zoom anchors on the pointer or the viewport centre, and whether that amends or supersedes ADR 0011; the gesture idle timeout and whether zoom/pan enter history at all; the fall-through policy; the ambient transition duration; and ADR 0015's undefended ~250ms framing flight, which the ticket asks to judge in the same session as the zoom curve.
+
+## Answer
+
+**ADR 0019** — a wheel event's meaning, its smoothing and its modifier set all follow from one
+device profile, guessed from delta granularity and overridable by the host.
+
+The parked session's headline question was A-versus-B. The answer is **neither, and the reason
+the question felt unanswerable is that both defaults are right — for different devices.**
+`WheelDeviceProfile` (`Auto` | `Mouse` | `Trackpad`) resolves it: plain wheel zooms on `Mouse`,
+pans on `Trackpad`, and `Auto` is the default.
+
+**The confound was killed first, and the verdict survived it.** With the ambient transition at 0
+the A/B preference was unchanged, so the parked warning is discharged and the variant preference
+is real data rather than an artifact of `.canvas-content` easing.
+
+**The one insight that makes this more than a preference toggle.** Every job the profile does
+follows from a single physical fact — **delta granularity**. A mouse notch is a discrete 100px
+step; a trackpad is fractional and fast. That is why the profile drives three things rather than
+one (plain-wheel meaning, ambient duration, whether Shift is bound), and it is why `Auto` is sound
+rather than a correlation: the detection tell *is* granularity, and granularity *is* why the
+smoothing exists. A misclassification is self-correcting in the direction that matters.
+
+Constants, all judged by feel on the prototype rather than reasoned: **K = 600** (1.18× per notch),
+**ambient 100ms / 0ms**, **idle timeout 300ms**, **framing flight 250ms**.
+
+### Two confounds caught, not one
+
+The parked note named the ambient-transition confound. A second one of the same shape appeared
+during this session and was caught before it was banked: **the first "ambient 0 is jumpy" reading
+was taken with K still at its default 100 — a 2.72× jump per notch.** The jumpiness could have
+been the violent zoom step rather than the absent smoothing. Re-tested at K=600 (about a seventh
+of the visual change) it was still jumpy, so the device coupling is real. One badly-set constant
+making another look necessary is evidently this ticket's characteristic failure mode.
+
+A third instrument problem was fixed rather than judged around: **the K slider capped at 600**,
+which is 1.18× — inside the plausible range, since 1.1× needs K≈1050. Widened to 1200 (`e39d8ec`)
+*before* judging, so "600 feels right" is distinguishable from "600 is as far as it goes."
+
+### Corrections to banked findings
+
+- **A real notch is 100px, not 120.** The banked Playwright assertion says 120 and is green;
+  real hardware delivers 100, because the engine converts a notch to three lines of ~33.3px and a
+  synthetic wheel skips that conversion. Any constant tuned against the test inherits a 20% error.
+- **ADR 0011 does not own what this ticket assumed it did.** The ticket asks whether pointer
+  anchoring amends or supersedes it. Neither: ADR 0011 covers the zoom *range*, LOD and the grid,
+  and says nothing about anchoring, response curve or input mapping. Today's `±0.1` step is code,
+  not a recorded decision. ADR 0019 occupies empty ground.
+- **ADR 0007 is untouched, not amended.** Wheel zoom and pan stay out of undo history, so a wheel
+  gesture never becomes a `Gesture` in the history sense. The idle timeout survives with a new
+  consumer — `Auto` classification — and is recorded as a classification boundary so it is not
+  later re-tuned against the removed one.
+
+### The Alt thread, closed on its third answer
+
+Retired mid-session on the reasoning that C makes it redundant (**wrong** — that considered only
+the trackpad user; a mouse user's wheel zooms and leaves them no vertical pan). Reopened as
+vertical-only. Finally settled as **broad — "pan both axes", unchanged from the prototype**,
+because on a mouse there is no `deltaX`, so panning both axes *is* vertical pan.
+
+That is also what closes the unresolved "Alt broke trackpad scrolling" report. Measured: Alt has
+no effect on the trackpad, because plain swipe already pans both axes. So a spuriously-arriving
+`altKey` is behaviourally invisible, and the narrow binding would have *created* the hazard by
+dropping the horizontal component of a misread swipe. Alt release was measured on Windows and
+does not steal focus. The broad binding is the immune one.
+
+### Handed to other tickets
+
+- **[Gesture release reliability](04-gesture-release-reliability.md) (resolved) — the pan leak is
+  worse than banked.** Reproduced live: after a framing flight, mouse movement pans with no button
+  held. `HandleMouseDown` is `async Task` and awaits `getContainerDimensions` *before* setting
+  `_isPanning`; a mouseup inside that await is undone by the continuation. Ticket 04 characterised
+  this as needing "a fast enough click" — **it does not.** The 250ms framing flight occupies the
+  Blazor circuit and stretches the round-trip, so an ordinary-speed click leaks whenever anything
+  else holds the circuit. The leak is gated on circuit latency, not user speed. Strengthens
+  ADR 0018's choice to establish ownership synchronously in JS rather than across an await.
+- **[Verifying interaction quality](15-verifying-interaction-quality.md) — an assertion-only probe
+  can be green and still not describe the device.** The 120-versus-100 divergence is the worked
+  example. The probe's value is in what it proves about *plumbing* (modifiers survive the trip,
+  the anchor invariant holds), never about magnitudes.

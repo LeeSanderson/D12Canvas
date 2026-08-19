@@ -22,3 +22,16 @@ Decide:
 - What the standing rule becomes. The existing one — new visual state means a screenshot case — needs an interaction-shaped counterpart, or it will be applied to gestures it cannot actually verify.
 - **How the suite deals with animation, now that ADR 0015 has introduced some.** Framing commands animate the canvas transform for ~250ms, so a screenshot taken without care races the transition — and the pre-existing ambient `transition: transform 0.1s ease-out` on `.canvas-content` means *every* baseline involving a pan or zoom has silently had this hazard all along. ADR 0015's recommendation is Playwright's `reducedMotion: 'reduce'` context option, so baselines capture the destination rather than a settle-and-hope wait; confirm that reaches the `prefers-reduced-motion` media query in the pinned Docker image, and decide whether it applies suite-wide or per-case. Note also that ADR 0015 suppresses pointer events on the container during a framing flight, which is exactly the kind of transient state a scripted gesture can trip over.
 - **Two baseline-shifting changes ADR 0015 lands**, worth planning for rather than discovering: the canvas now frames all content when a `Board` is first set, which changes the opening view of every board-mounting baseline, and the minimap is new chrome needing `D12Canvas.Demo` coverage of its own.
+
+## Note from ticket 17: a green assertion-only probe can still not describe the device
+
+`WheelInputProbeTests` asserts a wheel notch arrives as `deltaY: 120`. It is green. **Real hardware
+delivers 100** — Windows' raw `WHEEL_DELTA` is 120, but the engine converts a notch to three lines
+of ~33.3px before it reaches the event, and Playwright's synthetic wheel skips that conversion.
+
+Any feel constant tuned against the test would inherit a 20% error. The lesson for this ticket is
+not "assertion-only probes are bad" — they remain valuable, and unlike the rest of that project
+they have no font/AA sensitivity and run correctly outside the pinned container. It is that their
+value lies in what they prove about **plumbing** (modifiers survive the trip, the pointer-anchor
+invariant holds, `defaultPrevented` is set) and never about **magnitudes**, which only real input
+can establish. Whatever verification approach this ticket lands on needs that line drawn explicitly.

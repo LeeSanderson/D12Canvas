@@ -74,3 +74,18 @@ Every drag test in the suite (`DragMoveVisualTests`, `MarqueeVisualTests`, `Resi
 ### Side finding for tickets 18 and 06
 
 The four standard ports and the four edge resize handles are **exactly concentric** (`.port-right` at `right: -10px` width 20; `.resize-handle.right` at `right: -5px` width 10 — same centre), and the handles render later in the markup, so they win the paint-order tie-break. `elementFromPoint` at a port's exact centre returns `div.resize-handle.right`; the port is only pressable off-centre (7px outboard worked). Ticket 18 owns precedence between overlapping participants and ticket 06 owns port/handle sizing — this is a live instance of exactly the "inherited from paint order rather than written down" problem ticket 18 describes.
+
+### Later finding from ticket 17: the pan leak is not gated on click speed
+
+Reproduced live while judging the wheel prototype. After a framing flight, mouse movement over
+the canvas pans with no button held.
+
+This ticket characterised the headline path as needing "a fast enough click" — **it does not.**
+`HandleMouseDown` is `async Task` and awaits `getContainerDimensions` before setting `_isPanning`;
+a mouseup landing inside that await is cleared by `HandleMouseUp` and then reinstated by the
+continuation. The framing flight does `StateHasChanged` followed by `await Task.Delay(250)`, which
+occupies the Blazor circuit and stretches that round-trip, so an **ordinary-speed** click leaks.
+
+The leak is gated on **circuit latency, not user speed**, and any concurrent work supplies the
+latency. That widens the reproduction surface considerably and strengthens ADR 0018's choice to
+establish gesture ownership synchronously in JavaScript rather than across an interop await.

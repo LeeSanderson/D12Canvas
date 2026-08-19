@@ -72,6 +72,14 @@ _Avoid_: confusing with `Gesture`, which is the *history* unit — four pointer 
 **Gesture**:
 One completed user-facing action on the board — a drag from press to release, a resize, a prop edit committed on blur, a create, a delete, a group, an ungroup. The unit undo/redo operates on: a gesture becomes exactly one history entry, never one per intermediate frame. A `Pointer gesture` commits at most one of these, at release, in one place — never per intermediate frame, and never from the `pointing` phase.
 
+**Wheel gesture**:
+A run of wheel events bounded by a 300ms idle timeout, with `momentum === true` as an early terminator where the engine supplies one. Deliberately the *third* thing called a gesture here and the only one that touches neither of the others: it involves no press, so it is not a `Pointer gesture`, and it never produces a history entry, so it is not a `Gesture` — wheel zoom and pan stay out of undo entirely (ADR 0019). Its boundary exists solely to hold a `Wheel device profile` classification steady for the run.
+_Avoid_: treating the idle timeout as an undo-granularity boundary. It was originally specified as one, that consumer no longer exists, and re-tuning it against undo would break classification stability instead.
+
+**Wheel device profile**:
+Which of `Auto`, `Mouse` or `Trackpad` a canvas is treating the wheel as coming from, naming one physical fact — **delta granularity**. A mouse notch arrives as a discrete 100px step, a trackpad fractional and fast. Decides three things together: whether a plain wheel zooms or pans, the ambient transform-transition duration (100ms against coarse input, 0ms against fine), and whether Shift binds to horizontal pan at all. `Auto` classifies at `Wheel gesture` start and holds for the run; `Mouse` and `Trackpad` pin it. The host owns any control and any persistence — the library renders neither (ADR 0019).
+_Avoid_: reading `Auto` as a heuristic that merely correlates with the device. The integral-versus-fractional tell *is* granularity, and granularity *is* why the smoothing constant exists, so a misclassification still applies smoothing to exactly the input that needs it.
+
 **Command**:
 A recorded, invertible board mutation produced by a gesture — knows how to apply and undo itself. A small closed set (`AddEntity`, `RemoveEntity`, `ChangeBoundsCommand`, `ChangeEdgeStyleCommand`, `ChangeEdgeLabelCommand`, `ChangeZIndexCommand`, `ChangeLockedCommand`, `MutateEntity`, `GroupCommand`, `UngroupCommand`, `CompositeCommand`), not one bespoke class per gesture type. Every one of them refuses a `Locked` entity — skipping it rather than failing, so a command over a mixed selection still acts on the rest.
 _Avoid_: inventing a new command type per feature — a generic primitive (especially `MutateEntity` for opaque `Props`) should cover it first.
