@@ -23,7 +23,7 @@ A component type's own serializable business data (e.g. a sticky note's text and
 _Avoid_: parameters — Blazor's own term for a broader concept (includes callbacks, render fragments); "props" specifically means the serializable data payload.
 
 **Bounds**:
-A component instance's position and size, tracked uniformly across every component type independent of its props — what lets the canvas query "what's on screen" without knowing any specific component type's shape.
+A component instance's position and size, tracked uniformly across every component type independent of its props — what lets the canvas query "what's on screen" without knowing any specific component type's shape. Always the *committed* value: it is never written while a `Pointer gesture` is in flight, which is what lets a `Command` read its own before-value straight off the field; what is on screen mid-gesture comes from `Live geometry` instead.
 
 **Entity**:
 Any board-content item addressable by a stable GUID assigned at creation — a component instance, a group, or an edge. Entities reference each other only by ID, never by direct ownership, so board content stays flat and independently mergeable.
@@ -79,6 +79,14 @@ _Avoid_: treating the idle timeout as an undo-granularity boundary. It was origi
 **Wheel device profile**:
 Which of `Auto`, `Mouse` or `Trackpad` a canvas is treating the wheel as coming from, naming one physical fact — **delta granularity**. A mouse notch arrives as a discrete 100px step, a trackpad fractional and fast. Decides three things together: whether a plain wheel zooms or pans, the ambient transform-transition duration (100ms against coarse input, 0ms against fine), and whether Shift binds to horizontal pan at all. `Auto` classifies at `Wheel gesture` start and holds for the run; `Mouse` and `Trackpad` pin it. The host owns any control and any persistence — the library renders neither (ADR 0019).
 _Avoid_: reading `Auto` as a heuristic that merely correlates with the device. The integral-versus-fractional tell *is* granularity, and granularity *is* why the smoothing constant exists, so a misclassification still applies smoothing to exactly the input that needs it.
+
+**Gesture preview**:
+What the active `Pointer gesture` publishes once per frame while it runs — `Bounds` overrides keyed by component instance id, plus at most one pending edge line (two board points and the id of the edge whose own line is suppressed, absent while a brand-new edge is being drawn). The entities it overrides are that gesture's **participants**. Provisional by definition: `Board` is never written mid-gesture, so cancelling is discarding it and committing is writing it back verbatim, which is what makes a history entry record exactly what was on screen. Covers geometry only — a `Selection` replaced mid-gesture is not restored by discarding it (ADR 0020).
+_Avoid_: reading it as a cache of `Board` — only the owning gesture writes it, and it holds only what that gesture changes.
+
+**Live geometry**:
+The single read surface that turns board entities into their current board-space points and rectangles, consulting the `Gesture preview` before committed state. It exists to make one rule sayable: read `Bounds` off an entity when you mean committed state — a `Command`'s before-value, persistence — and go through live geometry when you mean what is on screen now. Every derivation exists once with two named entry points, the committed one on `Board` and the live one here; windowed mounting and `Content extent` deliberately take the committed ones, and an `LOD placeholder` swap is frozen for a participant until its gesture releases. Internal to the library: a host asking `Board` a question means the committed answer.
+_Avoid_: effective bounds — names one mechanism's single consumer rather than the question every reader is actually asking.
 
 **Command**:
 A recorded, invertible board mutation produced by a gesture — knows how to apply and undo itself. A small closed set (`AddEntity`, `RemoveEntity`, `ChangeBoundsCommand`, `ChangeEdgeStyleCommand`, `ChangeEdgeLabelCommand`, `ChangeZIndexCommand`, `ChangeLockedCommand`, `MutateEntity`, `GroupCommand`, `UngroupCommand`, `CompositeCommand`), not one bespoke class per gesture type. Every one of them refuses a `Locked` entity — skipping it rather than failing, so a command over a mixed selection still acts on the rest.
