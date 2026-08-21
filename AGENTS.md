@@ -1,5 +1,7 @@
 # D12Canvas
 
+*** IMPORTANT: *** Always load the `/unslop` skill to ensure communication between agent and humans is clear
+
 ## Agent skills
 
 ### Issue tracker
