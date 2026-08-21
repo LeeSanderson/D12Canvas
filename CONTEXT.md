@@ -47,7 +47,7 @@ A named attachment point on a component instance that an edge can connect to, po
 An edge both of whose endpoints resolve to component instances inside a given set of entities — the test for whether an edge belongs to that set rather than merely touching it. Applied when a selection is copied (only interior edges travel) and again when a payload is pasted (against what actually materialised, so an edge that lost an endpoint to an unresolvable component type is dropped rather than left dangling).
 
 **Canvas chrome**:
-UI anchored to a canvas's viewport rather than its pannable/zoomable board surface — it doesn't move when the board pans and isn't part of persisted board content. The palette and the minimap are the examples; each is a standalone component the host places and positions itself, so `DiagramCanvas` stays ignorant of both.
+UI anchored to a canvas's viewport rather than its pannable/zoomable board surface — it doesn't move when the board pans and isn't part of persisted board content. Two kinds, and the distinction is who places it. **Host-placed** chrome (the palette, the minimap) is a standalone component the host positions with its own CSS, wired to a canvas by reference, so `DiagramCanvas` stays ignorant of it. **Canvas-rendered** chrome (the selection context menu, the `Property bar`) is rendered by `DiagramCanvas` itself as a sibling of `.diagram-canvas`, positioned in plain container-relative pixels; it may derive that position from board geometry without becoming board content (ADR 0021).
 _Avoid_: overlay, widget.
 
 **Palette**:
@@ -57,10 +57,17 @@ The default canvas chrome component that lists registered component types for th
 The canvas chrome component showing the whole board at a glance plus a rect marking the current viewport, so content that has been panned away from stays locatable. Renders one plain box per component instance — never a mounted component or an `LOD placeholder`, and never edges — and maps the union of `Content extent` and the current viewport, so it shows both where content is and where the user is even when those no longer overlap. Holds its own `ZoomPanTracker` and reaches its scale through the same `Framing` computation the viewport commands use. Navigation only: clicking or dragging pans, and never selects or zooms.
 
 **Property panel**:
-The canvas-chrome component that surfaces editable `TProps` fields for the current selection, built generically from each component type's declared editable properties rather than one bespoke panel per type. A component's `Text`-type content is excluded — edited inline/WYSIWYG on the canvas instead.
+The host-placed canvas chrome that surfaces editable `TProps` fields for the current selection, built generically from each component type's declared editable properties rather than one bespoke panel per type. Holds the full schema, including everything with no `Property role` to put it in the `Property bar`. A component's `Text`-type content is excluded — edited inline/WYSIWYG on the canvas instead. Reads the *expanded* selection, so a selected `Group` is editable through its members (ADR 0021).
+
+**Property bar**:
+The canvas-rendered chrome that floats above the current selection carrying the properties judged by eye, drawn as glyphs with no text labels. Supplements the property panel rather than replacing it: the bar shows only properties declaring a `Property role`, the panel keeps the full schema. Anchored by transforming the selection's bounds into container pixels and clamping the result inside the container, sliding along an edge rather than flipping below. Hides for the duration of a pointer gesture and while a context menu is open (ADR 0021).
+_Avoid_: context toolbar, floating panel.
+
+**Property role**:
+The well-known role a property plays, drawn from a closed library-owned set (`Fill`, `Stroke`, `StrokeWidth`, `TextColour`, `FontSize`, `FontWeight`, `TextAlign`, plus four the library uses for an `Edge`). Declared explicitly by an author, never inferred — a glyph cannot be derived from a property's name or its `EditorKind`, since a rectangle's fill and stroke share a kind and a sticky note's `Color` is a background where a text instance's is a foreground. Each role owns its glyph and declares the `EditorKind` and CLR type it expects, so a mismatch is caught on the registration that causes it. Doing double duty: a role is both what admits a property to the `Property bar` and what merges it across types in a cross-type multi-selection (ADR 0021, replacing the free-string shared tag).
 
 **Editable property**:
-A `TProps` field exposed through the property panel, declared by default via an attribute on the `TProps` record and optionally overridden by the registration builder. Carries an `EditorKind` describing which panel control renders it.
+A `TProps` field exposed through the property panel, declared by default via an attribute on the `TProps` record and optionally overridden by the registration builder. Carries an `EditorKind` describing which panel control renders it, and optionally a `Property role`.
 
 **EditorKind**:
 The kind of control an editable property renders as in the property panel — a closed built-in set (Text, Color, Number, Checkbox, Dropdown, …) plus `Custom`, which takes an author-supplied `RenderFragment<CustomEditorContext>` (the property's current value plus a commit callback) for anything the built-ins can't express. A `Custom`-kind property can only be declared via the registration builder, never a `[PanelEditable]` attribute, since an attribute argument can't carry a RenderFragment.
