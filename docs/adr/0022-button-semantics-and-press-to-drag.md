@@ -158,3 +158,17 @@ The one thing this ADR takes away from touch is the context menu, which now live
 - **Letting the browser's menu through on bare canvas**, as today's conditional `preventDefault` does — it now aborts the pan it interrupts, via the `pointercancel` the specification mandates when a menu opens.
 - **Suppressing the native menu on `author-content`** — costs an author's `<input>` its spellcheck and its own clipboard items, which is the class of workaround ADR 0017 was pleased to delete rather than add.
 - **`author-content` swallowing all three buttons uniformly** — leaves an instance that is mostly a control with no pan route starting over it.
+
+**Addendum (surfaced while resolving the context menu enrichment ticket):** ADR 0023 amends **one cell** of the role table above. The `author-content` / Secondary cell is no longer `Native` unconditionally.
+
+The reasoning recorded here is about editable content and the rule was written against the role, and that gap is wider than it looks. Built-ins register through the same mechanism as any other component and ADR 0017's classification covers them, so as written this ADR gives **a right-click on a sticky note's body the browser's menu rather than the object menu** — along with Text instances and any author component that fills its container, which is most of them. A sticky note outside edit mode is static text, so `Native` there defends a spellcheck menu with nothing to check.
+
+So the exception narrows to where its reasoning bites: **`Native` when the press target is editable, or when a text selection is live inside the content; otherwise `author-content` classifies as `instance` for the secondary button and the object menu opens.** ADR 0018 already carries the editable-target predicate, so no new mechanism appears. The Middle column is untouched, and so is the Primary column, where `author-content` still selects its instance additively.
+
+The route that technically existed without this is worth recording as rejected rather than overlooked: every role but `author-content` opens the menu on a sub-threshold secondary release, so a selected instance's resize handles reach it. "Right-click the handle, not the shape" is not a thing anyone discovers.
+
+What the narrowing does not cover is an author embedding an `<a>`, `<img>`, `<video>` or `<audio>` element, where the browser's menu is genuinely the useful one and neither test catches it. That is left open rather than guessed at, since the choice between a closed set of element kinds the framework recognises and an opt-out the author declares is a contract decision.
+
+Two other things this ADR handed on are now settled. **The menu carries an unlock item** (see ADR 0017's addendum). And the press point this ADR stores to anchor the menu turns out to have a second consumer: ADR 0013's paste anchor reads it, because by the time a Paste row is clicked the pointer is over the menu rather than the canvas.
+
+Finally, note that ADR 0023 consumes a menu-dismissing press inside `.diagram-container` in the capture phase, which leaves ADR 0018 untouched and has one visible cost against this ADR's pan decision: right-dragging while a menu is open dismisses rather than pans, so the user right-drags twice.

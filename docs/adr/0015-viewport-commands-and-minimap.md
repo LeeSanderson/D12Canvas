@@ -113,3 +113,9 @@ The initial fit changes the opening view of every visual-test baseline that moun
 - **A zoom-control cluster, or buttons on the minimap** — new chrome hosts must position, feeding an unresolved chrome-layout question and baking a placement decision ADR 0002 left to hosts.
 - **A persisted home view** — would need an explicit exception in settled ADR 0003, to store what fit already derives.
 - **A host parameter to suppress the initial fit** — speculative until a host has any way to express an initial view at all.
+
+**Addendum (surfaced while resolving the context menu enrichment ticket):** the composition question this ADR handed on is answered by ADR 0023, and the three commands land as **one view section shared by both menus** rather than as an empty-canvas section. Zoom to fit and zoom to 100% are eligible always; zoom to selection is eligible when the selection is non-empty, which on the canvas menu is never. That removes the asymmetry this ADR noticed and left open — that fit is meaningful in both contexts while paste and select-all are empty-canvas-flavoured — without a rule, because per-item eligibility already expresses it.
+
+Two decisions here are confirmed and consumed. **Hidden rather than disabled** is followed for every row on both menus. And the rejection of a **zoom control cluster** is strengthened rather than merely respected: two of these three commands now have a surface that costs the host no placement at all, since the menu is canvas-rendered chrome, which removes most of what a cluster would have carried. What remains of that accumulation is the host's own board-editor layout, now its own ticket rather than fog.
+
+Note also that ADR 0023 declines a `WheelDeviceProfile` row on this ADR's own reasoning, generalised: the menu may flip state the library already has a built-in route to flip, and does not become the first route to a host-owned preference.

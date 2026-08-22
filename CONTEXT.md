@@ -53,6 +53,10 @@ _Avoid_: overlay, widget.
 **Palette**:
 The default canvas chrome component that lists registered component types for the user to pick from.
 
+**Context menu**:
+The canvas-rendered chrome a secondary press opens on release, one component with two content sets. The **object menu** carries commands over the selection; the **canvas menu** carries board and view settings. Which rows appear is per-item eligibility rather than a layout per context, so a section renders when any of its members is eligible and unavailable rows are hidden rather than disabled. Placed once at the press point with its anchor corner chosen to open away from the nearest container edge, and it dies on the next press — unlike the persistent `Property bar`, which clamps instead of flipping for exactly that reason (ADR 0023).
+_Avoid_: right-click menu, popup menu.
+
 **Minimap**:
 The canvas chrome component showing the whole board at a glance plus a rect marking the current viewport, so content that has been panned away from stays locatable. Renders one plain box per component instance — never a mounted component or an `LOD placeholder`, and never edges — and maps the union of `Content extent` and the current viewport, so it shows both where content is and where the user is even when those no longer overlap. Holds its own `ZoomPanTracker` and reaches its scale through the same `Framing` computation the viewport commands use. Navigation only: clicking or dragging pans, and never selects or zooms.
 
@@ -103,7 +107,7 @@ _Avoid_: inventing a new command type per feature — a generic primitive (espec
 The local, in-memory, session-scoped stack of `Command`s backing undo/redo for the current `Board` — capped at a fixed depth (a circular buffer), never persisted, and never tracked across a reload. Distinct from `Selection`, which is also transient view state but isn't tracked here at all.
 
 **Paste anchor**:
-The board point a pasted payload's bounding box is centred on — the pointer's board position when the pointer is over the canvas, the viewport centre otherwise. The payload translates as a rigid body relative to it, so internal relative geometry survives. Successive pastes onto an unchanged anchor cascade by a fixed offset; a changed anchor resets the cascade.
+The board point a pasted payload's bounding box is centred on — where the user last *indicated*. That is the pointer's board position when the pointer is over the canvas, the press point that opened a `Context menu` for a paste invoked from its row, and the viewport centre otherwise. The payload translates as a rigid body relative to it, so internal relative geometry survives. Successive pastes onto an unchanged anchor cascade by a fixed offset; a changed anchor resets the cascade.
 
 **Grid**:
 The canvas's visual position/scale reference — concurrent layers stepping by 10x spacing, crossfading in and out as zoom crosses each layer's legibility threshold to simulate infinite depth in either zoom direction. Purely a `DiagramCanvas` rendering concern; not part of `Board`, not persisted.

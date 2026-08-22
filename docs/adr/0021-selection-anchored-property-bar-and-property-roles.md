@@ -135,3 +135,13 @@ So the bar takes the same shape rather than inventing one, and the specific chor
 - **Showing the bar and the context menu together**: two selection-anchored popovers competing for the pixels above the selection, each needing the other's geometry.
 - **Widening the panel's discovery path to reach an `Edge`**: gives an edge a synthetic type key and a reflected schema to reconstruct what `EdgeStyle` already is.
 - **A shared notion of "target" across instances and edges**: their commit shapes genuinely differ, and unifying them puts a branch on entity kind inside the surface.
+
+**Addendum (surfaced while resolving the context menu enrichment ticket):** ADR 0023 takes up this ADR's instruction that "the context-menu work should adopt [the clamp rule] rather than re-derive it", and **diverges from it**, on the strength of this ADR's own reasoning rather than against it.
+
+The three arguments recorded above against flipping are hysteresis at the boundary, that flipping moves the side of the selection the user is reaching for, and that it competes with the clamp on cases the clamp already handles. **All three describe a persistent surface that re-anchors as the selection moves.** A context menu is placed once, on open, and dies on the next press, so there is no boundary to oscillate across and no target to move out from under a reaching hand. There is also a cost the bar never pays: clamping a menu slides it back over the pointer, putting a row under the cursor so the next click activates something the user did not aim at.
+
+So the two surfaces carry deliberately different placement rules, and **the difference is persistence rather than taste**: the persistent one clamps, the transient one flips. Both frame against `.diagram-container`, so both stay free of new interop for the same reason this ADR gives.
+
+Everything else here about the two surfaces coexisting is confirmed and used. The bar hides while a menu is open; the menu offers nothing the bar does, so no state needs both; neither needs the other's geometry; and a right-click on the bar is not a canvas press. One consequence worth naming, since it follows from ADR 0023 consuming the dismissing press inside `.diagram-container`: the bar is inside that container and hidden while the menu is open, so there is nothing there to press and no case where the two rules interact.
+
+Also note that this ADR's clamp rule is no longer the only positioning rule of its kind in the codebase, and that ADR 0023 fixes a live defect rather than adding a nicety: the menu's `left`/`top` had no bounds check at all and `.diagram-container` declares `overflow: hidden`, so a right-click near an edge was cutting items off unreachably.
