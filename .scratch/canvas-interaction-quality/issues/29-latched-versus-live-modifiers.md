@@ -2,7 +2,7 @@
 
 Type: grilling
 Status: open
-Blocked by: 07
+Blocked by: 07, 34
 
 ## Question
 
@@ -26,3 +26,9 @@ Decide:
 - **How undo survives a live modifier.** ADR 0007 gives one history entry per gesture, and tldraw's mid-drag toggle needs a mark-and-rewind to hold that. Decide whether any live modifier here requires the same, since that would be a genuine addition to the history model rather than a use of it.
 
 Blocked by ticket 07, which decides which modifiers mean what — this ticket cannot enumerate per-modifier answers before that table exists.
+
+**Update from ADR 0022 (ticket 07 resolved):** the table this inherits is **smaller than the question above assumes**, and two of its three named candidates are gone.
+
+`Shift` has a selection meaning on the pointer and no in-gesture meaning at all, so there is nothing to latch: it appends at press outside the selection and toggles at release inside it, both of which are read once, at the moment they act. Axis-locked movement, the reason `Shift` was listed as a candidate here, went to [Alignment guides and object snapping](11-alignment-guides-and-object-snapping.md) so the whole constrain vocabulary is decided in one place. Alt is unbound on the pointer pending [Alt-drag to duplicate](34-alt-drag-duplicate.md), which is now a second blocker on this ticket. Ctrl is unbound on the pointer entirely, deliberately left for ticket 11's snap suppression.
+
+So what remains here is genuinely narrow, and worth re-reading before starting: whether any *surviving* modifier needs live reading, plus the two structural questions above that hold regardless of which modifiers exist — whether a live modifier may change what a gesture does without changing which gesture it is, and the channel gap, since a modifier pressed or released without pointer movement generates no pointer event. Note that ADR 0022 widened ADR 0018's ownership to key on the claiming *button*, which means a modifier-only state change now has an even clearer reason to need its own channel: no button event accompanies it either.

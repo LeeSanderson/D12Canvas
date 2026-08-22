@@ -71,7 +71,7 @@ The cost is the context seam, and it is taken explicitly: gestures receive a pur
 
 ## The synchronous half is JavaScript's, and it is bounded by the role
 
-Four things must happen before the interop hop, and every one of them derives from the **role alone**:
+Four things must happen before the interop hop, and every one of them derives from the **role alone** (ADR 0022 adds a fifth, on a different event, see the addendum):
 
 - **`preventDefault`** — not if `author-content`, otherwise yes. Suppresses text selection during a drag and native drag initiation.
 - **`setPointerCapture`** — same predicate.
@@ -102,7 +102,7 @@ Capture is preferred over window-level listeners precisely for that third path: 
 
 **`Native` takes no capture, and that is consistent rather than an exception.** Capture on `.diagram-canvas` would retarget pointer events away from an author's `<input>` and break text selection inside it. So the one gesture with no release guarantee is the one gesture holding no state: every gesture that can leak is captured, and the one that is not, cannot.
 
-**Ownership is keyed by `pointerId`**, and events from any other pointer are dropped while a gesture is live. One field, worth having with touch permanently off the table — a second button pressed mid-drag or a stylus touching during a mouse drag currently walks straight into the same flags.
+**Ownership is keyed by `pointerId`** (widened to `pointerId` *and button* by ADR 0022, see the addendum), and events from any other pointer are dropped while a gesture is live. One field, worth having with touch permanently off the table — a second button pressed mid-drag or a stylus touching during a mouse drag currently walks straight into the same flags.
 
 **Escape routes to the active gesture's cancel before falling through.** Today `OnEscapePressed` clears only the connector drag, a table entry naming one specific gesture because there is no owner to name instead. It becomes "cancel the active pointer gesture, otherwise clear the selection" — the same behaviour, generalised.
 
@@ -185,3 +185,17 @@ Explicitly out:
 - **Author content always collapsing the selection to its instance** — discards a multi-selection with no warning, and breaks cross-type multi-selection editing on first contact with a control.
 - **Requiring every gesture to be reachable by a plain primary press** — sounds like the non-foreclosure constraint but forces the mouse table to double as a touch table, where the correct answers differ.
 - **Setting `touch-action: none` now** — removes native scrolling from touch users without giving them a gesture in return.
+
+## Addendum (surfaced while resolving the right-button and press-to-drag ticket)
+
+ADR 0022 discharges the question this ADR deferred: **which button picks between `Pan` and `MarqueeSelect` on the `canvas` role.** A plain primary drag marquees, and pan moves to the secondary and middle buttons. The closed set of eight is unchanged, and so is every other row of the role-to-owner table.
+
+Two amendments to this ADR's own mechanism.
+
+**The synchronous role-derived list gains a fifth member**: suppressing the browser's native context menu. It is the first such decision on an event other than `pointerdown`, classifying from `event.target` on the `contextmenu` event itself rather than consulting the stashed press classification, which would be `wasPortDragging`'s shape. It suppresses everywhere except `author-content`, where `Native`'s existing refusal to `preventDefault` already lets the browser's own text menu through with no mechanism at all. This matters more than tidiness: an unsuppressed native menu opening mid-right-drag fires the `pointercancel` the specification mandates for an opened menu, which reverts the pan it interrupted.
+
+**Ownership keys on the pointer and the button.** Keying on `pointerId` alone covers a stylus touching mid-drag but not a second *button* going down on the same pointer, which is the same `pointerId` and which right-button pan makes an everyday accident. The release side is sharper: `pointerup` fires per button, so pressing primary, pressing secondary, then releasing primary delivers a `pointerup` while a button is still held. A gesture therefore records the button that claimed it and only that button's release ends it; any other button's down or up is dropped and the live gesture keeps running. Dropping rather than treating a secondary press as a cancel, because Escape already routes to the active gesture's cancel and two abort routes give a user no way to know which one they invoked.
+
+Three of this ADR's claims are confirmed by being used rather than merely surviving. **Committing at press with the phase inside the gesture** is what lets the secondary button mean both pan and menu, the menu becoming a `pointing`-phase release outcome with no new mechanism. **JS owning the threshold** is what fixes it at one number, 4 screen pixels, for both buttons. And the rejection of *requiring every gesture to be reachable by a plain primary press* was written against exactly the table ADR 0022 landed on, so the touch story needs nothing beyond inverting the `canvas` row.
+
+One thing this ADR left open stays open by choice: `Shift` gets no in-gesture meaning, and Alt stays unbound on the pointer, so the latched-versus-live modifier question inherits a smaller table than it expected.

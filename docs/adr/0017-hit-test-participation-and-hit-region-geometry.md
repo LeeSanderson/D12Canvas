@@ -114,7 +114,7 @@ They differ in exactly one respect, deliberately: **the press margin does not ap
 
 ## Locking is that predicate's first real consumer
 
-Locked means *nothing modifies this*. A locked entity cannot be clicked, marquee'd, moved, resized, deleted, aligned, nudged or restyled by any route; it stays reachable only enough to find it and unlock it. Pointer exclusion is the mechanism of a lock, not its meaning — a pointer-only lock would still let a user Tab to a background image and nudge it away with an arrow key, which is the exact accident locking exists to prevent. Miro states the same semantic: locked objects "can't be selected, moved, edited, or deleted."
+Locked means *nothing modifies this*. A locked entity cannot be clicked by a primary press (ADR 0022 makes a **secondary** press the one exception, see the addendum), marquee'd, moved, resized, deleted, aligned, nudged or restyled by any route; it stays reachable only enough to find it and unlock it. Pointer exclusion is the mechanism of a lock, not its meaning — a pointer-only lock would still let a user Tab to a background image and nudge it away with an arrow key, which is the exact accident locking exists to prevent. Miro states the same semantic: locked objects "can't be selected, moved, edited, or deleted."
 
 **`Locked` is a bool, defaulting false, on `ComponentInstance` and on `Edge`. Not on `Group`.** ADR 0008 set that precedent by refusing a group a `ZIndex` of its own and making layering a bulk write across members; locking follows it, so "is this group locked?" is derived from its members exactly as its bounds are. Ungrouping a locked group leaves the parts locked, which is the wanted behaviour.
 
@@ -170,10 +170,16 @@ Expressed as declared `z-index` values on hit elements in **one CSS block**, so 
 - **A `Locked` flag on `Group`** — a second source of truth against member flags, and against ADR 0008's precedent of giving a group no state of its own.
 - **Locking via `MutateEntityCommand`** — that command swaps opaque `Props`; `Locked` is a field, not business data.
 - **Deferring locking to its own later ticket** — the participation predicate makes the semantics nearly free, and splitting them would record the same decision twice.
-- **Reaching a locked entity through the context menu** — the natural surface, but it depends on decisions not yet taken, and the panel route needs nothing new.
+- **Reaching a locked entity through the context menu** — the natural surface, but it depends on decisions not yet taken, and the panel route needs nothing new. **Reversed by ADR 0022**, which is the decision this was waiting on.
 
 ## Addendum (surfaced while resolving the pointer gesture arbitration ticket)
 
 The classification is **wider than the `(role, entityId, part)` triple above**. ADR 0018 needs the press to carry **press count** (from `event.detail`), **`pointerType`**, **buttons** and **modifiers** as well: click and double-click dispatch off the classification rather than off the browser's own `click`/`dblclick` events, the movement threshold varies by `pointerType`, and the press-to-gesture mapping reads buttons and modifiers. Recorded here explicitly so the triple is not read as the whole payload.
 
 Everything else holds unchanged, and two of this ADR's rules turned out to be load-bearing in ways it did not state. First, the four synchronous decisions ADR 0018 makes in JS — `preventDefault`, `setPointerCapture`, focus transfer and the threshold — all derive from the **role alone**, which is what keeps selection state out of JS entirely. Second, `author-content` presses select their enclosing instance **additively** (never removing anything from the selection), which is the question this ADR explicitly deferred.
+
+**Addendum (surfaced while resolving the right-button and press-to-drag ticket):** ADR 0022 amends the locking section above in one place, and it is a genuine reversal rather than a clarification. **A secondary press reaches a locked entity and selects it.** The unlock route through the context menu, rejected above on the stated grounds that it "depends on decisions not yet taken", is the decision ADR 0022 took; tldraw makes right-click the one route that hits a locked shape for the same reason. The panel route stays exactly as specified and still needs nothing new, so this is a second route rather than a hole being patched, but right-click is where a user looks for *unlock*. Whether the menu carries an unlock item is the context-menu decision's; that the press reaches the entity is ADR 0022's.
+
+Nothing else about locking moves. `Locked` stays a bool on `ComponentInstance` and `Edge` and off `Group`, the `ChangeLockedCommand` and the `SchemaVersion` decision are untouched, and the rule that **pointer participation and keyboard reachability are separate properties** is unaffected: this widens pointer reachability by one button without touching keyboard reachability at all.
+
+Two further notes from the same decision. The eleven roles above are consumed by the **primary button alone**: ADR 0022's secondary and middle buttons both map to `Pan` regardless of role, with `author-content` the one exception each way. And the role-derived synchronous decisions listed just above gain a **fifth** member there, native context-menu suppression, which is the first one on an event other than `pointerdown`.
