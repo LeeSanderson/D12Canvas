@@ -163,3 +163,11 @@ _Avoid_: reading the boundary as chrome versus content — it is **who renders t
 **Edge colour**:
 An `Edge`'s optional own colour, held as board data alongside its routing style and arrowheads. Absent by default, and absence means *no author opinion* rather than a value — it resolves to a `Theme token` at paint time, so an edge nobody has coloured is correct on both themes. An author's colour overrides the token for that edge only; `Selection` overrides both, because selection feedback is transient UI state the library paints.
 _Avoid_: treating it as a theme setting — it is per-edge data that persists with the board, and the library makes no legibility guarantee about a value an author chose.
+
+**Interaction probe**:
+A test that drives a real browser and asserts DOM or component state rather than comparing pixels against a committed baseline. It shares a project and a fixture with the visual tests but has none of their font sensitivity, and it exists to reach what only the browser owns: the `Hit target` walk, the `Drag threshold`, the synchronous decisions taken before the interop hop, and the release channels. Its remit is strictly plumbing — that a modifier survived the trip, that a default was prevented, that ten pointer moves in one frame arrive as one call. It never establishes a magnitude, because synthetic input does not reproduce a real device's granularity.
+_Avoid_: calling it a visual test — the whole project is named for those, and the distinction is what a failure means: a pixel diff asks a human to look, a probe names a broken invariant.
+
+**Release-reliability case**:
+A test that starts one `Pointer gesture`, ends it the way a user plausibly might, then moves the pointer with no button held and asserts nothing responded — a response to a buttonless pointer being the definition of a leaked gesture. One exists per member of the closed set of eight, enumerated by that set rather than written per ticket, so adding a ninth gesture fails the suite until its case exists. Blind by construction to `SelectEdge` and `Native`, which are the two members that hold no state and therefore cannot leak.
+_Avoid_: asserting the leak by inspecting which gesture is live — there is no observation surface for that, deliberately, and the behavioural form needs none.

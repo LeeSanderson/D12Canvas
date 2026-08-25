@@ -1,7 +1,7 @@
 # Verifying interaction quality
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 01, 05
 
 ## Question
@@ -35,3 +35,141 @@ they have no font/AA sensitivity and run correctly outside the pinned container.
 value lies in what they prove about **plumbing** (modifiers survive the trip, the pointer-anchor
 invariant holds, `defaultPrevented` is set) and never about **magnitudes**, which only real input
 can establish. Whatever verification approach this ticket lands on needs that line drawn explicitly.
+
+## Answer
+
+Recorded as **ADR 0025**. Three drive points, one line drawn three times, no manual layer, and a
+standing rule that is a test rather than a sentence.
+
+### The ticket's framing was half wrong, and the correction reframes the work
+
+This is not "add a layer on top of a working suite". **39 of 86 bUnit files dispatch pointer events
+at elements, 573 call sites, and ADR 0018 deletes every binding they drive.** Those tests do not
+fail, they stop being able to reach the code. The bulk of this work is roughly forty files
+reattaching, and choosing the wrong attachment point pays for the rework twice.
+
+Two of the ticket's own premises are false. **All 26 visual test files already pass
+`ScreenshotAnimations.Disabled`**, so the screenshot itself has never raced the ambient
+`transition: transform 0.1s ease-out`; only pre-screenshot steps (bounding-box reads, clicks taken
+mid-flight) are exposed. And **no `prefers-reduced-motion` rule exists anywhere in the codebase**,
+so `reducedMotion: 'reduce'` is a no-op that ADR 0015's implementation has to earn first.
+
+### Three drive points
+
+1. **Gesture objects, driven directly** over a fake context. No renderer. ADR 0018 already bought
+   this by giving gestures an explicit context rather than a back-reference; a fake context is that
+   same seam from the other side.
+2. **The press-to-kind mapping, through bUnit**, as a table. Eight owners against eleven roles and
+   three buttons is a space no quantity of hand-written drags covers evenly, which is how 573 call
+   sites left all six leaks undetected.
+3. **Interaction probes** in a real browser, asserting state rather than pixels, for everything
+   JavaScript owns.
+
+Each exists because the others are blind to something: a gesture correctly implemented and never
+selected is invisible to the first, and move arithmetic asserted through markup is what made the
+current tests expensive.
+
+### Probes live in `D12Canvas.VisualTests`, and the container is not the reason
+
+Both prior probes of this shape already lived there. A third project looked attractive because
+these tests have no font sensitivity and therefore need neither the pinned container nor baselines,
+and it buys nothing: the container is a convention about invocation, and **`-parallel none` is
+shared-`D12Canvas.Demo`-process contention** (a locator timing out at zero elements, a click
+intercepted), which an assertion suite inherits identically. Cost stated: probe failures gate
+behind the slow job, which is near-free here since nearly every ticket on this map touches markup.
+
+### `[JSInvokable]` cannot be internal, so the test seam is narrower than expected
+
+Blazor requires `[JSInvokable]` methods to be public; all 20 existing ones are public on
+`DiagramCanvas` with `DotNetObjectReference.Create(this)`. So bUnit reaches the four pointer entry
+points for free, and **ADR 0018's "entry is `internal`" cannot be read literally** — worth
+recording because the failure is silent: a non-public `[JSInvokable]` fails at *runtime*, shipping
+a canvas where no pointer works with a clean build. The sentence means the arbitration surface, not
+the interop entry.
+
+`InternalsVisibleTo` is taken and buys exactly one thing: **ADR 0020's preview**. Without it, "does
+the edge follow the shape" reverts to a question about a `style` attribute, which is the
+indirection ADR 0020's data-shaped preview exists to remove. This does **not** reopen ADR 0018's
+rejection of a public observation surface, which was about a *host* inspecting a live gesture.
+
+### A leak is behavioural, so it is asserted behaviourally
+
+The leak probe's own rule: **a response to a buttonless pointer is a leaked gesture.** No reflected
+attribute (the visual suite verifies `.verified.html`, so gesture state would enter every baseline
+in the project), no probe page, no observation surface. The approach is blind to a leaked
+`SelectEdge` or `Native` — **the blind spot and ADR 0018's two stateless members are the same
+set**, which is a property rather than a gap. `lostpointercapture` on a live gesture writes
+`console.error` and the fixture fails on it, turning "should never fire" into something enforced.
+
+### The line, drawn three times
+
+- **Plumbing, not magnitudes** (ticket 17's, generalised): probes prove a modifier survived the
+  hop, never a number.
+- **Relationships, not values**: assert `drag threshold (4) < snap radius (8) < edge hit band
+  (20)`, all screen pixels. Pinning a value catches only drift, and ticket 17's constant was wrong
+  the day it was written. A threshold above the snap radius silently stops short drags snapping.
+- **Counts, not clocks**: render counts prove ADR 0020's budget tracks participants rather than
+  board size; coalescing counts prove ten `pointermove` events in one frame yield one call. A
+  wall-clock canary is rejected — loose enough to survive a loaded runner is loose enough to miss
+  anything worth catching.
+
+**The relationship test finds a live defect on contact.** `PortHitRadius = 10` is **board space**,
+documented in its own comment as unaffected by zoom, so it cannot join the ordering. ADR 0017 made
+hit regions screen-constant precisely because such a number describes how precisely a hand can aim;
+the port tolerance is the family's one holdout, covering 2.5 screen pixels at 0.25x zoom, at
+exactly the zoom where aiming is hardest. Handed to ticket 06, which owns those numbers.
+
+### No manual acceptance pass, and what that costs
+
+Decided against a checklist. So roughly ten tuned numbers ship judged by nothing: zoom sensitivity,
+ambient smoothing, the idle boundary, the framing flight, the drag threshold, snap radius, velocity
+cut-off, edge band, press margin, LOD threshold. Relationship assertions keep them consistent with
+each other and say nothing about whether any feels right. The same gap covers rate: dropping from
+60fps to 30fps with identical render counts is invisible to every layer here. Recorded as a known
+consequence rather than left to be discovered.
+
+### The standing rule is a `[Theory]`, not a sentence
+
+"A new rendered visual state" is something a person recognises having made. "A new interaction" is
+not, which is the trap this ticket named. So the obligation is **a parameterised test over ADR
+0018's closed set of eight** — one `Release-reliability case` per member, and a ninth gesture fails
+the suite until its case exists. That is the second load-bearing use of ADR 0018 closing the set.
+`docs/agents/testing.md` gains one line pointing at the test rather than restating it in prose. The
+visual-state rule is unchanged.
+
+### What Playwright reaches
+
+Thirteen probes settled it empirically, and both shapes assumed hardest were expressible: the right
+button released mid-pan, and a press and release in one JavaScript turn. Under ADR 0018 most stop
+being cases at all, since **capture makes the release location meaningless** and both cancel
+channels are script-reachable (remove the captured element for `lostpointercapture`, dispatch
+`pointercancel`). The boundary is device physics: Playwright's synthetic wheel is coarse, so
+**ADR 0019's `Auto` profile classifies it as a mouse every time** and the trackpad branch needs the
+profile forced or raw fine-delta dispatch. Recorded so a green suite is not mistaken for trackpad
+coverage.
+
+### Animation
+
+Reduced motion **suite-wide**, not per case. Two constraints follow: a reduced-motion rule **may
+only zero durations** (suite-wide means every baseline documents the reduced rendering and none
+documents the default, honest only if they agree at rest), and **ADR 0015's pointer-event
+suppression must key off `transitionend` rather than a 250ms timer**, or reduced motion leaves the
+canvas dead to the pointer for 250ms with nothing animating. That is a defect prevented rather than
+found, and it is why **one case deliberately opts back in**: it asserts suppression applies during
+a flight and clears after, never the duration, with a reduced-motion counterpart asserting it has
+already cleared. The only place both paths run.
+
+### Two findings handed to implementation
+
+- **CI runs the visual job without `-parallel none`**, the flag every other document calls
+  mandatory and without which failures are documented as indistinguishable from real regressions.
+  A gate that flakes proves nothing, so it is in scope here.
+- **ADR 0015 shifts baselines twice** — framing all content when a `Board` is first set changes
+  every board-mounting baseline's opening view, and the minimap is new chrome needing demo
+  coverage. Planned for rather than discovered mid-run.
+
+### Recorded
+
+**ADR 0025**, amending ADR 0015 in one place (suppression keyed to the transition's lifecycle),
+confirming ADR 0018 with one sentence clarified and ADR 0020 throughout, and adding a caveat to
+ADR 0019. `Interaction probe` and `Release-reliability case` added to `CONTEXT.md`.
