@@ -23,3 +23,13 @@ Decide:
 Note also that ADR 0017 fixed hit *order* independently — instances always beat edges, regardless of the `PreviousZIndex()` bug — while leaving the paint arithmetic alone, so hit order and paint order already disagree in one case. A stack read from the DOM inherits paint order, which is the order the user sees, and that is the right one to expose.
 
 Amends ADR 0017 or ADR 0022 depending on the route chosen, and touches ADR 0001/0003 only if instances gain readable identity.
+
+**Update from ADR 0024 (ticket 11 resolved, unblocking this):** the answer this ticket was waiting for is **worse than "Ctrl is spent"**, and it changes the balance between the two routes rather than just removing an option.
+
+ADR 0024 takes `Ctrl` for snapping suppression, but that is not the binding constraint. On macOS a `Ctrl`+primary press **is** the system secondary click, and ADR 0024 honours that with a platform check, making it a secondary press that pans and opens the object menu. So `Ctrl` is not merely taken, it is **unusable at press time on macOS by any claimant at all** — and a modifier that works at press on Windows and not on macOS is worse than no modifier, because the feature would silently not exist for half the users while appearing to be shipped. Bullet 3 above is therefore answered: the modifier route does not need a platform check, it is *defeated* by one.
+
+`Alt` is the only remaining pointer modifier and it has a live claim from [Alt-drag to duplicate](34-alt-drag-duplicate.md), which is universal across all four reference tools and so has the stronger claim. Taking it here would pre-empt that ticket.
+
+The practical consequence: **the modifier route is no longer the cheap option this ticket assumed**, and the menu route's cost has not changed. That does not decide it — a third route neither bullet contemplates is now worth weighing, such as a repeat press in the same place cycling down the stack, which needs no modifier at all. The `document.elementsFromPoint` finding banked above serves that route as readily as the other two.
+
+One thing this ticket does *not* inherit: ADR 0024 leaves the selection bounding box exactly as ADR 0017 made it, so the hole this ticket exists to fill is neither widened nor narrowed.

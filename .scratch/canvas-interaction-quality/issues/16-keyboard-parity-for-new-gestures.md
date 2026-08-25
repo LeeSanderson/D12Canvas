@@ -24,3 +24,11 @@ Decide:
 - Whether the press-to-drag change (07) has any keyboard consequence, or is purely a pointer concern.
 
 Amends ADR 0010 and whatever shortcut table ends up superseding ADR 0009's.
+
+**Update from ADR 0024 (ticket 11 resolved):** bullet 1's question is now two questions, and one of them has a deadline attached.
+
+**The nudge *step*.** `Snap-to-grid` is **on by default** as of ADR 0024, so a board's content sits on grid lines out of the box while `NudgeCommand` still steps by a zoom-relative amount that has nothing to do with the grid. A single arrow press therefore takes a grid-aligned entity *off* the grid by default, where before it only did so for the minority who opted in. tldraw makes the nudge step become the grid size whenever grid mode is on, which is the obvious candidate. This is now the more urgent half.
+
+**Whether nudging snaps to *objects* at all.** ADR 0024 gave keyboard nudge nothing, and deliberately: ADR 0020 states outright that keyboard work must not reach for the `Gesture preview`, because a keypress's result is fully determined the moment it is pressed and there is nothing provisional to show, whereas `NudgeCommand` writes through and extends in place. So an object snap on a nudge cannot be built the way the pointer's is. Decide whether it should exist by some other route or not at all, noting that an `Alignment guide` with no gesture to live inside would have to appear and expire on a timer, which nothing in this library currently does.
+
+Two smaller inheritances. ADR 0024 declined a chord for the object-snapping toggle, so the table gains a `Ctrl+'` sibling in the context menu but **not** on the keyboard, and bullet 6's menu-hint work should show the menu row without a hint rather than inventing one. And the platform fact bullet 6 wants established once now has its second consumer built rather than merely anticipated: ADR 0024 puts a real platform check on the pointer path, for the macOS `Ctrl`+click secondary press.
