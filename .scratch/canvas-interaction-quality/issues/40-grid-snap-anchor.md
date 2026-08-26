@@ -26,3 +26,5 @@ Decide:
 - **Whether entity *size* should ever be rounded.** Snapping width and height to the grid would make every edge land on a line permanently and would fix the problem at its root, at the cost of resizing content the user did not ask to resize. `SnapBounds` deliberately does not do this today.
 
 Note that any change here is user-visible on a default-on feature, so it inherits ADR 0024's status as a behaviour reversal rather than an addition.
+
+**Dependant added by ADR 0026 (ticket 16 resolved):** the keyboard nudge now steps to the next dominant grid line under `Snap-to-grid`, and it measures from whatever point this ticket settles rather than choosing its own. So this decision now has two readers instead of one — the pointer path's placement and move, and the arrow key. Worth noting that the nudge needs a **directional** ceiling and floor rather than `SnapBounds`'s rounding, which is a third snap primitive after ADR 0014 found `SnapBounds` non-reusable and needed a scalar coordinate snap; whichever anchor point this picks has to be expressible in all three.

@@ -22,3 +22,7 @@ Build a prototype and decide:
 - Whether any of this survives the touch non-foreclosure constraint, given hover has no touch equivalent.
 
 Amends ADR 0005, which specified the four standard ports but not their affordance.
+
+**Constraint from ADR 0026 (ticket 16 resolved):** the keyboard-parity work could not answer what this decision means for keyboard users, because this ticket still changes what affordances exist. What it hands over is a constraint rather than a preference: **ports must be reachable and visible without hover.** ADR 0010's mouse-free connector attachment already depends on it, and the code is live rather than planned — `Enter` enters port picking, arrows jump to the four standard ports, `Space` reaches a custom one. If ports become visible on focus rather than on hover, record that as the accessibility improvement it is; if they stay hover-dependent, this ticket owes an explanation of how a keyboard user aims.
+
+Separately, ADR 0025's relationship test handed this ticket `PortHitRadius = 10`, which is board space by its own comment and therefore cannot join the screen-pixel ordering. ADR 0026 adds one more member to that ordering worth checking against: the grid nudge step, whose dominant cell is 6.3 to 63 screen pixels.
