@@ -1,7 +1,7 @@
 # Drag past the viewport edge
 
 Type: prototype
-Status: open
+Status: claimed
 
 ## Question
 
