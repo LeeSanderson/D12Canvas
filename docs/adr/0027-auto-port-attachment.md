@@ -153,3 +153,13 @@ Inherited from ADR 0025, and the assertions are relationships rather than magnit
 - **Coupling `RoutingStyle` to endpoint kind** (Figma, Excalidraw, tldraw all do) — rejected; the coupling describes direction-aware routers, ours reads neither field, and the combination it would forbid is drawn wrongly for an unrelated reason. It would also make a style change mutate attachment.
 - **Bumping `SchemaVersion`** — rejected; the version gate is strict equality, so a bump breaks every existing board rather than signalling anything.
 - **Auto choosing among custom ports too** — rejected; a hand-placed port would start catching edges nobody aimed at, making adding one a liability.
+
+## Addendum (surfaced while resolving the port affordance ticket)
+
+ADR 0028 settles the two things this ADR handed over, and confirms it in both.
+
+**The consequence flagged above is taken in the narrow direction.** Ports render on a single selection and on the one component under the pointer during a live connector drag, never on hover — so pinning is reachable only on a component the pointer has already arrived at, and a drop anywhere else produces an `Auto endpoint`. That makes pinning a two-stage act where auto stays one, which is this ADR's own ordering rather than a cost imposed on it: the easier gesture gives the more forgiving result.
+
+**A connector drag is startable without naming a port, and it needs no new gesture to be.** A port's hit region is a stretch of border rather than a circle, so the user grabs the side near the midpoint and never aims at the dot — Miro's pull-from-the-border, reached through geometry this ADR already assumed. The source is still always a named standard port, so **"a single drag can only produce auto at the target" stands unchanged** and `PortRef` still needs no third case. A drag from the body remains ADR 0018's `MoveSelection`.
+
+`PortHitRadius`'s move to `N / scale` completes here at `N` = 24 screen pixels, with the port-span floor and the corner reserve derived from the same number so the one-radius-one-owner rule extends to everything on the border rather than the port alone.

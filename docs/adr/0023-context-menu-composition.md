@@ -189,3 +189,13 @@ One finding from that investigation is banked rather than discarded, because it 
 - **Figma's `Select layer` z-order submenu** — the teardown assigned it here; it needs a highlight affordance, a decision about instance identity, and the submenu machinery, while a modifier answers the same question far more cheaply once Ctrl is settled.
 - **A `Board` scan over `Bounds` sorted by `ZIndex`** as the hit stack for that item — exactly the C#-side ranked list ADR 0017 rejected, and it disagrees with what the DOM classified the press as.
 - **An `Edit` or `Add label` row for the double-click meanings** ADR 0018 folded into its press count — the port half belongs to the port affordance decision, and adding rows for gestures whose affordances are undecided commits to them early.
+
+## Addendum (surfaced while resolving the port affordance ticket)
+
+The last rejection above is **reversed for the port half**, which is the half it explicitly deferred: "the port half belongs to the port affordance decision, and adding rows for gestures whose affordances are undecided commits to them early." ADR 0028 decided them, so the object menu gains one row.
+
+**Add port here**, eligible only when the press that opened the menu landed on a border span. It costs one predicate against this ADR's per-item eligibility and one stored press point from ADR 0022, which is exactly the side and fraction the port needs. It adds no command type — `AddCustomPortCommand` exists and is already undoable — and it is the only route with any discoverability, because the partition takes the cursor slot that `.port-strip`'s `cursor: copy` used to occupy.
+
+It is also **the first row that is pointer-only by construction rather than by choice.** A menu opened by `Shift+F10` carries no press point, so it names no side and no fraction and the row is ineligible and therefore invisible — this ADR's hide-rather-than-disable rule doing exactly what it was written for. Every other row composed here is reachable from both input paths. The gap that leaves is real and pre-existing, since `AddCustomPort` has exactly one caller in the library and no keyboard binding anywhere, and it is carried as its own ticket rather than answered by inventing a keyboard fraction-picker in a menu decision.
+
+Nothing else moves. The two content sets, the section vocabulary, the align strip, the flat z-order rows, the flip-rather-than-clamp placement and the capture-phase dismissal are all untouched.
