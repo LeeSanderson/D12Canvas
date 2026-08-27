@@ -86,6 +86,10 @@ Every reference tool divides its hit sizes by zoom so they stay constant on scre
 
 This ADR supplies the mechanism. The **numbers** for ports and resize handles, and the visual-clamped/hit-unclamped split at extreme zoom-out that tldraw expresses as `Math.max(zoom, 0.25)`, belong with the port affordance work, which already owns hit-target sizing under zoom.
 
+**Addendum (surfaced while resolving the edge-attachment-without-a-named-port ticket):** ADR 0027 gives the port's `N` a second reader and therefore a single owner. A connector drop cannot use this ADR's classification at all — ADR 0018 holds pointer capture for the whole gesture, so a captured `pointerup` is dispatched to the capture element rather than to what the pointer is over — so the drop is resolved geometrically in C# against `Board`, which is also what makes it assertable without a browser. That gives the same circle two descriptions, one in CSS and one in C#, and lets them drift. So **`N` is defined in C# and published through `ContentStyle`** exactly as `--d12-scale` is, and `PortHitRadius` becomes `N / scale` — which is the screen-pixel correction ADR 0025's relationship test asked for, since the constant is board space today and covers 2.5 screen pixels at 0.25x.
+
+Nothing else here moves. The role table, the one-target rule, the precedence order and the participation predicate are all reused rather than amended, and the drop deliberately reuses the press margin rather than inventing a second notion of "over a component". One consequence flows the other way, to the port affordance work: because affordances leave the render set and the hit set together (below), where a port is visible is now also where an edge can be *pinned* rather than auto-attached.
+
 ## Content never drops out of the hit set; affordances do
 
 The current code drops the wrong thing, in three places at once.

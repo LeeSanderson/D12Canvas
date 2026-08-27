@@ -23,6 +23,12 @@ Resize has no larger-step variant — `Shift` is fully repurposed here as the an
 
 **Mouse-free connector attachment** reuses the arrow-key move mechanics above, applied to a focused edge endpoint instead of a whole entity: once an `Edge`'s floating endpoint has focus, arrow keys nudge that endpoint; when it's within snapping distance of a port (ADR 0005), `Enter` commits the attachment — the keyboard equivalent of ADR 0009's drag-release-onto-a-port gesture.
 
+**Addendum (surfaced while resolving the edge-attachment-without-a-named-port ticket):** ADR 0027 amends the port pick in one place and adds one cycle member. Entering the pick currently seeds `PortEndpoint(id, PortId.Top)` — an arbitrary side, guessed and then pinned, which is the defect 0027 fixes on the pointer side. The seed becomes `AutoPortEndpoint(id)`, so committing without naming a side gives an attachment that keeps choosing its own, and the tentative choice moves with the geometry instead of always pointing up. Arrow keys and `Space` still reach every pinned option, so nothing is lost, and no binding is added.
+
+`Space` gains auto at the front of its cycle — auto, the four standard ports, then any custom ones, wrapping back to auto — because a state you can leave but not re-enter is a trap. The cycle list is built at the call site rather than inside `Board.AllPorts`, which `FindPortNear` shares and which must never see an entry with no fixed point to measure against.
+
+This is what keeps the two input paths in parity: the pointer distinguishes pinned from auto by where the drag is released, the keyboard by how far the pick is drilled, and without the seed change the pointer could express an endpoint kind the keyboard could not.
+
 **Considered and rejected:**
 - **Split focus/selection with an explicit commit key** (the model some design-canvas tools use: arrow keys move a cursor, Enter selects) — rejected in favor of focus-follows-selection; it avoids introducing a second UI concept (focus ring vs. selection) with no existing counterpart in this design to hang it on.
 - **Creation-order or `ZIndex`-order tab stops** — rejected in favor of reading order; spatial order is what a keyboard/screen-reader user actually perceives moving through the board, independent of when something was created or how it's layered.
