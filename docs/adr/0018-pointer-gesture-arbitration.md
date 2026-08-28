@@ -199,3 +199,11 @@ Two amendments to this ADR's own mechanism.
 Three of this ADR's claims are confirmed by being used rather than merely surviving. **Committing at press with the phase inside the gesture** is what lets the secondary button mean both pan and menu, the menu becoming a `pointing`-phase release outcome with no new mechanism. **JS owning the threshold** is what fixes it at one number, 4 screen pixels, for both buttons. And the rejection of *requiring every gesture to be reachable by a plain primary press* was written against exactly the table ADR 0022 landed on, so the touch story needs nothing beyond inverting the `canvas` row.
 
 One thing this ADR left open stays open by choice: `Shift` gets no in-gesture meaning, and Alt stays unbound on the pointer, so the latched-versus-live modifier question inherits a smaller table than it expected.
+
+## Addendum (surfaced while resolving the create-adjacent-and-connect ticket)
+
+ADR 0030 fills in a `pointing`-phase release outcome this ADR defined and left unassigned, and does so **without adding a member to the closed set of eight**. `Quick create` is `DragEdgeEnd` releasing below the threshold on the `port` or `port-strip` role, so ADR 0025's release-reliability `[Theory]` gains no case and the role-to-owner table, the synchronous decisions and the capture rules are all untouched.
+
+This is the second time the closure has paid off in the way it was meant to. ADR 0022 made the context menu a `pointing`-phase release on the secondary button with no new mechanism; this makes the most-repeated gesture in a diagramming tool one on the primary button, on a role that already had an owner.
+
+**The three double-click meanings become two.** `AddCustomPort` loses its double-click to ADR 0030, leaving `SwitchToEditMode` and `AddEdgeLabel`. The mechanism is unchanged and the reason is this ADR's own: press count comes from `event.detail`, so a press-count-1 outcome commits before a press-count-2 outcome can be known to exist. Three meanings on one target are expressible here only when at most one of them is a click, which is a property of the dispatch this ADR chose rather than a limitation discovered later. Worth writing down, because the table reads as though count is a free discriminator and it is free only in one direction.

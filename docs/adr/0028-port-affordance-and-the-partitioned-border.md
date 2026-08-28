@@ -158,3 +158,13 @@ Inherited from ADR 0025, and stated as invariants rather than magnitudes:
 - **Drawing the partition** — either always, or only on a drop candidate. Both were prototyped. Both make side resize discoverable without a cursor and both put a new visual language on every selected shape; the cursor does the same work only where the user is looking, and costs one CSS declaration.
 - **Leaving add-custom-port on the double-click alone** — the gesture keeps working, but it loses `cursor: copy` and with it the only thing that has ever suggested it exists.
 - **A keyboard fraction-picker for adding a custom port** — the gap is real and is this ADR's find, but choosing a side and a fraction from the keyboard is a decision with its own shape, carried as its own ticket.
+
+## Addendum (surfaced while resolving the create-adjacent-and-connect ticket)
+
+**The port span's double-click for adding a custom port is retired by ADR 0030**, which puts `Quick create` on a plain click of the same span. The rest of this decision is untouched: the partition geometry, the selection-and-drop-target visibility rule, the cursor table and the single number `N` all stand.
+
+This ADR argued the double-click was "unharmed and better off" because a stationary press never promotes, so a drag and a double-click cannot be confused. That argument is correct and is not what fails. It fails to extend to a third meaning: ADR 0018 reads the press count from `event.detail` on `pointerdown`, so a press-count-1 outcome fires before anything can know a second press is coming. Drag versus double-click is separated by movement, which the model holds when it decides. Click versus double-click is separated only by a press that has not happened yet.
+
+What retires is therefore a route this ADR had already found undiscoverable. Removing `cursor: copy` was this decision's own move, the loss of the only hint that a border could be double-clicked was this decision's own observation, and the **Add port here** menu row was this decision's own answer to it. That row is now the sole pointer route, which makes [Keyboard route to adding a custom port](../../.scratch/canvas-interaction-quality/issues/43-keyboard-add-custom-port.md) sharper rather than merely still open: a keyboard user has no route, and a pointer user now has exactly one.
+
+Two of this ADR's rules are confirmed by a consumer it did not anticipate. Because ports render only on a single selection, and because ADR 0027's consequence is that an unrendered port is not hit-testable, `Quick create` is reachable **only on a selected instance** and never on a member of a multi-selection. Both are Miro's and FigJam's documented behaviour, and neither needed a clause in ADR 0030 to produce.

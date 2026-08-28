@@ -16,6 +16,7 @@ Every row is guarded by focus (see the next section). The **Typing** column reco
 | `Shift`+`Arrow` | Coarse nudge | guarded | | ADR 0010, here |
 | `Alt`+`Arrow` | Resize a single instance, opposite edge anchored | guarded | | ADR 0010 |
 | `Alt`+`Shift`+`Arrow` | Resize a single instance, anchor flipped | guarded | | ADR 0010 |
+| `Ctrl`+`Arrow` | Quick-create and connect in that direction — **suspect on macOS, see the addendum** | guarded | | ADR 0030 |
 | `Ctrl`+`Tab` | Move focus without selecting — **suspect, see below** | guarded | | ADR 0010 |
 | `Space` | Toggle the focused entity's membership of the selection | guarded | | ADR 0010 |
 | `Enter` | Commit a port attachment | scoped to an instance tab stop | | ADR 0010 |
@@ -186,3 +187,15 @@ ADR 0010 rejected `Shift`+`Tab` and `Alt`+`Tab` because both are captured by bro
 - **Rebinding `Ctrl`+`Tab` now** — every candidate is reserved somewhere, and picking one blind is the mistake ADR 0010 already made.
 - **Treating `Ctrl`+`Tab` as out of scope** because ADR 0010 predates this effort — this decision supersedes the table, so shipping a row believed dead without saying so is the failure this map keeps naming.
 - **Shipping no menu hints** — leaves the menu as the place shortcuts go to be forgotten, which is ADR 0023's own phrase for the outcome it was avoiding.
+
+## Addendum (surfaced while resolving the create-adjacent-and-connect ticket)
+
+**`Ctrl`+`Arrow`, quick-create and connect in the arrow's direction** (ADR 0030), guarded like every other row. It is written **into the table above** rather than left to be discovered here, because a table that grew by six addenda across five ADRs is the specific failure this decision exists to end, and adding a row by addendum would repeat it on the first opportunity. This addendum carries only the reasoning. It reaches the four standard ports only, which is not a parity gap but ADR 0027's existing split, where the pointer distinguishes by where you release and the keyboard by how far you drill.
+
+The row completes a set rather than squeezing into one. A plain arrow nudges, `Shift` coarse-nudges, `Alt` resizes, `Ctrl` creates: four modifiers over the arrows, four meanings, no collision. It is also Excalidraw's own binding for the same gesture.
+
+**It ships as a documented doubt on macOS, the second on this table.** Bindings accept `(ctrlKey || metaKey)`, and macOS has reserved both readings: `Cmd`+`Left` and `Cmd`+`Right` are back and forward in Chrome and Safari, while `Ctrl`+`Left`, `Ctrl`+`Right` and `Ctrl`+`Up` are Mission Control at the operating-system level, which outranks the browser. Excalidraw ships the chord regardless, so its own binding is at best half-working there.
+
+Rather than opening a second investigation, [Whether `Ctrl+Tab` survives the browser](../../.scratch/canvas-interaction-quality/issues/41-ctrl-tab-browser-reservation.md) is **widened to measure `Ctrl`+`Arrow` and `Cmd`+`Arrow` alongside `Ctrl`+`Tab`**. Same measurement, same browsers, one more row in a table someone is already building.
+
+This ADR's own nudge-step finding gains a second consumer. ADR 0030's placement gap is `2 × DominantGridSpacing()`, taking this decision's argument verbatim: a step that follows the grid stays screen-relative within a bounded range instead of becoming a fixed board amount, and for the same reason it cannot join ADR 0025's screen-pixel ordering.

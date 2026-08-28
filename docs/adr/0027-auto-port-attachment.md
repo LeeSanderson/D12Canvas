@@ -163,3 +163,15 @@ ADR 0028 settles the two things this ADR handed over, and confirms it in both.
 **A connector drag is startable without naming a port, and it needs no new gesture to be.** A port's hit region is a stretch of border rather than a circle, so the user grabs the side near the midpoint and never aims at the dot — Miro's pull-from-the-border, reached through geometry this ADR already assumed. The source is still always a named standard port, so **"a single drag can only produce auto at the target" stands unchanged** and `PortRef` still needs no third case. A drag from the body remains ADR 0018's `MoveSelection`.
 
 `PortHitRadius`'s move to `N / scale` completes here at `N` = 24 screen pixels, with the port-span floor and the corner reserve derived from the same number so the one-radius-one-owner rule extends to everything on the border rather than the port alone.
+
+## Addendum (surfaced while resolving the create-adjacent-and-connect ticket)
+
+ADR 0030 confirms this decision in three places and needs nothing added to it.
+
+**Auto at the source stays unreachable in one gesture.** `Quick create` pins its source to the port span that was pressed, so the finding this ADR made and ADR 0028 confirmed survives a third gesture rather than being quietly spent by one. `PortRef` still needs no third case.
+
+**The three-drop-zone ordering supplies the target end with no argument of its own.** The user aimed at nothing, because the instance did not exist at press, so the target is `AutoPortEndpoint`. It resolves correctly for free: aiming from the new centre back at the source port crosses the side facing the source, which is the port a user would have picked, and it stays right after either shape is moved. A pinned target would leave the edge looping back from the wrong side after the first rearrangement, which is the defect this ADR exists to fix.
+
+**The same-component guard is not engaged**, the two endpoints naming different components by construction.
+
+One consequence of this ADR reaches further than it did when written. Its rule that an unrendered port is not hit-testable, combined with ADR 0028's selection-only visibility, is what makes `Quick create` reachable **only on a selected instance** and never on a member of a multi-selection. Both match Miro's and FigJam's documented behaviour, and ADR 0030 needed no clause to produce either.

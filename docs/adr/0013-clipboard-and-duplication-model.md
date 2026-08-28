@@ -50,3 +50,13 @@ There is no internal, in-memory clipboard. Copy writes to the system clipboard a
 **The paste anchor gains a third case.** "The pointer's board position when the pointer is over the canvas, and the viewport centre otherwise" sends a menu paste to the viewport centre, because the pointer is over the menu by the time a row is clicked and the menu is a sibling of `.diagram-canvas`. A menu paste anchors at the **press point that opened the menu**, which ADR 0022 already stores. The rule generalises rather than gaining an exception: the anchor is where the user last *indicated*. Each menu paste consequently resets the `+20, +20` cascade, which falls out of this ADR already stating the cascade over the anchor rather than over the input device.
 
 Separately, ADR 0023 records a consequence of the interior-edge rule rather than changing it. Because copy on a lone selected edge is a no-op and cut must be one too, **the menu makes Cut, Copy and Duplicate ineligible on an edge selection rather than showing them inert**, which together with edges having no `ZIndex` leaves a selected edge a four-row menu. Whether a lone edge should be copyable at all is now an open question of its own rather than a settled no.
+
+## Addendum (surfaced while resolving the create-adjacent-and-connect ticket)
+
+**Duplication gains a second consumer and needs no change to serve it.** ADR 0030's `Quick create` is a duplicate of the source instance plus an edge, so it routes through this decision's duplication path rather than through `NewCenteredInstance`.
+
+Reusing it is the point rather than an economy, and the reason is this ADR's own finding. Ids are regenerated across five references, of which `PortDef.Id` is the missable one, because `CustomPortEndpoint` names the port's own GUID. A hand-rolled copy inside the new gesture would share port GUIDs between a node and the node it was chained from, and that failure surfaces later as an edge attaching to the wrong shape rather than at the moment it is created.
+
+Two of this ADR's shapes carry over unchanged. `Quick create` is a `CompositeCommand` of existing primitives with **no new command type**, exactly as paste, duplicate and cut are. And it never touches the clipboard, for the reason stated here for duplicate: copy-then-paste would clobber the user's real clipboard.
+
+The one thing that does **not** carry over is the position rule. Duplicate cascades `+20, +20` from the paste anchor; `Quick create` places along the side that was pressed, at `2 × DominantGridSpacing()`, stepping further along that same axis while the slot is occupied. The cascade solves a pile built by repeated placement at one anchor, and a chain never builds a pile, because each new node becomes the next source.
