@@ -20,3 +20,11 @@ Decide:
 - **What `Native` does**, since it is uncaptured and therefore takes neither write — the browser's own focus transfer runs normally, which is the point. Confirm that an additive selection change (ADR 0018) does not then trigger focus-follows-selection and yank focus out of the author's control the user just clicked into. This is the sharpest failure candidate in the whole ticket.
 
 Ticket 15 will want a test shape for the last one in particular: clicking an `<input>` inside a registered component must leave the caret in that input.
+
+## Note added by ADR 0031
+
+Two things moved under this ticket while it sat on the frontier.
+
+**`MinimapPan` now takes the focus transfer too.** ADR 0018 described the four synchronous press decisions as deriving "from the role alone", and the minimap is the member with no role. ADR 0031 restates them as following the **press** — role-derived when classified, fixed for the minimap — because without the transfer, a host input outside `.diagram-container` keeps focus and ADR 0026's uniform guard blocks Escape, leaving `MinimapPan` the one gesture that cannot be cancelled. So the minimap joins bullet three's set: it changes no selection, so whatever the first write leaves behind is final for it, and it has no tab stop of its own to land on (ADR 0026 gives it none and marks it `aria-hidden`).
+
+**Bullet two is now load-bearing for cancellability, not just for tidiness.** "Blur, do not focus" leaves focus on `<body>`, which passes ADR 0026's guard only through its *nothing is focused* clause — and that clause is itself qualified, failing when a text selection lives outside the container. Choosing blur-only therefore makes Escape's reachability depend on whether the host page happens to have a selection, on every press that changes no selection. That is not a reason to reject the option, but it is a cost the ticket did not previously carry, and whichever way it goes the answer should be checked against the guard rather than against focus behaviour alone.
