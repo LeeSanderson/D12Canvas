@@ -5,7 +5,7 @@ A Blazor Razor-component library for an embeddable, local-first diagramming canv
 ## Language
 
 **Board**:
-The full set of a canvas's persisted content — its component instances, groups, and edges — modeled as flat, independently-addressable entities rather than an owned tree. Distinct from canvas chrome (not board content) and from transient view state like zoom/pan (not persisted).
+The full set of a canvas's persisted content — its component instances, groups, and edges — modeled as flat, independently-addressable entities rather than an owned tree, plus an `Asset` table the entities reference. Distinct from canvas chrome (not board content) and from transient view state like zoom/pan (not persisted).
 
 **Component type**:
 A registered kind of canvas content (e.g. "sticky note"), identified by a stable key and defined by a rendered component plus a props type.
@@ -19,15 +19,19 @@ The stable string a component type is registered under, chosen independently of 
 _Avoid_: using the CLR type name as identity.
 
 **Props**:
-A component type's own serializable business data (e.g. a sticky note's text and color) — distinct from its bounds.
+A component type's own serializable business data (e.g. a sticky note's text and color) — distinct from its bounds. Opaque to the library, which reads only what an author *declares* about a property (`[PanelEditable]`, `[AssetReference]`) and never infers meaning from its name or type.
 _Avoid_: parameters — Blazor's own term for a broader concept (includes callbacks, render fragments); "props" specifically means the serializable data payload.
 
 **Bounds**:
 A component instance's position and size, tracked uniformly across every component type independent of its props — what lets the canvas query "what's on screen" without knowing any specific component type's shape. Always the *committed* value: it is never written while a `Pointer gesture` is in flight, which is what lets a `Command` read its own before-value straight off the field; what is on screen mid-gesture comes from `Live geometry` instead.
 
 **Entity**:
-Any board-content item addressable by a stable GUID assigned at creation — a component instance, a group, or an edge. Entities reference each other only by ID, never by direct ownership, so board content stays flat and independently mergeable.
+Any board-content item addressable by a stable GUID assigned at creation — a component instance, a group, or an edge. Entities reference each other only by ID, never by direct ownership, so board content stays flat and independently mergeable. An `Asset` is not one: its id is derived rather than assigned, and nothing on a board points at it except a props field.
 _Avoid_: node, object — ambiguous with terms already avoided for component instance.
+
+**Asset**:
+A piece of binary content held once on a `Board` — bytes, a mime type, and an id that is the SHA-256 of the bytes themselves. Deliberately **not** an `Entity`: it has no bounds, cannot be selected, hit-tested or grouped, and is referenced *by* entities rather than referencing them. Every entity id is a GUID *assigned* at creation; an asset id is *derived* from content, which is what makes the table add-only, dedupe for free, and merge idempotently. A `TProps` property opts in with `[AssetReference]` and holds `asset:<id>`; `DiagramCanvas` swaps that for a renderable `data:` URI before binding props, so a component author only ever sees an ordinary URL. Assets are collected when a board is serialised, never during a session, so undo can always bring deleted content back.
+_Avoid_: image, file, blob — the seam carries any content type, and only the built-in `Image` component knows about images.
 
 **Group**:
 A named collection of component instances and/or nested groups, treated as one movable/resizable unit. Membership is a reference list (`MemberIds`) held by the group, not a back-pointer on each member; a group's bounds are computed from its members on demand, not stored. Layering commands (ADR 0008) applied to a group are bulk writes across member `ZIndex` values, preserving members' relative order — a group has no z-position field of its own.
