@@ -1,7 +1,7 @@
 # Viewport inset for host-placed chrome
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -22,3 +22,25 @@ Decide:
 - **Whether the minimap is a special case.** It is the one occluder the library itself introduces, so unlike the palette it *could* be known without a host parameter — which is either a useful shortcut or an inconsistency that makes the general mechanism harder to explain.
 
 Answerable now; nothing blocks it. The property bar will add a third occluder and its geometry may sharpen the "measured versus declared" question, but the decision does not wait on it.
+
+## Answer
+
+**No inset, in any shape.** `DiagramCanvas` never learns what is drawn on top of it. Framing, click-to-add and the paste anchor's pointer-free fallback all compute against the full `.diagram-container` rect, and a host that floats chrome over the canvas owns what ends up underneath. Recorded as **ADR 0033**.
+
+**Bullet 1 decided the ticket, and answering it collapsed the other four.** Shape, measured-versus-declared, which behaviours read it and the minimap special case all presuppose an inset exists. What survives of them is recorded in ADR 0033's rejected list rather than as decisions, so the next ticket that reaches for an inset finds the walk already done: four edge insets is the shape to reach for, a region list buys nothing because every consumer tolerates over-reservation, and measuring needs element nomination plus a second asynchronous container-shaped value on the channel whose await ordering produced ticket 04's worst leak.
+
+**The reasoning is that layout already is the inset.** Chrome docked beside the canvas shrinks the box `ZoomPanTracker` measures, so every reader is correct with no library code. `D12Canvas.App` does exactly that today, a 220px flex sibling, so nothing in the acceptance surface is occluded at all. Floating is a host trading real estate for overlay, and the host is the only party that knows the trade it made.
+
+**The ticket's bullet 1 was wrong on its own premise, and correcting it is most of why this is affordable.** It said a host choosing to own occlusion "currently has no mechanism to act on it". `DiagramCanvas.ZoomPanTracker` is public at `DiagramCanvas.razor.cs:172`, carrying `SetPanPosition`, `Pan(dx, dy)` and a settable `Scale`, with `OnZoomOrPanChanged` to hang off. A host floating a 300px rail pans by +150 after a fit.
+
+**ADR 0015's initial fit is the one cost a floating host cannot pre-empt, and it survives unchanged.** Every other case is a command the user pressed. The fit runs on every `Board` load, unconditionally, so the compensating pan is a visible jump. An opt-out was rejected because it hands back something worse: suppressing the fit leaves scale 1.0 at pan origin, which after ADR 0011 removed board extent has no relationship to content, and is the exact hazard ADR 0015 built the fit to prevent. ADR 0015's rejection of that opt-out therefore moves from speculative to harmful, and its rejection of a host-configurable margin is confirmed on a *different* argument than it used: an inset has a real use case where that knob had none, and is declined anyway.
+
+**No preference between docking and floating.** ADR 0002 holds no opinion on host layout, and expressing one here would smuggle it back through the side door of a consequence. It would also tell hosts not to build what all four reference tools build: Miro, FigJam, tldraw and Excalidraw all float chrome over a full-bleed canvas, and ticket 03 recorded one tell of it without naming the layout, tldraw's **25px drag threshold on its own toolbar** against 4px for the mouse elsewhere, which a toolbar needs only when presses on it reach the same arbitration.
+
+**Two facts made the decision safe rather than merely cheap.** `ToBoardPoint` (`DiagramCanvas.razor.cs:2044`) reads the container's `left` and `top` and never its width or height, as do all four gesture-feeding `getContainerDimensions` call sites, so screen-to-board conversion is inset-agnostic by construction and no version of this could have broken hit-testing. And `ZoomPanTracker.Viewport` has two readers wanting opposite things: `Board.GetVisible`/`GetVisibleGroups` mount against it, `ClickToAdd` places against it, so an inset folded into the property would have unmounted content under a floating panel. Had the inset been built, that is ADR 0020's two-named-entry-points rule arriving at a second site.
+
+**Nothing implemented changes.** `ClickToAdd` at `DiagramCanvas.razor.cs:2367` is the only true viewport-centre computation in the repo, and framing, the minimap and the clipboard do not exist yet, so the existing centre-semantics tests (`DiagramCanvasClickToAddTests`, `DiagramCanvasSnapToGridTests:83`, `DiagramCanvasConnectorPaletteTests:85`) all stand. Windowing, `Overscan`, `Content extent` and ADR 0024's viewport-bounded snap candidates were never inset questions, and the snap candidates deliberately are not: occlusion is a fact about painting, and an object under a host's panel is still an object the user is dragging toward.
+
+**Found and corrected: ADR 0031 called the minimap canvas-rendered chrome**, against ADR 0002, ADR 0015, ADR 0021 and `CONTEXT.md`, which all make it host-placed. Its argument strengthens under the fix, since host-placed puts the minimap further from ADR 0026's focus guard rather than nearer, and the suspected downstream cost dissolved on inspection: ADR 0023's dismissal listener is capture-phase on `document`, and the `.diagram-container` scope governs only whether the press is *consumed*, so a host-placed minimap press closes an open menu and starts the pan, which is what its line 109 already accepts.
+
+Pointers added to ADR 0002 and ADR 0015; `Canvas chrome` and `Framing` widened in `CONTEXT.md`. The revisit trigger is [Chrome layout for the acceptance surface](39-app-chrome-layout-rework.md): it prototypes this effort's own acceptance surface, and if it floats the minimap or the property panel, this decision is tested on contact rather than by a future host's complaint.
