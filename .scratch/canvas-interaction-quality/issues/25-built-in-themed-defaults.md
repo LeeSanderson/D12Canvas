@@ -1,7 +1,7 @@
 # Themed visual defaults for built-in component types
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -19,3 +19,32 @@ Decide:
 - **Whether registration should be able to express a theme-dependent default at all.** A `DefaultProps` evaluated once at startup cannot depend on a theme the host may switch at runtime, and ADR 0012 makes theme switching pure CSS with no C# signal — so there is nothing for a C# default to read. Decide whether that closes the door on the registration route entirely.
 - **Which types are actually in scope.** A per-type judgement (`Text` broken, `Rectangle` glaring, `StickyNote` fine) invites an inconsistent result; a blanket rule invites changing a sticky note's yellow for no reason.
 - **Whether the same reasoning reaches `Image`'s `AltText`/`Fit`** — i.e. whether this is specifically about colour or about visual defaults generally.
+
+## Answer
+
+**Three properties become nullable and default to `null`, meaning *no author opinion*, resolved from a `Theme token` in the component's own CSS**: `TextProps.Color`, `RectangleProps.FillColor` and `RectangleProps.StrokeColor`. A stored value is an author's choice, taken literally in both themes with no legibility guarantee. Recorded as **ADR 0034**.
+
+**The ticket asked about colours; the question is about defaults.** Both of bullet 5's fears (a per-type judgement invites inconsistency, a blanket rule recolours a sticky note for no reason) come from treating "is it a colour" as the discriminator. The discriminator is whether the literal in `BuiltInComponents.RegisterAll` records a decision or fills a constructor slot. `Text`'s black, `Rectangle`'s white and `Rectangle`'s grey are stand-ins nobody chose. `StickyNote`'s `#FFEB3B` is what makes it a sticky note, and its black text is judged against that yellow rather than the board. So the stand-ins go null and the opinions stay, derived rather than judged.
+
+**A second rule agrees, and is why the scope is two types rather than one.** Sorting the properties by what each is judged against, only `TextProps.Color` is a foreground with no fill of its own, so it is the only one that breaks outright: every other colour either *is* a backdrop or is judged against one travelling in the same `TProps`. That rule alone would scope this to `Text`, **which would ship a worse defect than it fixes**. `RectangleProps` has no text field, so labelling a box means overlaying a `Text` instance, and new instances default on top: the dark theme's default composition would be near-white text on a white rectangle, reached by placing the two default shapes in the obvious order.
+
+**Three of the ticket's own premises did not survive a check, and one of them decided a bullet.**
+
+- **Bullet 3 cites a decision that does not exist.** ADR 0008 contains no mention of theme, theming or token anywhere in its twenty-one lines. The claim originates in ADR 0012's characterisation of it, and what ticket 12 actually declined was a separate style *data model* beside `Props`, a different question from what an unset field resolves to. Nothing here introduces a second data model, so 0008 needed no reopening; it is amended in one place instead, and `CONTEXT.md`'s `Theme token` entry repeated the same false claim and is corrected.
+- **Bullet 3's second half is softer than stated.** `TextProps` and `RectangleProps` are positional records, so `string` becoming `string?` breaks no construction call. A host reading the field gets a nullable warning. ADR 0016 had already made this exact change to `EdgeStyle.Color`.
+- **Bullet 1's two-tier worry assumes the mechanism lives in the registry.** It does not. ADR 0016's mechanism is entirely CSS, and the equivalent here is two lines inside each component's own `<style>` and style emitter, against public tokens any author's component can read the same way. `ComponentRegistrationBuilder` gains no member and ADR 0001 is confirmed.
+- **Bullet 2's "sharp constraint" is bounded by a fact the ticket did not check.** The stranded population is developer-local test data, since D12Canvas is not a shipped product.
+
+**Bullet 4's answer is stronger than the bullet's own reasoning, and it kills the C# route twice.** A `DefaultProps` evaluated at startup cannot read a CSS-only theme, which is the bullet's point. But even if it could, the value would freeze into board data at placement, so a board authored on light would stay light-shaped after a switch. **A default cannot be theme-dependent because a default becomes data**, and only absence survives placement. The same argument disposes of resolving a literal in C# at ADR 0032's `GetComponentParameters` seam. A third route was found and is the only tempting one: substitute the token *reference* (`"var(--d12-board-text)"`) as the prop value, which needs no theme signal and would theme an author's component for free. Rejected on cost, since it needs a `PropertyRole`-to-token layer of which exactly one author-facing role has a token to fall back to, and it writes a CSS expression into a field typed as author data.
+
+**Reading the Color editor decided a question the ticket did not ask.** `EditorKind.Color` renders `<input type="color">`, which by specification has no empty state and displays `#000000` for `value=""`. Shipping nullability alone would make the panel **report the wrong colour** for every themed instance, in the direction that makes the user think nothing is wrong, and since `@onchange` fires on a confirmed pick, a user opening the picker to check and confirming the black they were shown freezes it. So a nullable colour property gains a **clear control** beside its swatch, which amends ADR 0008 and, for the same reason, ADR 0021, whose colour glyph paints its value and has no ink for a null.
+
+**No migration, and the clear control is why that costs nothing.** A `SchemaVersion` bump is unavailable against the strict-equality gate, the fourth refusal on this map. Rewriting `#000000` to null on load is available and refused: it cannot tell a frozen default from a deliberate choice, and would write the loss back with no undo. Recovery is the clear control, or Select All from ADR 0023's canvas menu plus one clear.
+
+**Bullet 6 is answered by a test rather than by "they are not colours".** The rule needs a stand-in default **and** a correct value that varies by theme. `AltText`'s `""` has the first and nothing to resolve from; `Fit`'s `cover` and `StrokeWidth`'s `2` look identical on both themes. The rule is general and only colours satisfy it today, because the token layer is currently a colour vocabulary.
+
+**Tokens follow ADR 0016's pattern:** `--d12-board-text`, `--d12-board-fill` and `--d12-board-stroke`, every light value byte-identical to the literal it replaces, so no light baseline moves. `--d12-board-fill` deliberately is not `--d12-surface`, since a shape the colour of the board loses its occlusion cue. Contrast is stated as relationships against both `--d12-surface` and `--d12-board-fill`, assertable in ADR 0025's shape.
+
+**Found on the way and handed on: four hard-coded colours in the built-ins' own `<style>` blocks.** `Text.razor` and `StickyNote.razor` both draw the inline editor with `rgba(0, 0, 0, 0.4)`, so **the "you are editing this" affordance disappears on the dark theme**, which is an interaction defect rather than a cosmetic one; it takes an escape-hatch token whose light default is the existing value. `Image.razor`'s placeholder is `.lod-placeholder` styled differently by accident and adopts the shared trio, the one swap here that moves a light baseline, as a correction rather than a regression. Ticket 74 claimed this sweep was finished; ticket 14 found three it missed and this found four more, neither while looking. Surfaced [Enumerate every hard-coded colour left in the library](47-hard-coded-colour-sweep.md).
+
+Recorded as **ADR 0034**, amending 0008 and 0021, extending 0012, confirming 0001/0004/0016, with `Themed default` added to `CONTEXT.md` and `Theme token` widened and corrected.

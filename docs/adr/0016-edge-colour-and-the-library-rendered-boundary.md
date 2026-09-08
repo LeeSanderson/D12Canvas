@@ -80,6 +80,8 @@ That surface is the selection-anchored property bar's, and it inherits a structu
 
 **Built-in components freeze light-mode assumptions into board data at placement time.** `DefaultProps` for `Text` is `TextProps("", "#000000", …)`, invisible on the dark theme's backdrop — and since an edge label defaults to a `Text` instance, that reaches *inside* an edge. The rule in this ADR implicates rather than excuses them: `Rectangle.razor`, `Text.razor` and `StickyNote.razor` all ship in the library, so the library does paint them. But they register through the same public path as a host's own types, with a comment stating outright that there is no separate built-in path, so theming them specially would manufacture a two-tier registry. And the damage is not retroactively fixable: once an instance is placed, `#000000` *is* its persisted prop value, beyond the reach of any theme. That is its own decision, and is not taken here.
 
+**Taken by ADR 0034**, which applies this ADR's boundary, mechanism and authored-colour position to three of those defaults unchanged. The two-tier worry dissolves rather than being traded off, because the mechanism is each component's own CSS against public tokens rather than anything in the registration path.
+
 **Considered and rejected:**
 - **Edge colour as a token only, with no per-edge field** — fixes dark mode cheaply but forecloses per-edge colour, which ADR 0005 already set the precedent for by making routing and arrowheads per-edge rather than board-wide.
 - **A non-nullable colour field with a literal default** — any literal is light-shaped, so the reported defect would ship as the default case permanently.

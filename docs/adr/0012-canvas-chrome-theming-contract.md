@@ -10,6 +10,8 @@ D12Canvas ships two built-in default value sets for the token layer — a light 
 
 **Extended by ADR 0016**, which establishes that the boundary here is *who renders the pixels* rather than chrome versus content, and admits library-painted board content (an `Edge`) as a token consumer. Nothing in this ADR is reversed; the case simply did not exist when it was written.
 
+**Extended again by ADR 0034**, which adds the `--d12-board-*` content-role tokens for the built-in components' own defaults, and confirms this ADR's CSS-only rule twice over: a C# theme signal is what both rejected resolution routes would have needed. Note that this ADR's sentence about ADR 0008 deciding per-instance visual props have "no separate theming model" reads stricter than ADR 0008 does. ADR 0008 says nothing about theming at all, and what ticket 12 declined was a separate style *data model*. See ADR 0034.
+
 **Considered and rejected:**
 - **A C# `CanvasTheme` object as a cascading parameter** — rejected; the rendering approach is already DOM/CSS, so a parallel C# theming API would just duplicate what plain CSS custom properties already do natively, adding surface area for something purely cosmetic.
 - **Folding this into ADR 0008** — rejected; ADR 0008 decided instance styling gets no separate theming model, the opposite shape of this decision. Keeping the two ADRs separate keeps each one's rationale unambiguous.
