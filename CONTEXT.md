@@ -14,6 +14,10 @@ _Avoid_: shape, node — not used anywhere in this codebase; "component" is the 
 **Component instance**:
 A placed occurrence of a component type on a board, with its own bounds and props value.
 
+**Component container**:
+The box a component instance is rendered in: it positions the instance at its `Bounds`, hosts the author's component as its content, and declares what is hittable. It has one rendering, and `Selection` alone decides whether its affordances appear. Used outside a `Board` it is a positioned box with content and nothing more, showing no affordances and answering no `Pointer gesture`, because classification carries an entity id and a container that is not board content has none (ADR 0035).
+_Avoid_: edit mode — a retired second rendering with its own entry gesture, deleted because it never had a working way in and out at the same time (ADR 0035).
+
 **Key**:
 The stable string a component type is registered under, chosen independently of its .NET type name so persisted boards survive renames/refactors of the underlying class.
 _Avoid_: using the CLR type name as identity.

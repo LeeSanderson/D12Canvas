@@ -13,7 +13,9 @@ Ticket 74 in `d12canvas-next` resolved as "token adoption across all remaining c
 - [Edge visibility and board-content theming](14-edge-visibility-and-board-content-theming.md) found `.selection-bounding-box`, `.drag-over-affordance` (a *third* hard-coded blue) and `.floating-endpoint` still carrying literals, and noted that the bounding box's byte-identical accent means a host retuning `--d12-accent` desynchronises it from the marquee drawn directly above it.
 - [Themed visual defaults for built-in component types](25-built-in-themed-defaults.md) found four more, in the built-ins' own `<style>` blocks: the inline-edit outline in both `Text.razor` and `StickyNote.razor` (`rgba(0, 0, 0, 0.4)`, effectively invisible against the dark theme's backdrop, so the "you are editing this" affordance disappears) and `Image.razor`'s three-literal placeholder.
 
-Neither was looking for them. Both were working an unrelated question and tripped over one. That is a pattern rather than two accidents, and the next ticket will find a fifth.
+- [What remains of `ComponentContainer`'s edit mode](26-component-container-edit-mode-remnant.md) found two more in `ComponentContainer.razor`'s own `<style>` block: `#3498db` on `.resize-handle` and `#2f80ed` on `.selected`. That is a **fourth and fifth blue**, and the second one sharpens ticket 14's finding rather than repeating it: `.selected` is the per-instance outline sitting beneath the same `.selection-bounding-box` accent ticket 14 flagged, so a host retuning `--d12-accent` desynchronises *three* selection affordances from each other, not two. A third literal in the same block, `.edit-mode`'s `#3498db`, is deleted outright by ADR 0035 rather than tokenised.
+
+None of the three was looking for them. All were working an unrelated question and tripped over one. That is a pattern rather than a run of accidents, and the next ticket will find a sixth.
 
 This is a task rather than a decision: nothing here needs judgement until the list exists. What each literal *becomes* belongs to whichever ADR owns that element, and ADRs 0016 and 0034 have already assigned seven of them.
 

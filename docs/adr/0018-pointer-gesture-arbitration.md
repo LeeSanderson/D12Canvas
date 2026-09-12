@@ -59,6 +59,8 @@ Two consequences, both taken deliberately:
 
 **The legacy `_editMode` gesture pair is deleted.** `_isDragging`/`_isResizing` predate the Board-backed canvas and are reachable only from `/componentcontainer-demo`, a nav-linked page with no visual-test coverage of its own. It is a rival implementation of two gestures this ADR specifies properly. What remains of `ComponentContainer`'s edit mode once it owns no gestures — `_editMode` still gates `ShowSelectionOverlay` and the `edit-mode`/`view-mode` classes — is its own question and not settled here.
 
+**Settled by ADR 0035: edit mode is deleted entirely.** That ADR also corrects the remnant listed above, which was larger than this sentence says. `InitialEditMode`, `OnStateChanged` and `ComponentContainerStateChangedEventArgs.IsEditMode` are all part of it and none is named here, so this list is not a safe basis for scoping the removal.
+
 ## Gestures are objects, not a switch
 
 Each kind is a small class implementing `OnMove` / `OnRelease` / `OnCancel`, constructed at press with a context that gives it the board, the selection, the `ZoomPanTracker` and the commit path. `DiagramCanvas` holds one nullable field and forwards three events without knowing which kind it holds. Instantiated per canvas on the `ZoomPanTracker` precedent — not DI, since two canvases on a page need two, and not a cascaded value, since containers no longer participate.
@@ -109,6 +111,8 @@ Capture is preferred over window-level listeners precisely for that third path: 
 ## Click and double-click dispatch from the same classification
 
 The classifier reports the press count from `event.detail` alongside the role, and click and double-click actions dispatch off that. **Every `@onclick` and `@ondblclick` binding on board content is deleted** — three double-click meanings (`SwitchToEditMode`, `AddCustomPort`, `AddEdgeLabel`) currently kept apart by their own `stopPropagation` flags, and three click bindings refereed against the mousedown layer by `_dragMoved`.
+
+**Narrowed by ADR 0035 to the six bindings named above.** Read as covering every such binding it deletes a seventh that this ADR keeps: `StickyNote` and `Text` bind `@ondblclick="BeginEdit"` on the author's own content, and the section on inline text editing below retains it, removing only its `stopPropagation`. That binding survives because `author-content` is the one role that skips `preventDefault`, so the browser's own `dblclick` still fires there and the warning two paragraphs down does not apply to it.
 
 Leaving that layer alone would make arbitration authoritative for drags and not for clicks — a single owner for one half of the pointer's meaning, with the other half smeared across markup and separated by propagation flags rather than by precedence declared in one place, which ADR 0017 already refused for hit precedence.
 
