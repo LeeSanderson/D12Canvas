@@ -142,3 +142,5 @@ Making `Pan` and `MinimapPan` immune to Escape would remove the frozen state, an
 - **Declaring `MinimapPan` uncancellable.** Coherent, since cancel restores nothing for it, and it leaves ADR 0026's guard resting on a false claim for the next chrome gesture to inherit.
 - **Making `Pan` immune to Escape** to remove the frozen-canvas state. Trades a rare confusion for a surprise selection wipe mid-pan.
 - **Feedback that a cancel happened**, built here. It belongs with the rest of the micro-feedback vocabulary, which this decision hands a mechanism rather than another dependant.
+
+**Amended by ADR 0037:** the snapshot still covers **both selection fields together** and that rule does not move, but the reason given for it is gone. It was exclusivity, that restoring one field without the other desynchronises them. Edges now join the selection in a second set beside the instance set, so the two are not exclusive. The rule survives on firmer ground than it was given: both fields have to be captured because both carry selection at once. Nothing else here is touched, and the fields are still snapshotted as a pair rather than per gesture.

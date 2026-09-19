@@ -152,3 +152,5 @@ The snap anchor and the guide algorithm belong to the alignment-guides decision,
 - **Hysteresis on the level-of-detail threshold** — stops the flapping, still unmounts an author component mid-gesture.
 - **Feeding the preview into the minimap** — invalidates an uncapped box layer every frame to animate motion that is sub-pixel at minimap scale.
 - **A public live-geometry surface** — no host needs to ask where something is mid-drag, `Board`'s committed queries answer the question a host actually asks, and additive exposure later costs nothing.
+
+**Amended by ADR 0037:** the `Gesture preview` gains a slot for **moved endpoints**. Its second typed slot holds at most one pending edge line, shaped for a connector drag, and a move of a selection containing several floating-ended edges needs a previewed position per endpoint. The invariant that the preview is the truth and the commit writes it verbatim is what forces this rather than making it optional: an endpoint the preview cannot express is one the commit cannot write. Derived geometry is untouched, since an attached endpoint still follows its component through `EffectiveBounds` and is never written by a move.
