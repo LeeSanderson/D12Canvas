@@ -1,7 +1,7 @@
 # Remembered-offset duplicate chaining
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 05
 
 ## Question
@@ -21,3 +21,18 @@ Decide:
 - **Whether rotation-style parameter replay is foreclosed.** Rotation is out of scope for this map, so decide only that the shape does not preclude it.
 
 Ships against ADR 0013, so it amends or supersedes that decision's offset rule rather than sitting beside it.
+
+## Answer
+
+**Read the offset from the board, not from a gesture.** When the selection is exactly what the last duplicate produced, the next duplicate lands at that selection's offset from its own source. Named a `Duplicate run`. Recorded as [ADR 0039](../../../docs/adr/0039-duplicate-run.md).
+
+- **The ticket's source did not exist.** tldraw replays the last Alt-drag clone's delta, and Alt-drag is [Alt-drag to duplicate](34-alt-drag-duplicate.md), which was blocked on this ticket. Taking the tldraw shape would have left `Ctrl+D` with nothing to replay, or made every plain move feed it. Figma's and PowerPoint's rule was taken instead: the offset is computed when the key is pressed, from committed bounds. So no gesture feeds it, the "spooky" plain-move case cannot happen, and ADR 0020's commit signal is not a dependency.
+- **What it is a property of:** the selection being exactly the last duplicate's output, both sets (ADR 0037). The run holds the produced ids and the source's selection bounds as captured, not a reference to the source.
+- **Separate from the paste cascade.** The cascade measures from an absolute point, a run from a source entity. They share only `+20, +20`, and neither reads nor resets the other. A pasted set does not start a run.
+- **Snap:** the offset is replayed verbatim, never snapped. The ticket's drift worry has it backwards: a verbatim replay never rounds, and snapping against the zoom-dependent `DominantGridSpacing()` is what would make gaps uneven.
+- **Invalidation:** only a selection change. Undo, redo and paste break a run only through the selection. Transient, not persisted, not in history, reset by a reload or `Board` swap.
+- **Reference point:** top-left of the selection bounds, matching ADR 0013's rigid-body paste. Resizing the copy first can make the next one overlap it, accepted.
+- **Sources:** `Ctrl+D`, the menu's Duplicate row, and Alt-drag if it ships. `Quick create` does not start a run, even though it shares the duplication path: `Ctrl+D` continuing its chain without an edge would be a near-duplicate gesture.
+- **Rotation:** not foreclosed. The run replays a difference of placements, and placement can gain an angle.
+
+Amends ADR 0013. `Duplicate run` added to `CONTEXT.md`. One item added to the fog: whether the first `+20, +20` step should follow `DominantGridSpacing()` at far zoom.

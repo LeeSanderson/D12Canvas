@@ -117,6 +117,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - [Committed state changing under a live gesture](issues/30-committed-state-under-live-gesture.md) — **block, not cancel**: while a pointer gesture owns the press, in any phase, nothing writes `Board` but its own release and the keyboard cannot change the selection (ADR 0038). ADR 0020's leading candidate lost on `Ctrl`+`Z`, which under cancel-then-apply springs the drag back *and* undoes the action before it. The allow-list objection to blocking did not hold, since cancel sorts commands too and every library `Board` write already goes through `CommandHistory`. A host `Board` swap cancels without restoring the `Selection snapshot`; direct host writes are the host's contract. Split out [Viewport changing under a live gesture](issues/51-viewport-under-live-gesture.md); two fog items added on what a swap does to selection and history.
 
+- [Remembered-offset duplicate chaining](issues/31-remembered-offset-duplicate-chaining.md) — a **`Duplicate run`**: when the selection is exactly what the last duplicate produced, the next lands at that selection's offset from its source, read from committed bounds when `Ctrl+D` is pressed, so no gesture feeds it and ADR 0020's signal is not needed (ADR 0039). Top-left to top-left, replayed unsnapped, broken only by a selection change, separate from the paste cascade; `Quick create` does not start one.
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.
@@ -127,6 +129,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - **What a `Board` swap does to the selection.** ADR 0038 has a swap cancel a live gesture without restoring the `Selection snapshot`, because the snapshot names entities in a model that is gone, and defers the rest: nothing says whether the selection clears on a swap, survives by id against the new board (a reload deserializes the same GUIDs), or is the host's to set. Applies with or without a gesture live.
 - **What a `Board` swap does to history.** Every `Command` holds references to the old model's entity objects, so undo after a swap writes to objects nothing renders. `History` is "for the current `Board`" in `CONTEXT.md`, which implies clearing, and nothing decides it or says whether a host that reloads the same board by id expects its history to survive.
+
+- **The first duplicate step at far zoom.** ADR 0013's flat `+20, +20` is a fraction of a screen pixel when zoomed far out, where the grid step is 200 or 2000. ADR 0039 declined to decide whether it should follow `DominantGridSpacing()`, because the same question applies to click-to-add and the paste cascade.
 
 ## Out of scope
 

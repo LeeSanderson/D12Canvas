@@ -24,3 +24,7 @@ Decide:
 - **How it composes with ticket 31's remembered offset.** Duplicate chaining tracks an offset from the last duplicate; a drag sets the offset explicitly, so decide whether an Alt-drag seeds or resets that chain.
 
 Blocked by ticket 31, which owns the duplicate-placement model this has to agree with. Blocks [Latched-versus-live modifier semantics](29-latched-versus-live-modifiers.md), which cannot enumerate Alt's behaviour before knowing whether Alt does anything.
+
+## Comments
+
+**From resolving [Remembered-offset duplicate chaining](31-remembered-offset-duplicate-chaining.md):** the last bullet is answered. ADR 0039 reads a `Duplicate run`'s offset from committed bounds when `Ctrl+D` is pressed, so a clone drag starts a run with no rule of its own, provided its copies end up selected with a known source. It neither seeds nor resets anything explicitly. Separately, this ticket's own motivation should be re-read against that: ADR 0039 no longer needs Alt-drag as a source, so Alt-drag now has to earn its place on "places the copy where the pointer is" alone.

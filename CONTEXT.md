@@ -135,6 +135,10 @@ The local, in-memory, session-scoped stack of `Command`s backing undo/redo for t
 **Paste anchor**:
 The board point a pasted payload's bounding box is centred on — where the user last *indicated*. That is the pointer's board position when the pointer is over the canvas, the press point that opened a `Context menu` for a paste invoked from its row, and the viewport centre otherwise. A menu opened from the keyboard has no press point and takes the viewport centre, deliberately not a press point stored earlier in the session, which names somewhere the user has since navigated away from (ADR 0026). The payload translates as a rigid body relative to it, so internal relative geometry survives. Successive pastes onto an unchanged anchor cascade by a fixed offset; a changed anchor resets the cascade.
 
+**Duplicate run**:
+A sequence of duplicates where each lands at the same offset from the last as the last sits from its own source. It exists while the `Selection` is exactly what the last duplicate produced, and any selection change ends it. The offset is read from committed bounds when the duplicate is invoked, top-left to top-left, so any way of moving the copy counts and no gesture feeds it. The first duplicate in a run offsets by the fixed step. Transient canvas state, never persisted and never in `History` (ADR 0039).
+_Avoid_: remembered offset, which suggests a stored delta from a gesture; conflating it with the `Paste anchor` cascade, which measures from an absolute point.
+
 **Grid**:
 The canvas's visual position/scale reference — concurrent layers stepping by 10x spacing, crossfading in and out as zoom crosses each layer's legibility threshold to simulate infinite depth in either zoom direction. Purely a `DiagramCanvas` rendering concern; not part of `Board`, not persisted.
 
