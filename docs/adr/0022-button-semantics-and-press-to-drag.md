@@ -172,3 +172,5 @@ What the narrowing does not cover is an author embedding an `<a>`, `<img>`, `<vi
 Two other things this ADR handed on are now settled. **The menu carries an unlock item** (see ADR 0017's addendum). And the press point this ADR stores to anchor the menu turns out to have a second consumer: ADR 0013's paste anchor reads it, because by the time a Paste row is clicked the pointer is over the menu rather than the canvas.
 
 Finally, note that ADR 0023 consumes a menu-dismissing press inside `.diagram-container` in the capture phase, which leaves ADR 0018 untouched and has one visible cost against this ADR's pan decision: right-dragging while a menu is open dismisses rather than pans, so the user right-drags twice.
+
+**Amended by ADR 0044:** the Primary cell for `author-content` is `Native` only when its instance is addressable, meaning top-level or a direct member of the `Entered group`. Inside a group that is not entered, `author-content` classifies as `instance`, so a double-press there enters the group rather than reaching the author's control. The cost is that every control inside an unentered group stops responding to a press.
