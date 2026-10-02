@@ -119,6 +119,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - [Remembered-offset duplicate chaining](issues/31-remembered-offset-duplicate-chaining.md) — a **`Duplicate run`**: when the selection is exactly what the last duplicate produced, the next lands at that selection's offset from its source, read from committed bounds when `Ctrl+D` is pressed, so no gesture feeds it and ADR 0020's signal is not needed (ADR 0039). Top-left to top-left, replayed unsnapped, broken only by a selection change, separate from the paste cascade; `Quick create` does not start one.
 
+- [Mixed values across a multi-selection](issues/32-mixed-values-in-a-multi-selection.md) — a **mixed** row stays editable and a commit writes to every target, replacing ADR 0008's first-target display (ADR 0040). Mixed is per row, `null` counts as a value and colours compare case-insensitively. One display rule per `EditorKind` shared by bar and panel, with a hatched glyph for colour roles that must stay distinct from the themed state. `CustomEditorContext` gains `IsMixed`.
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.
@@ -131,6 +133,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 - **What a `Board` swap does to history.** Every `Command` holds references to the old model's entity objects, so undo after a swap writes to objects nothing renders. `History` is "for the current `Board`" in `CONTEXT.md`, which implies clearing, and nothing decides it or says whether a host that reloads the same board by id expects its history to survive.
 
 - **The first duplicate step at far zoom.** ADR 0013's flat `+20, +20` is a fraction of a screen pixel when zoomed far out, where the grid step is 200 or 2000. ADR 0039 declined to decide whether it should follow `DominantGridSpacing()`, because the same question applies to click-to-add and the paste cascade.
+
+- **Relative arithmetic in a mixed number field.** Figma lets `Mixed+100` add 100 to each target's own value. ADR 0040 makes a typed value absolute and left this out as a feature rather than a display rule. It sits beside the bidirectional numeric fields patch above, since both change what a number field does across several targets.
 
 ## Out of scope
 

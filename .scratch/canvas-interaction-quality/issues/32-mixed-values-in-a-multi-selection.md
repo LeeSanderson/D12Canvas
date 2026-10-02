@@ -1,7 +1,7 @@
 # Mixed values across a multi-selection
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 08
 
 ## Question
@@ -25,3 +25,18 @@ Decide:
 Note the reference evidence is thin here and worth gathering before grilling: ticket 03's teardown covers placement and gesture behaviour for selection chrome but not mixed-value presentation.
 
 Amends ADR 0008 (the first-target rule) and possibly ADR 0021.
+
+## Answer
+
+**A mixed row stays editable, shows that it is mixed by one rule per `EditorKind`, and a commit writes to every target.** Recorded as [ADR 0040](../../../docs/adr/0040-mixed-values.md). Reference evidence: branch `research/mixed-value-presentation`, file `.scratch/canvas-interaction-quality/research/mixed-value-presentation.md`, commit `fff2c27`.
+
+- **Commit:** writes the new value to every target in one history entry, skipping targets already at it, changing only the edited property. No read-only state; tldraw, Excalidraw and FigJam all write to every target.
+- **Per row or per target set:** per row, across that row's targets. A target that lacks the property removes the row rather than making it mixed.
+- **`null` is its own value**, because ADR 0034's themed `null` and a literal look different under a theme switch.
+- **Colour values compare case-insensitively** in the mixed test and `Commit`'s skip. Defaults are uppercase, `<input type="color">` reports lowercase, and stored data is not rewritten.
+- **Bar and panel agree** on how mixed looks, one rule per kind: hatched swatch for `Color` (the role's own glyph shape in the bar, a swatch button opening the native picker in the panel), empty field with a "Mixed" placeholder for `Number`/`Text`, no active option plus a disabled "Mixed" option for `Dropdown`, native indeterminate for `Checkbox` via the JS module.
+- **Inked, themed and mixed colour glyphs must be distinct in both themes**, recorded as a constraint on ADR 0034's undrawn themed state.
+- **`Custom`:** `CustomEditorContext` gains a trailing `bool IsMixed = false`, with `Value` null when mixed. Not a `Values` list, not suppression.
+- **ADR 0021's row** gains `IsMixed`, computed by each producer, including the edge producer now that ADR 0037 allows edge-only multi-selection.
+
+Amends ADRs 0008 and 0021. One item added to the fog: relative arithmetic in mixed number fields.
