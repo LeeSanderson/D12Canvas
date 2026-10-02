@@ -1,7 +1,7 @@
 # Chrome suppression while a property is being judged
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 08
 
 ## Question
@@ -21,3 +21,16 @@ Decide:
 - Whether it is expressible in CSS, as ADR 0015's framing flight was. A class applied for a duration, with `prefers-reduced-motion` handled by a media query rather than plumbed through C#, is the cheaper shape if the trigger can be expressed as a class.
 
 Cheap and clearly right in the small, so the risk here is scope: it touches every overlay on the canvas, and every one of those is somebody else's decision.
+
+## Answer
+
+**Selection chrome hides while the property bar has `:hover` or `:focus-within`, instantly and by one CSS rule, and a selected edge stops repainting itself.** Recorded as [ADR 0041](../../../docs/adr/0041-selection-chrome-while-judging.md).
+
+- **The edge case was a rendering defect.** `.edge-line.selected` repaints the stroke in the accent, so an `EdgeColour` or arrow change from the bar is invisible until deselection, and suppression would only flash the true colour. Selection becomes a translucent accent halo on a second path under the edge. This takes ADR 0016's deferred halo alternative and removes its accent-blue limit.
+- **Surfaces:** the bounding box and group handles, resize handles, port strips, port circles, the `.selected` outline and the edge halo all hide. The bar stays. Accepted cost: a user with focus on an instance and the pointer on the bar loses the focus indicator until the pointer leaves.
+- **Triggers:** none. The bar's hover and focus state is the whole mechanism. Nudge and paste are excluded, because without a timer only a pointer move ends them, and a keyboard user would lose their focus indicator indefinitely.
+- **End:** leaving the bar by pointer, `Escape` or `Tab`. No timer; the library still has none.
+- **Composition with ADR 0021:** no third mechanism. A bar hidden for a gesture or a menu can be neither hovered nor focused.
+- **CSS:** yes, `:has()` on `.diagram-container`, with `visibility: hidden` and no transition, so there is no reduced-motion case.
+
+Amends ADRs 0016 and 0021, and corrects `CONTEXT.md`'s `Edge colour` and `Property bar` entries. No new tickets and no fog added.

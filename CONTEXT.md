@@ -85,7 +85,7 @@ The canvas chrome component showing the whole board at a glance plus a rect mark
 The host-placed canvas chrome that surfaces editable `TProps` fields for the current selection, built generically from each component type's declared editable properties rather than one bespoke panel per type. Holds the full schema, including everything with no `Property role` to put it in the `Property bar`. A component's `Text`-type content is excluded — edited inline/WYSIWYG on the canvas instead. Reads the *expanded* selection, so a selected `Group` is editable through its members (ADR 0021).
 
 **Property bar**:
-The canvas-rendered chrome that floats above the current selection carrying the properties judged by eye, drawn as glyphs with no text labels. Supplements the property panel rather than replacing it: the bar shows only properties declaring a `Property role`, the panel keeps the full schema. Anchored by transforming the selection's bounds into container pixels and clamping the result inside the container, sliding along an edge rather than flipping below. Hides for the duration of a pointer gesture and while a context menu is open (ADR 0021).
+The canvas-rendered chrome that floats above the current selection carrying the properties judged by eye, drawn as glyphs with no text labels. Supplements the property panel rather than replacing it: the bar shows only properties declaring a `Property role`, the panel keeps the full schema. Anchored by transforming the selection's bounds into container pixels and clamping the result inside the container, sliding along an edge rather than flipping below. Hides for the duration of a pointer gesture and while a context menu is open (ADR 0021). While it has hover or focus, the rest of the selection chrome hides instead, outline included, so the change being made can be seen (ADR 0041).
 _Avoid_: context toolbar, floating panel.
 
 **Property role**:
@@ -207,7 +207,7 @@ _Avoid_: reading the boundary as chrome versus content — it is **who renders t
 _Avoid_: citing ADR 0008 as having declined a theming model for instance props. It says nothing about theming; what was declined was a separate style *data model* beside `Props`, which is a different question from what an unset field resolves to (ADR 0034).
 
 **Edge colour**:
-An `Edge`'s optional own colour, held as board data alongside its routing style and arrowheads. Absent by default, and absence means *no author opinion* rather than a value — it resolves to a `Theme token` at paint time, so an edge nobody has coloured is correct on both themes. An author's colour overrides the token for that edge only; `Selection` overrides both, because selection feedback is transient UI state the library paints.
+An `Edge`'s optional own colour, held as board data alongside its routing style and arrowheads. Absent by default, and absence means *no author opinion* rather than a value — it resolves to a `Theme token` at paint time, so an edge nobody has coloured is correct on both themes. An author's colour overrides the token for that edge only. `Selection` never repaints an edge: it adds an accent halo under the edge's own stroke, so a selected edge still shows its colour (ADR 0041).
 _Avoid_: treating it as a theme setting — it is per-edge data that persists with the board, and the library makes no legibility guarantee about a value an author chose.
 
 **Themed default**:
