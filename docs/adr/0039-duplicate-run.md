@@ -66,3 +66,5 @@ Rotation is out of scope for this effort. The run holds a captured placement and
 ## Does not decide
 
 Whether the first `+20, +20` step should follow `DominantGridSpacing()` when zoomed far out, where a 20-unit offset is a fraction of a screen pixel and the grid step is 200 or 2000. That is a question about placement generally, shared with click-to-add and the paste cascade, not about runs.
+
+**Confirmed by ADR 0042:** Alt-drag duplication ships, as a clone drag. Its copies are selected at release and its source is the originals' committed selection bounds, so it starts a run exactly as "What starts a run" anticipated, with no rule of its own.

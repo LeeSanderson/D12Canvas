@@ -26,3 +26,5 @@ Not in scope here: whether an edge participates in the z-order at all. That is a
 Does not block ticket 10. The menu hides these rows behind an eligibility predicate, which stays correct under today's model and starts returning true on its own if this ticket adds the operations later.
 
 Amends ADR 0013 if a lone edge becomes copyable.
+
+**From resolving [Alt-drag to duplicate](34-alt-drag-duplicate.md):** this ticket's answer now has a second consumer. ADR 0042 makes a clone drag copy exactly what duplicate copies, so whatever this ticket decides for a selected edge with floating ends applies to Alt-drag as well, with no separate rule.

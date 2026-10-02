@@ -124,6 +124,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - [Chrome suppression while a property is being judged](issues/33-chrome-suppression-while-judging.md) — selection chrome, outline included, hides **while the property bar has hover or focus**, by one CSS rule with no timer, trigger or C# state (ADR 0041). Nudge and paste are not triggers. A selected edge stops repainting itself in the accent and gets a halo under its own stroke, amending ADR 0016, because the edge case was a rendering defect that suppression could only have flashed past.
 
+- [Alt-drag to duplicate](issues/34-alt-drag-duplicate.md) — Alt on a `MoveSelection` makes it a **`Clone drag`**: the copies move and the originals stay, because leaving copies behind would carry externally attached edges and the original ids away from the source (ADR 0042). The copies are exactly what `Ctrl+D` builds, held in a new **pending fragment** slot of the `Gesture preview` from promotion and added verbatim at release, so the screen and the commit agree. Alt is **live**, and that costs nothing here: nothing is written before release, so a toggle only swaps what the preview holds and no mark-and-rewind is needed. Still one of the eight gestures. `Selection` stays on the originals until release, the copies get the selected look from the preview, and the release starts a `Duplicate run`. Alt on a resize went to its own ticket.
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.

@@ -117,7 +117,7 @@ Which of `Auto`, `Mouse` or `Trackpad` a canvas is treating the wheel as coming 
 _Avoid_: reading `Auto` as a heuristic that merely correlates with the device. The integral-versus-fractional tell *is* granularity, and granularity *is* why the smoothing constant exists, so a misclassification still applies smoothing to exactly the input that needs it.
 
 **Gesture preview**:
-What the active `Pointer gesture` publishes once per frame while it runs — `Bounds` overrides keyed by component instance id, plus at most one pending edge line (two board points and the id of the edge whose own line is suppressed, absent while a brand-new edge is being drawn). The entities it overrides are that gesture's **participants**. Provisional by definition: `Board` is never written mid-gesture, so cancelling is discarding it and committing is writing it back verbatim, which is what makes a history entry record exactly what was on screen. Covers geometry only — a `Selection` replaced mid-gesture is restored from the `Selection snapshot` instead, not by discarding this (ADR 0020, ADR 0031).
+What the active `Pointer gesture` publishes once per frame while it runs — `Bounds` overrides keyed by component instance id, plus at most one pending edge line (two board points and the id of the edge whose own line is suppressed, absent while a brand-new edge is being drawn). ADR 0037 adds moved endpoints, and ADR 0042 adds a pending fragment, the entities a `Clone drag` will add at release. The entities it overrides are that gesture's **participants**. Provisional by definition: `Board` is never written mid-gesture, so cancelling is discarding it and committing is writing it back verbatim, which is what makes a history entry record exactly what was on screen. Covers geometry only — a `Selection` replaced mid-gesture is restored from the `Selection snapshot` instead, not by discarding this (ADR 0020, ADR 0031).
 _Avoid_: reading it as a cache of `Board` — only the owning gesture writes it, and it holds only what that gesture changes.
 
 **Selection snapshot**:
@@ -142,6 +142,10 @@ The board point a pasted payload's bounding box is centred on — where the user
 **Duplicate run**:
 A sequence of duplicates where each lands at the same offset from the last as the last sits from its own source. It exists while the `Selection` is exactly what the last duplicate produced, and any selection change ends it. The offset is read from committed bounds when the duplicate is invoked, top-left to top-left, so any way of moving the copy counts and no gesture feeds it. The first duplicate in a run offsets by the fixed step. Transient canvas state, never persisted and never in `History` (ADR 0039).
 _Avoid_: remembered offset, which suggests a stored delta from a gesture; conflating it with the `Paste anchor` cascade, which measures from an absolute point.
+
+**Clone drag**:
+A `MoveSelection` with Alt held, where a copy of the selection follows the pointer and the originals stay put. The copies are exactly what duplicate would build, held in the `Gesture preview`'s pending fragment until release, when they are added to `Board`, become the `Selection` and start a `Duplicate run`. Alt is read live, so the same press can switch between moving and cloning, and the release commits whichever was last on screen. A mode of `MoveSelection`, not a ninth `Pointer gesture` (ADR 0042).
+_Avoid_: alt-drag duplicate as a separate gesture; reading it as moving the originals and leaving copies behind, which would carry externally attached edges away from the copies' source.
 
 **Grid**:
 The canvas's visual position/scale reference — concurrent layers stepping by 10x spacing, crossfading in and out as zoom crosses each layer's legibility threshold to simulate infinite depth in either zoom direction. Purely a `DiagramCanvas` rendering concern; not part of `Board`, not persisted.

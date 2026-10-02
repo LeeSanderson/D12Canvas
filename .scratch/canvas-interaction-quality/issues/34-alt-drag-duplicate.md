@@ -1,7 +1,7 @@
 # Alt-drag to duplicate
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 31
 
 ## Question
@@ -28,3 +28,19 @@ Blocked by ticket 31, which owns the duplicate-placement model this has to agree
 ## Comments
 
 **From resolving [Remembered-offset duplicate chaining](31-remembered-offset-duplicate-chaining.md):** the last bullet is answered. ADR 0039 reads a `Duplicate run`'s offset from committed bounds when `Ctrl+D` is pressed, so a clone drag starts a run with no rule of its own, provided its copies end up selected with a known source. It neither seeds nor resets anything explicitly. Separately, this ticket's own motivation should be re-read against that: ADR 0039 no longer needs Alt-drag as a source, so Alt-drag now has to earn its place on "places the copy where the pointer is" alone.
+
+## Answer
+
+**Alt on a drag clones the selection, the copies are what moves, and Alt is read live.** Recorded as [ADR 0042](../../../docs/adr/0042-clone-drag.md), with the term `Clone drag` added to `CONTEXT.md`.
+
+- **It exists.** ADR 0039 removed the run as a reason, so it earns its place on placing the copy at the pointer in one gesture, and on the fact that every reference tool binds it. Without it, an Alt-drag here moves the original.
+- **The copies move and the originals stay.** Excalidraw's leave-behind model would carry externally attached edges and the original ids away from the source.
+- **The crux, the preview:** the `Gesture preview` gains a pending fragment slot. The copies are built at promotion through ADR 0013's duplication path, render as real instances, move through the existing bounds overrides, and are added verbatim at release with the ids they already have. They mount regardless of windowing while the gesture is live. The originals are snap candidates and the copies are not, so a clone aligns to its own source. Cancel drops the slot.
+- **Ninth gesture or `MoveSelection` variant:** a mode of `MoveSelection`. The closed set stays at eight.
+- **Latched or live:** live. A toggle only swaps what the preview holds, because nothing is written before release, so no mark-and-rewind and ADR 0007 is untouched. Alt arrives on `OnPointerMoved`.
+- **What the copies inherit:** exactly what `Ctrl+D` builds. One `CompositeCommand`, no new command type. Edge duplication follows [Clipboard and duplication for a lone edge](36-edge-clipboard-and-duplication.md).
+- **Selection:** stays on the originals until release. The canvas draws the selected look on the fragment from the preview. At release the copies become the selection and start a `Duplicate run`, which answers the last bullet.
+- **Release:** writes the last published preview, so Alt released without a move still clones, and a copy dragged back onto its source still commits.
+- **Keyboard:** duplicate-then-nudge, no chord. An `Interaction probe` for Windows Alt-keyup menu activation belongs in the implementation ticket. The Linux window-manager grab of Alt+drag is documented.
+
+Amends ADR 0020 and adds addenda to ADRs 0018 and 0039. New ticket: [Alt on a resize: resize from centre](52-alt-resize-from-centre.md).
