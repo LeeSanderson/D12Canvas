@@ -18,3 +18,5 @@ Start from ADR 0042's answer: Alt is live on every gesture that binds it, arrivi
 - **How it composes with snapping.** ADR 0024 snaps the selection's edges to neighbours and anchors grid snapping at its top-left. With a centre anchor, both opposite edges move together, so decide which edge drives the snap and whether the other mirrors it.
 - **How it composes with a multi-selection resize.** ADR 0018's single resizer scales members within the selection bounds. Decide whether the centre is the selection's centre, and confirm members still scale about it as a rigid body.
 - **Its keyboard route.** ADR 0010's `Alt+Arrow` already resizes by one step. Decide whether a centred keyboard resize is needed at all, under ADR 0026's "a chord only where nothing else reaches".
+
+**Update from ADR 0043 (latched-versus-live modifiers resolved):** the live question is answered by rule. Alt on a resize changes what `ResizeSelection` does, not which gesture it is, so if it ships it is read live, and a change with the pointer still re-sends the last move, so the anchor switches the moment Alt changes. Nothing on this ticket needs to decide that again.

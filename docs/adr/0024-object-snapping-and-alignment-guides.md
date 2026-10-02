@@ -164,3 +164,9 @@ Attachment snapping for edge endpoints belongs to the attachment decision, keybo
 - **A numeric distance readout** — neither reference tool shows one.
 - **Sizing guide strokes with `calc(1px / var(--d12-scale))`** — correct, and unnecessary once the guide layer is SVG, where non-scaling-stroke does it natively.
 - **A keyboard chord for the object-snapping toggle** — spends a key from a tight budget on a preference most users set once, for a job momentary suppression already does better.
+
+## Addendum (surfaced while resolving the latched-versus-live modifiers ticket)
+
+The ruling that Ctrl is live and never read at press stands. The reason this ADR gave for needing no channel does not: "snapping has no observable effect until the pointer moves" is wrong, because with snapping on the selection is drawn at the snapped position, up to 8 screen pixels from the raw pointer, so pressing Ctrl should let go of it at once. ADR 0043 closes the gap by having JavaScript re-send the last pointer position as a move whenever modifier state changes during a gesture. The re-sent move carries a velocity of zero, so the fast-pointer cut-off never suppresses a snap the stationary user is waiting for.
+
+ADR 0043 also states what this ADR left implicit for `Axis lock`: `Shift` is read live on a move, like Ctrl, while its selection meanings are read once, when they act.

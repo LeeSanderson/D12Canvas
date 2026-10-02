@@ -1,7 +1,7 @@
 # Latched-versus-live modifier semantics
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 07, 34
 
 ## Question
@@ -44,3 +44,19 @@ So what remains here is genuinely narrow, and worth re-reading before starting: 
 `Alt` remains unbound pending [Alt-drag to duplicate](34-alt-drag-duplicate.md), which is still the other blocker.
 
 **Update from ADR 0042 (ticket 34 resolved, clearing a blocker):** `Alt` is bound on `MoveSelection` as a clone drag, and it is **live**. The ticket's concern about undo does not apply: a toggle only changes what the `Gesture preview` holds, and nothing is written to `Board` before release, so no mark-and-rewind is needed. It is a mode of `MoveSelection`, so a live modifier changing what a gesture commits without changing which gesture it is now has a worked instance. It reaches the gesture on `OnPointerMoved` like `Ctrl` and `Shift`, accepting the same no-movement gap. Alt on a resize is pending in [Alt on a resize: resize from centre](52-alt-resize-from-centre.md); record it as pending rather than blocking on it, as this ticket did with Alt-drag.
+
+## Answer
+
+Recorded as [ADR 0043](../../../docs/adr/0043-live-gesture-modifiers.md).
+
+**One rule covers every pointer modifier.** A modifier that chooses which gesture runs, or what is selected, is read once, at the moment it acts. A modifier that changes what the running gesture does is read live on every move, and the release commits the last preview published. A modifier that a platform turns into a different button at press, as macOS does with Ctrl+click, cannot be read at press anywhere.
+
+**Per modifier:** `Shift`'s append and toggle are read when they act (ADR 0022). `Shift`'s `Axis lock`, Ctrl's snap suppression and Alt's `Clone drag` are all live. Alt on a resize is pending in [Alt on a resize: resize from centre](52-alt-resize-from-centre.md) and takes the rule if it ships. `Axis lock` was the only row still open, and it is live so that a `Shift` append at press does not also lock the drag, and so `Shift` behaves like the other two.
+
+**A live modifier changes what the gesture commits, never which gesture it is.** ADR 0042 is the worked instance, and the rule now covers all of them.
+
+**The channel gap is closed.** ADR 0024 accepted it on the grounds that snapping has no visible effect until the pointer moves, which is wrong: the snapped preview sits up to 8 screen pixels from the raw pointer. While a gesture holds capture, JavaScript re-sends the last pointer position through `OnPointerMoved` whenever `Shift`, Alt or Ctrl state changes. No new invokable method, through the frame coalescer, velocity zero, auto-repeat ignored, window capture-phase listener that prevents nothing. As a result, releasing Alt and then the button with no move between commits a move. An `Interaction probe` asserts it.
+
+**Undo** needs nothing: ADR 0020 writes nothing before release, so ADR 0007 is untouched. **A latched release made visible** has no case, because nothing in a running gesture latches.
+
+Amends ADR 0024 (reason corrected, ruling stands), ADR 0042 (toggle shows at once, Alt-release case commits a move) and ADR 0018 (addendum). Confirms ADR 0022. `CONTEXT.md` updated under `Pointer gesture`, `Clone drag` and `Axis lock`.

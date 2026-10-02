@@ -108,3 +108,11 @@ Two browser and platform facts are asserted by an `Interaction probe` (ADR 0025)
 - **Dropping a clone released on its source**: a second comparison, and it refuses a stacked copy placed on purpose.
 - **A clone-specific copy rule**: two duplication gestures with two different results.
 - **A keyboard chord for clone**: duplicate-then-nudge already reaches it.
+
+## Addendum (surfaced while resolving the latched-versus-live modifiers ticket)
+
+ADR 0043 amends two statements above, and leaves the rule that the release writes the last published preview as it is.
+
+**An Alt toggle shows at once.** "Pressing Alt without moving fires no pointer event, so the toggle shows on the next move" no longer holds. While a gesture holds capture, JavaScript re-sends the last pointer position as a move whenever modifier state changes, so the copies appear or go away the moment Alt does.
+
+**Alt released and then the pointer released, with no move between, commits a move.** The Alt release publishes a preview of a move, so the last published preview is a move. Before the re-send it was still a clone, and the commit was a clone after the user had let go of the key that means clone.

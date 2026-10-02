@@ -217,3 +217,9 @@ This is the second time the closure has paid off in the way it was meant to. ADR
 ## Addendum (surfaced while resolving the Alt-drag to duplicate ticket)
 
 ADR 0042 binds Alt on the pointer, which this ADR and ADR 0022 left free. Alt held during a `MoveSelection` makes it a clone drag. **The closed set of eight is unchanged.** Ownership, capture, the claiming button and the press-anchored delta are the same in both modes, so a toggle mid-press changes what the release commits and never which gesture owns the press. Alt is read live from the modifiers carried on `OnPointerMoved`, and no new channel is added. The other seven gestures ignore Alt.
+
+## Addendum (surfaced while resolving the latched-versus-live modifiers ticket)
+
+ADR 0043 states the rule the modifier bindings had been following one at a time. A modifier that chooses which gesture runs, or what is selected, is read once, at the moment it acts. A modifier that changes what the running gesture does is read live. This ADR's rule that identity is fixed at press is the first half of that rule, unchanged.
+
+**JavaScript re-sends a move on a modifier change.** While a gesture holds pointer capture, a change in `Shift`, Alt or Ctrl state re-sends the last pointer position through `OnPointerMoved` with the new modifiers, through the same frame coalescer as any other move. The four invokable methods stay four, and nothing about selection or gesture kind is mirrored into JavaScript, since the listener needs only the fact that capture is held. This replaces the no-movement gap the Alt addendum above and ADR 0024 both accepted.
