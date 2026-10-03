@@ -163,6 +163,10 @@ _Avoid_: remembered offset, which suggests a stored delta from a gesture; confla
 A `MoveSelection` with Alt held, where a copy of the selection follows the pointer and the originals stay put. The copies are exactly what duplicate would build, held in the `Gesture preview`'s pending fragment until release, when they are added to `Board`, become the `Selection` and start a `Duplicate run`. Alt is read live, so the same press can switch between moving and cloning, the switch shows the moment Alt changes, and the release commits whichever was last on screen (ADR 0043). A mode of `MoveSelection`, not a ninth `Pointer gesture` (ADR 0042).
 _Avoid_: alt-drag duplicate as a separate gesture; reading it as moving the originals and leaving copies behind, which would carry externally attached edges away from the copies' source.
 
+**Centre resize**:
+A `ResizeSelection` with Alt held, where the centre of the selection's bounding box stays fixed and the edge opposite the handle moves in mirror with it. Members scale inside the box as on any resize. Alt is read live, and a toggle recomputes from the start box, so the opposite edge jumps while the handle stays under the pointer. On each driven axis both edges are snap anchors and the smallest correction wins. A mode of `ResizeSelection`, not a ninth `Pointer gesture` (ADR 0057).
+_Avoid_: resize from centre as a separate gesture; conflating it with aspect-lock, which is out of scope and would bind `Shift`.
+
 **Grid**:
 The canvas's visual position/scale reference — concurrent layers stepping by 10x spacing, crossfading in and out as zoom crosses each layer's legibility threshold to simulate infinite depth in either zoom direction. Purely a `DiagramCanvas` rendering concern; not part of `Board`, not persisted.
 

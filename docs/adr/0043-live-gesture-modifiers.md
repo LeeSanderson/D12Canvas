@@ -71,3 +71,5 @@ The ticket asked how a modifier latched at press and released mid-drag would be 
 - **Keeping the gap and correcting only ADR 0024's reason**: leaves a stationary toggle invisible, and leaves releasing Alt and then the button committing a clone.
 - **A new invokable method for modifier changes**: carries nothing a move does not already carry.
 - **Reading modifiers from `pointerup`**: commits something the user never saw, as ADR 0042 already rejected.
+
+**Amended by ADR 0057:** the pending row is filled. Alt on a `ResizeSelection` anchors the resize at the selection's centre and is read live. A toggle recomputes from the start box, so the opposite edge jumps and the handle stays under the pointer.

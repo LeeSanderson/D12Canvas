@@ -174,3 +174,5 @@ ADR 0043 also states what this ADR left implicit for `Axis lock`: `Shift` is rea
 **Amended by ADR 0048:** "Which point of a selection grid snapping anchors" is answered. A move and a placement round the top-left of the selection's bounding box, and size is never rounded. Grid snapping now also covers resize, rounding only the edges the handle moves, which is the anchor set this ADR gave object snapping on resize, so per-axis precedence applies there unchanged.
 
 **Amended by ADR 0055:** "Above content and below selection chrome" is a concrete layer. Guides draw in their own stacking context between the instance layer and selection chrome, so no `ZIndex` can rise above them.
+
+**Amended by ADR 0057:** on a centre resize, both edges of each driven axis are moving, so both are in the resize anchor set, for object snapping and for ADR 0048's grid snapping. Per axis the smallest correction wins and the other edge mirrors it. Per-axis precedence and the second pass are unchanged.

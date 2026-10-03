@@ -126,3 +126,5 @@ ADR 0045 answers the open bullet on selected edges with floating ends, and clone
 ADR 0046 gives Alt a meaning on a release from `pointing`, which this ADR left free. Alt+click selects the next entity down the `Hit stack`. A press that crosses the threshold is still a clone drag, so "an Alt-click is a click" holds and the click now does something. The Windows probe above gains a case: whether releasing Alt after an Alt+click with no drag activates the browser's menu bar.
 
 **Amended by ADR 0056:** the fragment's rule of mounting regardless of windowing is now a case of the sticky mount every participant has during a live gesture.
+
+**Amended by ADR 0057:** the open claim on `ResizeSelection` under Alt elsewhere is answered. Alt on a resize anchors it at the selection's centre, read live, so Alt now binds on two pointer gestures. The Windows probe gains a case for releasing Alt after an Alt-resize. On Linux window managers that take an Alt+press, a user can press first and then hold Alt, because Alt is read live, so a clone drag is reachable there after all.

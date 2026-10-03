@@ -231,3 +231,5 @@ ADR 0043 states the rule the modifier bindings had been following one at a time.
 **Amended by ADR 0051:** a double-press on the `instance` role calls `BeginEdit()` when the instance is addressable and its type implements `IInlineEditable`, and enters the group when it is not addressable. ADR 0035's carve-out for `StickyNote`'s and `Text`'s `@ondblclick="BeginEdit"` is withdrawn: that binding sits on a plain paragraph that classifies `instance`, not `author-content`, so the rule deleting every `@ondblclick` on board content applies to it too.
 
 **Amended by ADR 0056:** the press-anchored delta holds in board space. The press point becomes a board point at press, and each tick converts the current pointer through the viewport as it is then. The drag threshold is crossed when the pointer moves far enough *or* the viewport moves; in the second case C# promotes the gesture and tells JavaScript once so it starts forwarding moves.
+
+**Amended by ADR 0057:** Alt is also bound on `ResizeSelection`, as a live mode that anchors the resize at the selection's centre. The closed set keeps eight members.
