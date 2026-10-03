@@ -1,7 +1,7 @@
 # Reaching a buried instance
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 11
 
 ## Question
@@ -37,3 +37,19 @@ One thing this ticket does *not* inherit: ADR 0024 leaves the selection bounding
 **Update from ADR 0042 (Alt-drag to duplicate resolved):** Alt's claim on the pointer turned out narrower than the paragraph above assumed. ADR 0042 binds Alt only on a `MoveSelection` that has crossed the threshold, and builds nothing below it, so **an Alt press released in the `pointing` phase has no meaning yet**. Alt+click is therefore free for the modifier route, and it would not pre-empt anything: a click and a drag on the same target are exactly the pair ADR 0018's threshold already separates. This does not decide the route. It only means the modifier route is open again on Alt+click, and stays closed on `Ctrl`.
 
 **Update from ADR 0044 ([Selecting inside a group](35-selecting-inside-a-group.md) resolved):** the repeat-press route above has lost part of its ground. A double-press on a member of a group that is not entered now enters that group, so "press again in the same place to go one deeper" already has a meaning wherever the topmost thing is grouped. A cycling repeat press would have to start at press count 3, or apply only where nothing at the point is grouped, and either way it would sit beside a press count that already descends a level. Weigh that before choosing it.
+
+## Answer
+
+Two holes, two rules, and no menu. Recorded as [ADR 0046](../../../docs/adr/0046-reaching-a-buried-instance.md), with `Hit stack` added to `CONTEXT.md` and addenda on ADRs 0017, 0022 and 0042.
+
+1. **Under the selection box.** A release from `pointing` on `selection-bounds` treats the topmost entity beneath the box as the pressed entity in ADR 0022's release table. A plain release collapses to it and a `Shift` release toggles it. Nothing changes at press, so a drag from inside the box still moves the selection.
+2. **Under another instance.** Alt+click is the only route. ADR 0042 left an Alt release from `pointing` unbound, so it pre-empts nothing, and a press that crosses the threshold is still a clone drag. There is no `Select layer` row, no repeat-press cycling, and instances gain no readable name, so ADR 0001 and ADR 0003 are untouched.
+3. **Cycling.** If the press-time `Selection snapshot` is one entity in the stack, Alt+click selects the next one below and wraps at the bottom. Otherwise it selects the one below the top. Nothing is stored between clicks. The snapshot is needed because ADR 0022 collapses a non-member at press.
+4. **The stack.** `elementsFromPoint` in paint order, each entry run through ADR 0017's marker walk and resolved through `EffectiveSelectionId`, deduplicated, with locked entities and the selection box skipped and edges kept. It supplies a click outcome, never the role, so ADR 0017's rejection of `elementsFromPoint` for classification stands.
+5. **Alt on `author-content`.** Uses ADR 0023's predicate: `Native` when the target is editable or holds a live text selection, otherwise `instance`.
+6. **`Shift`+Alt+click is Alt+click.** No additive cycling. The keyboard covers that case.
+7. **Probe.** ADR 0042's Windows Alt `Interaction probe` gains a case for an Alt+click with no drag.
+
+The keyboard never had this hole, since ADR 0010's tab stops follow reading order and reach a covered instance.
+
+Graduated nothing new. Added a discoverability case for Alt+click to the cursor and micro-feedback patch in the map's fog.

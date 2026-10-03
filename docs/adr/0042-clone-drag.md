@@ -120,3 +120,7 @@ ADR 0043 amends two statements above, and leaves the rule that the release write
 ## Addendum (surfaced while resolving the lone-edge clipboard ticket)
 
 ADR 0045 answers the open bullet on selected edges with floating ends, and clone drag takes the answer with no rule of its own. Every selected edge is in the fragment. An end on a copied instance is attached to the copy, a floating end moves with the delta, and an end on an instance not in the selection becomes floating. The bullet's sibling still holds: an edge that crosses the selection boundary and is not itself selected is not copied.
+
+## Addendum (surfaced while resolving the buried-instance ticket)
+
+ADR 0046 gives Alt a meaning on a release from `pointing`, which this ADR left free. Alt+click selects the next entity down the `Hit stack`. A press that crosses the threshold is still a clone drag, so "an Alt-click is a click" holds and the click now does something. The Windows probe above gains a case: whether releasing Alt after an Alt+click with no drag activates the browser's menu bar.
