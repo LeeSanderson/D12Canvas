@@ -207,3 +207,5 @@ Separately, this ADR is **silent** on whether an edge is a tab stop rather than 
 **Amended by ADR 0038:** every guarded row that writes `Board` or the selection gains a second condition, that no pointer gesture owns the press, in any of `pointing`, `active` or `cancelled`. While one does, the key does nothing. Escape, copy, the snap-to-grid toggle, focus moves and the viewport rows are unaffected.
 
 **Amended by ADR 0044:** `Enter` on a group's tab stop enters the group, replacing its one stop with stops for its direct members and focusing the first. The existing `Enter` row is scoped to instance tab stops, so the two never meet. Escape's row gains the step out of the `Entered group` between cancelling a gesture and clearing the selection, and returns focus to the group's tab stop when focus was on a member's.
+
+**Amended by ADR 0048:** the point the nudge measures from is settled as the top-left of the selection's bounding box, which is what snap-to-grid already anchored. `Alt+Arrow` resize gains the same next-grid-line step under snap, applied to the moving edge.
