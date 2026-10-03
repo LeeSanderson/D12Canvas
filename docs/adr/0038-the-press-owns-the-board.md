@@ -70,3 +70,5 @@ ADR 0020's ticket asked whether an entity deleted out from under a gesture was t
 - **Restoring the selection snapshot on a `Board` swap.** It names entities from the old model.
 - **Deferring a `Board` swap until release.** The host sets a parameter and reads back a different one.
 - **A public "gesture is live" signal for hosts.** Nothing needs it yet, and adding it later costs nothing.
+
+**Answered by ADR 0056:** the viewport stays live in every phase, and a live gesture keeps what it holds under the pointer when the viewport moves.

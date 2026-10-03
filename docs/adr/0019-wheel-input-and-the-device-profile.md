@@ -89,3 +89,5 @@ The apparently balanced middle option is a trap and is rejected outright: captur
 - **Shift as an axis lock on `Trackpad`** (use `deltaX`, discard `deltaY`), and **Shift as an axis sum** (today's `deltaY + deltaX`, which folds vertical motion into horizontal and surprises on a diagonal swipe). Both rejected in favour of leaving Shift unbound where the device needs no constraint.
 - **A host-configurable capture policy.** Rejected for now as one knob too many; always-capture with a documented limitation is the honest position until the embedded-figure case actually bites.
 - **Deriving the capture policy from canvas state.** Foreclosed by the synchronous-JS constraint regardless of desirability.
+
+**Confirmed by ADR 0056:** this ADR's silence on wheel input with a button held was silence, not a decision. The wheel stays live during a press, and a live gesture keeps what it holds under the pointer.

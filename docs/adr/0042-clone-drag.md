@@ -124,3 +124,5 @@ ADR 0045 answers the open bullet on selected edges with floating ends, and clone
 ## Addendum (surfaced while resolving the buried-instance ticket)
 
 ADR 0046 gives Alt a meaning on a release from `pointing`, which this ADR left free. Alt+click selects the next entity down the `Hit stack`. A press that crosses the threshold is still a clone drag, so "an Alt-click is a click" holds and the click now does something. The Windows probe above gains a case: whether releasing Alt after an Alt+click with no drag activates the browser's menu bar.
+
+**Amended by ADR 0056:** the fragment's rule of mounting regardless of windowing is now a case of the sticky mount every participant has during a live gesture.
