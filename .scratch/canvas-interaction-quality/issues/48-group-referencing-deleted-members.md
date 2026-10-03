@@ -1,7 +1,7 @@
 # A Group left referencing deleted members
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -24,3 +24,21 @@ Its edge-shaped sibling is **already settled the other way** and is the sharpest
 Touches ADR 0003 (the flat model with no ownership tree), ADR 0004 (what reaches the file) and ADR 0007 (what an undo has to restore).
 
 **Update from ADR 0044 ([Selecting inside a group](35-selecting-inside-a-group.md) resolved):** this case is about to become common. Inside an `Entered group` the selection holds direct members, so selecting one member and pressing Delete removes it from the board while its group's `MemberIds` still lists it. That is now an ordinary user action, not an edge case. ADR 0044 fixes the two cases it creates itself (`Ctrl+G` and ungroup inside a group now edit the parent's `MemberIds`) and leaves deletion to this ticket. The scope rule also depends on the answer: ADR 0044 pops the `Entered group` when its group stops existing, so if an emptied group is kept, the scope survives on a group with nothing in it.
+
+## Answer
+
+Recorded as [ADR 0053](../../../docs/adr/0053-a-groups-members-always-resolve.md). Grilled with the dev, six questions.
+
+- **Repaired, not tolerated.** Every id in a live group's `MemberIds` resolves. `OnDeletePressed` builds one `CompositeCommand` holding the removals plus every membership edit they make necessary, the same shape ADR 0044 gave `GroupCommand` and `UngroupCommand`. `RemoveEntityCommand` and `Board` stay unchanged, so ADR 0003 holds, and undo restores everything in one step (ADR 0007).
+- **Zero members removes the group; one member dissolves it**, with the survivor going where the group was in its parent. No user action builds a group of one, and it does nothing visible.
+- **Nesting:** the rule repeats upward, since removing an emptied inner group can leave its parent with zero or one. Dissolving a one-member group leaves the parent's count unchanged.
+- **The phantom tab stop question was a fact, and the answer is no crash.** `GetVisibleGroups` drops a group with null bounds before `OrderedTabStops` reaches its `!`. The real cost was an invisible, unselectable, unremovable entity that warned on every load.
+- **Load repairs on both paths.** Partial drops dead ids, drops emptied groups and dissolves one-member groups, including hand-written ones, with a warning for each. Strict repairs the same way without throwing, because the repair removes nothing visible and throwing would refuse boards the library damaged itself.
+- **The canvas and load guarantee the invariant, `Board` does not.** Hosts build boards through its public mutators. Readers keep their existing tolerance; the group label and ADR 0044's lock rule count only resolving members.
+- **`Ctrl+G` is unavailable when every direct member of the `Entered group` is selected.** Found during the grilling: it was the one user route to a group of one, through ADR 0044's own rule, and running it would only rename the group and pop the scope.
+
+Edges stay on ADR 0032's dangling-endpoint precedent. Amends ADR 0044 and ADR 0004; `CONTEXT.md`'s `Group` entry updated.
+
+## Comments
+
+- My Question 2 claimed no user action can create a group of one, and ADR 0044's `Ctrl+G` rule contradicted that two questions later. Corrected in the session, and the case became Question 5. A second gap surfaced while writing the ADR: ADR 0004 has a strict load path that the load question had not covered, which became Question 6.

@@ -28,3 +28,5 @@ Two deserialize methods are exposed, not one, so the host picks its own toleranc
 - **ID-keyed dictionary/object collections** instead of arrays — more convenient for O(1) in-memory lookup, but that's `Board`'s own indexing concern, not a serialization concern; arrays are the more portable wire shape and lose nothing since `Id` is already per-entity.
 - **Building a migration pipeline now** (e.g. an `IBoardMigration` chain) — rejected as speculative abstraction designed against a hypothetical V2 whose actual shape can't be known yet; deferred until a real second schema version exists.
 - **Static methods on `Board`** for serialize/deserialize — would need a service-locator or ambient singleton to reach the DI-registered component registry from a static context; an injectable service keeps the registry an explicit, testable constructor dependency instead.
+
+**Amended by ADR 0053:** both deserialize paths repair group membership on load. Dead member ids are dropped, an emptied group is dropped and a one-member group is dissolved. The partial path warns for each repair, and the strict path repairs without throwing.
