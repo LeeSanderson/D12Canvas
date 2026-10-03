@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Contextmenu timing probe</title>
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 16px; }
+  #pair { display: flex; gap: 0; margin: 12px 0; }
+  #pair div { width: 160px; height: 100px; display: grid; place-items: center; user-select: none; }
+  #a { background: #cde; }
+  #b { background: #edc; }
+  #controls label { margin-right: 16px; }
+  #log { font: 12px ui-monospace, monospace; white-space: pre; background: #f4f4f4; padding: 8px; max-height: 50vh; overflow: auto; }
+  button:focus, textarea:focus { outline: 3px solid #36c; }
+</style>
+</head>
+<body>
+<h1>Contextmenu timing probe</h1>
+<ol>
+  <li>Mouse: press the right button in A close to the border, move into B while holding, release in B. Repeat with no movement.</li>
+  <li>Keyboard: click the tab stop, then press <kbd>Shift+F10</kbd>, once with "prevent Shift+F10 keydown" on and once off.</li>
+  <li>Keyboard: with the tab stop focused, press and hold the ContextMenu key, release it. The log shows whether contextmenu lands before or after keyup.</li>
+</ol>
+<div id="controls">
+  <label><input type="checkbox" id="preventShiftF10"> prevent Shift+F10 keydown</label>
+  <label><input type="checkbox" id="preventMenuKey"> prevent ContextMenu keydown</label>
+  <label><input type="checkbox" id="preventContextmenu" checked> prevent contextmenu (no native menu)</label>
+  <button id="clear">Clear</button>
+  <button id="copy">Copy results</button>
+</div>
+<div id="pair"><div id="a">A</div><div id="b">B</div></div>
+<p><button id="stop">tab stop</button> <textarea id="ta" rows="2">editable</textarea></p>
+<div id="log"></div>
+<script>
+  const log = [];
+  const out = document.getElementById('log');
+  const name = el => el && el.id ? '#' + el.id : el ? el.tagName.toLowerCase() : 'null';
+  const write = line => { log.push(line); out.textContent = log.join('\n'); };
+  const t0 = performance.now();
+  const stamp = () => (performance.now() - t0).toFixed(1).padStart(8);
+  write('ua: ' + navigator.userAgent);
+
+  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'auxclick']) {
+    window.addEventListener(type, e => {
+      if (e.button !== 2) return;
+      write(`${stamp()} ${type.padEnd(12)} button=${e.button} buttons=${e.buttons} target=${name(e.target)} at ${e.clientX},${e.clientY}`);
+    }, true);
+  }
+
+  window.addEventListener('contextmenu', e => {
+    write(`${stamp()} contextmenu  button=${e.button} buttons=${e.buttons} target=${name(e.target)} at ${e.clientX},${e.clientY} active=${name(document.activeElement)}`);
+    if (document.getElementById('preventContextmenu').checked) e.preventDefault();
+  }, true);
+
+  for (const type of ['keydown', 'keyup']) {
+    window.addEventListener(type, e => {
+      if (!['F10', 'ContextMenu', 'Shift'].includes(e.key)) return;
+      let prevented = false;
+      if (type === 'keydown' && e.key === 'F10' && e.shiftKey && document.getElementById('preventShiftF10').checked) { e.preventDefault(); prevented = true; }
+      if (type === 'keydown' && e.key === 'ContextMenu' && document.getElementById('preventMenuKey').checked) { e.preventDefault(); prevented = true; }
+      write(`${stamp()} ${type.padEnd(12)} key=${e.key} shift=${e.shiftKey} target=${name(e.target)}${prevented ? ' PREVENTED' : ''}`);
+    }, true);
+  }
+
+  window.addEventListener('blur', () => write(`${stamp()} window blur`));
+  for (const id of ['preventShiftF10', 'preventMenuKey', 'preventContextmenu']) {
+    document.getElementById(id).addEventListener('change', e => write(`${stamp()} --- ${id} ${e.target.checked ? 'on' : 'off'} ---`));
+  }
+  document.getElementById('clear').onclick = () => { log.length = 1; out.textContent = log.join('\n'); };
+  document.getElementById('copy').onclick = () => navigator.clipboard.writeText(log.join('\n'));
+  window.__probeLog = log;
+</script>
+</body>
+</html>
