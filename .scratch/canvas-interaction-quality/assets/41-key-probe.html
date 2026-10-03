@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chord probe</title>
+<style>
+  :root { --bg: #fafafa; --fg: #1a1a1a; --muted: #666; --accent: #2563eb; --row: #fff; --warn: #b45309; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161616; --fg: #eee; --muted: #999; --accent: #60a5fa; --row: #222; --warn: #fbbf24; }
+  }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; margin: 0; padding: 16px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .meta { color: var(--muted); margin-bottom: 12px; word-break: break-all; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+  .stop { width: 160px; height: 90px; border: 2px dashed var(--muted); display: grid; place-items: center; margin-bottom: 12px; }
+  .stop:focus { outline: 3px solid var(--accent); border-color: transparent; }
+  table { border-collapse: collapse; width: 100%; font: 12px ui-monospace, monospace; }
+  th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--muted); }
+  tr.lifecycle td { color: var(--warn); }
+  tbody tr { background: var(--row); }
+</style>
+</head>
+<body>
+<h1>Chord probe</h1>
+<div class="meta" id="meta"></div>
+<div class="controls">
+  <label><input type="checkbox" id="prevent" checked> preventDefault on Ctrl/Cmd+Tab and Ctrl/Cmd+Arrow</label>
+  <button id="copy">Copy log</button>
+  <button id="clear">Clear</button>
+</div>
+<div class="stop" id="stop" tabindex="0">instance tab stop</div>
+<table>
+  <thead><tr><th>ms</th><th>event</th><th>key</th><th>code</th><th>mods</th><th>prevented</th><th>focus</th></tr></thead>
+  <tbody id="log"></tbody>
+</table>
+<script>
+  const started = performance.now();
+  const rows = [];
+  const log = document.getElementById("log");
+  const prevent = document.getElementById("prevent");
+  const stop = document.getElementById("stop");
+  document.getElementById("meta").textContent = `${navigator.userAgent} | platform: ${navigator.platform}`;
+
+  const arrows = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"]);
+  const isProbedChord = e => (e.ctrlKey || e.metaKey) && (e.code === "Tab" || arrows.has(e.code));
+  const mods = e => [e.ctrlKey && "Ctrl", e.metaKey && "Meta", e.altKey && "Alt", e.shiftKey && "Shift"].filter(Boolean).join("+");
+  const focusName = () => document.activeElement === stop ? "stop" : (document.activeElement?.tagName ?? "none").toLowerCase();
+
+  function record(cells, lifecycle) {
+    const ms = Math.round(performance.now() - started);
+    rows.push([ms, ...cells].join("\t"));
+    const tr = document.createElement("tr");
+    if (lifecycle) tr.className = "lifecycle";
+    for (const value of [ms, ...cells]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    }
+    log.prepend(tr);
+  }
+
+  function onKey(e) {
+    if (e.type === "keydown" && prevent.checked && isProbedChord(e)) e.preventDefault();
+    record([e.type, e.key, e.code, mods(e), e.defaultPrevented ? "yes" : "", focusName()], false);
+  }
+
+  window.addEventListener("keydown", onKey);
+  window.addEventListener("keyup", onKey);
+  window.addEventListener("blur", () => record(["window blur", "", "", "", "", focusName()], true));
+  window.addEventListener("focus", () => record(["window focus", "", "", "", "", focusName()], true));
+  document.addEventListener("visibilitychange", () => record([`visibility ${document.visibilityState}`, "", "", "", "", focusName()], true));
+
+  document.getElementById("copy").addEventListener("click", () => {
+    navigator.clipboard.writeText(`${navigator.userAgent}\n${rows.join("\n")}`);
+    stop.focus();
+  });
+  document.getElementById("clear").addEventListener("click", () => {
+    rows.length = 0;
+    log.replaceChildren();
+    stop.focus();
+  });
+  stop.focus();
+</script>
+</body>
+</html>

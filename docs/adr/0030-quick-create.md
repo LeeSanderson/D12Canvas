@@ -80,6 +80,8 @@ This is ticket 41's failure family exactly, arriving on a second chord. ADR 0026
 
 A platform split was considered and declined for now. ADR 0024 established that a platform check exists in this codebase, for `Ctrl`+click being the macOS secondary click, so a conditional binding is precedented. But there is no clean macOS arrow chord to split **to**, so splitting now means inventing a second chord before the measurement that would say whether one is needed.
 
+**Addendum (measured while resolving [Whether Ctrl+Tab and Ctrl+Arrow survive the browser](../../.scratch/canvas-interaction-quality/issues/41-ctrl-tab-browser-reservation.md)):** in Chrome and Edge on Windows all four `Ctrl`+`Arrow` chords reach the page, `preventDefault` takes, and the browser takes no action of its own. The binding holds there. The macOS readings this section worried about were not measured, so the doubt and the declined platform split both stand until [Chord survival on macOS and in Firefox](../../.scratch/canvas-interaction-quality/issues/56-chord-survival-macos-firefox.md) is worked.
+
 ## Three cases need no rule
 
 **Only a selected instance offers it.** ADR 0028 renders ports on a single selection and on the one component under the pointer during a live connector drag, and ADR 0027's consequence is that an unrendered port is not hit-testable. So a press on an unselected instance's border classifies as `instance` and becomes `MoveSelection`, and `Quick create` is unreachable there. That is Miro's and FigJam's documented behaviour, both of which describe the dot as appearing on a **selected** object, arrived at here by geometry rather than by a clause.

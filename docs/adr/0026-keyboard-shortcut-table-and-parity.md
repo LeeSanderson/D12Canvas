@@ -16,8 +16,8 @@ Every row is guarded by focus (see the next section). The **Typing** column reco
 | `Shift`+`Arrow` | Coarse nudge | guarded | | ADR 0010, here |
 | `Alt`+`Arrow` | Resize a single instance, opposite edge anchored | guarded | | ADR 0010 |
 | `Alt`+`Shift`+`Arrow` | Resize a single instance, anchor flipped | guarded | | ADR 0010 |
-| `Ctrl`+`Arrow` | Quick-create and connect in that direction — **suspect on macOS, see the addendum** | guarded | | ADR 0030 |
-| `Ctrl`+`Tab` | Move focus without selecting — **suspect, see below** | guarded | | ADR 0010 |
+| `Ctrl`+`Arrow` | Quick-create and connect in that direction. Works in Chrome and Edge on Windows; **macOS unmeasured, see the addendum** | guarded | | ADR 0030 |
+| `Ctrl`+`Tab` | Move focus without selecting. **Dead in Chrome and Edge on Windows, see below** | guarded | | ADR 0010 |
 | `Space` | Toggle the focused entity's membership of the selection | guarded | | ADR 0010 |
 | `Enter` | Commit a port attachment | scoped to an instance tab stop | | ADR 0010 |
 | `PageUp` / `PageDown` | Zoom in / out | guarded | | here |
@@ -149,6 +149,8 @@ ADR 0010 rejected `Shift`+`Tab` and `Alt`+`Tab` because both are captured by bro
 **The row is carried with the doubt attached and is not rebound here.** Rebinding blind would repeat the original mistake, and there is no confidently free replacement: `Ctrl`+`Shift`+`Tab` is the reverse tab switch, `Ctrl`+`Arrow` is Spaces and Mission Control on macOS, `Ctrl`+`Space` is IME switching on Windows, and the `F6` family is browser chrome. If none is available, the fix is not a key change but reopening ADR 0010's decision to weld focus to selection — "move focus without selecting" needs a chord only because selection follows focus by default. That is a design question and must not be answered as a footnote to a table.
 
 **Verification is a `task` and not a probe, and the reason bounds ADR 0025.** The observable is whether the *browser* switches tabs, which is invisible from inside the page: Playwright drives the page, not the browser UI, so a probe would confirm the handler fires and miss the failure entirely. ADR 0025 bounded Playwright's reach at device physics; this is a second boundary, browser-chrome-level bindings, and it needs a human pressing keys in Chrome, Firefox and Safari on both platforms.
+
+**Addendum (measured while resolving [Whether Ctrl+Tab and Ctrl+Arrow survive the browser](../../.scratch/canvas-interaction-quality/issues/41-ctrl-tab-browser-reservation.md)):** in Chrome and Edge on Windows, `Ctrl`+`Tab` never reaches the page. The `Tab` keydown does not arrive and the browser switches tabs. All four `Ctrl`+`Arrow` chords do reach the page there, and `preventDefault` takes. Firefox and macOS were not measured and are carried by [Chord survival on macOS and in Firefox](../../.scratch/canvas-interaction-quality/issues/56-chord-survival-macos-firefox.md). The `Ctrl`+`Tab` row is kept but marked dead. What replaces it is [Keyboard multi-select without Ctrl+Tab](../../.scratch/canvas-interaction-quality/issues/55-keyboard-multi-select-without-ctrl-tab.md), which is a design question and not a rebinding.
 
 ## Two questions this does not answer
 

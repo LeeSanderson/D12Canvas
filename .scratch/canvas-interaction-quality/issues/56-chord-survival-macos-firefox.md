@@ -1,0 +1,21 @@
+# Chord survival on macOS and in Firefox
+
+Type: task
+Status: open
+Blocked by:
+
+## Question
+
+Fill in the rows [Whether Ctrl+Tab and Ctrl+Arrow survive the browser](41-ctrl-tab-browser-reservation.md) could not measure: Firefox on Windows, and Safari, Chrome and Firefox on macOS. Use the same [chord probe page](../assets/41-key-probe.html). It is a single self-contained HTML file.
+
+Needs a human at a Mac. On macOS, record whether Mission Control and Spaces shortcuts are on (System Settings, Keyboard, Keyboard Shortcuts, Mission Control), since that changes the result.
+
+Per engine and platform, with the probe's tab stop focused, and with `preventDefault` on and then off:
+
+- `Ctrl+Tab`, and on macOS `Cmd+Tab`.
+- `Ctrl+Left/Right/Up/Down`, and on macOS `Cmd+Left/Right/Up/Down`.
+- Does the keydown for the non-modifier key reach the page? Does the browser or OS act anyway (blur, `visibility hidden`, back/forward navigation, a Space switch)?
+
+Keep the vertical and horizontal arrows apart. `Cmd+Up` and `Cmd+Down` are not browser navigation, so the vertical pair may survive where the horizontal pair does not.
+
+`Ctrl+Tab` is already dead in Blink on Windows, so these rows cannot rescue it. They matter for ADR 0030's `Ctrl+Arrow` macOS doubt, and for any replacement chord [Keyboard multi-select without Ctrl+Tab](55-keyboard-multi-select-without-ctrl-tab.md) proposes. Record the results on ADR 0030 and ADR 0026 by addendum.

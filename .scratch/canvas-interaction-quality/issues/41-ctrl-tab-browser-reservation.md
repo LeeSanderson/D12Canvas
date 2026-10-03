@@ -1,7 +1,9 @@
 # Whether Ctrl+Tab and Ctrl+Arrow survive the browser
 
 Type: task
-Status: open
+Status: resolved
+
+Assets: [chord probe page](../assets/41-key-probe.html). It logs every `keydown`/`keyup` plus window blur, focus and visibility changes, and can toggle `preventDefault` on the probed chords. It stands in for the board because `Ctrl+Arrow` quick-create is not implemented yet.
 
 ## Question
 
@@ -34,3 +36,17 @@ Note the asymmetry worth capturing rather than averaging away: `Cmd+Up` and `Cmd
 Record what happened per engine rather than a verdict. If the binding is dead in any engine the map cares about, **do not treat the fix as a key change**: every candidate replacement is reserved somewhere — `Ctrl+Shift+Tab` is the reverse tab switch, `Ctrl+Arrow` is Spaces and Mission Control on macOS, `Ctrl+Space` is IME switching on Windows, and the `F6` family is browser chrome. If none is free, the fix is reopening ADR 0010's decision to weld focus to selection, since "move focus without selecting" needs a chord only because selection follows focus by default. That is a design question and should surface as its own ticket rather than being decided here.
 
 Amends ADR 0010's multi-select section and ADR 0026's table row if `Ctrl+Tab` is confirmed dead, and ADR 0030 plus ADR 0026's new row if `Ctrl+Arrow` is. The two verdicts are independent: one chord failing says nothing about the other, and ADR 0030 deliberately declined to invent a macOS-specific replacement ahead of this measurement, so a clean failure there is an answer rather than a problem.
+
+## Answer
+
+Measured on 2026-10-03 on Windows 11, in Chrome 153 and Edge, using the [chord probe page](../assets/41-key-probe.html). The dev pressed each chord with focus on the probe's tab stop, once with `preventDefault` on and once with it off. Firefox is not installed on the machine and no Mac was available, so those rows are **not measured**, not passed.
+
+| Chord | Chrome, Windows | Edge, Windows | Firefox | macOS, any |
+|---|---|---|---|---|
+| `Ctrl+Tab` | Dead. Only the `Control` keydown arrives. The `Tab` keydown never does, then window blur and `visibility hidden` follow as Chrome switches tabs. | Same as Chrome. | not measured | not measured |
+| `Ctrl+Left/Right/Up/Down` | All four arrive, `preventDefault` takes, no blur or visibility change. With `preventDefault` off they still arrive and the browser does nothing visible. | Same as Chrome. | not measured | not measured |
+| `Cmd+Tab`, `Cmd+Arrow` | n/a | n/a | n/a | not measured |
+
+**`Ctrl+Tab` is dead in Blink on Windows, and `preventDefault` cannot save it.** The browser takes the chord before the page receives the `Tab` keydown, so no handler runs and there is nothing to prevent. That is the market-majority engine on the platform this repo is developed on, which is enough to call the binding broken without the macOS and Firefox rows. ADR 0010's multi-select section and ADR 0026's table row are amended to say so. The row stays wired, because removing it would change nothing for Blink users and might break a browser where it does work. Per the ticket body, the fix is not a key change: [Keyboard multi-select without `Ctrl+Tab`](55-keyboard-multi-select-without-ctrl-tab.md) takes the design question.
+
+**`Ctrl+Arrow` works on Windows in both engines measured, and the macOS doubt stays open.** ADR 0030's binding is safe where it was measured. The case it was worried about, macOS Mission Control and `Cmd+Arrow` navigation, could not be measured here. ADR 0030 and ADR 0026's row get an addendum recording the Windows result, and [Chord survival on macOS and in Firefox](56-chord-survival-macos-firefox.md) carries the remaining rows with the same probe.
