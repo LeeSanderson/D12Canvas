@@ -22,3 +22,7 @@ Establish:
 - **Whether `visibilitychange` covers a case `blur` does not**, notably a tab switch within the same window versus a switch to another application.
 
 If `blur` proves unreliable, the fallback above is the likely answer and it needs no new event source, only a guard on a move C# already receives. Record which one shipped.
+
+## Comments
+
+- Parked 2026-10-03 because the dev was on mobile. A standalone probe page is ready at [probes/blur-probe.html](../probes/blur-probe.html). It logs `blur`, `focus`, `visibilitychange`, `pointercancel`, `lostpointercapture` and the first move's `buttons` per attempt, with `preventDefault` and `setPointerCapture` as toggles. Attempts to run in Chrome, Edge and Firefox: hold and `Alt`+`Tab` away, release, return and move; the same with `preventDefault` off; `Ctrl+PgDn` to another tab instead; optionally `Win+D`. Then **Copy results** and paste them into the session. WebKit and macOS cannot be driven by hand here and stay unmeasured, as in ticket 41.

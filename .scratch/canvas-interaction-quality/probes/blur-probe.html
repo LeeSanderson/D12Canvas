@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blur probe</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 16px; background: #fafafa; color: #222; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+  #target { width: 320px; height: 220px; background: #3b82f6; color: #fff; display: grid; place-items: center; user-select: none; touch-action: none; border-radius: 8px; font-weight: 600; }
+  #target.live { background: #dc2626; }
+  fieldset { border: 1px solid #ccc; border-radius: 6px; }
+  #summary { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  #summary th, #summary td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; font-size: 12px; }
+  #log { height: 320px; overflow: auto; background: #111; color: #ddd; font: 12px/1.35 ui-monospace, monospace; padding: 8px; white-space: pre; margin-top: 12px; }
+  .hit { color: #4ade80; }
+  .warn { color: #fbbf24; }
+</style>
+</head>
+<body>
+<h1>Blur probe</h1>
+<p id="ua"></p>
+<div class="row">
+  <div id="target">press, hold, Alt+Tab away</div>
+  <fieldset>
+    <legend>Press options</legend>
+    <label><input type="checkbox" id="optPrevent" checked> preventDefault on pointerdown</label><br>
+    <label><input type="checkbox" id="optCapture" checked> setPointerCapture on pointerdown</label><br>
+    <label>Trial label <input id="optLabel" value="alt-tab, release away"></label><br><br>
+    <button id="copy">Copy results</button>
+    <button id="clear">Clear</button>
+  </fieldset>
+</div>
+<table id="summary">
+  <thead><tr><th>#</th><th>label</th><th>preventDefault</th><th>capture</th><th>blur while live</th><th>visibilitychange while live</th><th>lostpointercapture</th><th>pointercancel</th><th>pointerup</th><th>first move after focus: buttons</th><th>ended by</th></tr></thead>
+  <tbody></tbody>
+</table>
+<div id="log"></div>
+<script>
+  const target = document.getElementById("target");
+  const logEl = document.getElementById("log");
+  const tbody = document.querySelector("#summary tbody");
+  const t0 = performance.now();
+  const trials = [];
+  let trial = null;
+  let lastMoveLog = 0;
+
+  document.getElementById("ua").textContent = navigator.userAgent;
+
+  function log(text, cls) {
+    const line = document.createElement("div");
+    line.textContent = `${(performance.now() - t0).toFixed(0).padStart(7)}ms  ${text}`;
+    if (cls) line.className = cls;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function render() {
+    tbody.innerHTML = "";
+    for (const t of trials) {
+      const tr = document.createElement("tr");
+      const cells = [t.id, t.label, t.prevent, t.capture, t.blur, t.visibility, t.lost, t.cancel, t.up, t.firstMoveButtons ?? "-", t.endedBy ?? "(still live)"];
+      for (const c of cells) {
+        const td = document.createElement("td");
+        td.textContent = String(c);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+  }
+
+  function end(reason) {
+    if (!trial || trial.endedBy) return;
+    trial.endedBy = reason;
+    target.classList.remove("live");
+    log(`trial ${trial.id} ended by ${reason}`, "warn");
+    render();
+  }
+
+  target.addEventListener("pointerdown", e => {
+    if (e.button !== 0) return;
+    if (document.getElementById("optPrevent").checked) e.preventDefault();
+    if (document.getElementById("optCapture").checked) target.setPointerCapture(e.pointerId);
+    if (trial && !trial.endedBy) end("next pointerdown");
+    trial = {
+      id: trials.length + 1,
+      label: document.getElementById("optLabel").value,
+      prevent: document.getElementById("optPrevent").checked,
+      capture: document.getElementById("optCapture").checked,
+      blur: false, visibility: false, lost: false, cancel: false, up: false,
+      awaitingReturn: false, firstMoveButtons: null, endedBy: null
+    };
+    trials.push(trial);
+    target.classList.add("live");
+    log(`pointerdown  id=${e.pointerId} buttons=${e.buttons} prevent=${trial.prevent} capture=${trial.capture}`);
+    render();
+  });
+
+  target.addEventListener("gotpointercapture", e => log(`gotpointercapture id=${e.pointerId}`));
+  target.addEventListener("lostpointercapture", e => {
+    log(`lostpointercapture id=${e.pointerId}`, "hit");
+    if (trial && !trial.endedBy) { trial.lost = true; render(); }
+  });
+
+  window.addEventListener("pointerup", e => {
+    log(`pointerup  buttons=${e.buttons}`);
+    if (trial && !trial.endedBy) { trial.up = true; end("pointerup"); }
+  }, true);
+
+  window.addEventListener("pointercancel", e => {
+    log(`pointercancel`, "hit");
+    if (trial && !trial.endedBy) { trial.cancel = true; end("pointercancel"); }
+  }, true);
+
+  window.addEventListener("pointermove", e => {
+    const live = trial && !trial.endedBy;
+    if (live && trial.awaitingReturn) {
+      trial.awaitingReturn = false;
+      trial.firstMoveButtons = e.buttons;
+      log(`FIRST MOVE AFTER RETURN buttons=${e.buttons}${e.buttons === 0 ? "  <- buttonless move on a live gesture" : ""}`, e.buttons === 0 ? "hit" : "warn");
+      render();
+      if (e.buttons === 0) end("buttonless pointermove");
+      return;
+    }
+    if (live && e.buttons === 0) {
+      log(`pointermove buttons=0 on live gesture`, "hit");
+      end("buttonless pointermove");
+      return;
+    }
+    const now = performance.now();
+    if (live && now - lastMoveLog > 250) {
+      lastMoveLog = now;
+      log(`pointermove buttons=${e.buttons}`);
+    }
+  }, true);
+
+  window.addEventListener("blur", () => {
+    const live = trial && !trial.endedBy;
+    log(`window blur  (gesture live: ${!!live})`, live ? "hit" : "");
+    if (live) { trial.blur = true; render(); }
+  });
+
+  window.addEventListener("focus", () => {
+    const live = trial && !trial.endedBy;
+    log(`window focus  (gesture live: ${!!live})`);
+    if (live) trial.awaitingReturn = true;
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    const live = trial && !trial.endedBy;
+    log(`visibilitychange -> ${document.visibilityState}  (gesture live: ${!!live})`, live ? "hit" : "");
+    if (live) { trial.visibility = true; render(); }
+  });
+
+  document.getElementById("clear").addEventListener("click", () => {
+    trials.length = 0; trial = null; logEl.textContent = ""; render();
+  });
+
+  document.getElementById("copy").addEventListener("click", async () => {
+    const header = ["#", "label", "preventDefault", "capture", "blur", "visibilitychange", "lostpointercapture", "pointercancel", "pointerup", "firstMoveButtons", "endedBy"];
+    const rows = trials.map(t => [t.id, t.label, t.prevent, t.capture, t.blur, t.visibility, t.lost, t.cancel, t.up, t.firstMoveButtons ?? "-", t.endedBy ?? "(still live)"]);
+    const text = [navigator.userAgent, header.join(" | "), ...rows.map(r => r.join(" | ")), "", logEl.innerText].join("\n");
+    try { await navigator.clipboard.writeText(text); log("copied", "warn"); }
+    catch { log("clipboard blocked; select the log by hand", "warn"); }
+  });
+</script>
+</body>
+</html>

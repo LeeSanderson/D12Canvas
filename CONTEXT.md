@@ -41,6 +41,10 @@ _Avoid_: node, object — ambiguous with terms already avoided for component ins
 A piece of binary content held once on a `Board` — bytes, a mime type, and an id that is the SHA-256 of the bytes themselves. Deliberately **not** an `Entity`: it has no bounds, cannot be selected, hit-tested or grouped, and is referenced *by* entities rather than referencing them. Every entity id is a GUID *assigned* at creation; an asset id is *derived* from content, which is what makes the table add-only, dedupe for free, and merge idempotently. A `TProps` property opts in with `[AssetReference]` and holds `asset:<id>`; `DiagramCanvas` swaps that for a renderable `data:` URI before binding props, so a component author only ever sees an ordinary URL. Assets are collected when a board is serialised, never during a session, so undo can always bring deleted content back.
 _Avoid_: image, file, blob — the seam carries any content type, and only the built-in `Image` component knows about images.
 
+**Empty image**:
+An `"image"` component instance whose `Url` is empty, rendered as the "No image" placeholder. A deliberate state, not a defect: palette placement produces one, **Remove image** returns an image to it, and a file dropped onto an unlocked empty image fills it where a drop anywhere else creates a new instance (ADR 0052).
+_Avoid_: placeholder image, blank image.
+
 **Group**:
 A named collection of component instances and/or nested groups, treated as one movable/resizable unit. Membership is a reference list (`MemberIds`) held by the group, not a back-pointer on each member; a group's bounds are computed from its members on demand, not stored. Layering commands (ADR 0008) applied to a group are bulk writes across member `ZIndex` values, preserving members' relative order — a group has no z-position field of its own.
 

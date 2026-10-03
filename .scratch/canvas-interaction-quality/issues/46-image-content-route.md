@@ -1,7 +1,7 @@
 # No route to give an image any content
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by:
 
 ## Question
@@ -22,3 +22,23 @@ Decide:
 - **Whether a size limit belongs here.** ADR 0032 states outright that there is no cap and that the library has no basis for one, but a file picker is the first place where the library chooses what to accept, which is a different position from the clipboard.
 
 Feeds whatever implementation ticket carries ADR 0032, and touches ADR 0021's property bar and ADR 0023's object menu if either gains a row.
+
+## Answer
+
+Recorded as ADR 0052, worked as a grilling.
+
+Decided:
+
+1. **The `Empty image` stays.** Palette placement still produces the placeholder, because a wireframe needs one. Making the palette open a picker was rejected, partly because a `drop` event cannot reliably open one.
+2. **Two surfaces: the property panel and the object menu.** `ImageProps.Url` gets its `EditorKind.Custom` editor with **Choose file…** and **Remove image** and no URL field. The menu gets **Choose image…** and **Remove image**. Nothing goes on the property bar, which ADR 0021 keeps for properties judged by eye.
+3. **No double-press and no `F2`.** `Image` keeps declining `IInlineEditable`, because ADR 0051's edit-on-create would open a picker on every new image.
+4. **File drop through a JS listener.** A drop on an unlocked `Empty image` fills it. A drop anywhere else, a filled image included, creates new images cascading `+20, +20` from the drop point. Non-image files are ignored and the drop is one history entry.
+5. **An image made from a file (drop or bitmap paste) takes the picture's own size,** scaled down to fit half the visible viewport and never up. Aspect ratio is kept.
+6. **Filling or replacing keeps the box.** `ObjectFit` decides the crop.
+7. **No size limit on any route.** A host-set limit, if ever needed, goes in `Board.AddAsset` for every route at once.
+8. **Several selected images:** both surfaces act on all of them as one history entry, because the panel already does. Mixed values follow ADR 0040.
+9. **No chords.** `Shift+F10` reaches both rows, following ADR 0050's reading of ADR 0026.
+
+Consequences checked against the other answers before sign-off: question 8's single-image menu rows contradicted the panel's existing multi-selection behaviour and were reversed in question 10; several files dropped on an `Empty image` fill it with the first and cascade the rest; paste still never fills, because it has an anchor and no target. Expected but unmeasured: user activation surviving the Blazor hop for `input.click()`, which ADR 0013 measured for clipboard writes. The implementation ticket asserts it with an `Interaction probe`.
+
+Amends ADR 0013 (pasted-image size) and ADR 0023 (two rows). New `CONTEXT.md` term, `Empty image`.

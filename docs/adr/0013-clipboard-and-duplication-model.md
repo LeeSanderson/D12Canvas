@@ -74,3 +74,5 @@ The one thing that does **not** carry over is the position rule. Duplicate casca
 **Paste no longer re-applies the interior rule.** It drops an edge only when an attached end names an instance that did not materialise. A floating end always passes, so the floating lines a copy carries survive the paste.
 
 **"Its own bounding box" in the paste delta is ADR 0015's extent**, instances unioned with resolvable edge endpoints, so an edge-only payload has a box to move by.
+
+**Amended by ADR 0052:** a pasted bitmap's `"image"` instance takes the picture's own pixel size, scaled down to fit within half the visible viewport at the current zoom and never scaled up, instead of the type's `DefaultSize`. Paste still creates a new instance even when an `Empty image` is selected.
