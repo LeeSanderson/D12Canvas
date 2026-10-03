@@ -6,7 +6,7 @@ This is a decision not to build something, taken because the mechanism a host ne
 
 ## Layout already is the inset
 
-Chrome placed beside the canvas shrinks `.diagram-container`. `ZoomPanTracker` measures that box through `getContainerDimensions` and a `ResizeObserver`, so every reader is correct with no library code at all. `D12Canvas.App` does exactly this today: a 220px palette rail as a real flex sibling, which narrows the measured container before the canvas ever sees it, and nothing in the acceptance surface is occluded.
+Chrome placed beside the canvas shrinks `.diagram-container`. `ZoomPanTracker` measures that box through `getContainerDimensions` and a `ResizeObserver`, so every reader is correct with no library code at all. `D12Canvas.App` did exactly this when this decision was taken, with a 220px palette rail as a real flex sibling. It no longer does: see the revisit section.
 
 Floating is a host trading screen real estate for overlay. The host is the only party that knows what it floated, how wide it is and whether it is currently collapsed, and it is also the party that wrote the CSS that made it float. An inset parameter would be a second expression of something layout already expresses, kept in sync by hand.
 
@@ -47,6 +47,8 @@ Nothing changes for windowing, `Overscan`, `Content extent`, ADR 0024's viewport
 ## When to revisit
 
 The cheap trigger is [Chrome layout for the acceptance surface](../../.scratch/canvas-interaction-quality/issues/39-app-chrome-layout-rework.md), which prototypes `D12Canvas.App`'s own chrome and is where the minimap, the property panel and the wheel device profile all need somewhere to live. If it floats any of them, this decision is tested on contact by the effort's own acceptance surface rather than by a future host's complaint.
+
+That trigger has fired. The App now floats everything over a full-bleed canvas: the palette top-left, `PropertyPanel` top-right while something is selected, and the minimap bottom-right once it exists. Click-to-add is unaffected, since the container's centre sits clear of both corners. The test that matters is the initial fit, which the App will exercise on every board load as soon as ADR 0015's fit is built. That is when to judge whether the compensating pan is acceptable.
 
 Reopen it if a host that must be full-bleed reports the compensating pan as unacceptable, or if a second library-owned behaviour starts placing content and the correction has to be written twice.
 

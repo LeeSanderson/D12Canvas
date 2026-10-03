@@ -1,7 +1,7 @@
 # Chrome layout for the acceptance surface
 
 Type: prototype
-Status: open
+Status: resolved
 
 ## Question
 
@@ -30,3 +30,19 @@ Decide:
 Type is `prototype` deliberately. Every question above is a layout judgement, and the map's own note says interaction quality resists paper specification.
 
 No ADR is expected. ADR 0002 already assigns placement to the host, and `D12Canvas.App` is a host; a decision here is about the example app rather than the library. Say so explicitly if that turns out to be wrong, because it would mean ADR 0002's boundary is not carrying its weight.
+
+## Answer
+
+**Full-bleed canvas with every piece of chrome floating over it.** The dev picked this from three variants, built on the real editor: three docked rails, full-bleed with floating chrome, and a palette toolbar with a selection drawer and a status bar. The prototype is on the `prototype/chrome-layout` branch (commit `5b02846`), run with `?variant=A|B|C` on `/board/{id}`.
+
+Per bullet:
+
+- **The 220px rail does not survive.** The canvas takes the whole area under the header, and the header is unchanged.
+- **`PropertyPanel` floats top-right and appears only while something is selected.** It leaves when the selection empties, so an empty board shows the palette and nothing else. This alone fixes "a sticky note's colour cannot be edited" (ADR 0021).
+- **The minimap floats bottom-right and is always visible** once it exists. ADR 0015 leaves its visibility to host markup, and the App chooses always.
+- **The wheel device profile gets a control, but only behind a settings gear** floating bottom-left. It opens a popover with the `Auto`/`Mouse`/`Trackpad` choice. This keeps ADR 0015's objection to permanent chrome that earns its place only on a miss, and still gives the preference a route, which ADR 0023 refused to provide from the menu.
+- **The canvas still does not learn what occludes it.** This layout is the one that tests ADR 0033 on contact. The palette and panel sit in corners, so click-to-add's centre stays clear. The real test is ADR 0015's initial fit, which does not exist yet. ADR 0033's revisit section now says so, and its line about the App docking the rail is corrected.
+
+**Folded in now:** the full-bleed body, the floating palette, and the selection-driven `PropertyPanel` in `BoardEditor.razor`. **Not folded in:** the minimap and the settings gear. Neither `Minimap` nor `WheelDeviceProfile` exists in the library yet, so each lands with its own implementation, in the position above.
+
+**No ADR, as the ticket predicted.** ADR 0002's boundary held. Every choice here is the App's own CSS, and nothing in the library had to change to allow any of the three variants.

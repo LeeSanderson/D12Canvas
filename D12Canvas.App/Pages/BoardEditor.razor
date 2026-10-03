@@ -38,12 +38,16 @@
     @if (_board is not null)
     {
         <div class="board-editor-body">
-            <div class="board-editor-palette">
+            <DiagramCanvas @ref="_canvas" Board="_board" />
+            <div class="board-editor-overlay board-editor-palette">
                 <Palette Canvas="_canvas" />
             </div>
-            <div class="board-editor-canvas">
-                <DiagramCanvas @ref="_canvas" Board="_board" />
-            </div>
+            @if (_hasSelection)
+            {
+                <div class="board-editor-overlay board-editor-properties">
+                    <PropertyPanel Canvas="_canvas" />
+                </div>
+            }
         </div>
     }
     else if (_notFound)
@@ -107,20 +111,32 @@
     .board-editor-body {
         flex: 1;
         min-height: 0;
-        display: flex;
+        position: relative;
+    }
+
+    .board-editor-overlay {
+        position: absolute;
+        top: 12px;
+        z-index: 10;
+        max-height: calc(100% - 24px);
+        overflow-y: auto;
+        box-shadow: var(--app-shadow);
     }
 
     .board-editor-palette {
-        width: 220px;
-        padding: 16px;
-        overflow-y: auto;
-        border-right: 1px solid var(--app-border);
-        background: var(--app-surface);
+        left: 12px;
+        width: 180px;
+        border-radius: 6px;
     }
 
-    .board-editor-canvas {
-        flex: 1;
-        min-height: 0;
+    .board-editor-properties {
+        right: 12px;
+        width: 260px;
+        box-sizing: border-box;
+        padding: 12px;
+        background: var(--app-surface);
+        border: 1px solid var(--app-border);
+        border-radius: var(--app-radius-sm);
     }
 </style>
 
@@ -136,6 +152,7 @@
     private DiagramCanvas? _canvas;
     private DiagramCanvas? _subscribedCanvas;
     private bool _isDirty;
+    private bool _hasSelection;
     private bool _autosaveEnabled;
     private CancellationTokenSource? _autosaveCts;
     private bool _isEditingName;
@@ -160,8 +177,8 @@
     // DiagramCanvas is only rendered once _board finishes loading, so its @ref isn't captured
     // until a render after this page's own first one - re-checked on every render (cheap: a
     // reference comparison) rather than gated to firstRender, the same "subscribe once the
-    // reference actually changes" shape PropertyPanel uses for its own Canvas parameter. Palette
-    // is declared before DiagramCanvas in the markup above, so its own Canvas parameter is still
+    // reference actually changes" shape PropertyPanel uses for its own Canvas parameter. @ref is
+    // only assigned after the render that produced it, so Palette's own Canvas parameter is still
     // stale (null) on the render where _canvas is first captured (same wrinkle
     // PropertyPanelDemo's own layout documents) - the extra StateHasChanged forces the one more
     // render pass Palette needs to pick up the now-non-null reference.
@@ -181,6 +198,7 @@
         if (_subscribedCanvas is not null)
         {
             _subscribedCanvas.Changed -= HandleBoardChanged;
+            _subscribedCanvas.SelectionChanged -= HandleSelectionChanged;
         }
 
         _subscribedCanvas = _canvas;
@@ -188,8 +206,15 @@
         if (_subscribedCanvas is not null)
         {
             _subscribedCanvas.Changed += HandleBoardChanged;
+            _subscribedCanvas.SelectionChanged += HandleSelectionChanged;
         }
 
+        StateHasChanged();
+    }
+
+    private void HandleSelectionChanged(object? sender, EventArgs e)
+    {
+        _hasSelection = _canvas?.SelectedComponents.Count > 0;
         StateHasChanged();
     }
 
@@ -295,6 +320,7 @@
         if (_subscribedCanvas is not null)
         {
             _subscribedCanvas.Changed -= HandleBoardChanged;
+            _subscribedCanvas.SelectionChanged -= HandleSelectionChanged;
         }
     }
 }
