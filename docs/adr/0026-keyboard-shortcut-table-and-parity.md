@@ -216,3 +216,5 @@ Separately, this ADR is **silent** on whether an edge is a tab stop rather than 
 **Amended by ADR 0050:** a row is added to the table for keyboard port placement, entered from the menu's **Add port…** row. Inside placement only `Arrow`, `Shift+Arrow`, `Enter` and `Escape` act, and every other guarded row that writes `Board` or the selection is a no-op. `Escape` there is staged: it ends placement and keeps the selection.
 
 **Amended by ADR 0051:** a row is added for `F2`, guarded: begin editing the focused instance when its type implements `IInlineEditable`, otherwise a no-op, and a no-op on a locked instance. Inside an editor `Escape` commits the edit and returns focus to the instance's tab stop, so the canvas's own `Escape` row acts only on the next press.
+
+**Amended by ADR 0054:** the tab-stop enumeration gains edges, which answers the silence recorded above. Each edge's stop comes directly after the stop its source resolves to, and an edge with a floating source sorts at its source point. While a group is entered, no edge has a stop. `Space` toggles a focused edge, and `Enter` does nothing on one. The table gains no row.

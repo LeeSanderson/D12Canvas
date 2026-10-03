@@ -139,3 +139,7 @@ Per ADR 0025:
 - **`BeginEdit(EditEntry)`** with select-all for creation and caret-at-end for an existing node. Doubles what every author implements for a one-keypress difference.
 - **Keeping `Escape` as discard.** Leaves the keyboard no way out of an editor that keeps both the text and the user's place.
 - **One history entry for create and edit.** Needs a coalescing operation or a creation held open, and neither fits ADR 0007 or ADR 0020.
+
+## Amended by ADR 0054
+
+Edges now have tab stops, so `EndInlineEdit` for an edge label returns focus to the edge's stop, which selects the edge. The canvas container is only the fallback, used when the edge's stop is not mounted because the viewport was panned during the edit.

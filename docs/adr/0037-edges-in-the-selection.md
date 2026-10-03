@@ -140,3 +140,7 @@ The `ChangeEdgeEndpointCommand` above is the first command for an edge's geometr
 **"An edge contributes nothing to the selection bounds" is scoped to arrangement**: align, distribute, resize and z-order, which write instance `Bounds`. Placement, meaning the paste delta and the `Duplicate run` offset, reads ADR 0015's extent, which counts edge endpoints.
 
 **The marquee did not reuse `Interior edge` verbatim.** The clause admitting an end floating inside the band was new, and ADR 0013's copy test had no such clause, so a marqueed palette connector was selected and then dropped by a copy. ADR 0045 closes that by having copy carry every selected edge, not by giving the readers one predicate. The table's "lone-edge case remaining ticket 36's" is answered there.
+
+## Amended by ADR 0054
+
+**An edge has a tab stop**, placed directly after the stop its source resolves to, so the gap stated under "What this decision deliberately does not settle" is closed. Of the two reasons this ADR gave for leaving it, ring length is accepted as the cost of a busy board. The reading-order objection holds only for a position taken from the edge's own geometry, and the position is borrowed from the edge's source instead.

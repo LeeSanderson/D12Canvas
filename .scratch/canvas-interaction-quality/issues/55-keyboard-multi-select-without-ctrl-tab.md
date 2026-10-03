@@ -20,3 +20,7 @@ Things that lean on `Ctrl+Tab` and must still work after the decision: ADR 0044'
 `DiagramCanvasCtrlTabSpaceMultiSelectTests` calls `OnCtrlTabPressed()` directly and cannot see any of this. Whatever replaces the route needs an `Interaction probe` that sends the real keys.
 
 ADR 0050 adds keyboard port placement, which uses `Arrow`, `Shift+Arrow`, `Enter` and `Escape` and makes every other board-writing key a no-op while it is active. A replacement that rebinds `Enter` or adds a key inside a mode should check against it.
+
+## Comments
+
+**From [Keyboard reach for edges](49-keyboard-reach-for-edges.md), resolved first (ADR 0054):** edges are now in the tab ring, each directly after the stop its source resolves to, so the ring this ticket decides over includes them. ADR 0054 assumes nothing about how this ticket lands. An edge stop is an ordinary stop and gets whatever is decided here. One thing to carry: if this ticket unwelds focus from selection, focus without selection needs a visible indicator, and ADR 0036 records that the library draws none. That covers instance, group and edge stops alike. The ring is also about twice as long on a `Quick create` board, which counts against any answer that costs an extra keypress per stop.

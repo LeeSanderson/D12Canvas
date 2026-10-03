@@ -1,7 +1,7 @@
 # Keyboard reach for an edge
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -32,3 +32,18 @@ Amends or extends ADR 0026 (its table and its tab-stop enumeration), and touches
 ## Widened by ADR 0051
 
 `Escape` out of an edge label's inline edit calls `EndInlineEdit`, which returns focus to the canvas container because a label has no tab stop to return to. If this ticket gives edges a tab stop, decide whether that focus return moves to the edge.
+
+## Answer
+
+Recorded as [ADR 0054](../../../docs/adr/0054-an-edge-is-a-tab-stop-after-its-source.md).
+
+- **Route.** An edge is board content, so ADR 0010's reading order governs it and ADR 0026's chrome rule does not. Every edge joins the tab ring. No chord, no drill from an endpoint. A drill cannot reach a palette connector with both ends floating, and a chord would need a binding that has not been measured.
+- **Order key.** An edge's stop comes directly after the stop its source resolves to: the instance, or the outermost group's stop for a grouped member. Several edges after one anchor sort by target point, `Y` then `X`. An edge with a floating source sorts as its own stop at its source point. This answers "an edge spanning the board sits nowhere meaningful": the position comes from the source, not from the edge's own geometry.
+- **Which edges have a stop.** Those whose anchor is present: the source's stop is mounted, or a floating source point is inside the viewport plus overscan. LOD never removes an edge's stop. An edge whose line cannot be resolved has none.
+- **Entered group.** While a group is entered, no edge has a stop. An edge is never a member, so ADR 0044 would pop the scope on the first `Tab` that reached it. Every edge stays reachable from the top level.
+- **`FocusEntity`** resolves the kind with `Board.GetEdge` and hard-selects the edge alone. `Space` toggles a focused edge in `_selectedEdgeIds`. `Enter` does nothing on an edge stop. `TabStop` gains an `Edge` field.
+- **The element already exists for the pointer but cannot be the stop.** The `<line>`/`<path>` sits in `<svg class="edges-layer">` ahead of every tab-stop div in the DOM. Each edge gets an invisible `.edge-tab-stop` proxy in the `OrderedTabStops` loop, as `.group-tab-stop` does for a group: `pointer-events: none`, `tabindex="0"`, sized to the endpoints' union box, `aria-label` "Connector from {source} to {target}" with "unattached end" for a floating end, `aria-selected`, no `role`.
+- **Widened by ADR 0051.** `Escape` out of an edge label's edit returns focus to the edge's stop, with the canvas container as the fallback when the stop is not mounted.
+- **Assumes nothing about [Keyboard multi-select without Ctrl+Tab](55-keyboard-multi-select-without-ctrl-tab.md).** Edge stops are ordinary stops and get whatever that ticket decides.
+
+Found on the way: the ticket says `FocusableTabStopIds` drops a placeholdered instance because the placeholder has no `tabindex`. That is the code. ADR 0017 and `CONTEXT.md` make the placeholder an ordinary tab stop, so the code has not caught up with a settled decision. It does not change this answer, since the edge keeps its stop either way.
