@@ -133,3 +133,5 @@ The property bar and panel are untouched. They follow the selection, which alrea
 **Amended by ADR 0051:** the behaviour described under "Content responds only when its instance is addressable" stands, with a different mechanism. A sticky note's text is a plain paragraph and classifies `instance`, not `author-content`, so the second double-press does not reach the built-in's own `dblclick`. The canvas dispatches it, calling `BeginEdit()` through `IInlineEditable` on an addressable instance.
 
 **Amended by ADR 0053:** a group's `MemberIds` always resolve, and a delete that empties a group removes it while one that leaves a single member dissolves it, so "whether a group tolerates dead member ids" is decided there. `Ctrl+G` inside the `Entered group` is unavailable when every direct member is selected, and the lock rule reads over members that resolve.
+
+**Amended by ADR 0058:** the handed-on move is answered. An operation on a partly-locked group at the top level acts on its unlocked members, and the locked ones stay where they are. Resize keeps its handles on the group's real bounds, while align and distribute measure the unlocked members' box.

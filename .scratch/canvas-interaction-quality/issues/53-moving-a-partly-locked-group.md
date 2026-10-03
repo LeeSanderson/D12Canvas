@@ -1,7 +1,7 @@
 # Moving a partly-locked group
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by:
 
 ## Question
@@ -21,3 +21,18 @@ Decide also:
 - **Whether the keyboard nudge and the menu's align strip match the pointer**, since all of them read the same selection.
 
 Touches ADR 0017 (what locked protects) and ADR 0044 (what a partly-locked group is).
+
+## Answer
+
+Recorded as [ADR 0058](../../../docs/adr/0058-a-partly-locked-group-moves-its-unlocked-members.md). Grilled with the dev, six questions, each agreed as recommended.
+
+1. **Skip.** An operation on a partly-locked group acts on its unlocked members and the locked ones stay put. It is the only answer that keeps ADR 0017's "by any route" with no exception. Moving everything carries a locked background image along with its group, and refusing forces a detour through the `Entered group` to the same result.
+2. **Resize scales against the group's real bounds.** The handles stay where they are, the unlocked members scale inside that box, and the locked ones keep their size and position. The floor counts only the members that scale. A centre resize uses this box's centre.
+3. **No new feedback.** The `Gesture preview` shows the member left behind and the derived box stretches to cover it. Why it stayed is the lock badge, added to the cursor and micro-feedback fog patch.
+4. **Nudge matches move. Align and distribute measure the unlocked members' box.** With the real bounds, a locked member defining the aligned edge makes every press move the members again. A fully locked group is not counted. Chrome shows the group's bounds, and commands measure what they can move.
+5. **A clone drag copies the whole group and every copy follows the pointer.** ADR 0042's "locked entities cannot take part" rested on a premise ADR 0044 broke. Whether a copy of a locked entity is itself locked is split out.
+6. **Mid-resize, the box is the frame being dragged**, so the handle stays under the pointer. It re-derives at release.
+
+Checking the answers against each other turned up question 6, the conflict between resize against the real bounds and the derived box mid-drag. Grepping showed that no `.cs` file implements `Locked` yet, so the ticket's "existing per-entity lock check" does not exist and nothing has to be undone. ADR 0024 already makes locked entities snap candidates, so a member left behind is one with no new rule. Delete and restyle follow the same rule by derivation, with ADR 0053's repair after a delete.
+
+Amends ADRs 0014, 0017, 0042 and 0044 by addendum. ADR 0017's addendum also notes that its "no mixed locked-and-unlocked state" claim is out of date, though its Lock/Unlock row rule still works. `CONTEXT.md`'s `Locked` entry gains one sentence. Split out [Whether a copy of a locked entity is locked](61-copy-of-a-locked-entity.md).
