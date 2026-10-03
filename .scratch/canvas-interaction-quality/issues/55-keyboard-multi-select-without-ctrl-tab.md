@@ -1,7 +1,7 @@
 # Keyboard multi-select without Ctrl+Tab
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by:
 
 ## Question
@@ -24,3 +24,18 @@ ADR 0050 adds keyboard port placement, which uses `Arrow`, `Shift+Arrow`, `Enter
 ## Comments
 
 **From [Keyboard reach for edges](49-keyboard-reach-for-edges.md), resolved first (ADR 0054):** edges are now in the tab ring, each directly after the stop its source resolves to, so the ring this ticket decides over includes them. ADR 0054 assumes nothing about how this ticket lands. An edge stop is an ordinary stop and gets whatever is decided here. One thing to carry: if this ticket unwelds focus from selection, focus without selection needs a visible indicator, and ADR 0036 records that the library draws none. That covers instance, group and edge stops alike. The ring is also about twice as long on a `Quick create` board, which counts against any answer that costs an extra keypress per stop.
+
+## Answer
+
+Resolved by grilling on 2026-10-03. Recorded in [ADR 0059](../../../docs/adr/0059-space-starts-additive-traversal.md), with a new `CONTEXT.md` term, `Additive traversal`.
+
+Keep the weld and let `Space` start the additive mode. No new chord, and focus is not unwelded. Outside the mode, `Space` was nearly useless: whenever it had a target, that target was already selected, so the toggle only emptied the selection. Giving it a new meaning takes nothing away.
+
+- `Space` outside the mode adds the focused stop (never removes) and starts `Additive traversal`. Inside it, `Tab` and `Shift+Tab` move focus only and `Space` toggles. Instance, group and edge stops all behave alike.
+- Ended by `Escape` (selection kept), a pointer press, focus leaving `.diagram-container`, `Enter` on a group stop, and any ADR 0036 command handoff (`Quick create`, `Ctrl+G`, keyboard placement, `BeginEdit`). Not ended by emptying the selection, by `Delete` and other selection commands, or by port picking or placement, which sit on top of the mode and take `Space` while active.
+- `Escape` stages: cancel gesture, end port pick or placement, end the mode, leave the entered group, clear the selection.
+- Focus indicator: `:focus-visible:not([aria-selected="true"])` draws a dashed `--d12-accent` outline. No new token, no C# class, no live region, no `aria-multiselectable`.
+- `Ctrl+Tab`, `OnCtrlTabPressed`, `_suppressFocusSelect` and `DiagramCanvasCtrlTabSpaceMultiSelectTests` are removed.
+- Verified by a real-key `Interaction probe`, one visual baseline for the ring, and bUnit for the flag's clear events, `Space` routing and `Escape` order.
+
+Amends ADRs 0010, 0026 (table rows rewritten), 0036, 0044 and 0046. Confirms 0022, 0050 and 0054. The `Ctrl+Tab` row was dropped from [Chord survival on macOS and in Firefox](56-chord-survival-macos-firefox.md).

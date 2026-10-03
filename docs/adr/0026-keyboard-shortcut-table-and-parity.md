@@ -17,8 +17,7 @@ Every row is guarded by focus (see the next section). The **Typing** column reco
 | `Alt`+`Arrow` | Resize a single instance, opposite edge anchored | guarded | | ADR 0010 |
 | `Alt`+`Shift`+`Arrow` | Resize a single instance, anchor flipped | guarded | | ADR 0010 |
 | `Ctrl`+`Arrow` | Quick-create and connect in that direction. Works in Chrome and Edge on Windows; **macOS unmeasured, see the addendum** | guarded | | ADR 0030 |
-| `Ctrl`+`Tab` | Move focus without selecting. **Dead in Chrome and Edge on Windows, see below** | guarded | | ADR 0010 |
-| `Space` | Toggle the focused entity's membership of the selection | guarded | | ADR 0010 |
+| `Space` | Outside `Additive traversal`, add the focused stop and start it; inside, toggle the focused stop | guarded | | ADR 0059 |
 | `Enter` | Commit a port attachment | scoped to an instance tab stop | | ADR 0010 |
 | `Arrow`, `Shift`+`Arrow`, `Enter`, `Escape` inside port placement | Slide the provisional port along the border, commit it, cancel. Every other row is a no-op while placing | guarded | entered from the menu's **Add port…** row | ADR 0050 |
 | `PageUp` / `PageDown` | Zoom in / out | guarded | | here |
@@ -216,5 +215,7 @@ Separately, this ADR is **silent** on whether an edge is a tab stop rather than 
 **Amended by ADR 0050:** a row is added to the table for keyboard port placement, entered from the menu's **Add port…** row. Inside placement only `Arrow`, `Shift+Arrow`, `Enter` and `Escape` act, and every other guarded row that writes `Board` or the selection is a no-op. `Escape` there is staged: it ends placement and keeps the selection.
 
 **Amended by ADR 0051:** a row is added for `F2`, guarded: begin editing the focused instance when its type implements `IInlineEditable`, otherwise a no-op, and a no-op on a locked instance. Inside an editor `Escape` commits the edit and returns focus to the instance's tab stop, so the canvas's own `Escape` row acts only on the next press.
+
+**Amended by ADR 0059:** the `Ctrl`+`Tab` row is removed and the `Space` row rewritten in the table above. `Space` outside `Additive traversal` adds the focused stop and starts the mode, in which `Tab` moves focus without selecting. `Escape`'s stages become: cancel the gesture, end port picking or placement, end the mode, step out of the entered group, clear the selection. The section on `Ctrl`+`Tab` below is kept as the record of why.
 
 **Amended by ADR 0054:** the tab-stop enumeration gains edges, which answers the silence recorded above. Each edge's stop comes directly after the stop its source resolves to, and an edge with a floating source sorts at its source point. While a group is entered, no edge has a stop. `Space` toggles a focused edge, and `Enter` does nothing on one. The table gains no row.

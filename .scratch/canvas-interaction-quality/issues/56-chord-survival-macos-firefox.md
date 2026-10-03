@@ -12,10 +12,13 @@ Needs a human at a Mac. On macOS, record whether Mission Control and Spaces shor
 
 Per engine and platform, with the probe's tab stop focused, and with `preventDefault` on and then off:
 
-- `Ctrl+Tab`, and on macOS `Cmd+Tab`.
 - `Ctrl+Left/Right/Up/Down`, and on macOS `Cmd+Left/Right/Up/Down`.
 - Does the keydown for the non-modifier key reach the page? Does the browser or OS act anyway (blur, `visibility hidden`, back/forward navigation, a Space switch)?
 
 Keep the vertical and horizontal arrows apart. `Cmd+Up` and `Cmd+Down` are not browser navigation, so the vertical pair may survive where the horizontal pair does not.
 
-`Ctrl+Tab` is already dead in Blink on Windows, so these rows cannot rescue it. They matter for ADR 0030's `Ctrl+Arrow` macOS doubt, and for any replacement chord [Keyboard multi-select without Ctrl+Tab](55-keyboard-multi-select-without-ctrl-tab.md) proposes. Record the results on ADR 0030 and ADR 0026 by addendum.
+These rows matter for ADR 0030's `Ctrl+Arrow` macOS doubt. Record the results on ADR 0030 and ADR 0026 by addendum.
+
+## Comments
+
+**From [Keyboard multi-select without Ctrl+Tab](55-keyboard-multi-select-without-ctrl-tab.md), resolved (ADR 0059):** `Ctrl+Tab` is removed from the library, so its rows are dropped from this probe. Keyboard multi-select now uses `Space` and `Tab`, which no browser reserves, so this ticket no longer gates it.

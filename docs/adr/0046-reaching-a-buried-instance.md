@@ -88,3 +88,5 @@ The Linux window managers that bind Alt+press to window moves, KDE Plasma by def
 - **Reordering the stack to match hit order**: a second ordering rule to patch one case that wrapping already reaches.
 
 **Amended by ADR 0055:** the caveat that the hit stack's top entry differs from a plain click for an instance sent behind an edge no longer applies. Edges always paint beneath instances, so paint order and ADR 0017's hit order agree, and that case cannot occur.
+
+**Amended by ADR 0059:** the keyboard route for two buried instances is `Additive traversal` (`Space`, then `Tab` and `Space`), since `Ctrl+Tab` never reaches the page in Chrome or Edge.

@@ -135,3 +135,5 @@ The property bar and panel are untouched. They follow the selection, which alrea
 **Amended by ADR 0053:** a group's `MemberIds` always resolve, and a delete that empties a group removes it while one that leaves a single member dissolves it, so "whether a group tolerates dead member ids" is decided there. `Ctrl+G` inside the `Entered group` is unavailable when every direct member is selected, and the lock rule reads over members that resolve.
 
 **Amended by ADR 0058:** the handed-on move is answered. An operation on a partly-locked group at the top level acts on its unlocked members, and the locked ones stay where they are. Resize keeps its handles on the group's real bounds, while align and distribute measure the unlocked members' box.
+
+**Amended by ADR 0059:** multi-select inside the scope is `Additive traversal` rather than `Ctrl+Tab` and `Space`, over the same rendered stops. `Enter` on a group stop ends the mode before entering, and `Escape` ends the mode before it steps out of the group.

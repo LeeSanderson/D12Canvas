@@ -100,6 +100,10 @@ Two interaction probes are owed, not one. That `preventDefault` on `pointerdown`
 
 Handed on to [Edit-on-create for a quick-created instance](../../.scratch/canvas-interaction-quality/issues/44-edit-on-create.md), found while checking that `BeginEdit` still composes and not a focus question at all: **ADR 0018 keeps `StickyNote`'s and `Text`'s `@ondblclick="BeginEdit"` on a justification that does not hold for the element carrying it.** ADR 0035 narrowed line 111 to spare that binding, reasoning that `author-content` is the one role skipping `preventDefault` so the browser's own `dblclick` still fires. But the binding sits on `<p class="d12-sticky-note-text">`, a plain paragraph: not natively interactive, not opt-in marked, so ADR 0017's walk-up passes it and classifies the press `instance`, which does `preventDefault`. Marking it `author-content` cannot repair it either, since that is the same region a sticky note is dragged by. So double-click to edit may have no pointer route after ADR 0018 at all, which makes that ticket's question wider than edit-on-create.
 
+## Amended by ADR 0059
+
+A command handoff, the third occasion above, ends `Additive traversal` before it moves focus, so its target's `@onfocus` still hard-selects. "This library draws no focus ring anywhere" no longer holds: a focused stop that is not selected draws a dashed accent outline. The pointer press's `@onfocus` on `.diagram-canvas` also clears the mode flag.
+
 ## Considered and rejected
 
 - **Blur with no focus target.** Gets the commit and nothing else. Leaves focus on `<body>`, where ADR 0026's guard passes only through a clause that fails whenever a text selection lives outside the container, so Escape's reachability after a press depends on what the host page happens to have selected.
