@@ -1,7 +1,7 @@
 # When an author's content owns its own context menu
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -20,3 +20,19 @@ Decide:
 Note that the object menu is not fully unreachable even where the native menu wins: every role except `author-content` opens it on a sub-threshold secondary release, so a selected instance's resize handles are a route. ADR 0023 rejected that as the *primary* route on the grounds that nobody discovers it, which is the same objection here, weaker only because an author who embeds a `<video>` has chosen to hand that region over.
 
 Amends ADR 0022's role table and ADR 0023's narrowing, and adds a registration or markup contract if delegation wins.
+
+## Answer
+
+Both enumerate and delegate, in ADR 0017's inference-plus-marker shape, decided once at press. Recorded as [ADR 0047](../../../docs/adr/0047-who-owns-a-secondary-press-on-author-content.md), with `Menu verdict` added to `CONTEXT.md` and addenda on ADRs 0017, 0018, 0022 and 0023.
+
+1. **A fixed order, first match wins.** Not addressable (ADR 0044) → canvas. Editable target or live text selection → browser. Nearest `data-d12-context-menu` marker → its value. `a[href]`, `video` or `audio` → browser. Otherwise canvas.
+2. **`<img>` is not inferred.** The built-in `Image` is a bare `<img>` filling its instance, so inferring it would take the object menu off every Image shape. An author who wants a saveable image marks it.
+3. **A separate marker from ADR 0017's.** That one gives a primary press to the author. This one decides who owns a menu request and touches neither the primary nor the middle button.
+4. **The marker is two-valued.** `canvas` lets an author whose component is one big link get the object menu back.
+5. **Editable and live selection outrank the marker.** A wrapper marked `canvas` cannot take spellcheck off a textarea being typed in.
+6. **Addressability outranks everything.** A member of an unentered group owns neither button, matching ADR 0044's primary rule.
+7. **One predicate, one evaluation.** The verdict is taken at `pointerdown` and the first `contextmenu` after the press uses it up. ADR 0022 classified on the `contextmenu` target instead, and on Windows that target is the release point, which gives a wobbled right-click on a link no menu at all and a pan released over a video or textarea the browser menu.
+8. **Expiry.** A keyboard `contextmenu` has no stored verdict and runs the order on the focused element. ADR 0023's consumed dismissal press stores a canvas verdict.
+9. **Mixed cases dissolve.** The rules decide who owns the press, not what the menu holds, so a link inside an editable region is browser by two rules and the browser merges the items itself.
+
+Graduated [When `contextmenu` fires, and at what](54-contextmenu-timing-probe.md), a task ticket probing the Windows ordering and the keyboard `contextmenu` behaviour.
