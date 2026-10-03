@@ -125,3 +125,5 @@ Inherited from ADR 0025, stated as relationships and counts.
 - **Both endpoints auto.** Reads the press as pure direction and would give a direction-aware router better input at both ends, which ADR 0027 notes is genuinely true. It creates an auto source in one gesture, reversing a finding that ADR 0027 made and ADR 0028 confirmed.
 - **Both endpoints pinned.** Fully determined and easy to reason about, at the cost of the self-correction: move the new node above its source and the edge still leaves the right side and loops back.
 - **A platform-split keyboard chord**, deciding macOS's binding now. Precedented by ADR 0024's platform check, but there is no clean macOS arrow chord to split to, so it would invent a second chord ahead of the measurement.
+
+**Amended by ADR 0051:** the cost this ADR carried is resolved. A `Quick create` of a type that implements `IInlineEditable` opens the new instance for editing with its text selected, panning it into view first if it landed outside the viewport, so typing replaces the duplicated label. A type that declines behaves exactly as above.

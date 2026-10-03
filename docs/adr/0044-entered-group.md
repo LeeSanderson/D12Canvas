@@ -129,3 +129,5 @@ The property bar and panel are untouched. They follow the selection, which alrea
 - **A group locked when any member is**: one locked member freezes all its neighbours to the pointer.
 - **Dimming content outside the scope**: theme work on every built-in to warn the user away from presses that exit anyway.
 - **"Focused group", "group scope", "edit mode" or "isolation mode" as the name**: focus means DOM focus throughout this repo, "scoped" already means something else in ADR 0026, ADR 0035 deleted edit mode, and this is not a mode under ADR 0009.
+
+**Amended by ADR 0051:** the behaviour described under "Content responds only when its instance is addressable" stands, with a different mechanism. A sticky note's text is a plain paragraph and classifies `instance`, not `author-content`, so the second double-press does not reach the built-in's own `dblclick`. The canvas dispatches it, calling `BeginEdit()` through `IInlineEditable` on an addressable instance.

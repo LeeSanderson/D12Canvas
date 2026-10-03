@@ -18,6 +18,10 @@ A placed occurrence of a component type on a board, with its own bounds and prop
 The box a component instance is rendered in: it positions the instance at its `Bounds`, hosts the author's component as its content, and declares what is hittable. It has one rendering, and `Selection` alone decides whether its affordances appear. Used outside a `Board` it is a positioned box with content and nothing more, showing no affordances and answering no `Pointer gesture`, because classification carries an entity id and a container that is not board content has none (ADR 0035).
 _Avoid_: edit mode — a retired second rendering with its own entry gesture, deleted because it never had a working way in and out at the same time (ADR 0035).
 
+**Inline edit**:
+Editing a component instance's content in place on the board, inside the author's own component. A component type opts in by implementing `IInlineEditable`, and the canvas always starts the edit: a double-press on an addressable instance, `F2` on a focused one, or creating a new node by `Quick create`, palette placement or adding an edge label. Copies (paste, duplicate, `Alt`-drag) do not start one. Entry selects all of the existing text. `Escape` commits and returns focus to the instance's tab stop, and the edit is its own history entry, separate from any creation before it (ADR 0051).
+_Avoid_: edit mode — the retired container rendering above, which never edited content.
+
 **Key**:
 The stable string a component type is registered under, chosen independently of its .NET type name so persisted boards survive renames/refactors of the underlying class.
 _Avoid_: using the CLR type name as identity.
@@ -69,7 +73,7 @@ An edge end attached to a component instance without naming a `Port`, leaving th
 _Avoid_: calling it floating — a floating end tracks nothing, where this one tracks everything.
 
 **Quick create**:
-Duplicating a selected instance beside itself and connecting the two, in one act. Carried by a plain click on a `Port` span — a `DragEdgeEnd` that releases before crossing the `Drag threshold`, so it adds no member to the `Pointer gesture` set — and by `Ctrl`+`Arrow`, which reaches the four standard ports only. What it makes is a true duplicate (same type, same props, same size as the source, not the registration's `DefaultSize`), placed at the source's border on the pressed side plus two grid cells, stepping further along that same axis while the slot is occupied. The new edge pins at the source port and takes an `Auto endpoint` at the target, so it re-chooses its side as either shape moves. The new instance takes `Selection` and focus and the source gives both up, which is what makes a chain chainable. One history entry (ADR 0030).
+Duplicating a selected instance beside itself and connecting the two, in one act. Carried by a plain click on a `Port` span — a `DragEdgeEnd` that releases before crossing the `Drag threshold`, so it adds no member to the `Pointer gesture` set — and by `Ctrl`+`Arrow`, which reaches the four standard ports only. What it makes is a true duplicate (same type, same props, same size as the source, not the registration's `DefaultSize`), placed at the source's border on the pressed side plus two grid cells, stepping further along that same axis while the slot is occupied. The new edge pins at the source port and takes an `Auto endpoint` at the target, so it re-chooses its side as either shape moves. The new instance takes `Selection` and focus and the source gives both up, which is what makes a chain chainable. One history entry (ADR 0030). A new instance of an editable type then opens for an `Inline edit` with its text selected, so typing replaces the duplicated label (ADR 0051).
 _Avoid_: reading it as placement — placement derives from a registration, this derives from an instance, which is why the two disagree about size.
 
 **Interior edge**:

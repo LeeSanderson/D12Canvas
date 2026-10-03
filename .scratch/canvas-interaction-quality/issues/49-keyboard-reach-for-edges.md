@@ -28,3 +28,7 @@ Decide:
 - **Whether the DOM element already exists.** ADR 0017 made every hit region a real element, so an edge may need only a `tabindex` and an order key rather than new markup. Confirm before designing around either answer.
 
 Amends or extends ADR 0026 (its table and its tab-stop enumeration), and touches ADR 0010, ADR 0017 and ADR 0036.
+
+## Widened by ADR 0051
+
+`Escape` out of an edge label's inline edit calls `EndInlineEdit`, which returns focus to the canvas container because a label has no tab stop to return to. If this ticket gives edges a tab stop, decide whether that focus return moves to the edge.
