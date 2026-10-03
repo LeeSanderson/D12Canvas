@@ -175,3 +175,13 @@ ADR 0030 confirms this decision in three places and needs nothing added to it.
 **The same-component guard is not engaged**, the two endpoints naming different components by construction.
 
 One consequence of this ADR reaches further than it did when written. Its rule that an unrendered port is not hit-testable, combined with ADR 0028's selection-only visibility, is what makes `Quick create` reachable **only on a selected instance** and never on a member of a multi-selection. Both match Miro's and FigJam's documented behaviour, and ADR 0030 needed no clause to produce either.
+
+## Addendum (surfaced while resolving the direction-aware routing ticket)
+
+ADR 0049 fixes the router this ADR described, and confirms the decision to keep routing style and endpoint kind independent.
+
+**The router now reads the side.** "Ours reads neither" above described the defect. It no longer describes the code once ADR 0049 is built. `Orthogonal` leaves each end along its side and routes around both connected shapes, and `Curved` puts its control points on each side's normal.
+
+**The auto endpoint turned out to be the router's best input, as predicted.** Its side faces the other end by construction, so an auto end never needs the route-around that a pinned port facing away does.
+
+**The independence argument is stronger, not weaker.** The reference tools couple style to endpoint kind because their routers need a side. Under ADR 0049 every end has one, floating ends included through a pseudo-side facing the other end, so no combination is left for a legality rule to forbid.

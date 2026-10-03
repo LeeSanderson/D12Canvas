@@ -22,6 +22,8 @@ A port is **drawn as a dot but grabbed as a stretch of border**. Its hit region 
 
 One thing this ADR made possible without meaning to: because `AddCustomPort` pins the perpendicular fraction to the side's own 0 or 1, every custom port the product can create lands exactly on a border, even though `PortDef` is a 2-D fraction. That is what keeps the partition a 1-D problem. ADR 0028 does not add a way to create an interior port and depends on there not being one.
 
+**Addendum (surfaced while resolving the direction-aware routing ticket):** ADR 0049 decides what each routing style draws. `Orthogonal` leaves each end along its side by a 20-unit stub and routes around the two shapes it connects. `Curved` puts each control point on its end's side. A floating end routes as if it had the side facing the other end. `Straight` is unchanged. Labels now sit halfway along the drawn path, not at the straight-line midpoint.
+
 **Considered and rejected:**
 - **Dynamically-calculated, unnamed anchor points** (always route to the nearest point on the target's bounding-box perimeter, no discrete ports) — rejected; the user wants a concrete, named, addressable set of connection points (matching precise-diagramming tools), not an implicit nearest-point calculation. Narrowed by ADR 0027 as above: the *calculation* now chooses among the named points, and never produces an unnamed one.
 - **Ports declared at registration time only** (component developer opts a type into specific anchors) — rejected in favor of automatic standard ports (no opt-in needed) plus end-user-added custom ports; keeps ADR 0001 untouched and puts port authorship where the user actually wants it — in the end user's hands at runtime, not the component developer's at registration.
