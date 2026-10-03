@@ -86,3 +86,5 @@ The Linux window managers that bind Alt+press to window moves, KDE Plasma by def
 - **Additive cycling under `Shift`+Alt**: a second rule for a rare case the keyboard already covers.
 - **Leaving Alt on `author-content` as `Native`**: Alt+click on top of an author's control reaches nothing beneath it.
 - **Reordering the stack to match hit order**: a second ordering rule to patch one case that wrapping already reaches.
+
+**Amended by ADR 0055:** the caveat that the hit stack's top entry differs from a plain click for an instance sent behind an edge no longer applies. Edges always paint beneath instances, so paint order and ADR 0017's hit order agree, and that case cannot occur.

@@ -172,3 +172,5 @@ The ruling that Ctrl is live and never read at press stands. The reason this ADR
 ADR 0043 also states what this ADR left implicit for `Axis lock`: `Shift` is read live on a move, like Ctrl, while its selection meanings are read once, when they act.
 
 **Amended by ADR 0048:** "Which point of a selection grid snapping anchors" is answered. A move and a placement round the top-left of the selection's bounding box, and size is never rounded. Grid snapping now also covers resize, rounding only the edges the handle moves, which is the anchor set this ADR gave object snapping on resize, so per-axis precedence applies there unchanged.
+
+**Amended by ADR 0055:** "Above content and below selection chrome" is a concrete layer. Guides draw in their own stacking context between the instance layer and selection chrome, so no `ZIndex` can rise above them.

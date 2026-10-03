@@ -98,3 +98,5 @@ That surface is the selection-anchored property bar's, and it inherits a structu
 - **Theming the built-in components' visual defaults here** — turns on a registry two-tier question and a frozen-into-data problem that need their own decision.
 
 **Amended by ADR 0041:** "A selected edge is always the accent" is replaced. Selection is a translucent `--d12-accent` halo drawn as a second stroked path under the edge, and the edge keeps its own colour, width and arrowheads while selected. The rejected alternative above, keeping the edge's own colour with a halo as the cue, is now the decision. The property bar made the deferral expensive: with the accent repaint, changing `EdgeColour` or an arrow role from the bar showed nothing until the edge was deselected. The accent-blue limit recorded above goes with it. The rest of this ADR, including the `--d12-edge-override` cascade and `context-stroke` arrowheads, is unchanged.
+
+**Amended by ADR 0055:** the send-to-back trap is discharged. Edges paint in their own layer beneath the instance layer, so "edges paint beneath components" now holds for every `ZIndex`, including the negative values `PreviousZIndex()` produces.
