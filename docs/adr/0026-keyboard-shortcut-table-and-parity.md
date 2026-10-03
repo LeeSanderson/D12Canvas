@@ -17,6 +17,7 @@ Every row is guarded by focus (see the next section). The **Typing** column reco
 | `Alt`+`Arrow` | Resize a single instance, opposite edge anchored | guarded | | ADR 0010 |
 | `Alt`+`Shift`+`Arrow` | Resize a single instance, anchor flipped | guarded | | ADR 0010 |
 | `Ctrl`+`Arrow` | Quick-create and connect in that direction. Works in Chrome and Edge on Windows; **macOS unmeasured, see the addendum** | guarded | | ADR 0030 |
+| `Ctrl`+`Shift`+`Arrow` | `Directional focus`: move focus to the nearest instance or group stop in that direction. **Windows measured before build; macOS unmeasured** | guarded | | ADR 0060 |
 | `Space` | Outside `Additive traversal`, add the focused stop and start it; inside, toggle the focused stop | guarded | | ADR 0059 |
 | `Enter` | Commit a port attachment | scoped to an instance tab stop | | ADR 0010 |
 | `Arrow`, `Shift`+`Arrow`, `Enter`, `Escape` inside port placement | Slide the provisional port along the border, commit it, cancel. Every other row is a no-op while placing | guarded | entered from the menu's **Add port…** row | ADR 0050 |
@@ -219,3 +220,5 @@ Separately, this ADR is **silent** on whether an edge is a tab stop rather than 
 **Amended by ADR 0059:** the `Ctrl`+`Tab` row is removed and the `Space` row rewritten in the table above. `Space` outside `Additive traversal` adds the focused stop and starts the mode, in which `Tab` moves focus without selecting. `Escape`'s stages become: cancel the gesture, end port picking or placement, end the mode, step out of the entered group, clear the selection. The section on `Ctrl`+`Tab` below is kept as the record of why.
 
 **Amended by ADR 0054:** the tab-stop enumeration gains edges, which answers the silence recorded above. Each edge's stop comes directly after the stop its source resolves to, and an edge with a floating source sorts at its source point. While a group is entered, no edge has a stop. `Space` toggles a focused edge, and `Enter` does nothing on one. The table gains no row.
+
+**Amended by ADR 0060:** a row is added for `Ctrl`+`Shift`+`Arrow`, `Directional focus`, guarded. It moves focus to the nearest instance or group stop in the arrow's direction, within the current ring, and selects under the weld or moves focus only inside `Additive traversal`. It is a no-op during a pointer gesture, port placement and port picking. Windows is measured before it is built, and macOS is carried as a doubt beside `Ctrl`+`Arrow`.

@@ -58,3 +58,5 @@ After ADR 0036 a pointer press writes focus once, to `.diagram-canvas`, and no s
 **Amended by ADR 0059:** `Ctrl+Tab` is removed. Keyboard multi-select is `Additive traversal`: `Space` adds the focused stop and starts a transient mode in which `Tab` moves focus without selecting and `Space` toggles. Focus-follows-selection holds outside the mode. The rejected split model above stays rejected; the mode borrows its shape only while the user is building a multi-selection.
 
 **Amended by ADR 0048:** under `Snap-to-grid`, each `Alt+Arrow` press moves the moving edge to the next grid line in its direction rather than by `1 / zoomScale`, and never below the minimum size. `Shift` keeps its anchor-flip meaning, so resize still has no larger-step variant. With snap off, the step above is unchanged.
+
+**Extended by ADR 0060:** `Directional focus`, on `Ctrl`+`Shift`+`Arrow`, is a second focus route over the same stops. `Tab` keeps reading order. The weld is unchanged: a directional move selects its target, except inside `Additive traversal`.

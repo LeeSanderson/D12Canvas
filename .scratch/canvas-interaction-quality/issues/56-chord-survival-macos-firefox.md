@@ -22,3 +22,5 @@ These rows matter for ADR 0030's `Ctrl+Arrow` macOS doubt. Record the results on
 ## Comments
 
 **From [Keyboard multi-select without Ctrl+Tab](55-keyboard-multi-select-without-ctrl-tab.md), resolved (ADR 0059):** `Ctrl+Tab` is removed from the library, so its rows are dropped from this probe. Keyboard multi-select now uses `Space` and `Tab`, which no browser reserves, so this ticket no longer gates it.
+
+**From [Moving through a long tab ring](62-moving-through-a-long-tab-ring.md), resolved (ADR 0060):** add `Ctrl+Shift+Left/Right/Up/Down` and, on macOS, `Cmd+Shift+Left/Right/Up/Down` to every macOS row. They carry `Directional focus`. Windows is measured separately by [Ctrl+Shift+Arrow on Windows](63-ctrl-shift-arrow-on-windows.md). Record the results on ADR 0060 as well.
