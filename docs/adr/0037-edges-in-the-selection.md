@@ -134,3 +134,9 @@ The `ChangeEdgeEndpointCommand` above is the first command for an edge's geometr
 - **Edges never move.** Leaves a palette-created connector, which ADR 0009 creates with both ends floating, repositionable only one end at a time.
 - **Resolving the `Group`-with-deleted-members case here.** Unchanged by edges in the selection, and it runs into ADR 0003's flat model and ADR 0007's undo symmetry, which is a different argument set.
 - **Giving edges tab stops here.** Its real question is ring length and whether an edge's reading-order position means anything when it spans the board, neither of which is about selection membership.
+
+## Amended by ADR 0045
+
+**"An edge contributes nothing to the selection bounds" is scoped to arrangement**: align, distribute, resize and z-order, which write instance `Bounds`. Placement, meaning the paste delta and the `Duplicate run` offset, reads ADR 0015's extent, which counts edge endpoints.
+
+**The marquee did not reuse `Interior edge` verbatim.** The clause admitting an end floating inside the band was new, and ADR 0013's copy test had no such clause, so a marqueed palette connector was selected and then dropped by a copy. ADR 0045 closes that by having copy carry every selected edge, not by giving the readers one predicate. The table's "lone-edge case remaining ticket 36's" is answered there.

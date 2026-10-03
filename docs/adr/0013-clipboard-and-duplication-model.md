@@ -64,3 +64,13 @@ The one thing that does **not** carry over is the position rule. Duplicate casca
 **Amended by ADR 0037:** two changes, one of them a defect closing. **Select-all takes every edge** in addition to top-level entities, so select-all-then-delete now clears a board, which is the limitation this ADR recorded and declined to fix. And the **interior edge** test gains a second reader: it was written as the rule for what a copy carries, and it is now also the rule for what a marquee selects. The definition is unchanged, and the two consumers agree by construction rather than by a rule written to keep them in step.
 
 **Amended by ADR 0039:** remembered-offset chaining leaves the rejected list, where it was recorded as open. When the selection is exactly what the last duplicate produced, the next duplicate lands at that selection's offset from its own source, measured top-left to top-left of the selection bounds and replayed without snapping. The first step keeps this ADR's `+20, +20`. The "a move gesture just committed, by this delta" signal named above as the blocker is not needed, because the offset is read from committed geometry when the key is pressed rather than taken from a gesture. The paste cascade is unchanged and separate.
+
+**Amended by ADR 0045:** four changes, all about edges.
+
+**A selected edge always travels.** A copy carries the selected instances closed over interior edges, plus every selected edge. An end of a selected edge attached to an instance not copied becomes floating at its current resolved position. The rejection of half-attached edges above still holds for edges swept in by closure, which is what its two reasons are about. Duplicate and clone drag build the same payload and never keep an outside attachment.
+
+**Cut on a lone selected edge is no longer a no-op.** The sentence saying so is removed rather than replaced. Copy now captures every selected edge, so cut is copy plus delete with no case of its own.
+
+**Paste no longer re-applies the interior rule.** It drops an edge only when an attached end names an instance that did not materialise. A floating end always passes, so the floating lines a copy carries survive the paste.
+
+**"Its own bounding box" in the paste delta is ADR 0015's extent**, instances unioned with resolvable edge endpoints, so an edge-only payload has a box to move by.

@@ -116,3 +116,7 @@ ADR 0043 amends two statements above, and leaves the rule that the release write
 **An Alt toggle shows at once.** "Pressing Alt without moving fires no pointer event, so the toggle shows on the next move" no longer holds. While a gesture holds capture, JavaScript re-sends the last pointer position as a move whenever modifier state changes, so the copies appear or go away the moment Alt does.
 
 **Alt released and then the pointer released, with no move between, commits a move.** The Alt release publishes a preview of a move, so the last published preview is a move. Before the re-send it was still a clone, and the commit was a clone after the user had let go of the key that means clone.
+
+## Addendum (surfaced while resolving the lone-edge clipboard ticket)
+
+ADR 0045 answers the open bullet on selected edges with floating ends, and clone drag takes the answer with no rule of its own. Every selected edge is in the fragment. An end on a copied instance is attached to the copy, a floating end moves with the delta, and an end on an instance not in the selection becomes floating. The bullet's sibling still holds: an edge that crosses the selection boundary and is not itself selected is not copied.

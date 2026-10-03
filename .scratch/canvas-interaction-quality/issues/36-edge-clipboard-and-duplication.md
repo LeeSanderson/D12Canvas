@@ -1,7 +1,7 @@
 # Clipboard and duplication for a lone edge
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 28
 
 ## Question
@@ -28,3 +28,23 @@ Does not block ticket 10. The menu hides these rows behind an eligibility predic
 Amends ADR 0013 if a lone edge becomes copyable.
 
 **From resolving [Alt-drag to duplicate](34-alt-drag-duplicate.md):** this ticket's answer now has a second consumer. ADR 0042 makes a clone drag copy exactly what duplicate copies, so whatever this ticket decides for a selected edge with floating ends applies to Alt-drag as well, with no separate rule.
+
+## Answer
+
+Recorded as [ADR 0045](../../../docs/adr/0045-selected-edges-on-the-clipboard.md).
+
+**The premise had moved.** ADR 0037 replaced the exclusive `_selectedEdgeId` slot with a second set, so the lone edge is one case of a wider question: what a copy carries for a selected edge that is not interior.
+
+**Explicit selection overrides the interior rule for edges.** A copy carries the selected instances closed over interior edges, plus every selected edge. An end on a copied instance stays attached and is remapped, a floating end keeps its coordinate, and an end on an instance not copied becomes floating at its current resolved position. ADR 0013's two reasons for rejecting half-attached edges are about edges swept in by closure, so they still hold there and say nothing about an edge the user picked.
+
+**Duplicate and clone drag build the same payload** and never keep an outside attachment, even though on the same board it would resolve. A second edge on the same two ports draws over the first and looks like nothing happened. A lone attached edge duplicates as a floating line beside the original.
+
+**Cut is copy plus delete with no edge case.** The "cut on a lone selected edge is a no-op" sentence is removed. Cut, Copy and Duplicate become eligible on edge selections, so an edge-only menu is seven rows.
+
+**Paste drops an edge only when an attached end names an instance that did not materialise.** Re-applying the interior rule would have dropped every floating line the copy carried. An end whose instance did not materialise drops its edge rather than floating, since its position would need a port on a component paste could not bind.
+
+**Placement reads ADR 0015's extent**, instances unioned with resolvable edge endpoints, for the paste delta and the `Duplicate run` offset. ADR 0037's "an edge contributes nothing to the selection bounds" is scoped to arrangement. Without this, an edge-only payload had no box to move by.
+
+**Found on the way:** ADR 0037 said the marquee reused `Interior edge` "verbatim" while adding a floating-inside-the-band clause, and `CONTEXT.md` claimed marquee and copy select "the same set by construction". They did not, so a marqueed palette connector was dropped by `Ctrl+C`. Closed by copy carrying the selection. `CONTEXT.md`'s entry now says what each of its three readers does.
+
+Amends ADR 0013, ADR 0023, ADR 0037, ADR 0039 and ADR 0042. No new tickets.
