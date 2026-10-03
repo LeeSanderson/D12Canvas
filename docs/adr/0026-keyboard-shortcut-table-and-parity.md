@@ -20,6 +20,7 @@ Every row is guarded by focus (see the next section). The **Typing** column reco
 | `Ctrl`+`Tab` | Move focus without selecting. **Dead in Chrome and Edge on Windows, see below** | guarded | | ADR 0010 |
 | `Space` | Toggle the focused entity's membership of the selection | guarded | | ADR 0010 |
 | `Enter` | Commit a port attachment | scoped to an instance tab stop | | ADR 0010 |
+| `Arrow`, `Shift`+`Arrow`, `Enter`, `Escape` inside port placement | Slide the provisional port along the border, commit it, cancel. Every other row is a no-op while placing | guarded | entered from the menu's **Add port…** row | ADR 0050 |
 | `PageUp` / `PageDown` | Zoom in / out | guarded | | here |
 | `Ctrl`+`Z` / `Ctrl`+`Shift`+`Z` | Undo / redo | guarded | | ADR 0007 |
 | `Ctrl`+`G` / `Ctrl`+`Shift`+`G` | Group / ungroup | guarded | | ADR 0006 |
@@ -211,3 +212,5 @@ Separately, this ADR is **silent** on whether an edge is a tab stop rather than 
 **Amended by ADR 0044:** `Enter` on a group's tab stop enters the group, replacing its one stop with stops for its direct members and focusing the first. The existing `Enter` row is scoped to instance tab stops, so the two never meet. Escape's row gains the step out of the `Entered group` between cancelling a gesture and clearing the selection, and returns focus to the group's tab stop when focus was on a member's.
 
 **Amended by ADR 0048:** the point the nudge measures from is settled as the top-left of the selection's bounding box, which is what snap-to-grid already anchored. `Alt+Arrow` resize gains the same next-grid-line step under snap, applied to the moving edge.
+
+**Amended by ADR 0050:** a row is added to the table for keyboard port placement, entered from the menu's **Add port…** row. Inside placement only `Arrow`, `Shift+Arrow`, `Enter` and `Escape` act, and every other guarded row that writes `Board` or the selection is a no-op. `Escape` there is staged: it ends placement and keeps the selection.

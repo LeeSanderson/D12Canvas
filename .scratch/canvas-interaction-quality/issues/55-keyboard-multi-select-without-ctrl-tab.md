@@ -18,3 +18,5 @@ The two shapes to weigh, without treating this list as the whole space:
 Things that lean on `Ctrl+Tab` and must still work after the decision: ADR 0044's multi-select inside an entered group, ADR 0046's note that the keyboard covers selecting two buried instances, ADR 0022's additive marquee having a keyboard analogue, and ADR 0036's mixed mouse-then-keyboard cost. [Keyboard reach for edges](49-keyboard-reach-for-edges.md) asks whether edges join the same ring, so whichever answer lands first should say what it assumes about the other.
 
 `DiagramCanvasCtrlTabSpaceMultiSelectTests` calls `OnCtrlTabPressed()` directly and cannot see any of this. Whatever replaces the route needs an `Interaction probe` that sends the real keys.
+
+ADR 0050 adds keyboard port placement, which uses `Arrow`, `Shift+Arrow`, `Enter` and `Escape` and makes every other board-writing key a no-op while it is active. A replacement that rebinds `Enter` or adds a key inside a mode should check against it.

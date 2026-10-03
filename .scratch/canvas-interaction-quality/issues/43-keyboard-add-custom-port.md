@@ -1,7 +1,7 @@
 # Keyboard route to adding a custom port
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -22,3 +22,19 @@ Decide:
 - **Whether the new port is placed against the partition's rules or merely near them.** ADR 0028 drops a port span below the floor and lets a standard port clip a custom one, so a keyboard-placed port can be invisible the moment it exists. Whether the picker should refuse such a position, allow it silently, or say something is the same choice ADR 0028 made for the pointer by allowing it silently.
 
 Adds no command type — `AddCustomPortCommand` already exists and is already undoable.
+
+## Answer
+
+Recorded as ADR 0050, worked as a grilling.
+
+Decided:
+
+1. **Any position, reached by stepping.** A provisional port moves along the border by the nudge step: the next grid line under snap, `1 / scale` otherwise, `Shift` ten. A fixed set of positions would let the pointer express positions the keyboard cannot, which ADR 0027 called a defect. Positions are clamped to the side when the grid spacing is wider than it.
+2. **Entered from the existing menu row.** On a keyboard-opened menu, **Add port here** reads **Add port…** and enters a transient placement mode. No new chord. A third stage inside port picking was rejected because it mixes adding a port with making a connection.
+3. **The port goes where the arrow points, kept on the border.** It starts at Top 0.25, slides along a side, turns at a corner and stops, and crosses to the opposite side when the arrow points into the shape. `Enter` commits one `AddCustomPortCommand`. `Escape` ends placement and keeps the selection (staged, unlike port picking). Focus leaving, including a pointer press, cancels. Focus stays on the instance after commit, and the new port is in the `Space` cycle.
+4. **Drawn as a hollow `port-focused` dot.** No partition and no announcement. The library has no live region, and port picking already needs one, so announcements go to the map as fog.
+5. **Clipped and dropped positions are allowed**, as for the pointer. Refusing them would depend on zoom, and a dropped port still works from the keyboard.
+
+Consequences checked against the other answers before sign-off: inside placement only `Arrow`, `Shift+Arrow`, `Enter` and `Escape` act; entering placement ends a port pick but keeps an armed connector source; [Keyboard multi-select without Ctrl+Tab](55-keyboard-multi-select-without-ctrl-tab.md) must check any `Enter` rebinding against placement.
+
+Amends ADR 0028 and ADR 0023 (the row enters placement without a press point) and ADR 0026 (one table row). New `CONTEXT.md` term, `Port placement`. Surfaced [Removing a custom port](57-removing-a-custom-port.md): nothing removes one except undo.
