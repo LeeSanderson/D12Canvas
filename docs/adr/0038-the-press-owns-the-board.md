@@ -72,3 +72,5 @@ ADR 0020's ticket asked whether an entity deleted out from under a gesture was t
 - **A public "gesture is live" signal for hosts.** Nothing needs it yet, and adding it later costs nothing.
 
 **Answered by ADR 0056:** the viewport stays live in every phase, and a live gesture keeps what it holds under the pointer when the viewport moves.
+
+**Amended by ADR 0066:** a gesture cancelled by a window blur no longer owns the press, so board-writing and selection-writing keys work as soon as the window has focus again. Every other cancelled gesture still owns the press until its button comes up.

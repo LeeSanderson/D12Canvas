@@ -160,6 +160,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - [Whether a copy of a locked entity is locked](issues/61-copy-of-a-locked-entity.md) — **copying is not modifying, so a locked entity can be copied and the copy is locked** on every route, clipboard included (ADR 0065). Cut is eligible only when its delete would remove something and carries exactly that, so a partly-locked group's locked members stay put as on a drag. The Lock row reads Unlock when every top-level selected entity is locked.
 
+- [Whether window `blur` actually fires on a focus steal mid-gesture](issues/45-blur-delivery-mid-gesture.md) — **it does, in Chrome, Edge and Firefox on Windows, with or without `preventDefault`**, on `Alt+Tab` and on a tab switch, so `blur` alone closes leak path seven, with no `visibilitychange` listener and no buttonless-move guard. The probe also found that the release never reaches the page, so a blur cancel now ends the press as well, clearing the gesture and releasing capture, rather than holding it as Escape does. Otherwise ADR 0038 would block the keyboard after `Alt+Tab` back until the mouse moved (ADR 0066). WebKit and macOS are unmeasured.
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.
