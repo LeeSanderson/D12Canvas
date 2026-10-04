@@ -50,7 +50,7 @@ A host that breaks the invariant through `Board` gets a group that renders sligh
 
 ## Edges stay the other way
 
-A component deleted from under an attached edge leaves the endpoint resolving to nothing, and ADR 0032 named that the dangling-endpoint precedent. That stays. An edge endpoint is a reference ADR 0005 already allows to resolve to nothing, and the edge still draws from its other end. A group is a membership list whose only purpose is its members, so a dead entry in it has no meaning to keep.
+A component deleted from under an attached edge leaves the endpoint resolving to nothing, and ADR 0032 named that the dangling-endpoint precedent. That stays. An edge endpoint is a reference ADR 0005 already allows to resolve to nothing. **Corrected by ADR 0061:** this said "the edge still draws from its other end", which it does not; an edge with an unresolved end has no line, label or stop (ADR 0054). A group is a membership list whose only purpose is its members, so a dead entry in it has no meaning to keep.
 
 ## How this is verified
 

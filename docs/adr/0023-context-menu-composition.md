@@ -209,3 +209,5 @@ Nothing else moves. The two content sets, the section vocabulary, the align stri
 **Amended by ADR 0050:** the Add port here row is no longer pointer-only. On a menu opened by `Shift+F10` or the `ContextMenu` key it reads **Add port…** and enters keyboard port placement instead of adding a port at once. Eligibility is unchanged, a single selected instance, and the hide-rather-than-disable rule now has no row it hides by input path.
 
 **Amended by ADR 0052:** two rows, **Choose image…** and **Remove image**, eligible when every selected entity is an `"image"` instance. Both act on every selected image as one history entry and take no chord, so neither shows a hint.
+
+**Amended by ADR 0061:** a **Remove port** row, eligible when the opening press landed on a custom port's span, the instance is not locked, and no edge pinned to that port is locked. On a custom port's span Add port here is never shown, whether or not Remove port is. Standard port spans and resize spans keep Add port here.
