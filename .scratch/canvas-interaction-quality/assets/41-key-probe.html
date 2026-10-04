@@ -19,6 +19,7 @@
   th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--muted); }
   tr.lifecycle td { color: var(--warn); }
   tbody tr { background: var(--row); }
+  .filler { width: 3000px; height: 3000px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -34,6 +35,7 @@
   <thead><tr><th>ms</th><th>event</th><th>key</th><th>code</th><th>mods</th><th>prevented</th><th>focus</th></tr></thead>
   <tbody id="log"></tbody>
 </table>
+<p class="filler">Filler text so the page can scroll in both directions and a keyboard selection has something to extend over. Filler text so the page can scroll in both directions and a keyboard selection has something to extend over.</p>
 <script>
   const started = performance.now();
   const rows = [];
@@ -70,6 +72,19 @@
   window.addEventListener("blur", () => record(["window blur", "", "", "", "", focusName()], true));
   window.addEventListener("focus", () => record(["window focus", "", "", "", "", focusName()], true));
   document.addEventListener("visibilitychange", () => record([`visibility ${document.visibilityState}`, "", "", "", "", focusName()], true));
+  let scrollQueued = false;
+  window.addEventListener("scroll", () => {
+    if (scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(() => {
+      scrollQueued = false;
+      record([`scroll ${Math.round(scrollX)},${Math.round(scrollY)}`, "", "", "", "", focusName()], true);
+    });
+  });
+  document.addEventListener("selectionchange", () => {
+    const selection = document.getSelection();
+    if (selection && !selection.isCollapsed) record([`selection "${selection.toString().slice(0, 30)}"`, "", "", "", "", focusName()], true);
+  });
 
   document.getElementById("copy").addEventListener("click", () => {
     navigator.clipboard.writeText(`${navigator.userAgent}\n${rows.join("\n")}`);
