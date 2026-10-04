@@ -19,7 +19,7 @@ The box a component instance is rendered in: it positions the instance at its `B
 _Avoid_: edit mode — a retired second rendering with its own entry gesture, deleted because it never had a working way in and out at the same time (ADR 0035).
 
 **Inline edit**:
-Editing a component instance's content in place on the board, inside the author's own component. A component type opts in by implementing `IInlineEditable`, and the canvas always starts the edit: a double-press on an addressable instance, `F2` on a focused one, or creating a new node by `Quick create`, palette placement or adding an edge label. Copies (paste, duplicate, `Alt`-drag) do not start one. Entry selects all of the existing text. `Escape` commits and returns focus to the instance's tab stop, and the edit is its own history entry, separate from any creation before it (ADR 0051).
+Editing a component instance's content in place on the board, inside the author's own component. A component type opts in by implementing `IInlineEditable`, and the canvas always starts the edit: a double-press on an addressable instance, `F2` on a focused one, or creating a new node by `Quick create`, palette placement or adding an edge label. Copies (paste, duplicate, `Alt`-drag) do not start one. Entry selects all of the existing text. `Escape` commits and returns focus to the instance's tab stop, and the edit is its own history entry, separate from any creation before it (ADR 0051). An edit that ends empty removes the instance when its type registers an `IsEmpty` predicate, as `Text` does; if the creation is still the top history entry it is retracted, so an abandoned new `Text` leaves no history at all (ADR 0062).
 _Avoid_: edit mode — the retired container rendering above, which never edited content.
 
 **Key**:
@@ -158,7 +158,7 @@ _Note_: this list was five short of the code until ADR 0028 counted it, and the 
 _Avoid_: inventing a new command type per feature — a generic primitive (especially `MutateEntity` for opaque `Props`) should cover it first.
 
 **History**:
-The local, in-memory, session-scoped stack of `Command`s backing undo/redo for the current `Board` — capped at a fixed depth (a circular buffer), never persisted, and never tracked across a reload. Distinct from `Selection`, which is also transient view state but isn't tracked here at all.
+The local, in-memory, session-scoped stack of `Command`s backing undo/redo for the current `Board` — capped at a fixed depth (a circular buffer), never persisted, and never tracked across a reload. Besides undo and redo it has one more operation, `Retract`, which removes the top entry without leaving it on redo, used only for a creation abandoned empty (ADR 0062). Distinct from `Selection`, which is also transient view state but isn't tracked here at all.
 
 **Paste anchor**:
 The board point a pasted payload's bounding box is centred on — where the user last *indicated*. That is the pointer's board position when the pointer is over the canvas, the press point that opened a `Context menu` for a paste invoked from its row, and the viewport centre otherwise. A menu opened from the keyboard has no press point and takes the viewport centre, deliberately not a press point stored earlier in the session, which names somewhere the user has since navigated away from (ADR 0026). The payload translates as a rigid body relative to it, so internal relative geometry survives. Successive pastes onto an unchanged anchor cascade by a fixed offset; a changed anchor resets the cascade.

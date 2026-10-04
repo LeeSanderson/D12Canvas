@@ -143,3 +143,7 @@ Per ADR 0025:
 ## Amended by ADR 0054
 
 Edges now have tab stops, so `EndInlineEdit` for an edge label returns focus to the edge's stop, which selects the edge. The canvas container is only the fallback, used when the edge's stop is not mounted because the viewport was panned during the edit.
+
+## Amended by ADR 0062
+
+An edit that ends empty removes the instance when its type registers an `IsEmpty` predicate, which `Text` and so every edge label does. When the creation is still the top entry it is retracted, so create-then-abandon leaves no history, and "that case is one entry anyway" above becomes zero entries for such a type. `EndInlineEdit` is replaced by `CommitInlineEdit`, called on every edit end including blur, with `returnFocus` true only for `Escape`.
