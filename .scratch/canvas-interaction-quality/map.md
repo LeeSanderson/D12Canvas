@@ -158,6 +158,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - [Theming the property panel](issues/60-property-panel-theming.md) — **two value sets, chosen by whether a surface floats over the board** (ADR 0064). The panel declares `Palette`'s blocks plus a text colour it never had. Every raised surface, the future property bar included, declares `Palette`'s values and `color-scheme` on its own root, because board values put a `#f0f0f0` surface on a `#f0f0f0` board. Inputs read the surface and inherit the text colour. Two dark baselines and a token test ship with it.
 
+- [Whether a copy of a locked entity is locked](issues/61-copy-of-a-locked-entity.md) — **copying is not modifying, so a locked entity can be copied and the copy is locked** on every route, clipboard included (ADR 0065). Cut is eligible only when its delete would remove something and carries exactly that, so a partly-locked group's locked members stay put as on a drag. The Lock row reads Unlock when every top-level selected entity is locked.
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.

@@ -211,3 +211,5 @@ Nothing else moves. The two content sets, the section vocabulary, the align stri
 **Amended by ADR 0052:** two rows, **Choose image…** and **Remove image**, eligible when every selected entity is an `"image"` instance. Both act on every selected image as one history entry and take no chord, so neither shows a hint.
 
 **Amended by ADR 0061:** a **Remove port** row, eligible when the opening press landed on a custom port's span, the instance is not locked, and no edge pinned to that port is locked. On a custom port's span Add port here is never shown, whether or not Remove port is. Standard port spans and resize spans keep Add port here.
+
+**Amended by ADR 0065:** Copy and Duplicate are eligible on a selection holding locked entities. Cut is eligible only when its delete would remove something, so it is hidden on a lone locked entity or a fully locked group. The Lock row reads **Unlock when every top-level selected entity is locked** and Lock otherwise, which reads as before for every selection the library produces and offers Unlock on a pasted set of several locked entities.

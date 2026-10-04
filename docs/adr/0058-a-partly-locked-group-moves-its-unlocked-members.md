@@ -79,3 +79,5 @@ What is missing is why the member stayed. That is the lock badge, which waits wi
 - **Showing the live derived bounds mid-resize**: the handle leaves the pointer.
 - **Leaving the locked member's copy behind on a clone drag, or out of the copy**: a duplicate stacked on the original, or a clone that changes membership.
 - **A lock indicator decided for this case alone**: belongs with every other silent lock case.
+
+**Amended by ADR 0065:** the open question is answered. The locked member's copy lands locked, on clone drag and on every other duplication route. Cut of a partly-locked group carries only its unlocked members, the ones its delete removes.

@@ -130,3 +130,5 @@ ADR 0046 gives Alt a meaning on a release from `pointing`, which this ADR left f
 **Amended by ADR 0057:** the open claim on `ResizeSelection` under Alt elsewhere is answered. Alt on a resize anchors it at the selection's centre, read live, so Alt now binds on two pointer gestures. The Windows probe gains a case for releasing Alt after an Alt-resize. On Linux window managers that take an Alt+press, a user can press first and then hold Alt, because Alt is read live, so a clone drag is reachable there after all.
 
 **Amended by ADR 0058:** "Locked entities cannot take part" rested on a selection containing a locked entity being that one entity alone, and ADR 0044 made a partly-locked group selectable by a primary press. Such a group clones whole, as `Ctrl+D` would copy it, and every copy follows the pointer, the locked member's copy included. The source stays where it is. Whether a copy of a locked entity is itself locked is open in [Whether a copy of a locked entity is locked](../../.scratch/canvas-interaction-quality/issues/61-copy-of-a-locked-entity.md).
+
+**Amended by ADR 0065:** the copy of a locked member lands locked.

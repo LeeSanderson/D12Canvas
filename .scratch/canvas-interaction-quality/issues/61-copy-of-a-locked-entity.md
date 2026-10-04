@@ -1,7 +1,7 @@
 # Whether a copy of a locked entity is locked
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by:
 
 ## Question
@@ -16,3 +16,14 @@ Surfaced while resolving [Moving a partly-locked group](53-moving-a-partly-locke
 - **Clipboard round-trips.** A paste into another board goes through the serializer, which persists `Locked` as an optional field. Decide whether the clipboard payload keeps it.
 
 Touches ADR 0013 (clipboard and duplication), ADR 0017 (what locked protects), ADR 0039 (`Duplicate run`) and ADR 0042 (clone drag).
+
+## Answer
+
+Recorded as [ADR 0065](../../../docs/adr/0065-a-copy-of-a-locked-entity-is-locked.md). Grilled with the dev, four questions, each agreed as recommended.
+
+1. **Copy and Duplicate are available on a locked selection, Cut is not.** Copying leaves the source untouched, so it is not modifying, the same argument ADR 0058 made for clone drag. Cut deletes, so a lone locked entity cannot be cut.
+2. **The copy carries `Locked` on every route.** Carrying costs one visible step: the copy lands selected, and `Ctrl+Shift+L` unlocks it. Dropping costs a silent one: a cloned card's locked background comes out unlocked and the next drag takes it along. The accepted cost is that a locked `Ctrl+D` copy cannot be dragged off its original until unlocked.
+3. **The clipboard payload keeps `Locked`**, across boards too, and foreign content arrives unlocked. A crafted payload can paste several top-level locked entities, so the Lock row now reads Unlock when every top-level selected entity is locked.
+4. **Cut carries only what its delete removes.** On a partly-locked group the locked members stay, as on a drag. Carrying the whole group would leave the original and paste a second locked copy.
+
+Checking the answers against each other joined 1 and 4 into one rule: Cut is eligible when its delete would remove something. A grep confirmed no `.cs` file implements `Locked` yet, so nothing in the code changes. No new tickets. The lock badge stays in the cursor and micro-feedback fog patch, which already holds it.

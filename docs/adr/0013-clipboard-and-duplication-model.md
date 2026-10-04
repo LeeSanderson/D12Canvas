@@ -76,3 +76,5 @@ The one thing that does **not** carry over is the position rule. Duplicate casca
 **"Its own bounding box" in the paste delta is ADR 0015's extent**, instances unioned with resolvable edge endpoints, so an edge-only payload has a box to move by.
 
 **Amended by ADR 0052:** a pasted bitmap's `"image"` instance takes the picture's own pixel size, scaled down to fit within half the visible viewport at the current zoom and never scaled up, instead of the type's `DefaultSize`. Paste still creates a new instance even when an `Empty image` is selected.
+
+**Amended by ADR 0065:** the payload and every duplication route carry `Locked`, so a copy of a locked entity is locked, including after a paste into another board. Cut's payload is exactly what its delete removes, so the locked members of a partly-locked group stay in place and do not travel.
