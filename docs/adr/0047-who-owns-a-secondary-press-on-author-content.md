@@ -89,3 +89,12 @@ If the first is wrong, the stored verdict is harmless: it agrees with a second e
 - **Ignoring addressability on the secondary button**: a member that cannot be clicked could still be right-clicked into the browser's menu, and the two buttons would disagree about whether the group is the thing addressed.
 - **Two evaluations, at press and at `contextmenu`**: on Windows they read different targets, which produces a press with no menu and a pan that ends in one.
 - **Treating the dismissing press as having no verdict**: it would read a stale one.
+
+## Addendum (measured while resolving the contextmenu timing probe ticket)
+
+Both platform facts above were measured by hand on Windows 11 with real input, in Chromium 149 and Firefox 151.
+
+- **The first fact holds in both engines.** `contextmenu` fires after `pointerup` and targets the element under the release point. Storing the verdict at press is needed on Windows, not only harmless.
+- **The second fact cuts the other way from the hope it was checked for.** Preventing the `Shift+F10` keydown stops `contextmenu` in Chromium only. In Firefox it still fires, about 1 ms after the keydown. The ContextMenu key fires `contextmenu` on keyup in both engines, and preventing its keydown stops it in neither. So ADR 0026's binding never owns the menu outright, and the keyboard rule above applies to both keys.
+
+A keyboard `contextmenu` can therefore arrive after ADR 0026's binding has already opened the menu and moved focus into it, so the five rules may run on a menu item. Which handler acts on a keyboard menu request is left open here.

@@ -162,6 +162,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - [Whether window `blur` actually fires on a focus steal mid-gesture](issues/45-blur-delivery-mid-gesture.md) — **it does, in Chrome, Edge and Firefox on Windows, with or without `preventDefault`**, on `Alt+Tab` and on a tab switch, so `blur` alone closes leak path seven, with no `visibilitychange` listener and no buttonless-move guard. The probe also found that the release never reaches the page, so a blur cancel now ends the press as well, clearing the gesture and releasing capture, rather than holding it as Escape does. Otherwise ADR 0038 would block the keyboard after `Alt+Tab` back until the mouse moved (ADR 0066). WebKit and macOS are unmeasured.
 
+- [When `contextmenu` fires, and at what](issues/54-contextmenu-timing-probe.md) — **on Windows, `contextmenu` follows `pointerup` and targets the release element in Chromium and Firefox**, so ADR 0047's verdict at press is needed. The keyboard result goes the other way: preventing the menu keydown stops `contextmenu` only for `Shift+F10` in Chromium. Firefox still fires it for `Shift+F10`, and both engines fire it on keyup for the ContextMenu key. So ADR 0026's binding never owns the menu, and one keypress makes two menu requests. Addenda on ADRs 0047 and 0026. WebKit's keyboard rows are unmeasured. Surfaced [One menu per keyboard menu request](issues/64-one-menu-per-keyboard-menu-request.md).
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.
