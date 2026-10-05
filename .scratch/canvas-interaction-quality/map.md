@@ -166,6 +166,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - [Chord survival on macOS and in Firefox](issues/56-chord-survival-macos-firefox.md) — **Firefox on Windows passes, and macOS is assumed to match Windows without being measured.** Firefox 157 delivers all eight `Ctrl+Arrow` and `Ctrl+Shift+Arrow` keydowns and `preventDefault` takes. Unlike Chrome it has a default for both chords (scroll, text selection), so a row that is a no-op in its current state still calls `preventDefault`. No Mac was available, so both bindings ship unchanged on macOS. This knowingly accepts the Mission Control and back/forward defaults ADRs 0026 and 0030 name. Addenda on ADRs 0026, 0030 and 0060.
 
+- [One menu per keyboard menu request](issues/64-one-menu-per-keyboard-menu-request.md) — **the menu keydown writes ADR 0047's `Menu verdict` and the browser's trailing `contextmenu` uses it up without classifying its own target** (ADR 0067). A capture-phase `keydown` listener writes on a menu chord and clears on any other key, and every non-secondary press clears, so a verdict Chromium never consumes cannot strand a later `Shift+F10` inside an editor that stops propagation. The ContextMenu key acts on keydown. Outside `author-content` the keydown uses rule 2 alone, which replaces the row's typing guard. Verified by three Chromium probes, with Firefox resting on ticket 54's hand measurement.
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.
