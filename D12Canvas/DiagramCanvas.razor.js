@@ -418,10 +418,9 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
     };
 }
 
-// Backspace/Delete double as the browser's own text-editing keys, so unlike this listener's other
-// codes they must not fire while focus is on an editable host-page element (an <input>/<textarea>
-// elsewhere on the embedding page, or a future in-canvas editable field) - otherwise typing
-// Backspace there would silently wipe the canvas selection instead of deleting a character.
+// The per-row typing guard. Keys such as Backspace, Delete and the arrows double as text-editing
+// keys, so those rows stay out of the way of an editable element inside the canvas (an inline
+// edit, or an author's own input); the focus guard has already kept out the rest of the page.
 function isEditableTarget(target) {
     return (
         target instanceof HTMLInputElement ||
@@ -430,31 +429,60 @@ function isEditableTarget(target) {
     );
 }
 
-// Enter also doubles as the native activation key for a focused button (a Palette entry) -
-// pressing it there must reach the browser's own default "click the button" behavior, not this
-// listener's preventDefault. Unlike every other key case below (none of which have a competing
-// native meaning on a button), Enter is scoped to firing only when DOM focus is actually on one of
-// the canvas's own instance tab stops - the one place OnEnterPressed's keyboard connector-
-// attachment gesture is meaningful.
+// Enter means "commit this port attachment", which is defined only on one of the canvas's own
+// instance tab stops, so the Enter row is scoped to them.
 function isComponentContainerTarget(target) {
     return target instanceof Element && target.classList.contains("component-container");
 }
 
+function isNothingFocused() {
+    const active = document.activeElement;
+    return active === null || active === document.body || active === document.documentElement;
+}
+
+function hasLiveTextSelectionOutside(container) {
+    const selection = window.getSelection();
+    return (
+        selection !== null &&
+        !selection.isCollapsed &&
+        selection.anchorNode !== null &&
+        !container.contains(selection.anchorNode)
+    );
+}
+
+// The one focus guard every row sits behind. A key reaches the canvas when focus is inside its
+// container, or when nothing is focused and the user has not selected text elsewhere on the page,
+// since selecting text never moves focus off the body.
+function keyReachesCanvas(container) {
+    if (isNothingFocused()) {
+        return !hasLiveTextSelectionOutside(container);
+    }
+
+    return container.contains(document.activeElement);
+}
+
 export async function addKeyboardListener(element, dotnetRef) {
     const handleKeyDown = (event) => {
+        if (!keyReachesCanvas(element)) {
+            return;
+        }
+
         // preventDefault is called only from inside a branch that actually invokes a
         // dotnetRef method - never unconditionally after the switch. Tab (native browser focus
         // navigation) and every other unhandled key must reach the browser's own default
-        // handling, both here and in this host page beyond D12Canvas's own container (this
-        // listener is window-level, so isEditableTarget's guards actually protect anything).
+        // handling.
         switch (event.code) {
             case "PageUp":
-                event.preventDefault();
-                dotnetRef.invokeMethodAsync("OnZoomIn");
+                if (!isEditableTarget(event.target)) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnZoomIn");
+                }
                 break;
             case "PageDown":
-                event.preventDefault();
-                dotnetRef.invokeMethodAsync("OnZoomOut");
+                if (!isEditableTarget(event.target)) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnZoomOut");
+                }
                 break;
             case "ArrowLeft":
             case "ArrowRight":
@@ -565,7 +593,7 @@ export async function addKeyboardListener(element, dotnetRef) {
             case "Quote":
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
                     event.preventDefault();
-                    dotnetRef.invokeMethodAsync("OnToggleSnapToGridPressed");
+                    dotnetRef.invokeMethodAsync("OnSnapToGridChordPressed");
                 }
                 break;
         }

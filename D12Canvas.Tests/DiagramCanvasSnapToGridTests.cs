@@ -68,7 +68,29 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
     }
 
     [Fact]
-    public async Task DisablingTheBuiltInShortcutMakesCtrlApostropheANoOp()
+    public async Task TheSnapChordTogglesSnapToGridWhileTheShortcutIsEnabled()
+    {
+        var canvas = Render<DiagramCanvas>();
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnSnapToGridChordPressed());
+
+        Assert.True(canvas.Instance.SnapToGrid);
+    }
+
+    [Fact]
+    public async Task DisablingTheBuiltInShortcutMakesTheSnapChordANoOp()
+    {
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.EnableSnapToGridShortcut, false)
+        );
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnSnapToGridChordPressed());
+
+        Assert.False(canvas.Instance.SnapToGrid);
+    }
+
+    [Fact]
+    public async Task TheToggleMethodStillWorksWhenTheHostHasDisabledTheChord()
     {
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.EnableSnapToGridShortcut, false)
@@ -76,7 +98,7 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
 
         await canvas.InvokeAsync(() => canvas.Instance.OnToggleSnapToGridPressed());
 
-        Assert.False(canvas.Instance.SnapToGrid);
+        Assert.True(canvas.Instance.SnapToGrid);
     }
 
     [Fact]

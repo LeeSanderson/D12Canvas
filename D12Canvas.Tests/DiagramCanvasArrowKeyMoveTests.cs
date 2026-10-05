@@ -233,6 +233,144 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         Assert.Equal(-50, canvas.Instance.ZoomPanTracker.PanX);
     }
 
+    [Theory]
+    [InlineData(0.1, 9)]
+    [InlineData(4.0, 30)]
+    public async Task ArrowPanMovesTheViewportByTheSameScreenDistanceAtAnyZoom(
+        double expectedScale,
+        int zoomSteps
+    )
+    {
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        for (var i = 0; i < zoomSteps; i++)
+        {
+            await canvas.InvokeAsync(
+                expectedScale < 1 ? canvas.Instance.OnZoomOut : canvas.Instance.OnZoomIn
+            );
+        }
+        var tracker = canvas.Instance.ZoomPanTracker;
+        Assert.Equal(expectedScale, tracker.Scale, precision: 6);
+        var viewportBefore = tracker.Viewport;
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
+
+        var screenDistance = (tracker.Viewport.X - viewportBefore.X) * tracker.Scale;
+        Assert.Equal(50, screenDistance, precision: 6);
+    }
+
+    private IRenderedComponent<DiagramCanvas> RenderWithSnap(Board board) =>
+        Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, true)
+        );
+
+    [Theory]
+    [InlineData("ArrowRight", 120, 93)]
+    [InlineData("ArrowLeft", 100, 93)]
+    [InlineData("ArrowDown", 107, 100)]
+    [InlineData("ArrowUp", 107, 80)]
+    public async Task WithSnapOnANudgeFromOffGridLandsOnTheNextGridLineInTheArrowsDirection(
+        string code,
+        double expectedX,
+        double expectedY
+    )
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 107, 93);
+        var canvas = RenderWithSnap(board);
+        canvas.Find(".component-container").Click();
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed(code, false));
+
+        Assert.Equal(new Bounds(expectedX, expectedY, 50, 50), instance.Bounds);
+    }
+
+    [Theory]
+    [InlineData("ArrowRight", 120, 100)]
+    [InlineData("ArrowLeft", 80, 100)]
+    public async Task WithSnapOnANudgeFromAGridLineMovesExactlyOneLine(
+        string code,
+        double expectedX,
+        double expectedY
+    )
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 100, 100);
+        var canvas = RenderWithSnap(board);
+        canvas.Find(".component-container").Click();
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed(code, false));
+
+        Assert.Equal(new Bounds(expectedX, expectedY, 50, 50), instance.Bounds);
+    }
+
+    [Theory]
+    [InlineData("ArrowRight", 300)]
+    [InlineData("ArrowLeft", -80)]
+    public async Task WithSnapOnShiftNudgeLandsOnTheTenthGridLine(string code, double expectedX)
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 107, 100);
+        var canvas = RenderWithSnap(board);
+        canvas.Find(".component-container").Click();
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed(code, true));
+
+        Assert.Equal(new Bounds(expectedX, 100, 50, 50), instance.Bounds);
+    }
+
+    [Fact]
+    public async Task WithSnapOnTheGridStepFollowsTheDominantLayerAsTheCanvasZoomsOut()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 107, 100);
+        var canvas = RenderWithSnap(board);
+        canvas.Find(".component-container").Click();
+        for (var i = 0; i < 9; i++)
+        {
+            await canvas.InvokeAsync(canvas.Instance.OnZoomOut);
+        }
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
+
+        Assert.Equal(new Bounds(200, 100, 50, 50), instance.Bounds);
+    }
+
+    [Fact]
+    public async Task WithSnapOnAHeldBurstWalksGridLinesAndUndoesInOneStep()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 107, 100);
+        var canvas = RenderWithSnap(board);
+        canvas.Find(".component-container").Click();
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
+        Assert.Equal(new Bounds(160, 100, 50, 50), instance.Bounds);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+        Assert.Equal(new Bounds(107, 100, 50, 50), instance.Bounds);
+    }
+
+    [Fact]
+    public async Task WithSnapOnAMultiSelectionNudgesFromTheTopLeftOfItsBoundingBox()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 107, 100);
+        var second = AddInstance(board, 213, 53);
+        var canvas = RenderWithSnap(board);
+        var containers = canvas.FindAll(".component-container");
+        containers[0].Click();
+        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowUp", false));
+
+        Assert.Equal(new Bounds(120, 87, 50, 50), first.Bounds);
+        Assert.Equal(new Bounds(226, 40, 50, 50), second.Bounds);
+    }
+
     // An edge's own selection slot (_selectedEdgeId) is never mixed into the instance selection
     // arrow-key nudge reads (ExpandedSelection) - a selected edge has no Bounds of its own to
     // nudge, so this must fall back to panning too, not silently no-op.

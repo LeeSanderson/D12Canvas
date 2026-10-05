@@ -329,6 +329,78 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         Assert.Single(board.Groups);
     }
 
+    public static TheoryData<string> BoardWritingRows() =>
+        [
+            "Arrow",
+            "ShiftArrow",
+            "AltArrow",
+            "BringForward",
+            "BringToFront",
+            "SendBackward",
+            "SendToBack",
+            "Space",
+        ];
+
+    private static Task PressRow(IRenderedComponent<DiagramCanvas> canvas, string row) =>
+        canvas.InvokeAsync(() =>
+        {
+            switch (row)
+            {
+                case "Arrow":
+                    canvas.Instance.OnArrowKeyPressed("ArrowRight", false);
+                    break;
+                case "ShiftArrow":
+                    canvas.Instance.OnArrowKeyPressed("ArrowRight", true);
+                    break;
+                case "AltArrow":
+                    canvas.Instance.OnAltArrowKeyPressed("ArrowRight", false);
+                    break;
+                case "BringForward":
+                    canvas.Instance.OnBringForwardPressed();
+                    break;
+                case "BringToFront":
+                    canvas.Instance.OnBringToFrontPressed();
+                    break;
+                case "SendBackward":
+                    canvas.Instance.OnSendBackwardPressed();
+                    break;
+                case "SendToBack":
+                    canvas.Instance.OnSendToBackPressed();
+                    break;
+                case "Space":
+                    canvas.Instance.OnSpacePressed();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(row), row, null);
+            }
+        });
+
+    [Theory]
+    [MemberData(nameof(BoardWritingRows))]
+    public async Task ABoardWritingRowDoesNothingWhileAPressIsHeldAndTheGestureCarriesOn(string row)
+    {
+        var board = new Board();
+        var first = AddInstance(board, 100, 100);
+        var second = AddInstance(board, 400, 400);
+        second.ZIndex = 1;
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.FindAll(".component-container")[0].Focus();
+
+        await canvas.Press(0, 0, PointerPress.MiddleButton);
+        await canvas.Move(50, 30);
+
+        await PressRow(canvas, row);
+
+        Assert.Equal(new Bounds(100, 100, 50, 50), first.Bounds);
+        Assert.Equal(0, first.ZIndex);
+        Assert.Equal(1, second.ZIndex);
+        Assert.Equal("true", AriaSelected(canvas, 0));
+        Assert.NotEqual("true", AriaSelected(canvas, 1));
+
+        await canvas.Move(80, 50);
+        Assert.Contains("translate(80px, 50px)", ContentStyle(canvas));
+    }
+
     // A palette click is a board write from outside the keyboard. Refused while a press is held,
     // it must also leave the selection alone, rather than selecting an instance never placed.
     [Fact]

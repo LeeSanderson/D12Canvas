@@ -545,11 +545,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Zoom-relative arrow-key nudge: 1 screen pixel per press regardless of current zoom
-    // (1 / Scale board units) - Shift+Arrow's coarser ~10 screen px. With nothing selected
-    // there's no instance to nudge, so this falls back to the pre-existing arrow-key pan instead
-    // (an edge-only selection - _selectedEdgeId, never mixed into _selectedInstanceIds - has no
-    // Bounds either, so it takes the same pan fallback).
+    // With snap-to-grid off a nudge unit is one screen pixel (1 / Scale board units); with it on
+    // a unit is one dominant grid line. With nothing selected there's no instance to nudge, so this falls back to the arrow-key
+    // pan instead (an edge-only selection - _selectedEdgeId, never mixed into _selectedInstanceIds
+    // - has no Bounds either, so it takes the same pan fallback). PanStep is in screen pixels,
+    // because ZoomPanTracker's pan is, so a pan press covers the same screen distance at any zoom.
     private const double NudgeStep = 1;
     private const double NudgeStepCoarse = 10;
     private const double PanStep = 50;
@@ -626,9 +626,9 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var step = (shiftKey ? NudgeStepCoarse : NudgeStep) / _zoomPanTracker.Scale;
-        var deltaX = dirX * step;
-        var deltaY = dirY * step;
+        var (deltaX, deltaY) = SnapToGrid
+            ? GridNudgeDelta(targets, dirX, dirY, shiftKey ? NudgeStepCoarse : NudgeStep)
+            : ScreenNudgeDelta(dirX, dirY, shiftKey);
 
         // Extending in place only when this is still the top of the undo stack (nothing else was
         // pushed or undone since) and the selection hasn't changed - either failing means this
@@ -648,6 +648,50 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         StateHasChanged();
+    }
+
+    private (double X, double Y) ScreenNudgeDelta(double dirX, double dirY, bool shiftKey)
+    {
+        var step = (shiftKey ? NudgeStepCoarse : NudgeStep) / _zoomPanTracker.Scale;
+        return (dirX * step, dirY * step);
+    }
+
+    // Measured from the top-left of the selection's bounding box, the point snap-to-grid anchors,
+    // and read off the current bounds so each press in a held burst steps from where the last
+    // one landed.
+    private (double X, double Y) GridNudgeDelta(
+        IReadOnlyList<ComponentInstance> targets,
+        double dirX,
+        double dirY,
+        double lines
+    )
+    {
+        var anchor = Bounds.Union(targets.Select(target => target.Bounds))!.Value;
+        var spacing = DominantGridSpacing();
+        var deltaX = dirX == 0 ? 0 : NextGridLine(anchor.X, dirX, spacing, lines) - anchor.X;
+        var deltaY = dirY == 0 ? 0 : NextGridLine(anchor.Y, dirY, spacing, lines) - anchor.Y;
+        return (deltaX, deltaY);
+    }
+
+    private const double GridLineTolerance = 1e-9;
+
+    // A coordinate already on a line counts as on it, within a tolerance that absorbs
+    // floating-point drift, so it moves a whole spacing rather than landing back where it started.
+    private static double NextGridLine(
+        double coordinate,
+        double direction,
+        double spacing,
+        double lines
+    )
+    {
+        var cell = coordinate / spacing;
+        var nearest = Math.Round(cell);
+        var onLine = Math.Abs(cell - nearest) < GridLineTolerance;
+        var first =
+            direction > 0
+                ? (onLine ? nearest + 1 : Math.Ceiling(cell))
+                : (onLine ? nearest - 1 : Math.Floor(cell));
+        return (first + direction * (lines - 1)) * spacing;
     }
 
     private static (double X, double Y) ArrowDirection(string code) =>
@@ -1132,16 +1176,19 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void OnSendBackwardPressed() =>
         ApplyZIndexChange(instance => Board!.ZIndexBelow(instance.ZIndex));
 
-    // Ctrl+'. No-op while a host has disabled the built-in chord (EnableSnapToGridShortcut) -
-    // the bindable SnapToGrid parameter itself is still settable directly by the host either way.
+    // The Ctrl+' keydown lands here. A host that disables the chord disables only the chord, so
+    // OnToggleSnapToGridPressed stays ungated for any other caller.
     [JSInvokable]
+    public void OnSnapToGridChordPressed()
+    {
+        if (EnableSnapToGridShortcut)
+        {
+            OnToggleSnapToGridPressed();
+        }
+    }
+
     public void OnToggleSnapToGridPressed()
     {
-        if (!EnableSnapToGridShortcut)
-        {
-            return;
-        }
-
         SnapToGrid = !SnapToGrid;
         SnapToGridChanged.InvokeAsync(SnapToGrid);
         StateHasChanged();
@@ -1154,7 +1201,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // board's current extreme, assigned in ascending original-ZIndex order.
     private void RestackSelection(bool toFront)
     {
-        if (Board is null)
+        if (Board is null || PressOwnsBoard)
         {
             return;
         }
@@ -1198,7 +1245,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // once" shape.
     private void ApplyZIndexChange(Func<ComponentInstance, int?> computeNewZIndex)
     {
-        if (Board is null)
+        if (Board is null || PressOwnsBoard)
         {
             return;
         }
