@@ -5,10 +5,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for the property panel: its empty state with nothing selected, and
-// its populated state for each property-editor kind (Number, Color, Dropdown, Custom). Checkbox
-// has no baseline here since no built-in declares a Checkbox-kind property yet - see
-// PropertyPanelTests for its control-level coverage.
+// Screenshot-diff baselines for the property panel: its empty state with nothing selected, its
+// populated state for each property-editor kind (Number, Color, Dropdown, Custom), and the two
+// populated states again under the dark colour scheme, where the panel's raised values and
+// color-scheme must carry its native inputs along with it. Checkbox has no baseline here since no
+// built-in declares a Checkbox-kind property yet - see PropertyPanelTests for its control-level
+// coverage.
 public sealed class PropertyPanelVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -29,13 +31,18 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
         _browser = playwright.Browser;
     }
 
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
+
+    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+
+    private async Task NewPageAsync(ColorScheme colorScheme)
     {
         _context = await _browser.NewContextAsync(
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
                 ViewportSize = new ViewportSize { Width = 1000, Height = 700 },
+                ColorScheme = colorScheme,
             }
         );
         _page = await _context.NewPageAsync();
@@ -43,11 +50,19 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(6);
     }
 
-    public async ValueTask DisposeAsync() => await _context.DisposeAsync();
+    private async Task PlaceAndSelectAsync(string paletteEntryLabel)
+    {
+        await _page
+            .Locator($".d12-palette-entry-button[aria-label='{paletteEntryLabel}']")
+            .ClickAsync();
+        await _page.Locator(".component-container").ClickAsync();
+    }
 
     [Fact]
     public async Task EmptyPanel_MatchesBaseline()
     {
+        await NewPageAsync(ColorScheme.Light);
+
         await Expect(_page.Locator(".d12-property-panel-empty")).ToBeVisibleAsync();
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
@@ -56,8 +71,20 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
     [Fact]
     public async Task PopulatedPanel_MatchesBaseline()
     {
-        await _page.Locator(".d12-palette-entry-button[aria-label='Rectangle']").ClickAsync();
-        await _page.Locator(".component-container").ClickAsync();
+        await NewPageAsync(ColorScheme.Light);
+        await PlaceAndSelectAsync("Rectangle");
+
+        await Expect(_page.Locator("#d12-property-panel-field-StrokeWidth")).ToBeVisibleAsync();
+        await Expect(_page.Locator("#d12-property-panel-field-FillColor")).ToBeVisibleAsync();
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
+    [Fact]
+    public async Task PopulatedPanel_DarkColorScheme_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+        await PlaceAndSelectAsync("Rectangle");
 
         await Expect(_page.Locator("#d12-property-panel-field-StrokeWidth")).ToBeVisibleAsync();
         await Expect(_page.Locator("#d12-property-panel-field-FillColor")).ToBeVisibleAsync();
@@ -68,8 +95,19 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
     [Fact]
     public async Task PopulatedPanelWithDropdownControl_MatchesBaseline()
     {
-        await _page.Locator(".d12-palette-entry-button[aria-label='Text']").ClickAsync();
-        await _page.Locator(".component-container").ClickAsync();
+        await NewPageAsync(ColorScheme.Light);
+        await PlaceAndSelectAsync("Text");
+
+        await Expect(_page.Locator("#d12-property-panel-field-FontWeight")).ToBeVisibleAsync();
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    }
+
+    [Fact]
+    public async Task PopulatedPanelWithDropdownControl_DarkColorScheme_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+        await PlaceAndSelectAsync("Text");
 
         await Expect(_page.Locator("#d12-property-panel-field-FontWeight")).ToBeVisibleAsync();
 
@@ -79,8 +117,8 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
     [Fact]
     public async Task PopulatedPanelWithCustomControl_MatchesBaseline()
     {
-        await _page.Locator(".d12-palette-entry-button[aria-label='Demo note']").ClickAsync();
-        await _page.Locator(".component-container").ClickAsync();
+        await NewPageAsync(ColorScheme.Light);
+        await PlaceAndSelectAsync("Demo note");
 
         await Expect(_page.Locator(".demo-note-color-editor")).ToBeVisibleAsync();
 

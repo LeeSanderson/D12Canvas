@@ -52,6 +52,7 @@
         --d12-accent: #2f80ed;
         --d12-muted-text: #666;
         --d12-text: #212529;
+        color-scheme: light;
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -75,6 +76,7 @@
             --d12-accent: #2f80ed;
             --d12-muted-text: #a0a0a0;
             --d12-text: #e8e8e8;
+            color-scheme: dark;
         }
     }
 
@@ -85,6 +87,7 @@
         --d12-accent: #2f80ed;
         --d12-muted-text: #666;
         --d12-text: #212529;
+        color-scheme: light;
     }
 
     .d12-palette[data-d12-theme="dark"],
@@ -94,6 +97,7 @@
         --d12-accent: #2f80ed;
         --d12-muted-text: #a0a0a0;
         --d12-text: #e8e8e8;
+        color-scheme: dark;
     }
 
     .d12-palette-category-title {
@@ -406,6 +410,12 @@
 
 <!--!--><style>
     .d12-property-panel {
+        --d12-surface: #fff;
+        --d12-border: #ccc;
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #666;
+        --d12-text: #212529;
+        color-scheme: light;
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -414,17 +424,49 @@
             BlinkMacSystemFont,
             "Segoe UI",
             sans-serif;
-        background: #fff;
-        border: 1px solid #ccc;
+        background: var(--d12-surface);
+        border: 1px solid var(--d12-border);
         border-radius: 6px;
         padding: 12px;
         box-sizing: border-box;
+        color: var(--d12-text);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .d12-property-panel {
+            --d12-surface: #2a2a2a;
+            --d12-border: rgba(255, 255, 255, 0.12);
+            --d12-accent: #2f80ed;
+            --d12-muted-text: #a0a0a0;
+            --d12-text: #e8e8e8;
+            color-scheme: dark;
+        }
+    }
+
+    .d12-property-panel[data-d12-theme="light"],
+    [data-d12-theme="light"] .d12-property-panel {
+        --d12-surface: #fff;
+        --d12-border: #ccc;
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #666;
+        --d12-text: #212529;
+        color-scheme: light;
+    }
+
+    .d12-property-panel[data-d12-theme="dark"],
+    [data-d12-theme="dark"] .d12-property-panel {
+        --d12-surface: #2a2a2a;
+        --d12-border: rgba(255, 255, 255, 0.12);
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #a0a0a0;
+        --d12-text: #e8e8e8;
+        color-scheme: dark;
     }
 
     .d12-property-panel-empty {
         margin: 0;
         font-size: 13px;
-        color: #666;
+        color: var(--d12-muted-text);
     }
 
     .d12-property-panel-fields {
@@ -445,15 +487,17 @@
     .d12-property-panel-label {
         font-size: 12px;
         font-weight: 600;
-        color: #666;
+        color: var(--d12-muted-text);
     }
 
     .d12-property-panel-input {
         font: inherit;
         padding: 4px 6px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--d12-border);
         border-radius: 4px;
         box-sizing: border-box;
+        background: var(--d12-surface);
+        color: inherit;
     }
 
     .d12-property-panel-color {
