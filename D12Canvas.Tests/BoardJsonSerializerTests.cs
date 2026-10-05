@@ -297,24 +297,36 @@ public class BoardJsonSerializerTests
     {
         var serializer = new BoardJsonSerializer(BuildRegistry());
         var board = new Board();
-        var instance = new ComponentInstance(
+        var first = new ComponentInstance(
             TestComponentKey,
             new TestProps(),
             new Bounds(0, 0, 10, 10)
         );
-        board.AddComponent(instance);
-        var inner = new Group(new[] { instance.Id });
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(20, 0, 10, 10)
+        );
+        var third = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(40, 0, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        board.AddComponent(third);
+        var inner = new Group(new[] { first.Id, second.Id });
         board.AddGroup(inner);
-        var outer = new Group(new[] { inner.Id });
+        var outer = new Group(new[] { inner.Id, third.Id });
         board.AddGroup(outer);
 
         var restored = serializer.Deserialize(serializer.Serialize(board));
 
         var restoredOuter = restored.GetGroup(outer.Id);
         Assert.NotNull(restoredOuter);
-        Assert.Equal(new[] { inner.Id }, restoredOuter!.MemberIds);
+        Assert.Equal(new[] { inner.Id, third.Id }, restoredOuter!.MemberIds);
         Assert.NotNull(restored.GetGroup(inner.Id));
-        Assert.Same(restoredOuter, restored.FindContainingGroup(instance.Id));
+        Assert.Same(restoredOuter, restored.FindContainingGroup(first.Id));
     }
 
     [Fact]
@@ -346,12 +358,12 @@ public class BoardJsonSerializerTests
         Assert.Same(foundViaFirst, foundViaSecond);
     }
 
-    // Strict deserialize does no referential-integrity checking for Groups, same as it already
-    // does none for Components (e.g. no check that a ComponentTypeKey's props shape is sane beyond
-    // registry resolution) - a dangling member id is loaded as-is, never a throw. Only the tolerant
-    // partial path (BoardJsonSerializerPartialDeserializeTests) turns this into a warning.
+    // Strict deserialize repairs group membership exactly as the partial path does and never
+    // throws over it: a member id that resolves to nothing is dropped, a group left with no
+    // members is removed, and a group left with one is dissolved into its parent. Only the
+    // partial path (BoardJsonSerializerPartialDeserializeTests) reports the repairs as warnings.
     [Fact]
-    public void StrictDeserializeLoadsAGroupWithAMissingMemberWithoutThrowing()
+    public void StrictDeserializeRemovesAGroupWhoseOnlyMemberIsMissingWithoutThrowing()
     {
         var serializer = new BoardJsonSerializer(BuildRegistry());
         const string json = """
@@ -369,12 +381,20 @@ public class BoardJsonSerializerTests
 
         var restored = serializer.Deserialize(json);
 
-        var restoredGroup = restored.GetGroup(Guid.Parse("55555555-5555-5555-5555-555555555555"));
-        Assert.NotNull(restoredGroup);
-        Assert.Equal(
-            Guid.Parse("66666666-6666-6666-6666-666666666666"),
-            Assert.Single(restoredGroup!.MemberIds)
-        );
+        Assert.Empty(restored.Groups);
+    }
+
+    [Fact]
+    public void StrictDeserializeRepairsGroupsToTheSameShapeAsThePartialPath()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+
+        var strict = serializer.Deserialize(GroupRepairFixtures.Json);
+        var partial = serializer.DeserializePartial(GroupRepairFixtures.Json).Board;
+
+        Assert.Equal(GroupRepairFixtures.RepairedGroups, GroupRepairFixtures.Describe(strict));
+        Assert.Equal(GroupRepairFixtures.Describe(partial), GroupRepairFixtures.Describe(strict));
+        Assert.Equal(4, strict.Components.Count);
     }
 
     // Edges join the envelope alongside Components and Groups. Attached endpoints round-trip as
@@ -725,9 +745,10 @@ public class BoardJsonSerializerTests
         );
     }
 
-    // Strict deserialize does no referential-integrity checking for Edges either, same as Groups
-    // (StrictDeserializeLoadsAGroupWithAMissingMemberWithoutThrowing above) - a dangling endpoint
-    // componentId is loaded as-is. Only the tolerant partial path turns this into a warning.
+    // Strict deserialize does no referential-integrity checking for Edges - unlike Groups, a
+    // dangling endpoint componentId is loaded as-is, since an endpoint is a reference the edge
+    // model already allows to resolve to nothing. Only the tolerant partial path turns this into
+    // a warning.
     [Fact]
     public void StrictDeserializeLoadsAnEdgeWithAMissingEndpointInstanceWithoutThrowing()
     {

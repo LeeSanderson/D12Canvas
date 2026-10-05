@@ -794,12 +794,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Delete/Backspace removes every currently selected instance from Board and clears
     // the selection - single and multi-selection are the same code path here, since (unlike
     // move/resize) deletion has no "move as one unit" delta to apply, just N independent removals.
-    // Wrapped in one CompositeCommand of RemoveEntityCommands, so a
-    // multi-selection delete undoes as a single atomic entry and every deleted instance is
-    // restored with its identity, bounds, and props intact.
-    // Reads through ExpandedSelection so a selected Group's members are what actually
-    // get deleted (the Group entity itself, now referencing missing members, is left for
-    // future work to decide how to handle - not exercised here).
+    // Reads through ExpandedSelection so a selected Group's members are what actually get
+    // deleted; the group membership edits those removals force (a group dissolving at one
+    // member, disappearing at none) ride in the same CompositeCommand, so one undo restores
+    // every deleted instance and every group exactly as they were.
     // A selected edge takes a separate branch - it's never mixed into
     // _selectedInstanceIds (see _selectedEdgeId), and there's no multi-select or "as one unit"
     // delta to apply, just the one RemoveEdgeCommand.
@@ -818,16 +816,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             }
             else
             {
-                var commands = new List<ICommand>();
-                foreach (var id in ExpandedSelection())
-                {
-                    var instance = Board.GetComponent(id);
-                    if (instance is not null)
-                    {
-                        commands.Add(new RemoveEntityCommand(Board, instance));
-                    }
-                }
-
+                var commands = InstanceRemoval.Compose(Board, ExpandedSelection());
                 if (commands.Count > 0)
                 {
                     _history.Do(new CompositeCommand(commands));
@@ -1813,8 +1802,15 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static string GroupTabStopStyle(Bounds bounds) =>
         $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";
 
-    private static string GroupAccessibleLabel(Group group) =>
-        $"Group ({group.MemberIds.Count} items)";
+    private string GroupAccessibleLabel(Group group) =>
+        $"Group ({ResolvingMemberCount(group)} items)";
+
+    private int ResolvingMemberCount(Group group) =>
+        Board is null
+            ? 0
+            : group.MemberIds.Count(id =>
+                Board.GetComponent(id) is not null || Board.GetGroup(id) is not null
+            );
 
     private string CanvasCssClass =>
         _isDragOverBoard ? "diagram-canvas drag-over" : "diagram-canvas";

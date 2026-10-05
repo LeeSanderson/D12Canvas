@@ -240,6 +240,20 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         Assert.NotNull(board.GetGroup(innerGroup.Id));
     }
 
+    // A host can still break group membership through Board's plain mutators; the canvas renders
+    // such a group without throwing and its accessible label counts only the members that resolve.
+    [Fact]
+    public void AGroupsAccessibleLabelCountsOnlyTheMembersThatResolve()
+    {
+        var board = new Board();
+        var onlyLiveMember = AddInstance(board, 0);
+        board.AddGroup(new Group([onlyLiveMember.Id, Guid.NewGuid()]));
+
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        Assert.Equal("Group (1 items)", canvas.Find(".group-tab-stop").GetAttribute("aria-label"));
+    }
+
     [Fact]
     public async Task UngroupingTheOuterGroupOfANestedPairLeavesTheInnerGroupIntact()
     {

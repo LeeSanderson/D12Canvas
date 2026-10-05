@@ -49,6 +49,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             board.AddGroup(FromGroupEnvelope(groupEnvelope));
         }
 
+        PlanGroupRepair(board).ApplyTo(board);
+
         foreach (var edgeEnvelope in envelope.Edges ?? [])
         {
             board.AddEdge(FromEdgeEnvelope(edgeEnvelope));
@@ -56,6 +58,9 @@ public sealed class BoardJsonSerializer : IBoardSerializer
 
         return board;
     }
+
+    private static GroupRepairPlan PlanGroupRepair(Board board) =>
+        GroupRepair.Plan(board.Groups, id => board.GetComponent(id) is not null);
 
     public PartialBoardDeserializeResult DeserializePartial(string json)
     {
@@ -143,52 +148,67 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         }
     }
 
-    // A group referencing a member (component or nested group) that doesn't exist is tolerated,
-    // not fatal - Board.GetBounds already tolerates a dangling member id at read time (Model/Board.cs),
-    // so a warning is recorded but the group still loads with whatever members do resolve.
-    // Membership is checked against every successfully-parsed group in the same batch regardless of
-    // array order, since nesting may reference a group declared later in the Groups array.
+    // A group's problems never fail the load either. Every parsed group is added first, so a
+    // nested reference to a group declared later in the array resolves, and the membership repair
+    // then runs over the whole set at once: a member id that resolves to nothing is dropped, a
+    // group left with no members is removed and a group left with one is dissolved into its
+    // parent, each with its own warning. The strict path makes the same repair silently.
     private static void DeserializeGroupsPartial(
         JsonElement groupsElement,
         Board board,
         List<BoardDeserializeWarning> warnings
     )
     {
-        var parsedGroups = new List<(string Entity, GroupEnvelope Envelope)>();
+        var entityNames = new Dictionary<Guid, string>();
 
         ParseEntries<GroupEnvelope>(
             groupsElement,
             nameof(GroupEnvelope.Id),
             nameof(BoardEnvelope.Groups),
             warnings,
-            (entity, groupEnvelope) => parsedGroups.Add((entity, groupEnvelope))
-        );
-
-        var knownIds = new HashSet<Guid>(board.Components.Select(c => c.Id));
-        knownIds.UnionWith(parsedGroups.Select(g => g.Envelope.Id));
-
-        foreach (var (entity, groupEnvelope) in parsedGroups)
-        {
-            foreach (var memberId in groupEnvelope.MemberIds.Where(id => !knownIds.Contains(id)))
-            {
-                warnings.Add(
-                    new BoardDeserializeWarning(entity, $"References missing member '{memberId}'.")
-                );
-            }
-
-            try
+            (entity, groupEnvelope) =>
             {
                 board.AddGroup(FromGroupEnvelope(groupEnvelope));
+                entityNames[groupEnvelope.Id] = entity;
             }
-            catch (Exception ex)
-            {
-                // Mirrors the Components loop above: a duplicate Id (e.g. two Groups entries
-                // sharing an Id) must never abort the rest of the load either.
-                warnings.Add(
-                    new BoardDeserializeWarning(entity, $"Malformed entity: {ex.Message}")
-                );
-            }
+        );
+
+        var plan = PlanGroupRepair(board);
+
+        string EntityName(Guid groupId) =>
+            entityNames.TryGetValue(groupId, out var name) ? name : groupId.ToString();
+
+        foreach (var (groupId, memberId) in plan.MissingMembers)
+        {
+            warnings.Add(
+                new BoardDeserializeWarning(
+                    EntityName(groupId),
+                    $"References missing member '{memberId}'."
+                )
+            );
         }
+
+        foreach (var group in plan.Emptied)
+        {
+            warnings.Add(
+                new BoardDeserializeWarning(
+                    EntityName(group.Id),
+                    "No members remain; the group was removed."
+                )
+            );
+        }
+
+        foreach (var (group, survivorId) in plan.Dissolved)
+        {
+            warnings.Add(
+                new BoardDeserializeWarning(
+                    EntityName(group.Id),
+                    $"One member remains; the group was dissolved and '{survivorId}' takes its place."
+                )
+            );
+        }
+
+        plan.ApplyTo(board);
     }
 
     private static void EnsureSupportedSchemaVersion(int schemaVersion)

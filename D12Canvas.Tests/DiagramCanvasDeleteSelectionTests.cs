@@ -90,6 +90,29 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task DeletePressedOnAGroupRemovesTheGroupWithItsMembersAndOneUndoRestoresBoth()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 0);
+        var second = AddInstance(board, 100);
+        var group = new Group([first.Id, second.Id]);
+        board.AddGroup(group);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.Find(".component-container").Click();
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+
+        Assert.Empty(board.Components);
+        Assert.Empty(board.Groups);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal(2, board.Components.Count);
+        Assert.Same(group, Assert.Single(board.Groups));
+        Assert.Equal([first.Id, second.Id], group.MemberIds);
+    }
+
+    [Fact]
     public async Task DeletePressedWithNoSelectionIsANoOp()
     {
         var board = new Board();

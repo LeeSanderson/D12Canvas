@@ -220,8 +220,8 @@ public class BoardJsonSerializerPartialDeserializeTests
 
     // The partial path never fails the whole load over a group's problems either - a
     // structurally malformed group is skipped-and-warned like a malformed component, and a group
-    // referencing a missing member is still loaded (its other, valid members still behave as a
-    // group) with a warning recorded instead of the load failing.
+    // whose membership needs repairing (a member id that resolves to nothing, no members left,
+    // one member left) is repaired with one warning per repair instead of the load failing.
     [Fact]
     public void RoundTripsGroupsWithNoWarningsWhenEveryMemberResolves()
     {
@@ -251,17 +251,24 @@ public class BoardJsonSerializerPartialDeserializeTests
     }
 
     [Fact]
-    public void RecordsAWarningForAGroupReferencingAMissingMemberButStillLoadsTheGroup()
+    public void DropsAMissingMemberWithAWarningAndKeepsTheGroupWhenTwoMembersRemain()
     {
         var serializer = new BoardJsonSerializer(BuildRegistry());
-        const string json = """
+        var json = $$"""
             {
               "SchemaVersion": 1,
-              "Components": [],
+              "Components": [
+                {{GroupRepairFixtures.LeafComponent("11111111-1111-1111-1111-111111111111")}},
+                {{GroupRepairFixtures.LeafComponent("22222222-2222-2222-2222-222222222222")}}
+              ],
               "Groups": [
                 {
                   "Id": "55555555-5555-5555-5555-555555555555",
-                  "MemberIds": [ "66666666-6666-6666-6666-666666666666" ]
+                  "MemberIds": [
+                    "11111111-1111-1111-1111-111111111111",
+                    "66666666-6666-6666-6666-666666666666",
+                    "22222222-2222-2222-2222-222222222222"
+                  ]
                 }
               ]
             }
@@ -271,12 +278,83 @@ public class BoardJsonSerializerPartialDeserializeTests
 
         var restoredGroup = Assert.Single(result.Board.Groups);
         Assert.Equal(Guid.Parse("55555555-5555-5555-5555-555555555555"), restoredGroup.Id);
+        Assert.Equal(
+            new[]
+            {
+                Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            },
+            restoredGroup.MemberIds
+        );
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("55555555-5555-5555-5555-555555555555", warning.Entity, ignoreCase: true);
         Assert.Contains(
             "66666666-6666-6666-6666-666666666666",
             warning.Reason,
             StringComparison.OrdinalIgnoreCase
+        );
+    }
+
+    [Fact]
+    public void RepairsEveryKindOfBrokenGroupOnLoadWithOneWarningPerRepair()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+
+        var result = serializer.DeserializePartial(GroupRepairFixtures.Json);
+
+        Assert.Equal(
+            GroupRepairFixtures.RepairedGroups,
+            GroupRepairFixtures.Describe(result.Board)
+        );
+        Assert.Equal(4, result.Board.Components.Count);
+
+        var warnings = result
+            .Warnings.Select(w => (Entity: w.Entity.ToLowerInvariant(), w.Reason))
+            .ToList();
+        Assert.Equal(5, warnings.Count);
+        Assert.Contains(
+            warnings,
+            w =>
+                w.Entity == GroupRepairFixtures.GroupWithDeadMember
+                && w.Reason.Contains(GroupRepairFixtures.DeadMember)
+        );
+        Assert.Contains(
+            warnings,
+            w =>
+                w.Entity == GroupRepairFixtures.EmptiedGroup
+                && w.Reason.Contains(GroupRepairFixtures.DeadMemberTwo)
+        );
+        Assert.Contains(
+            warnings,
+            w =>
+                w.Entity == GroupRepairFixtures.EmptiedGroup
+                && w.Reason.Contains(GroupRepairFixtures.DeadMemberThree)
+        );
+        Assert.Contains(
+            warnings,
+            w => w.Entity == GroupRepairFixtures.EmptiedGroup && w.Reason.Contains("removed")
+        );
+        Assert.Contains(
+            warnings,
+            w =>
+                w.Entity == GroupRepairFixtures.OneMemberGroup
+                && w.Reason.Contains("dissolved")
+                && w.Reason.Contains(GroupRepairFixtures.LeafC)
+        );
+    }
+
+    [Fact]
+    public void ABoardRepairedOnLoadSavesCleanAndLoadsAgainWithNoWarnings()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var repaired = serializer.DeserializePartial(GroupRepairFixtures.Json).Board;
+
+        var reloaded = serializer.DeserializePartial(serializer.Serialize(repaired));
+
+        Assert.Empty(reloaded.Warnings);
+        Assert.Equal(
+            GroupRepairFixtures.Describe(repaired),
+            GroupRepairFixtures.Describe(reloaded.Board)
         );
     }
 
@@ -308,26 +386,28 @@ public class BoardJsonSerializerPartialDeserializeTests
     public void DoesNotWarnWhenAGroupIsDeclaredBeforeTheNestedGroupItReferences()
     {
         var serializer = new BoardJsonSerializer(BuildRegistry());
-        const string json = """
+        var json = $$"""
             {
               "SchemaVersion": 1,
               "Components": [
-                {
-                  "Id": "11111111-1111-1111-1111-111111111111",
-                  "ComponentTypeKey": "test-props",
-                  "Props": { "Text": "leaf" },
-                  "Bounds": { "X": 0, "Y": 0, "Width": 10, "Height": 10 },
-                  "ZIndex": 0
-                }
+                {{GroupRepairFixtures.LeafComponent("11111111-1111-1111-1111-111111111111")}},
+                {{GroupRepairFixtures.LeafComponent("22222222-2222-2222-2222-222222222222")}},
+                {{GroupRepairFixtures.LeafComponent("33333333-3333-3333-3333-333333333333")}}
               ],
               "Groups": [
                 {
                   "Id": "77777777-7777-7777-7777-777777777777",
-                  "MemberIds": [ "88888888-8888-8888-8888-888888888888" ]
+                  "MemberIds": [
+                    "88888888-8888-8888-8888-888888888888",
+                    "33333333-3333-3333-3333-333333333333"
+                  ]
                 },
                 {
                   "Id": "88888888-8888-8888-8888-888888888888",
-                  "MemberIds": [ "11111111-1111-1111-1111-111111111111" ]
+                  "MemberIds": [
+                    "11111111-1111-1111-1111-111111111111",
+                    "22222222-2222-2222-2222-222222222222"
+                  ]
                 }
               ]
             }
@@ -343,18 +423,27 @@ public class BoardJsonSerializerPartialDeserializeTests
     public void SkipsAGroupWithADuplicateIdAndRecordsAWarningInsteadOfFailingTheLoad()
     {
         var serializer = new BoardJsonSerializer(BuildRegistry());
-        const string json = """
+        var json = $$"""
             {
               "SchemaVersion": 1,
-              "Components": [],
+              "Components": [
+                {{GroupRepairFixtures.LeafComponent("11111111-1111-1111-1111-111111111111")}},
+                {{GroupRepairFixtures.LeafComponent("22222222-2222-2222-2222-222222222222")}}
+              ],
               "Groups": [
                 {
                   "Id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-                  "MemberIds": []
+                  "MemberIds": [
+                    "11111111-1111-1111-1111-111111111111",
+                    "22222222-2222-2222-2222-222222222222"
+                  ]
                 },
                 {
                   "Id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-                  "MemberIds": []
+                  "MemberIds": [
+                    "11111111-1111-1111-1111-111111111111",
+                    "22222222-2222-2222-2222-222222222222"
+                  ]
                 }
               ]
             }
