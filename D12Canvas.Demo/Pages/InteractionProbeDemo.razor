@@ -1,0 +1,70 @@
+@page "/interaction-probe-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Interaction Probe Demo</PageTitle>
+
+<div class="interaction-probe-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .interaction-probe-canvas {
+        width: 700px;
+        height: 500px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid SourceId = Guid.Parse("a0000000-0000-0000-0000-000000000001");
+    private static readonly Guid TargetId = Guid.Parse("a0000000-0000-0000-0000-000000000002");
+    private static readonly Guid LooseEndId = Guid.Parse("a0000000-0000-0000-0000-000000000003");
+    private static readonly Guid LabelledEdgeId = Guid.Parse("e0000000-0000-0000-0000-000000000001");
+    private static readonly Guid FloatingEdgeId = Guid.Parse("e0000000-0000-0000-0000-000000000002");
+
+    private readonly Board _board = SeedBoard();
+
+    private static ComponentInstance AddRectangle(Board board, Guid id, double x, double y)
+    {
+        var instance = new ComponentInstance(
+            "rectangle",
+            new RectangleProps(null, null, 2),
+            new Bounds(x, y, 160, 100),
+            id: id
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        var source = AddRectangle(board, SourceId, 40, 40);
+        var target = AddRectangle(board, TargetId, 360, 40);
+        var looseEnd = AddRectangle(board, LooseEndId, 40, 260);
+
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(source.Id, PortId.Right),
+                new PortEndpoint(target.Id, PortId.Left),
+                id: LabelledEdgeId,
+                label: new ComponentInstance(
+                    "text",
+                    new TextProps("Label", null, 14, "normal", "center"),
+                    new Bounds(250, 75, 60, 30)
+                )
+            )
+        );
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(looseEnd.Id, PortId.Right),
+                new FloatingEndpoint(400, 310),
+                id: FloatingEdgeId
+            )
+        );
+
+        return board;
+    }
+}

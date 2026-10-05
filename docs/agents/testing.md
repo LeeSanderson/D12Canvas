@@ -41,6 +41,21 @@ Then build and run. On Git Bash for Windows, `-v $PWD:/workspace`-style volume a
 
 **Always pass `-parallel none`** (on the exe directly - `dotnet test -- -parallel none` doesn't forward reliably here either). The suite opens many Playwright browser contexts against one shared `D12Canvas.Demo` process; under default parallelism, tests fail with symptoms that look like real regressions - large pixel/HTML diffs, a Locator timing out at 0 elements, a click intercepted by an overlapping element - but aren't. Before trusting any visual-test failure (or spending time updating baselines over it), reproduce it under `-parallel none` first.
 
+### Interaction probes
+
+An interaction probe drives the browser and asserts DOM or interop state, never pixels, so it has no baseline. Probes live in `D12Canvas.VisualTests` beside the screenshot tests, run in the same container with the same `-parallel none` command, and share the demo-app and Playwright assembly fixtures. To run only the probes, build as above and pass one `-class` per probe class:
+
+    ./D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none -class D12Canvas.VisualTests.ReleaseChannelProbes
+
+To add one, derive from `InteractionProbe`. It opens `/interaction-probe-demo`, a board seeded with fixed entity ids, and gives the probe four things:
+
+- every call the page's JavaScript makes into a .NET object, recorded before dispatch, read with `CallsToAsync("OnPointerMoved")` after `SettleAsync()`, which waits for pending calls and two animation frames
+- `ExpectNothingRespondsToAButtonlessMoveAsync()`, which sweeps an unpressed pointer over the board and fails if any pointer entry point is called or the viewport, selection or marquee changes
+- a console-error trap that fails the test on dispose if the page logged a `console.error` or threw; a probe that provokes one on purpose asserts it and then calls `ConsoleErrors.Clear()`
+- `PagePointOnCanvasAsync`, which turns container pixels into page coordinates, and `StartMiddlePanAsync`, which leaves a pan live on empty canvas
+
+A probe asserts what the user would see or what crossed the interop boundary. It never asserts which gesture is live, and it never establishes a magnitude: synthetic input does not have a real device's granularity, so a distance or delta in a probe sits well clear of the constant it is near rather than measuring it. Before trusting a new probe, break the thing it guards in the listener and watch it fail.
+
 ### Updating baselines
 
 See the root `README.md`'s "Updating baselines" section for the full step-by-step. In short: a real diff writes `*.received.png`/`*.received.html` next to the existing `*.verified.*` files - inspect the `.received.*` output, confirm the new rendering is correct, then overwrite the matching `.verified.*` file with it (delete the `.received.*` after) and commit both.

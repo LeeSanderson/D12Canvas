@@ -57,7 +57,9 @@ Two layers, per the project's [layered testing strategy](.scratch/d12canvas-next
   states (layout, CSS positioning, zoom/pan) that bUnit can't see, driven against the real
   `D12Canvas.Demo` app. Baselines are the committed `*.verified.png`/`*.verified.html` files
   alongside the tests, generated and diffed via
-  [Verify.Playwright](https://github.com/VerifyTests/Verify.HeadlessBrowsers).
+  [Verify.Playwright](https://github.com/VerifyTests/Verify.HeadlessBrowsers). The same project
+  holds the interaction probes, which drive the browser and assert DOM or interop state rather
+  than pixels; see `docs/agents/testing.md`.
 
 ### Standing rule
 
