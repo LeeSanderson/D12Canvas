@@ -7,13 +7,18 @@
         width: 100%;
         height: 100%;
         box-sizing: border-box;
+        background-color: var(--d12-board-fill-override, var(--d12-board-fill));
+        border-style: solid;
+        border-color: var(--d12-board-stroke-override, var(--d12-board-stroke));
     }
 </style>
 
 @code {
     [Parameter]
-    public RectangleProps Props { get; set; } = new("#FFFFFF", "#333333", 2);
+    public RectangleProps Props { get; set; } = new(null, null, 2);
 
     private string Style =>
-        $"background-color: {Props.FillColor}; border: {Props.StrokeWidth}px solid {Props.StrokeColor};";
+        ThemedDefault.Override("--d12-board-fill-override", Props.FillColor)
+        + ThemedDefault.Override("--d12-board-stroke-override", Props.StrokeColor)
+        + $"border-width: {Props.StrokeWidth}px;";
 }

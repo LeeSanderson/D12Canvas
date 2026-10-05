@@ -35,13 +35,33 @@
                             />
                             break;
                         case EditorKind.Color:
-                            <input
-                                id="@field.FieldId"
-                                class="d12-property-panel-input d12-property-panel-color"
-                                type="color"
-                                value="@CurrentValue(field)"
-                                @onchange="@(e => CommitEdit(field, e))"
-                            />
+                            <div class="d12-property-panel-color-row">
+                                <input
+                                    id="@field.FieldId"
+                                    class="@ColorInputClass(field)"
+                                    type="color"
+                                    value="@CurrentValue(field)"
+                                    @onchange="@(e => CommitEdit(field, e))"
+                                />
+                                @if (field.CanHoldNull)
+                                {
+                                    if (IsThemed(field))
+                                    {
+                                        <span class="d12-property-panel-themed-label">Theme colour</span>
+                                    }
+                                    else
+                                    {
+                                        <button
+                                            type="button"
+                                            class="d12-property-panel-clear"
+                                            aria-label="Use theme colour"
+                                            @onclick="@(() => Commit(field, null))"
+                                        >
+                                            Use theme colour
+                                        </button>
+                                    }
+                                }
+                            </div>
                             break;
                         case EditorKind.Checkbox:
                             <input
@@ -172,6 +192,38 @@
     .d12-property-panel-color {
         padding: 2px;
         height: 28px;
+    }
+
+    .d12-property-panel-color-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .d12-property-panel-color-themed::-webkit-color-swatch {
+        background: var(--d12-surface);
+        border: 1px dashed var(--d12-muted-text);
+    }
+
+    .d12-property-panel-color-themed::-moz-color-swatch {
+        background: var(--d12-surface);
+        border: 1px dashed var(--d12-muted-text);
+    }
+
+    .d12-property-panel-themed-label {
+        font-size: 12px;
+        color: var(--d12-muted-text);
+    }
+
+    .d12-property-panel-clear {
+        font: inherit;
+        font-size: 12px;
+        padding: 2px 6px;
+        border: 1px solid var(--d12-border);
+        border-radius: 4px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
     }
 
     .d12-property-panel-checkbox {

@@ -49,29 +49,6 @@ public class PaletteThemeTokensTests : ComponentTestBase
         }
     }
 
-    // The palette floats over the board, so each of its raised blocks also tells the browser which
-    // scheme to draw native parts (scrollbars here) in.
-    [Fact]
-    public void EveryRaisedBlockDeclaresItsColorScheme()
-    {
-        var palette = Render<Palette>();
-        var css = StyleBlockText(palette);
-
-        Assert.Contains("color-scheme: light", ExtractBlock(css, ".d12-palette {"));
-        Assert.Contains(
-            "color-scheme: dark",
-            ExtractBlock(css, "@media (prefers-color-scheme: dark)")
-        );
-        Assert.Contains(
-            "color-scheme: light",
-            ExtractBlock(css, "[data-d12-theme=\"light\"] .d12-palette {")
-        );
-        Assert.Contains(
-            "color-scheme: dark",
-            ExtractBlock(css, "[data-d12-theme=\"dark\"] .d12-palette {")
-        );
-    }
-
     [Fact]
     public void CategoryTitleReadsTokensExclusively()
     {

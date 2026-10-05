@@ -16,7 +16,7 @@ internal static class BuiltInComponents
             {
                 builder.DisplayName = "Rectangle";
                 builder.AccessibleName = "Rectangle";
-                builder.DefaultProps = new RectangleProps("#FFFFFF", "#333333", 2);
+                builder.DefaultProps = new RectangleProps(null, null, 2);
                 builder.Icon = "▭";
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(160, 100);
@@ -42,7 +42,7 @@ internal static class BuiltInComponents
             {
                 builder.DisplayName = "Text";
                 builder.AccessibleName = "Text";
-                builder.DefaultProps = new TextProps("", "#000000", 16, "normal", "left");
+                builder.DefaultProps = new TextProps("", null, 16, "normal", "left");
                 builder.Icon = "🔤";
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(200, 40);

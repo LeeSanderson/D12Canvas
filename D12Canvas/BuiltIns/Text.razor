@@ -23,6 +23,7 @@ else
         height: 100%;
         box-sizing: border-box;
         margin: 0;
+        color: var(--d12-board-text-override, var(--d12-board-text));
     }
 
     .d12-text-editor {
@@ -38,7 +39,7 @@ else
 
 @code {
     [Parameter]
-    public TextProps Props { get; set; } = new("", "#000000", 16, "normal", "left");
+    public TextProps Props { get; set; } = new("", null, 16, "normal", "left");
 
     // The editing built-in's own route back to Board/History - both are supplied by
     // DiagramCanvas via cascading parameters every built-in has access to (ParentCanvas already
@@ -56,7 +57,8 @@ else
     private ElementReference _editorRef;
 
     private string Style =>
-        $"color: {Props.Color}; font-size: {Props.FontSize}px; font-weight: {Props.FontWeight}; text-align: {Props.TextAlign};";
+        ThemedDefault.Override("--d12-board-text-override", Props.Color)
+        + $"font-size: {Props.FontSize}px; font-weight: {Props.FontWeight}; text-align: {Props.TextAlign};";
 
     // A Text-type field is edited inline/WYSIWYG on the canvas, never through the
     // property panel. stopPropagation keeps this double-click from also reaching

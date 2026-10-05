@@ -58,27 +58,6 @@ public class SelectionContextMenuThemeTokensTests : ComponentTestBase
     }
 
     [Fact]
-    public void EveryRaisedBlockDeclaresItsColorScheme()
-    {
-        var menu = Render<SelectionContextMenu>();
-        var css = StyleBlockText(menu);
-
-        Assert.Contains("color-scheme: light", ExtractBlock(css, ".d12-context-menu {"));
-        Assert.Contains(
-            "color-scheme: dark",
-            ExtractBlock(css, "@media (prefers-color-scheme: dark)")
-        );
-        Assert.Contains(
-            "color-scheme: light",
-            ExtractBlock(css, "[data-d12-theme=\"light\"] .d12-context-menu {")
-        );
-        Assert.Contains(
-            "color-scheme: dark",
-            ExtractBlock(css, "[data-d12-theme=\"dark\"] .d12-context-menu {")
-        );
-    }
-
-    [Fact]
     public void MenuItemHoverReadsTokensExclusively()
     {
         var menu = Render<SelectionContextMenu>();

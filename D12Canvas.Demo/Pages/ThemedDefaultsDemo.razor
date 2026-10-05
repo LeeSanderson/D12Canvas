@@ -1,0 +1,63 @@
+@page "/themed-defaults-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Themed Defaults Demo</PageTitle>
+
+<div class="themed-defaults-layout">
+    <div class="theme-pane" data-d12-theme="light">
+        <DiagramCanvas Board="_lightBoard" />
+    </div>
+    <div class="theme-pane" data-d12-theme="dark">
+        <DiagramCanvas Board="_darkBoard" />
+    </div>
+</div>
+
+<style>
+    .themed-defaults-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .theme-pane {
+        flex: 1;
+        height: 420px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private readonly Board _lightBoard = SeedBoard();
+    private readonly Board _darkBoard = SeedBoard();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(
+                "rectangle",
+                new RectangleProps(null, null, 2),
+                new Bounds(40, 40, 240, 140),
+                zIndex: 0
+            )
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "text",
+                new TextProps("Themed default text", null, 18, "normal", "center"),
+                new Bounds(60, 90, 200, 40),
+                zIndex: 1
+            )
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "text",
+                new TextProps("Authored colour stays", "#1565c0", 18, "bold", "left"),
+                new Bounds(40, 220, 240, 40),
+                zIndex: 2
+            )
+        );
+        return board;
+    }
+}

@@ -16,7 +16,7 @@ internal sealed record PanelTestProps(
     string Content,
     [property: PanelEditable(EditorKind.Text)] string Label,
     [property: PanelEditable(EditorKind.Number)] double Count,
-    [property: PanelEditable(EditorKind.Color, PropertyRole.Fill)] string Tint = "#000000",
+    [property: PanelEditable(EditorKind.Color, PropertyRole.Fill)] string? Tint = "#000000",
     [property: PanelEditable(EditorKind.Checkbox)] bool Flag = false,
     [property: PanelEditable(EditorKind.Dropdown, Options = new[] { "a", "b", "c" })]
         string Mode = "a",

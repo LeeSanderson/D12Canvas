@@ -26,7 +26,7 @@ public class BuiltInComponentsTests
         Assert.Equal("Rectangle", registration.AccessibleName);
         Assert.Equal("Basic Shapes", registration.Category);
         Assert.Equal(new ComponentSize(160, 100), registration.DefaultSize);
-        Assert.Equal(new RectangleProps("#FFFFFF", "#333333", 2), registration.DefaultProps);
+        Assert.Equal(new RectangleProps(null, null, 2), registration.DefaultProps);
         Assert.False(string.IsNullOrEmpty(registration.Icon));
     }
 
@@ -68,7 +68,7 @@ public class BuiltInComponentsTests
         Assert.Equal("Text", registration.AccessibleName);
         Assert.Equal("Basic Shapes", registration.Category);
         Assert.Equal(new ComponentSize(200, 40), registration.DefaultSize);
-        Assert.Equal(new TextProps("", "#000000", 16, "normal", "left"), registration.DefaultProps);
+        Assert.Equal(new TextProps("", null, 16, "normal", "left"), registration.DefaultProps);
         Assert.False(string.IsNullOrEmpty(registration.Icon));
     }
 

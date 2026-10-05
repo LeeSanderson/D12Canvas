@@ -101,6 +101,36 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         Assert.DoesNotContain("rgba(", placeholder);
     }
 
+    // The board tokens are what a built-in paints when its colour prop is null. They are declared
+    // beside the chrome tokens in every block, with light values equal to the literals they
+    // replaced, and stay separate from --d12-text so a host retuning its chrome label colour
+    // does not silently recolour every text instance on every board.
+    [Theory]
+    [InlineData(".diagram-container {")]
+    [InlineData("@media (prefers-color-scheme: dark)")]
+    [InlineData("[data-d12-theme=\"light\"] .diagram-container {")]
+    [InlineData("[data-d12-theme=\"dark\"] .diagram-container {")]
+    public void EveryBlockDeclaresTheBoardTokens(string marker)
+    {
+        var canvas = Render<DiagramCanvas>();
+        var block = ExtractBlock(StyleBlockText(canvas), marker);
+
+        Assert.Contains("--d12-board-text:", block);
+        Assert.Contains("--d12-board-fill:", block);
+        Assert.Contains("--d12-board-stroke:", block);
+    }
+
+    [Fact]
+    public void LightBoardTokensHaveTheirDeclaredValues()
+    {
+        var canvas = Render<DiagramCanvas>();
+        var rootRule = ExtractBlock(StyleBlockText(canvas), ".diagram-container {");
+
+        Assert.Contains("--d12-board-text: #000000", rootRule);
+        Assert.Contains("--d12-board-fill: #FFFFFF", rootRule);
+        Assert.Contains("--d12-board-stroke: #333333", rootRule);
+    }
+
     // The connector drag-preview's green is a deliberate departure from the shared accent (which
     // already means "selected") - an escape hatch for an element that genuinely needs to diverge,
     // routed through its own custom property rather than a bare literal so it still counts as

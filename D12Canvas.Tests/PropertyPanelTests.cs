@@ -82,7 +82,7 @@ public class PropertyPanelTests : ComponentTestBase
         Board board,
         string label = "",
         double count = 0,
-        string tint = "#000000",
+        string? tint = "#000000",
         bool flag = false,
         string mode = "a",
         string customValue = ""
@@ -114,6 +114,71 @@ public class PropertyPanelTests : ComponentTestBase
 
     private static void Select(IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.Find(".component-container").Click();
+
+    // A nullable colour prop holding null means "follow the theme". The colour input cannot show
+    // absence (it would display #000000 and a confirmed pick would freeze it), so the row marks
+    // the swatch as themed and offers no clear control; once a colour is set, the clear control
+    // is the way back to the themed default.
+    [Fact]
+    public void AThemedColourFieldMarksItsSwatchAndOffersNoClearControl()
+    {
+        var board = new Board();
+        AddInstance(board, tint: null);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        var input = panel.Find("#d12-property-panel-field-Tint");
+        Assert.Contains("d12-property-panel-color-themed", input.ClassList);
+        Assert.NotEmpty(panel.FindAll(".d12-property-panel-themed-label"));
+        Assert.Empty(panel.FindAll(".d12-property-panel-clear"));
+    }
+
+    [Fact]
+    public async Task TheClearControlCommitsNullAsOneHistoryEntryThatUndoReverses()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, tint: "#ff0000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+        Assert.DoesNotContain(
+            "d12-property-panel-color-themed",
+            panel.Find("#d12-property-panel-field-Tint").ClassList
+        );
+
+        panel.Find(".d12-property-panel-clear").Click();
+
+        Assert.Null(((PanelTestProps)instance.Props).Tint);
+        Assert.Contains(
+            "d12-property-panel-color-themed",
+            panel.Find("#d12-property-panel-field-Tint").ClassList
+        );
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("#ff0000", ((PanelTestProps)instance.Props).Tint);
+    }
+
+    [Fact]
+    public void ANonNullableColourFieldOffersNoClearControlAndIsNeverThemed()
+    {
+        var board = new Board();
+        AddSecondaryInstance(board, accentColor: "#ff0000");
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        Assert.NotNull(panel.Find("#d12-property-panel-field-AccentColor"));
+        Assert.Empty(panel.FindAll(".d12-property-panel-clear"));
+        Assert.Empty(panel.FindAll(".d12-property-panel-themed-label"));
+    }
 
     [Fact]
     public void RendersStandaloneWithoutRequiringAWiredCanvas()

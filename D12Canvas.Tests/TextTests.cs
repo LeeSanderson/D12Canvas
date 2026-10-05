@@ -24,12 +24,14 @@ public class TextTests : ComponentTestBase
         Assert.Contains("Hello, D12Canvas", element.TextContent);
 
         var style = element.GetAttribute("style");
-        Assert.Contains("color: #ff0000", style);
+        Assert.Contains("--d12-board-text-override: #ff0000", style);
         Assert.Contains("font-size: 24px", style);
         Assert.Contains("font-weight: bold", style);
         Assert.Contains("text-align: center", style);
     }
 
+    // The default props carry no colour, so nothing colour-related is emitted inline and the
+    // board text token paints it (see ThemedDefaultTests).
     [Fact]
     public void RendersWithItsDefaultPropsWhenNoneSupplied()
     {
@@ -37,7 +39,7 @@ public class TextTests : ComponentTestBase
 
         var element = text.Find(".d12-text");
         var style = element.GetAttribute("style");
-        Assert.Contains("color: #000000", style);
+        Assert.DoesNotContain("color", style);
         Assert.Contains("font-size: 16px", style);
         Assert.Contains("font-weight: normal", style);
         Assert.Contains("text-align: left", style);

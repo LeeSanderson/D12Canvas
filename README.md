@@ -18,9 +18,14 @@ with plain CSS; no host-side registration or parameter is required.
 | `--d12-accent` | Selection marquee outline and fill |
 | `--d12-muted-text` | Muted/secondary chrome text (category titles, LOD placeholder label) |
 | `--d12-text` | Primary chrome text (palette entry names, context-menu item labels) |
+| `--d12-board-text` | A `Text` instance's colour when its `Color` prop is null (no author opinion) |
+| `--d12-board-fill` | A `Rectangle` instance's fill when its `FillColor` prop is null |
+| `--d12-board-stroke` | A `Rectangle` instance's stroke when its `StrokeColor` prop is null |
 
-Component-instance visuals (the props a registered component reads to draw itself) are never
-themed through this layer — they stay ordinary `TProps` fields, per ADR 0008.
+A colour an author or user has set on a component instance is never themed through this layer:
+it stays an ordinary `TProps` value and is painted literally in both themes. The three
+`--d12-board-*` tokens are what a built-in paints when that value is null, meaning nobody has
+chosen one. Any registered component can fall back to the same public tokens in its own CSS.
 
 Two elements use a one-off escape-hatch custom property instead of the shared set: the connector
 drag-preview's color is a deliberate departure from `--d12-accent` (which already means

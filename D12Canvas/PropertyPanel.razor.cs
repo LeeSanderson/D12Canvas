@@ -61,14 +61,25 @@ public partial class PropertyPanel : IDisposable
     // the matching PropertyRole - the names can differ across types, but PropertyRoleValidator
     // guarantees every property declaring a role matches that role's Kind/CLR type at registration
     // time, so the row can render (and bulk-commit) as if it were a single property.
+    // CanHoldNull is true when every target's property can hold null, which for a colour means
+    // "no author opinion, follow the theme": the panel then offers the way back to that state,
+    // because <input type="color"> cannot express absence and would otherwise show #000000.
     private sealed record PanelField(
         string FieldId,
         string Label,
         EditorKind Kind,
         IReadOnlyList<string>? Options,
         RenderFragment<CustomEditorContext>? CustomEditor,
-        IReadOnlyList<(ComponentInstance Instance, PropertyInfo Property)> Targets
+        IReadOnlyList<(ComponentInstance Instance, PropertyInfo Property)> Targets,
+        bool CanHoldNull
     );
+
+    private bool IsThemed(PanelField field) => field.CanHoldNull && FirstTargetValue(field) is null;
+
+    private string ColorInputClass(PanelField field) =>
+        IsThemed(field)
+            ? "d12-property-panel-input d12-property-panel-color d12-property-panel-color-themed"
+            : "d12-property-panel-input d12-property-panel-color";
 
     private IReadOnlyList<PanelField> Fields
     {
@@ -105,7 +116,8 @@ public partial class PropertyPanel : IDisposable
                 Kind: property.Kind,
                 Options: property.Options,
                 CustomEditor: property.CustomEditor,
-                Targets: instances.Select(instance => (instance, property.Property)).ToList()
+                Targets: instances.Select(instance => (instance, property.Property)).ToList(),
+                CanHoldNull: property.CanHoldNull
             ))
             .ToList();
 
@@ -135,14 +147,13 @@ public partial class PropertyPanel : IDisposable
             .Select(entry =>
             {
                 var (representative, role) = entry;
+                var propertiesByType = schemasByType.ToDictionary(
+                    schema => schema.Key,
+                    schema => schema.Value.First(property => property.Role == role)
+                );
                 var targets = instances
                     .Select(instance =>
-                        (
-                            instance,
-                            schemasByType[instance.ComponentTypeKey]
-                                .First(property => property.Role == role)
-                                .Property
-                        )
+                        (instance, propertiesByType[instance.ComponentTypeKey].Property)
                     )
                     .ToList();
 
@@ -152,7 +163,8 @@ public partial class PropertyPanel : IDisposable
                     Kind: representative.Kind,
                     Options: representative.Options,
                     CustomEditor: representative.CustomEditor,
-                    Targets: targets
+                    Targets: targets,
+                    CanHoldNull: propertiesByType.Values.All(property => property.CanHoldNull)
                 );
             })
             .ToList();
@@ -217,6 +229,11 @@ public partial class PropertyPanel : IDisposable
     // whether or not every target ends up changing.
     private void Commit(PanelField field, object? newValue)
     {
+        if (field.Kind == EditorKind.Color && field.CanHoldNull && newValue is "")
+        {
+            newValue = null;
+        }
+
         var changes = new List<(Guid InstanceId, object Before, object After)>();
         foreach (var (instance, property) in field.Targets)
         {

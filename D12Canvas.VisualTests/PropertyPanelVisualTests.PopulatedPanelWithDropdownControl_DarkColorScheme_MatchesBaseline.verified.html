@@ -52,7 +52,6 @@
         --d12-accent: #2f80ed;
         --d12-muted-text: #666;
         --d12-text: #212529;
-        color-scheme: light;
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -76,7 +75,6 @@
             --d12-accent: #2f80ed;
             --d12-muted-text: #a0a0a0;
             --d12-text: #e8e8e8;
-            color-scheme: dark;
         }
     }
 
@@ -87,7 +85,6 @@
         --d12-accent: #2f80ed;
         --d12-muted-text: #666;
         --d12-text: #212529;
-        color-scheme: light;
     }
 
     .d12-palette[data-d12-theme="dark"],
@@ -97,7 +94,6 @@
         --d12-accent: #2f80ed;
         --d12-muted-text: #a0a0a0;
         --d12-text: #e8e8e8;
-        color-scheme: dark;
     }
 
     .d12-palette-category-title {
@@ -147,12 +143,13 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: -30px; top: 279px; width: 200px; height: 40px; z-index: 0;" role="group" aria-label="Text" aria-selected="true" tabindex="0" _bl_3=""><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="color: #000000; font-size: 16px; font-weight: normal; text-align: left;"></p><!--!--><style>
+    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: -30px; top: 279px; width: 200px; height: 40px; z-index: 0;" role="group" aria-label="Text" aria-selected="true" tabindex="0" _bl_3=""><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="font-size: 16px; font-weight: normal; text-align: left;"></p><!--!--><style>
     .d12-text {
         width: 100%;
         height: 100%;
         box-sizing: border-box;
         margin: 0;
+        color: var(--d12-board-text-override, var(--d12-board-text));
     }
 
     .d12-text-editor {
@@ -357,6 +354,9 @@
         --d12-muted-text: #6b6b6b;
         --d12-text: #212529;
         --d12-connector-preview: #2ecc71;
+        --d12-board-text: #000000;
+        --d12-board-fill: #FFFFFF;
+        --d12-board-stroke: #333333;
         width: 100%;
         height: 100%;
         display: grid;
@@ -373,6 +373,9 @@
             --d12-accent: #2f80ed;
             --d12-muted-text: #a0a0a0;
             --d12-text: #e8e8e8;
+            --d12-board-text: #e8e8e8;
+            --d12-board-fill: #2e2e2e;
+            --d12-board-stroke: #8a8a8a;
         }
     }
 
@@ -383,6 +386,9 @@
         --d12-accent: #2f80ed;
         --d12-muted-text: #6b6b6b;
         --d12-text: #212529;
+        --d12-board-text: #000000;
+        --d12-board-fill: #FFFFFF;
+        --d12-board-stroke: #333333;
     }
 
     .diagram-container[data-d12-theme="dark"],
@@ -392,6 +398,9 @@
         --d12-accent: #2f80ed;
         --d12-muted-text: #a0a0a0;
         --d12-text: #e8e8e8;
+        --d12-board-text: #e8e8e8;
+        --d12-board-fill: #2e2e2e;
+        --d12-board-stroke: #8a8a8a;
     }
 
     .diagram-canvas {
@@ -606,7 +615,7 @@
             linear-gradient(to bottom, var(--d12-border) 1px, transparent 1px);
     }
 </style></div><!--!-->
-    <div class="panel-slot"><!--!--><div class="d12-property-panel" role="region" aria-label="Property panel"><ul class="d12-property-panel-fields"><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-Color">Color</label><input id="d12-property-panel-field-Color" class="d12-property-panel-input d12-property-panel-color" type="color" style="caret-color: transparent !important;"></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-FontSize">FontSize</label><input id="d12-property-panel-field-FontSize" class="d12-property-panel-input" type="number" style="caret-color: transparent !important;"></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-FontWeight">FontWeight</label><select id="d12-property-panel-field-FontWeight" class="d12-property-panel-input"><option value="normal">normal</option><option value="bold">bold</option></select></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-TextAlign">TextAlign</label><select id="d12-property-panel-field-TextAlign" class="d12-property-panel-input"><option value="left">left</option><option value="center">center</option><option value="right">right</option></select></li></ul></div><!--!-->
+    <div class="panel-slot"><!--!--><div class="d12-property-panel" role="region" aria-label="Property panel"><ul class="d12-property-panel-fields"><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-Color">Color</label><div class="d12-property-panel-color-row"><input id="d12-property-panel-field-Color" class="d12-property-panel-input d12-property-panel-color d12-property-panel-color-themed" type="color" style="caret-color: transparent !important;"><!--!--><span class="d12-property-panel-themed-label">Theme colour</span></div></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-FontSize">FontSize</label><input id="d12-property-panel-field-FontSize" class="d12-property-panel-input" type="number" style="caret-color: transparent !important;"></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-FontWeight">FontWeight</label><select id="d12-property-panel-field-FontWeight" class="d12-property-panel-input"><option value="normal">normal</option><option value="bold">bold</option></select></li><li class="d12-property-panel-field"><label class="d12-property-panel-label" for="d12-property-panel-field-TextAlign">TextAlign</label><select id="d12-property-panel-field-TextAlign" class="d12-property-panel-input"><option value="left">left</option><option value="center">center</option><option value="right">right</option></select></li></ul></div><!--!-->
 
 <!--!--><style>
     .d12-property-panel {
@@ -703,6 +712,38 @@
     .d12-property-panel-color {
         padding: 2px;
         height: 28px;
+    }
+
+    .d12-property-panel-color-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .d12-property-panel-color-themed::-webkit-color-swatch {
+        background: var(--d12-surface);
+        border: 1px dashed var(--d12-muted-text);
+    }
+
+    .d12-property-panel-color-themed::-moz-color-swatch {
+        background: var(--d12-surface);
+        border: 1px dashed var(--d12-muted-text);
+    }
+
+    .d12-property-panel-themed-label {
+        font-size: 12px;
+        color: var(--d12-muted-text);
+    }
+
+    .d12-property-panel-clear {
+        font: inherit;
+        font-size: 12px;
+        padding: 2px 6px;
+        border: 1px solid var(--d12-border);
+        border-radius: 4px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
     }
 
     .d12-property-panel-checkbox {
