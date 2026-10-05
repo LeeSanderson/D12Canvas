@@ -76,7 +76,6 @@ public sealed class ThemeVisualTests : IAsyncLifetime
     private async Task DrawMarqueeAcross((float X, float Y) from, (float X, float Y) to)
     {
         await _page.Mouse.MoveAsync(from.X, from.Y);
-        await _page.Keyboard.DownAsync("Shift");
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync(to.X, to.Y);
         await Expect(_page.Locator(".marquee-select")).ToBeVisibleAsync();
@@ -126,7 +125,6 @@ public sealed class ThemeVisualTests : IAsyncLifetime
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
 
         await _page.Mouse.UpAsync();
-        await _page.Keyboard.UpAsync("Shift");
     }
 
     [Fact]
@@ -140,7 +138,6 @@ public sealed class ThemeVisualTests : IAsyncLifetime
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
 
         await _page.Mouse.UpAsync();
-        await _page.Keyboard.UpAsync("Shift");
     }
 
     [Fact]
@@ -155,6 +152,5 @@ public sealed class ThemeVisualTests : IAsyncLifetime
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
 
         await _page.Mouse.UpAsync();
-        await _page.Keyboard.UpAsync("Shift");
     }
 }

@@ -630,7 +630,7 @@ public class PropertyPanelTests : ComponentTestBase
     }
 
     [Fact]
-    public void PanelUpdatesLiveWhenSelectionChangesOnTheCanvas()
+    public async Task PanelUpdatesLiveWhenSelectionChangesOnTheCanvas()
     {
         var board = new Board();
         AddInstance(board, label: "First");
@@ -642,7 +642,7 @@ public class PropertyPanelTests : ComponentTestBase
         Select(canvas);
         Assert.NotEmpty(panel.FindAll("#d12-property-panel-field-Label"));
 
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.ClickCanvas(400, 400);
 
         Assert.NotNull(panel.Find(".d12-property-panel-empty"));
     }

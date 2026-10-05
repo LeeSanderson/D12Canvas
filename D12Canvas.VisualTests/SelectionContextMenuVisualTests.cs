@@ -105,10 +105,10 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(2);
 
-        // The second, now-on-top instance is the only one reachable by a real click at its own
-        // default (center) position.
-        var topInstance = _page.Locator(".component-container").Nth(1);
-        await topInstance.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
+        // With two instances selected the selection box covers both, and it is the box a real
+        // press inside the selection lands on, so that is what the right-click goes to.
+        var selectionBox = _page.Locator(".selection-bounding-box");
+        await selectionBox.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
 
         await Expect(_page.GetByRole(AriaRole.Menuitem, new() { Name = "Group" }))
             .ToBeVisibleAsync();

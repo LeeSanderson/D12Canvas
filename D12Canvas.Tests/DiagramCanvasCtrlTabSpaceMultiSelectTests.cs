@@ -228,7 +228,7 @@ public class DiagramCanvasCtrlTabSpaceMultiSelectTests : ComponentTestBase
         containers[0].Click();
         containers[1].Click(new MouseEventArgs { ShiftKey = true });
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
-        canvas.Find(".diagram-canvas").Click(); // clear the selection first
+        await canvas.ClickCanvas(400, 400); // clear the selection first
         canvas.FindAll(".component-container")[2].Focus();
 
         // Reading order: group-tab-stop (bounds start at First's origin), then Third.

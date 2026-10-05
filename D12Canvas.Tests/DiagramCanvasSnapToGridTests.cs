@@ -101,17 +101,7 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
 
         // Pans by (-7, -13): the raw (unsnapped) top-left corner would land at (347, 273) - both
         // off the default zoom's 20-unit grid.
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 100,
-                    ClientY = 100,
-                }
-            );
-        canvas.Find(".diagram-canvas").MouseMove(new MouseEventArgs { ClientX = 93, ClientY = 87 });
+        await canvas.Pan(from: (100, 100), to: (93, 87));
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 

@@ -1,6 +1,7 @@
 using AngleSharp.Dom;
 using Bunit;
 using D12Canvas.Model;
+using D12Canvas.Pointer;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,10 +9,11 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Right-click on a selection opens a menu offering the same action set as the baseline shortcut
-// table (Delete; Group/Ungroup as applicable; the four layering commands), each wired to invoke
-// the exact same OnXPressed method its shortcut does. Right-click on empty canvas (no selection)
-// opens no custom menu at all.
+// A secondary release from pointing opens a menu offering the same action set as the baseline
+// shortcut table (Delete; Group/Ungroup as applicable; the four layering commands), each wired to
+// invoke the exact same OnXPressed method its shortcut does. The release first resolves the
+// selection: a press inside it preserves it, a press on something else selects that, and a press
+// on empty canvas clears it and so opens no menu.
 public class DiagramCanvasContextMenuTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -63,49 +65,135 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         containers[1].Click(new MouseEventArgs { ShiftKey = true });
     }
 
-    private static void RightClick(
+    private static async Task RightClick(
         IRenderedComponent<DiagramCanvas> canvas,
-        double clientX = 0,
-        double clientY = 0
-    ) =>
-        canvas
-            .Find(".diagram-canvas")
-            .ContextMenu(new MouseEventArgs { ClientX = clientX, ClientY = clientY });
+        ComponentInstance instance,
+        double x = 10,
+        double y = 10
+    )
+    {
+        await canvas.Press(
+            x,
+            y,
+            PointerPress.SecondaryButton,
+            role: HitRole.Instance,
+            entityId: instance.Id
+        );
+        await canvas.Release(x, y, PointerPress.SecondaryButton);
+    }
+
+    private static async Task RightClickEdge(IRenderedComponent<DiagramCanvas> canvas, Edge edge)
+    {
+        await canvas.Press(
+            100,
+            25,
+            PointerPress.SecondaryButton,
+            role: HitRole.Edge,
+            entityId: edge.Id
+        );
+        await canvas.Release(100, 25, PointerPress.SecondaryButton);
+    }
 
     [Fact]
-    public void RightClickOnASelectedInstanceOpensTheMenu()
+    public async Task RightClickOnASelectedInstanceOpensTheMenuAtThePressPoint()
     {
         var board = new Board();
-        AddInstance(board, 0);
+        var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.Find(".component-container").Click();
 
-        RightClick(canvas);
+        await RightClick(canvas, instance, x: 37, y: 19);
 
+        var menu = canvas.Find(".d12-context-menu");
+        var style = menu.GetAttribute("style");
+        Assert.Contains("left: 37px", style);
+        Assert.Contains("top: 19px", style);
+    }
+
+    [Fact]
+    public async Task RightClickOnAnUnselectedInstanceSelectsItAndOpensTheMenu()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 0);
+        var second = AddInstance(board, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.FindAll(".component-container")[0].Click();
+
+        await RightClick(canvas, second);
+
+        var containers = canvas.FindAll(".component-container");
+        Assert.Null(containers[0].GetAttribute("aria-selected"));
+        Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
+        Assert.Single(canvas.FindAll(".d12-context-menu"));
+        Assert.NotNull(board.GetComponent(first.Id));
+    }
+
+    [Fact]
+    public async Task RightClickOnAMemberOfTheSelectionPreservesTheWholeSelection()
+    {
+        var board = new Board();
+        AddInstance(board, 0);
+        var second = AddInstance(board, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        SelectBoth(canvas);
+
+        await RightClick(canvas, second);
+
+        var containers = canvas.FindAll(".component-container");
+        Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
+        Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
         Assert.Single(canvas.FindAll(".d12-context-menu"));
     }
 
     [Fact]
-    public void RightClickOnEmptyCanvasWithNoSelectionOpensNoMenu()
-    {
-        var board = new Board();
-        AddInstance(board, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-
-        RightClick(canvas);
-
-        Assert.Empty(canvas.FindAll(".d12-context-menu"));
-    }
-
-    [Fact]
-    public void MenuOffersOnlyDeleteAndLayeringForASingleSelectedInstance()
+    public async Task RightClickOnEmptyCanvasClearsTheSelectionAndOpensNoMenu()
     {
         var board = new Board();
         AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.Find(".component-container").Click();
 
-        RightClick(canvas);
+        await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
+
+        Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
+        Assert.Empty(canvas.FindAll(".d12-context-menu"));
+    }
+
+    [Fact]
+    public async Task ARightDragPastTheThresholdPansAndOpensNothing()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.Find(".component-container").Click();
+
+        await canvas.Press(
+            10,
+            10,
+            PointerPress.SecondaryButton,
+            role: HitRole.Instance,
+            entityId: instance.Id
+        );
+        await canvas.Move(60, 40);
+        await canvas.Release(60, 40, PointerPress.SecondaryButton);
+
+        Assert.Contains(
+            "translate(50px, 30px)",
+            canvas.Find(".canvas-content").GetAttribute("style")
+        );
+        Assert.Empty(canvas.FindAll(".d12-context-menu"));
+        Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
+    }
+
+    [Fact]
+    public async Task MenuOffersOnlyDeleteAndLayeringForASingleSelectedInstance()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.Find(".component-container").Click();
+
+        await RightClick(canvas, instance);
 
         var labels = canvas
             .FindAll(".d12-context-menu-item")
@@ -118,15 +206,15 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     }
 
     [Fact]
-    public void MenuOffersGroupForATwoInstanceAdHocSelection()
+    public async Task MenuOffersGroupForATwoInstanceAdHocSelection()
     {
         var board = new Board();
-        AddInstance(board, 0);
+        var first = AddInstance(board, 0);
         AddInstance(board, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
 
-        RightClick(canvas);
+        await RightClick(canvas, first);
 
         Assert.Contains(
             "Group",
@@ -138,13 +226,13 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     public async Task MenuOffersUngroupForASelectedGroupAndNotGroup()
     {
         var board = new Board();
-        AddInstance(board, 0);
+        var first = AddInstance(board, 0);
         AddInstance(board, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        RightClick(canvas);
+        await RightClick(canvas, first);
 
         var labels = canvas
             .FindAll(".d12-context-menu-item")
@@ -155,13 +243,13 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     }
 
     [Fact]
-    public void ClickingDeleteInTheMenuRemovesTheSelectionAndClosesTheMenu()
+    public async Task ClickingDeleteInTheMenuRemovesTheSelectionAndClosesTheMenu()
     {
         var board = new Board();
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.Find(".component-container").Click();
-        RightClick(canvas);
+        await RightClick(canvas, instance);
 
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Delete").Click();
 
@@ -176,7 +264,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.Find(".component-container").Click();
-        RightClick(canvas);
+        await RightClick(canvas, instance);
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Delete").Click();
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -185,14 +273,14 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     }
 
     [Fact]
-    public void ClickingGroupInTheMenuPromotesTheSelectionIntoAGroupAndClosesTheMenu()
+    public async Task ClickingGroupInTheMenuPromotesTheSelectionIntoAGroupAndClosesTheMenu()
     {
         var board = new Board();
-        AddInstance(board, 0);
+        var first = AddInstance(board, 0);
         AddInstance(board, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
-        RightClick(canvas);
+        await RightClick(canvas, first);
 
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Group").Click();
 
@@ -204,12 +292,12 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     public async Task ClickingUngroupInTheMenuDissolvesTheGroupAndClosesTheMenu()
     {
         var board = new Board();
-        AddInstance(board, 0);
+        var first = AddInstance(board, 0);
         AddInstance(board, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
-        RightClick(canvas);
+        await RightClick(canvas, first);
 
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Ungroup").Click();
 
@@ -222,7 +310,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     [InlineData("Bring Forward")]
     [InlineData("Send Backward")]
     [InlineData("Send to Back")]
-    public void EachLayeringMenuItemChangesZIndexAndClosesTheMenu(string label)
+    public async Task EachLayeringMenuItemChangesZIndexAndClosesTheMenu(string label)
     {
         var board = new Board();
         // target sits between a lower and a higher neighbour, so every one of the four directions
@@ -233,7 +321,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         AddInstance(board, 200, zIndex: 9);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.Find(".component-container").Click();
-        RightClick(canvas);
+        await RightClick(canvas, target);
 
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == label).Click();
 
@@ -242,13 +330,13 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     }
 
     [Fact]
-    public void EscapeInsideTheMenuClosesItWithoutClearingTheBoardSelection()
+    public async Task EscapeInsideTheMenuClosesItWithoutClearingTheBoardSelection()
     {
         var board = new Board();
-        AddInstance(board, 0);
+        var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.Find(".component-container").Click();
-        RightClick(canvas);
+        await RightClick(canvas, instance);
 
         canvas.Find(".d12-context-menu").KeyDown(new KeyboardEventArgs { Key = "Escape" });
 
@@ -257,7 +345,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     }
 
     [Fact]
-    public void RightClickOnASelectedEdgeOffersDeleteAndDeletingItRemovesTheEdge()
+    public async Task RightClickOnAnEdgeSelectsItAndOffersDeleteWhichRemovesTheEdge()
     {
         var board = new Board();
         var source = AddInstance(board, 0);
@@ -268,9 +356,10 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         );
         board.AddEdge(edge);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".edge-line").Click();
 
-        RightClick(canvas);
+        await RightClickEdge(canvas, edge);
+        Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
+
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Delete").Click();
 
         Assert.Null(board.GetEdge(edge.Id));

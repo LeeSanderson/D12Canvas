@@ -67,11 +67,9 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         );
 
         await _page.Mouse.MoveAsync(from.Item1, from.Item2);
-        await _page.Keyboard.DownAsync("Shift");
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync(to.Item1, to.Item2);
         await _page.Mouse.UpAsync();
-        await _page.Keyboard.UpAsync("Shift");
 
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(2);
@@ -126,11 +124,10 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await _page.Mouse.UpAsync();
     }
 
-    // Regression coverage for a real bug found and fixed here: a handle's own mousedown/mouseup
-    // with no movement in between still fires a native click that bubbles past the
-    // (pointer-events: none) bounding box up to the canvas's own click-to-clear-selection handler,
-    // unless the handle also stops that click's propagation. bUnit can't drive this exact scenario
-    // (see DiagramCanvasMultiSelectionMoveResizeTests's comment) - a real browser can.
+    // Regression coverage for a real bug once found here: a handle's own mousedown/mouseup with
+    // no movement in between fires a native click, which used to bubble to a canvas click handler
+    // that cleared the selection. The canvas no longer listens for clicks, and a press on the
+    // handle is left to the handle's own handler; a real browser proves the selection survives.
     [Fact]
     public async Task StationaryClickOnGroupResizeHandle_DoesNotClearSelection()
     {

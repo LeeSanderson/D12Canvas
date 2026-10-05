@@ -193,20 +193,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         AddInstance(board, new Bounds(100, 0, 10, 10)); // below threshold
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    ClientX = 0,
-                    ClientY = 0,
-                    ShiftKey = true,
-                }
-            );
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 200, ClientY = 200 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 200, ClientY = 200 });
+        await canvas.Marquee(from: (0, 0), to: (200, 200));
 
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
 

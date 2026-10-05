@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Components
 @using D12Canvas
 @using D12Canvas.Model
+@using D12Canvas.Pointer
 @using D12Canvas.Registration
 @using System.Collections.Generic;
 
@@ -17,12 +18,12 @@
         <div @key="layer.Level" class="grid-layer" style="@GridLayerStyle(layer)"></div>
     }
     <div class="@CanvasCssClass"
-         @onmousedown="@HandleMouseDown"
+         @ref="CanvasElement"
+         tabindex="-1"
+         @onfocus="@HandleCanvasFocus"
          @onmousemove="@HandleMouseMove"
          @onmouseup="@HandleMouseUp"
          @onwheel="@HandleMouseWheel"
-         @onclick="@HandleCanvasClick"
-         @oncontextmenu="@HandleContextMenu" @oncontextmenu:preventDefault="@HasContextMenuEligibleSelection"
          @ondragenter="@HandleDragEnterOrOver" @ondragenter:preventDefault="true"
          @ondragover="@HandleDragEnterOrOver" @ondragover:preventDefault="true"
          @ondragleave="@HandleDragLeave"
@@ -63,6 +64,7 @@
                                 {
                                     <line @key="edge.Id" x1="@line.Value.From.X" y1="@line.Value.From.Y" x2="@line.Value.To.X" y2="@line.Value.To.Y"
                                       class="@EdgeLineCssClass(edge.Id)"
+                                      data-d12-role="@HitRole.Edge" data-d12-entity="@edge.Id"
                                       marker-start="@markerStart"
                                       marker-end="@markerEnd"
                                       aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)"
@@ -75,6 +77,7 @@
                                 {
                                     <path @key="edge.Id" d="@EdgePathD(edge.RoutingStyle, line.Value.From, line.Value.To)"
                                       class="@EdgeLineCssClass(edge.Id)"
+                                      data-d12-role="@HitRole.Edge" data-d12-entity="@edge.Id"
                                       marker-start="@markerStart"
                                       marker-end="@markerEnd"
                                       aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)"
@@ -93,6 +96,7 @@
                     {
                         <circle @key="@($"{floating.Edge.Id}-{(floating.IsSource ? "source" : "target")}")"
                                 cx="@floating.X" cy="@floating.Y" r="6" class="floating-endpoint"
+                                data-d12-role="@HitRole.EdgeEndpoint" data-d12-entity="@floating.Edge.Id" data-d12-part="@(floating.IsSource ? "source" : "target")"
                                 @onmousedown="@((e) => StartFloatingEndpointDrag(floating.Edge.Id, floating.IsSource, e))"
                                 @onmousedown:stopPropagation></circle>
                     }
@@ -122,6 +126,7 @@
                         {
                             <div @key="instance.Id"
                                  class="lod-placeholder"
+                                 data-d12-role="@HitRole.Instance" data-d12-entity="@instance.Id"
                                  style="@LodPlaceholderStyle(stop.Bounds, instance.ZIndex)"
                                  aria-hidden="true">
                                 @if (!string.IsNullOrEmpty(registration.Icon))
@@ -135,6 +140,7 @@
                         {
                             var boundProps = BoundProps(instance, registration);
                             <ComponentContainer @key="instance.Id"
+                                                EntityId="instance.Id"
                                                 X="stop.Bounds.X"
                                                 Y="stop.Bounds.Y"
                                                 Width="stop.Bounds.Width"
@@ -194,7 +200,8 @@
                     {
                         var labelRegistration = Registry.Resolve(edge.Label!.ComponentTypeKey);
                         <div @key="@($"{edge.Id}-label")" class="edge-label" style="@labelStyle"
-                             @onmousedown:stopPropagation @onclick:stopPropagation>
+                             data-d12-role="@HitRole.EdgeLabel" data-d12-entity="@edge.Id"
+                             @onmousedown:stopPropagation>
                             <CascadingValue Value="edge.Label.Id" Name="InstanceId">
                                 <DynamicComponent Type="labelRegistration.ComponentType" Parameters="ComponentParameters(BoundProps(edge.Label, labelRegistration))" />
                             </CascadingValue>
@@ -202,25 +209,27 @@
                     }
                 }
             }
-            @if (_isMarqueeSelecting)
+            @if (_marqueeBounds is not null)
             {
                 <div class="marquee-select" style="@MarqueeStyle"></div>
             }
             @if (HasMultiMemberSelection)
             {
-                <div class="selection-bounding-box" style="@SelectionBoundingBoxStyle">
-                    @* Each handle stops both mousedown (so it arms this gesture instead of the
-                       canvas's own pan/marquee/group-move) and click (so a stationary press-release
-                       with no movement in between - which never sets _dragMoved - doesn't bubble to
-                       HandleCanvasClick and wipe the very selection this box belongs to). *@
-                    <div class="group-resize-handle top-left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.TopLeft))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
-                    <div class="group-resize-handle top" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Top))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
-                    <div class="group-resize-handle top-right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.TopRight))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
-                    <div class="group-resize-handle right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Right))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
-                    <div class="group-resize-handle bottom-right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.BottomRight))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
-                    <div class="group-resize-handle bottom" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Bottom))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
-                    <div class="group-resize-handle bottom-left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.BottomLeft))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
-                    <div class="group-resize-handle left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Left))" @onmousedown:stopPropagation @onclick:stopPropagation></div>
+                @* The box is a solid hit target: a press anywhere inside the multi-selection's
+                   bounds lands on it rather than on whatever sits beneath, and moves the whole
+                   selection. Each handle stops its mousedown so it arms a resize instead of
+                   bubbling into the box's own move. *@
+                <div class="selection-bounding-box" style="@SelectionBoundingBoxStyle"
+                     data-d12-role="@HitRole.SelectionBounds"
+                     @onmousedown="@StartGroupMoveFromSelectionBox">
+                    <div class="group-resize-handle top-left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top-left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.TopLeft))" @onmousedown:stopPropagation></div>
+                    <div class="group-resize-handle top" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Top))" @onmousedown:stopPropagation></div>
+                    <div class="group-resize-handle top-right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top-right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.TopRight))" @onmousedown:stopPropagation></div>
+                    <div class="group-resize-handle right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Right))" @onmousedown:stopPropagation></div>
+                    <div class="group-resize-handle bottom-right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom-right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.BottomRight))" @onmousedown:stopPropagation></div>
+                    <div class="group-resize-handle bottom" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Bottom))" @onmousedown:stopPropagation></div>
+                    <div class="group-resize-handle bottom-left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom-left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.BottomLeft))" @onmousedown:stopPropagation></div>
+                    <div class="group-resize-handle left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Left))" @onmousedown:stopPropagation></div>
                 </div>
             }
             @ChildContent
@@ -313,7 +322,11 @@
         position: relative;
         cursor: grab;
     }
-    
+
+    .diagram-canvas:focus {
+        outline: none;
+    }
+
     .diagram-canvas:active {
         cursor: grabbing;
     }
@@ -336,7 +349,7 @@
     .selection-bounding-box {
         position: absolute;
         border: 1px solid #2f80ed;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 1000;
     }
 

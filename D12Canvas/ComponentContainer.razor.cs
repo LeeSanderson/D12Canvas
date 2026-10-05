@@ -32,6 +32,11 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public int ZIndex { get; set; }
 
+    // The board entity this container renders, carried on the root as the classification marker
+    // the canvas's pointer listener reads. Null for a container rendered outside a Board.
+    [Parameter]
+    public Guid? EntityId { get; set; }
+
     [Parameter]
     public string? AccessibleName { get; set; }
 

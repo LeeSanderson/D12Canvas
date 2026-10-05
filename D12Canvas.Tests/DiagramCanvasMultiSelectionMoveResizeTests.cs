@@ -11,9 +11,10 @@ namespace D12Canvas.Tests;
 // computed over every selected member and rendered (with its own resize handles) whenever 2+ are
 // selected; individual members' own resize handles are suppressed for that same reason
 // (DiagramCanvasResizeTests/ComponentContainerTests cover their single-select case). A move can
-// start either by dragging one of the selected members directly, or by dragging empty space
-// inside the combined bounding box - either way every member moves by the same delta, and the
-// whole gesture (move or resize) commits to Board exactly once, on release.
+// start either by dragging one of the selected members directly, or by dragging the bounding box
+// itself, which is the hit target anywhere inside the selection's bounds - either way every
+// member moves by the same delta, and the whole gesture (move or resize) commits to Board exactly
+// once, on release.
 public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -124,9 +125,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         SelectBoth(canvas);
 
         // (150, 25) sits inside the combined bounding box (0,0)-(350,50) but isn't over either
-        // instance - empty space "within the marquee".
+        // instance; the box itself is the hit target there.
         canvas
-            .Find(".diagram-canvas")
+            .Find(".selection-bounding-box")
             .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
         canvas
             .Find(".diagram-canvas")
@@ -136,9 +137,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         Assert.Equal(new Bounds(50, 50, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(350, 50, 50, 50), second.Bounds);
 
-        // The trailing native click that follows a real drag's mouseup must not clear the
-        // selection it just moved (the same _dragMoved guard the marquee relies on).
-        canvas.Find(".diagram-canvas").Click();
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
         Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
@@ -155,7 +153,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         SelectBoth(canvas);
 
         canvas
-            .Find(".diagram-canvas")
+            .Find(".selection-bounding-box")
             .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
         canvas
             .Find(".diagram-canvas")
@@ -195,7 +193,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         SelectBoth(canvas);
 
         canvas
-            .Find(".diagram-canvas")
+            .Find(".selection-bounding-box")
             .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
         canvas
             .Find(".diagram-canvas")
@@ -343,13 +341,34 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 0, 50, 50), second.Bounds);
     }
 
-    // A stationary click (mousedown/mouseup, no movement) on a group-resize handle must not bubble
-    // a native click up to the canvas's own HandleCanvasClick and wipe the selection the bounding
-    // box itself belongs to. bUnit's synthetic event dispatch can't drive this specific scenario
-    // (a target with @onclick:stopPropagation but no @onclick handler of its own throws
-    // Bunit.MissingEventHandlerException, unlike a real browser) - covered instead by
-    // MultiSelectionMoveResizeVisualTests.StationaryClickOnGroupResizeHandle_DoesNotClearSelection,
-    // which drives a real click through a real browser.
+    // The box is a hit target in its own right: a press anywhere inside the multi-selection's
+    // bounds lands on it, not on whatever sits beneath, which is what lets it start the move.
+    [Fact]
+    public void TheSelectionBoxIsASolidHitTargetCarryingItsRole()
+    {
+        var board = new Board();
+        AddInstance(board, 0, 0);
+        AddInstance(board, 300, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        SelectBoth(canvas);
+
+        var box = canvas.Find(".selection-bounding-box");
+        Assert.Equal("selection-bounds", box.GetAttribute("data-d12-role"));
+        var canvasCss = canvas
+            .FindAll("style")
+            .Select(style => style.InnerHtml)
+            .Single(css => css.Contains(".selection-bounding-box {"));
+        Assert.Contains(
+            "pointer-events: auto",
+            ExtractBlock(canvasCss, ".selection-bounding-box {")
+        );
+    }
+
+    // A stationary click (mousedown/mouseup, no movement) on a group-resize handle must not wipe
+    // the selection the bounding box itself belongs to. The canvas no longer listens for clicks
+    // at all, so nothing is there to wipe it; covered through a real browser by
+    // MultiSelectionMoveResizeVisualTests.StationaryClickOnGroupResizeHandle_DoesNotClearSelection.
 
     [Fact]
     public void IndividualResizeHandlesAreHiddenWhileMultiSelectedAndReappearOnceSelectionShrinksToOne()

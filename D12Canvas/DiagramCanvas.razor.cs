@@ -1,6 +1,7 @@
 using System.Globalization;
 using D12Canvas.History;
 using D12Canvas.Model;
+using D12Canvas.Pointer;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -16,9 +17,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Inject]
     private IComponentRegistry Registry { get; set; } = null!;
 
-    // Sized to absorb the pan-render throttle's worst case: at PanRenderInterval (16ms) and a
-    // fast drag, the pointer can move well past this before the next windowed re-render lands,
-    // but a much larger margin just inflates mount/unmount cost for no visible benefit.
+    // Sized to absorb a fast pan: moves reach the canvas once per animation frame, so the pointer
+    // can travel well past this before the next windowed re-render lands, but a much larger
+    // margin just inflates mount/unmount cost for no visible benefit.
     public const double DefaultOverscan = 200;
 
     [Parameter]
@@ -171,30 +172,27 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     public ZoomPanTracker ZoomPanTracker => _zoomPanTracker;
 
-    // A plain drag on empty canvas still pans (pre-existing behaviour, unchanged);
-    // Shift+drag draws an intersection-based marquee instead, pairing with Shift-click's existing
-    // "multi-select gesture" meaning. A drag starting inside the current selection's own combined
-    // bounding box does neither of those - it's a group-move instead (see _isGroupMoving
-    // below). Whichever of these a gesture turns out to be, it starts and ends with mousedown/
-    // mouseup on the same element, so the browser's native click fires right after it - without the
-    // _dragMoved guard that click would immediately clear the selection the drag just established
-    // (or leave alone), the same wrinkle the original pan guard existed to solve.
-    private bool _isPanning;
-    private bool _isMarqueeSelecting;
-    private bool _dragMoved;
-    private MouseEventArgs? _panStart;
-    private DateTime _lastPanRender = DateTime.MinValue;
-    private static readonly TimeSpan PanRenderInterval = TimeSpan.FromMilliseconds(16); // ~60fps cap
-    private (double Left, double Top) _marqueeContainerOrigin;
-    private (double X, double Y) _marqueeAnchor;
-    private (double X, double Y) _marqueeCurrent;
+    // Every press the browser-side listener forwards resolves to exactly one pointer gesture,
+    // chosen here once the interop hop lands because the choice needs the selection, and that
+    // gesture owns the pointer until its claiming button comes up. Its identity never changes
+    // mid-press, only its phase. The selection as it stood at the press is kept so a cancel can
+    // put it back, and the marquee band is the one piece of gesture geometry the canvas renders.
+    private PointerGesture? _activeGesture;
+    private SelectionSnapshot? _pressSelection;
+    private Bounds? _marqueeBounds;
+    private Board? _previousBoard;
+
+    // Container-relative origin for the gestures the old per-element mouse handlers still own
+    // (the selection box's move and resize, and the connector drag), fetched when one of them
+    // starts since the container can move on the page between renders.
+    private (double Left, double Top) _mouseGestureContainerOrigin;
 
     // A multi-selection (2+) moves and resizes as a single bounding-box unit.
-    // Move can start two ways - dragging empty space inside the combined bounding box (tracked here,
-    // live-previewed every tick since DiagramCanvas owns the whole gesture) or dragging one of the
-    // selected members directly (ComponentContainer's own existing _isMoving already tracks that
-    // member smoothly; MoveComponent below turns its single OnMoved delta into a one-shot update of
-    // every other member once the gesture commits, rather than routing it through here). Either way
+    // Move can start two ways - dragging the selection box itself (tracked here, live-previewed
+    // every tick since DiagramCanvas owns the whole gesture) or dragging one of the selected
+    // members directly (ComponentContainer's own existing _isMoving already tracks that member
+    // smoothly; MoveComponent below turns its single OnMoved delta into a one-shot update of every
+    // other member once the gesture commits, rather than routing it through here). Either way
     // Board is only ever written once, on release, matching every other gesture's discipline.
     private bool _isGroupMoving;
     private (double X, double Y) _groupMoveAnchor;
@@ -266,6 +264,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     public bool IsConnectingPort => _isConnectingPort;
 
     private ElementReference ContainerElement;
+    private ElementReference CanvasElement;
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
     private List<IJSObjectReference> _cleanupHandles = new List<IJSObjectReference>();
     private IJSObjectReference? _jsModule;
@@ -299,9 +298,17 @@ public partial class DiagramCanvas : IAsyncDisposable
         _dotNetObjectRef = DotNetObjectReference.Create(this);
     }
 
+    // A host replacing the Board reference mid-press cancels the gesture without restoring the
+    // selection snapshot, which names entities in a model that is gone.
     protected override void OnParametersSet()
     {
         _zoomPanTracker.SetZoomLimits(MinZoom, MaxZoom);
+
+        if (!ReferenceEquals(Board, _previousBoard))
+        {
+            _previousBoard = Board;
+            CancelActiveGesture(restoreSelection: false);
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -332,8 +339,17 @@ public partial class DiagramCanvas : IAsyncDisposable
                 _dotNetObjectRef
             );
 
+            var pointerCleanup = await _jsModule.InvokeAsync<IJSObjectReference>(
+                "addPointerListener",
+                CanvasElement,
+                ContainerElement,
+                _dotNetObjectRef,
+                new { classify = true }
+            );
+
             _cleanupHandles.Add(resizeCleanup);
             _cleanupHandles.Add(keyboardCleanup);
+            _cleanupHandles.Add(pointerCleanup);
 
             StateHasChanged();
         }
@@ -360,6 +376,159 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         _zoomPanTracker.SetContainerSize((int)width, (int)height);
         StateHasChanged();
+    }
+
+    // The four pointer entry points. The listener has already classified the press and taken the
+    // synchronous decisions; what arrives here is a press whose owner this canvas chooses, moves
+    // that are real drags (the listener never forwards one below the threshold), and the one
+    // release or interruption that ends the press.
+    [JSInvokable]
+    public void OnPointerPressed(PointerPress press)
+    {
+        if (_activeGesture is not null || PressToKind.Resolve(press) is not { } kind)
+        {
+            return;
+        }
+
+        var snapshot = new SelectionSnapshot(_selectedInstanceIds, _selectedEdgeId);
+        var context = new CanvasGestureContext(this, snapshot);
+        _pressSelection = snapshot;
+        _activeGesture = kind switch
+        {
+            GestureKind.Pan => new PanGesture(press, context),
+            GestureKind.MarqueeSelect => new MarqueeSelectGesture(press, context),
+            _ => throw new InvalidOperationException($"No gesture is built for {kind}."),
+        };
+        _history.Lock();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnPointerMoved(PointerMove move)
+    {
+        if (_activeGesture is null || move.PointerId != _activeGesture.Press.PointerId)
+        {
+            return;
+        }
+
+        _activeGesture.Move(move);
+        StateHasChanged();
+    }
+
+    // The press ends before the gesture acts on its release, so the release is the one write the
+    // board accepts while the gesture still owns it.
+    [JSInvokable]
+    public void OnPointerReleased(PointerRelease release)
+    {
+        if (_activeGesture is null || !_activeGesture.Owns(release.PointerId, release.Button))
+        {
+            return;
+        }
+
+        var gesture = _activeGesture;
+        EndPress();
+        gesture.Release(release);
+        StateHasChanged();
+    }
+
+    // pointercancel, a lost capture and a window blur all mean the claiming release will never
+    // arrive on this page, so the gesture is cancelled and the press ends with it.
+    [JSInvokable]
+    public void OnPointerCancelled(string reason)
+    {
+        if (_activeGesture is null)
+        {
+            return;
+        }
+
+        CancelActiveGesture(restoreSelection: true);
+        EndPress();
+        StateHasChanged();
+    }
+
+    // While any gesture owns the press, in any phase, nothing writes the board except that
+    // gesture's release and no keyboard command changes the selection.
+    private bool PressOwnsBoard => _activeGesture is not null;
+
+    // Cancel is three canvas-level steps and no gesture implements any of them: drop the preview,
+    // restore the selection taken at press, mark the gesture cancelled. The viewport is never
+    // restored. A cancelled gesture keeps owning the press until its button comes up.
+    private void CancelActiveGesture(bool restoreSelection)
+    {
+        if (_activeGesture is null || _activeGesture.Phase == GesturePhase.Cancelled)
+        {
+            return;
+        }
+
+        _marqueeBounds = null;
+
+        if (restoreSelection && _pressSelection is { } snapshot)
+        {
+            SetSelection(snapshot.InstanceIds, snapshot.EdgeId);
+        }
+
+        _activeGesture.MarkCancelled();
+    }
+
+    private void SetSelection(IEnumerable<Guid> instanceIds, Guid? edgeId)
+    {
+        _selectedInstanceIds.Clear();
+        _selectedInstanceIds.UnionWith(instanceIds);
+        _selectedEdgeId = edgeId;
+        NotifySelectionChanged();
+    }
+
+    private void EndPress()
+    {
+        _activeGesture = null;
+        _pressSelection = null;
+        _marqueeBounds = null;
+        _history.Unlock();
+    }
+
+    // The one focus write per press lands here. The keyboard's anchor goes null with it, since a
+    // press invalidates whichever stop the keyboard was on and any port pick in progress there.
+    private void HandleCanvasFocus()
+    {
+        _focusedTabStopId = null;
+        _portFocusInstanceId = null;
+    }
+
+    // What a gesture may reach, bound to this canvas for the duration of one press.
+    private sealed class CanvasGestureContext(DiagramCanvas canvas, SelectionSnapshot snapshot)
+        : IGestureContext
+    {
+        public Board? Board => canvas.Board;
+        public ZoomPanTracker ZoomPan => canvas._zoomPanTracker;
+        public SelectionSnapshot SelectionSnapshot => snapshot;
+
+        public (double X, double Y) ToBoardPoint(double containerX, double containerY) =>
+            canvas.ToBoardPoint((containerX, containerY), (0, 0));
+
+        public Guid EffectiveSelectionId(Guid entityId) => canvas.EffectiveSelectionId(entityId);
+
+        public bool IsSelected(Guid effectiveId) =>
+            canvas._selectedInstanceIds.Contains(effectiveId);
+
+        public bool IsMarqueeCandidate(ComponentInstance instance) =>
+            !canvas.IsBelowLodThreshold(instance.Bounds);
+
+        public void ReplaceSelection(IEnumerable<Guid> effectiveIds) =>
+            canvas.SetSelection(effectiveIds, null);
+
+        public void SelectEdge(Guid edgeId) => canvas.SelectEdge(edgeId);
+
+        public void ClearSelection() => canvas.SetSelection([], null);
+
+        public void ShowMarquee(Bounds? boardBounds) => canvas._marqueeBounds = boardBounds;
+
+        public void OpenContextMenuAt(double containerX, double containerY)
+        {
+            if (canvas.HasContextMenuEligibleSelection)
+            {
+                canvas._contextMenu = new ContextMenuState(containerX, containerY);
+            }
+        }
     }
 
     [JSInvokable]
@@ -410,7 +579,10 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         if (_selectedInstanceIds.Count > 0)
         {
-            NudgeSelection(code, shiftKey);
+            if (!PressOwnsBoard)
+            {
+                NudgeSelection(code, shiftKey);
+            }
         }
         else
         {
@@ -517,7 +689,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         // Also a no-op while picking a port (see OnEnterPressed) - Alt+Arrow must not resize
         // whichever instance is currently being navigated for its connector attachment mid-gesture.
-        if (Board is null || _portFocusInstanceId is not null || _selectedInstanceIds.Count != 1)
+        if (
+            Board is null
+            || PressOwnsBoard
+            || _portFocusInstanceId is not null
+            || _selectedInstanceIds.Count != 1
+        )
         {
             return;
         }
@@ -592,15 +769,23 @@ public partial class DiagramCanvas : IAsyncDisposable
                 .Cast<ComponentInstance>()
                 .ToList();
 
-    // Escape clears the selection, and cancels an in-progress connector
-    // drag rather than letting it resolve against wherever the pointer happens to be. Also cancels
-    // a half-built KEYBOARD connection in one press, whether it's still mid-pick
-    // (_portFocusInstanceId) or already has an armed source waiting for a target
-    // (_pendingConnectorSource) - a single, full reset rather than a staged one, matching how every
-    // other piece of state this method already touches resets in one press.
+    // Escape's first rung is the pointer gesture that owns the press: cancel it and stop, so one
+    // Escape never throws away more than it meant to and a second Escape mid-press does nothing,
+    // because the cancelled gesture still owns the pointer until its button comes up. Below that
+    // rung it still clears the selection, and cancels an in-progress connector drag rather than
+    // letting it resolve against wherever the pointer happens to be. Also cancels a half-built
+    // KEYBOARD connection in one press, whether it's still mid-pick (_portFocusInstanceId) or
+    // already has an armed source waiting for a target (_pendingConnectorSource).
     [JSInvokable]
     public void OnEscapePressed()
     {
+        if (_activeGesture is not null)
+        {
+            CancelActiveGesture(restoreSelection: true);
+            StateHasChanged();
+            return;
+        }
+
         if (_isConnectingPort)
         {
             CancelPortDrag();
@@ -631,7 +816,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnEnterPressed()
     {
-        if (Board is null)
+        if (Board is null || PressOwnsBoard)
         {
             return;
         }
@@ -758,6 +943,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnSpacePressed()
     {
+        if (PressOwnsBoard)
+        {
+            return;
+        }
+
         if (_portFocusInstanceId is { } focusedInstanceId)
         {
             CyclePortFocus(focusedInstanceId);
@@ -804,6 +994,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnDeletePressed()
     {
+        if (PressOwnsBoard)
+        {
+            return;
+        }
+
         if (Board is not null)
         {
             if (_selectedEdgeId is { } edgeId)
@@ -841,7 +1036,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnGroupPressed()
     {
-        if (Board is null || !CanGroupSelection)
+        if (Board is null || PressOwnsBoard || !CanGroupSelection)
         {
             return;
         }
@@ -863,7 +1058,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnUngroupPressed()
     {
-        if (Board is null || !CanUngroupSelection)
+        if (Board is null || PressOwnsBoard || !CanUngroupSelection)
         {
             return;
         }
@@ -896,6 +1091,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnUndoPressed()
     {
+        if (PressOwnsBoard)
+        {
+            return;
+        }
+
         _history.Undo();
         NotifySelectionChanged();
         StateHasChanged();
@@ -904,6 +1104,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnRedoPressed()
     {
+        if (PressOwnsBoard)
+        {
+            return;
+        }
+
         _history.Redo();
         NotifySelectionChanged();
         StateHasChanged();
@@ -1040,31 +1245,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     private bool CanUngroupSelection =>
         _selectedInstanceIds.Any(id => Board?.GetGroup(id) is not null);
 
-    // ClientX/ClientY (not OffsetX/OffsetY) since a right-click landing on a nested
-    // ComponentContainer would make OffsetX/OffsetY relative to THAT element, not this one - same
-    // reasoning ToBoardPoint's own callers already rely on. Container rect fetched fresh (matching
-    // HandleMouseDown/HandleDrop's own "the container can move on the page" reasoning), converted to
-    // plain container-relative pixels rather than board space - the menu is canvas chrome, so it must
-    // not run through ToBoardPoint's pan/zoom division.
-    private async Task HandleContextMenu(MouseEventArgs e)
-    {
-        if (!HasContextMenuEligibleSelection)
-        {
-            return;
-        }
-
-        var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
-            "getContainerDimensions",
-            ContainerElement
-        );
-
-        _contextMenu = new ContextMenuState(
-            e.ClientX - containerRect["left"],
-            e.ClientY - containerRect["top"]
-        );
-        StateHasChanged();
-    }
-
     private void CloseContextMenu()
     {
         _contextMenu = null;
@@ -1134,7 +1314,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private bool HasMultiMemberSelection => ExpandedSelection().Count > 1;
 
     // An entity id's outermost containing group id, if it has one, else the id itself -
-    // shared by SelectComponent (a click) and UpdateMarqueeSelection (a marquee drag), so
+    // shared by SelectComponent (a click) and the pointer gestures through their context, so
     // whichever gesture picks an entity up, selection converges onto its group the same way.
     private Guid EffectiveSelectionId(Guid id) => Board?.FindContainingGroup(id)?.Id ?? id;
 
@@ -1686,21 +1866,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             (to.ClientY - from.ClientY) / _zoomPanTracker.Scale
         );
 
-    // Bound directly to the canvas background's own click, so it never fires for a click that
-    // landed on a ComponentContainer (that element stops the click from propagating here).
-    private void HandleCanvasClick()
-    {
-        if (_dragMoved)
-        {
-            _dragMoved = false;
-            return;
-        }
-
-        _selectedInstanceIds.Clear();
-        _selectedEdgeId = null;
-        NotifySelectionChanged();
-    }
-
     // The registered TComponent's props parameter is a fixed contract:
     // [Parameter] public TProps Props { get; set; }
     private const string PropsParameterName = "Props";
@@ -1929,118 +2094,65 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static double PositiveMod(double value, double modulus) =>
         ((value % modulus) + modulus) % modulus;
 
-    private async Task HandleMouseDown(MouseEventArgs e)
+    // A press on the multi-selection's own box moves the whole selection. Still driven by the old
+    // interaction layer's mouse events (the box's own mousedown here, the canvas's mousemove and
+    // mouseup below) until MoveSelection takes the selection-bounds role onto the spine.
+    private async Task StartGroupMoveFromSelectionBox(MouseEventArgs e)
     {
-        if (e.Button != 0) // Left mouse button only
-        {
-            return;
-        }
-
-        _dragMoved = false;
-
-        // Fetched fresh rather than reused from first render - same reasoning as HandleDrop: the
-        // container can move on the page (scroll, sibling layout changes) between renders.
         var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
             "getContainerDimensions",
             ContainerElement
         );
-        _marqueeContainerOrigin = (containerRect["left"], containerRect["top"]);
-        var boardPoint = ToBoardPoint(e, _marqueeContainerOrigin);
-
-        if (e.ShiftKey)
-        {
-            _isMarqueeSelecting = true;
-            _marqueeAnchor = boardPoint;
-            _marqueeCurrent = boardPoint;
-            return;
-        }
-
-        if (PointIsWithinSelectionBounds(boardPoint))
-        {
-            // A drag starting on empty space inside the multi-selection's own combined
-            // bounding box moves the whole selection - no pan underneath it, no new marquee.
-            _isGroupMoving = true;
-            _groupMoveAnchor = boardPoint;
-            _groupMoveDeltaX = 0;
-            _groupMoveDeltaY = 0;
-            return;
-        }
-
-        _isPanning = true;
-        _panStart = e;
+        _mouseGestureContainerOrigin = (containerRect["left"], containerRect["top"]);
+        _isGroupMoving = true;
+        _groupMoveAnchor = ToBoardPoint(e, _mouseGestureContainerOrigin);
+        _groupMoveDeltaX = 0;
+        _groupMoveDeltaY = 0;
     }
 
+    // The canvas-level mouse plumbing left for the gestures the old interaction layer still owns:
+    // the connector drag, the multi-selection box's move and its resize. Each goes when its
+    // gesture moves onto the spine. A press the spine owns prevents its pointerdown, so these
+    // never fire for it.
     private void HandleMouseMove(MouseEventArgs e)
     {
-        // Reached when the pointer is directly over empty canvas mid-connector-drag
-        // (over an instance's own body, ComponentContainer forwards here instead - see
-        // UpdatePortDrag's other caller).
         if (_isConnectingPort)
         {
             UpdatePortDrag(e.ClientX, e.ClientY);
             return;
         }
 
-        if (_isMarqueeSelecting)
-        {
-            _marqueeCurrent = ToBoardPoint(e, _marqueeContainerOrigin);
-            _dragMoved = true;
-            UpdateMarqueeSelection();
-            StateHasChanged();
-            return;
-        }
-
         if (_isGroupResizing)
         {
             ApplyGroupResize(e);
-            _dragMoved = true;
             StateHasChanged();
             return;
         }
 
         if (_isGroupMoving)
         {
-            var current = ToBoardPoint(e, _marqueeContainerOrigin);
+            var current = ToBoardPoint(e, _mouseGestureContainerOrigin);
             _groupMoveDeltaX = current.X - _groupMoveAnchor.X;
             _groupMoveDeltaY = current.Y - _groupMoveAnchor.Y;
-            _dragMoved = true;
             StateHasChanged();
-            return;
-        }
-
-        if (_isPanning && _panStart != null)
-        {
-            var deltaX = e.ClientX - _panStart.ClientX;
-            var deltaY = e.ClientY - _panStart.ClientY;
-
-            // Pan state updates every tick so no motion is lost; the render itself is
-            // throttled since it's what cascades into re-rendering every mounted child.
-            _zoomPanTracker.Pan(deltaX, deltaY);
-            _dragMoved = true;
-            _panStart = e;
-
-            var now = DateTime.UtcNow;
-            if (now - _lastPanRender >= PanRenderInterval)
-            {
-                _lastPanRender = now;
-                StateHasChanged();
-            }
         }
     }
 
     private void HandleMouseUp(MouseEventArgs e)
     {
-        // Same reasoning as the top of HandleMouseMove above - a drop landing
-        // directly on empty canvas reaches this handler natively.
         if (_isConnectingPort)
         {
             CompletePortDrag(e.ClientX, e.ClientY);
             return;
         }
 
-        // Single-commit gestures: only write to Board once, here, and only if the
-        // drag actually moved anything - a plain click that happened to land inside the bbox or on
-        // a handle is a no-op, matching every other gesture's press-release-with-no-movement rule.
+        if (!_isGroupMoving && !_isGroupResizing)
+        {
+            return;
+        }
+
+        // Single-commit gestures: only write to Board once, here, and only if the drag actually
+        // moved anything - a plain click on the box or on a handle is a no-op.
         if (_isGroupMoving && (_groupMoveDeltaX != 0 || _groupMoveDeltaY != 0))
         {
             CommitGroupMove(_groupMoveDeltaX, _groupMoveDeltaY);
@@ -2051,15 +2163,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             CommitGroupResize();
         }
 
-        _isPanning = false;
-        _isMarqueeSelecting = false;
         _isGroupMoving = false;
         _isGroupResizing = false;
-        _panStart = null;
         _groupResizeAnchor = null;
         _groupMoveDeltaX = 0;
         _groupMoveDeltaY = 0;
-        // Flush so the view can't be left visually behind a throttled final pan tick.
         StateHasChanged();
     }
 
@@ -2081,44 +2189,9 @@ public partial class DiagramCanvas : IAsyncDisposable
         (double Left, double Top) containerOrigin
     ) => ToBoardPoint((e.ClientX, e.ClientY), containerOrigin);
 
-    private static Bounds MarqueeBoundsFrom((double X, double Y) a, (double X, double Y) b) =>
-        new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
-
-    // Replaces the selection outright with whatever the marquee currently intersects
-    // (intersection semantics, not full-containment) - not additive, so a marquee drag that ends up
-    // over nothing empties the selection, the same as clicking empty canvas.
-    // An intersected instance that belongs to a Group is added by that group's id, not
-    // its own - same convergence as a plain click - so _selectedInstanceIds never ends up holding
-    // a "naked" grouped member id (which would let a later Ctrl+G create a second, overlapping
-    // group over members already grouped).
-    // An LOD-placeholdered instance is skipped the same way FocusableTabStopIds skips one -
-    // unlike a click or Ctrl+Tab, a marquee reads raw Bounds intersection rather than going through
-    // any per-instance element, so it needs its own check to keep that instance's own non-
-    // interactivity from being bypassed by this gesture.
-    private void UpdateMarqueeSelection()
-    {
-        if (Board is null)
-        {
-            return;
-        }
-
-        var marquee = MarqueeBoundsFrom(_marqueeAnchor, _marqueeCurrent);
-        _selectedInstanceIds.Clear();
-        _selectedEdgeId = null;
-        foreach (var instance in Board.Components)
-        {
-            if (!IsBelowLodThreshold(instance.Bounds) && instance.Bounds.Intersects(marquee))
-            {
-                _selectedInstanceIds.Add(EffectiveSelectionId(instance.Id));
-            }
-        }
-
-        NotifySelectionChanged();
-    }
-
-    // The combined bounding box of the current selection, or null when nothing is selected - used
-    // both to keep a plain drag starting there from panning underneath it, and to
-    // position the group bounding-box overlay. Reads through EffectiveBounds rather than each
+    // The combined bounding box of the current selection, or null when nothing is selected - what
+    // positions the selection box, which is itself the hit target for a press inside the
+    // multi-selection's bounds. Reads through EffectiveBounds rather than each
     // instance's raw Bounds, so it live-tracks during an active group move/resize instead of only
     // updating once the gesture commits.
     private Bounds? SelectedInstancesBounds()
@@ -2188,13 +2261,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             memberStart.Height * scaleY
         );
     }
-
-    // Group-move-as-a-unit only applies once 2+ instances are selected - a lone
-    // selected instance's own bounds already are its bounding box, so a drag just outside it (if
-    // reachable at all) should pan like before, not move "a group of one".
-    private bool PointIsWithinSelectionBounds((double X, double Y) point) =>
-        HasMultiMemberSelection
-        && (SelectedInstancesBounds()?.Intersects(new Bounds(point.X, point.Y, 0, 0)) ?? false);
 
     // An edge's rendered endpoints, resolved fresh from Board on every render - this
     // is what lets an attached edge track its instances through move/resize with no separate
@@ -2334,7 +2400,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         get
         {
-            var bounds = MarqueeBoundsFrom(_marqueeAnchor, _marqueeCurrent);
+            var bounds = _marqueeBounds ?? default;
             return $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";
         }
     }
@@ -2361,7 +2427,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         _pendingPaletteDragKey = null;
         _isDragOverBoard = false;
 
-        if (componentTypeKey is null || Board is null)
+        if (componentTypeKey is null || Board is null || PressOwnsBoard)
         {
             StateHasChanged();
             return;
@@ -2393,8 +2459,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void ClickToAdd(string componentTypeKey)
     {
         // Also a no-op before the first-render container-size JS round trip has resolved, which
-        // would otherwise center the new instance on the board origin instead of the viewport.
-        if (Board is null || !_zoomPanTracker.HasKnownContainerSize)
+        // would otherwise center the new instance on the board origin instead of the viewport,
+        // and while a pointer gesture owns the board, since the add would be refused and the
+        // selection must not move to an instance that was never placed.
+        if (Board is null || PressOwnsBoard || !_zoomPanTracker.HasKnownContainerSize)
         {
             return;
         }

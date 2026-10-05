@@ -143,7 +143,7 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: -10px; top: 249px; width: 160px; height: 100px; z-index: 0;" role="group" aria-label="Rectangle" aria-selected="true" tabindex="0" _bl_3=""><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="border-width: 2px;"></div><!--!-->
+    <div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: -10px; top: 249px; width: 160px; height: 100px; z-index: 0;" role="group" aria-label="Rectangle" aria-selected="true" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="border-width: 2px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -154,20 +154,20 @@
         border-style: solid;
         border-color: var(--d12-board-stroke-override, var(--d12-board-stroke));
     }
-</style></div><div class="port-strip port-strip-top"></div><!--!-->
-        <div class="port-strip port-strip-right"></div><!--!-->
-        <div class="port-strip port-strip-bottom"></div><!--!-->
-        <div class="port-strip port-strip-left"></div><div class="port port-top"></div><!--!-->
-    <div class="port port-right"></div><!--!-->
-    <div class="port port-bottom"></div><!--!-->
-    <div class="port port-left"></div><div class="resize-handle top-left"></div><!--!-->
-        <div class="resize-handle top"></div><!--!-->
-        <div class="resize-handle top-right"></div><!--!-->
-        <div class="resize-handle right"></div><!--!-->
-        <div class="resize-handle bottom-right"></div><!--!-->
-        <div class="resize-handle bottom"></div><!--!-->
-        <div class="resize-handle bottom-left"></div><!--!-->
-        <div class="resize-handle left"></div></div><!--!-->
+</style></div><div class="port-strip port-strip-top" data-d12-role="port-strip" data-d12-part="top"></div><!--!-->
+        <div class="port-strip port-strip-right" data-d12-role="port-strip" data-d12-part="right"></div><!--!-->
+        <div class="port-strip port-strip-bottom" data-d12-role="port-strip" data-d12-part="bottom"></div><!--!-->
+        <div class="port-strip port-strip-left" data-d12-role="port-strip" data-d12-part="left"></div><div class="port port-top" data-d12-role="port" data-d12-part="Top"></div><!--!-->
+    <div class="port port-right" data-d12-role="port" data-d12-part="Right"></div><!--!-->
+    <div class="port port-bottom" data-d12-role="port" data-d12-part="Bottom"></div><!--!-->
+    <div class="port port-left" data-d12-role="port" data-d12-part="Left"></div><div class="resize-handle top-left" data-d12-role="resize-handle" data-d12-part="top-left"></div><!--!-->
+        <div class="resize-handle top" data-d12-role="resize-handle" data-d12-part="top"></div><!--!-->
+        <div class="resize-handle top-right" data-d12-role="resize-handle" data-d12-part="top-right"></div><!--!-->
+        <div class="resize-handle right" data-d12-role="resize-handle" data-d12-part="right"></div><!--!-->
+        <div class="resize-handle bottom-right" data-d12-role="resize-handle" data-d12-part="bottom-right"></div><!--!-->
+        <div class="resize-handle bottom" data-d12-role="resize-handle" data-d12-part="bottom"></div><!--!-->
+        <div class="resize-handle bottom-left" data-d12-role="resize-handle" data-d12-part="bottom-left"></div><!--!-->
+        <div class="resize-handle left" data-d12-role="resize-handle" data-d12-part="left"></div></div><!--!-->
 
 <!--!--><style>
     .component-container {
@@ -403,7 +403,11 @@
         position: relative;
         cursor: grab;
     }
-    
+
+    .diagram-canvas:focus {
+        outline: none;
+    }
+
     .diagram-canvas:active {
         cursor: grabbing;
     }
@@ -426,7 +430,7 @@
     .selection-bounding-box {
         position: absolute;
         border: 1px solid #2f80ed;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 1000;
     }
 

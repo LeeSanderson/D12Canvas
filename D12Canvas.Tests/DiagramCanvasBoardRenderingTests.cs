@@ -144,7 +144,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
     }
 
     [Fact]
-    public void InstanceBoundsStayFixedInCanvasSpaceWhilePanTranslatesTheSharedSurface()
+    public async Task InstanceBoundsStayFixedInCanvasSpaceWhilePanTranslatesTheSharedSurface()
     {
         RegisterTestComponent();
         var board = new Board();
@@ -154,17 +154,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 100,
-                    ClientY = 100,
-                }
-            );
-        canvas.Find(".diagram-canvas").MouseMove(new MouseEventArgs { ClientX = 50, ClientY = 40 });
+        await canvas.Pan(from: (100, 100), to: (50, 40));
 
         Assert.Contains(
             "translate(-50px, -60px)",
@@ -198,7 +188,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
     }
 
     [Fact]
-    public void AnInstanceMountsOncePanBringsItIntoTheWindowedViewport()
+    public async Task AnInstanceMountsOncePanBringsItIntoTheWindowedViewport()
     {
         RegisterTestComponent();
         var board = new Board();
@@ -214,19 +204,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
 
         Assert.Empty(canvas.FindAll(".component-container"));
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 0,
-                    ClientY = 0,
-                }
-            );
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = -1300, ClientY = 0 });
+        await canvas.Pan(from: (0, 0), to: (-1300, 0));
 
         Assert.Single(canvas.FindAll(".component-container"));
     }
@@ -235,7 +213,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
     // 3000x3000 boundary (and the pan distance the old extent-based clamp would have capped at)
     // still mounts once brought into view.
     [Fact]
-    public void AnInstanceFarBeyondTheOldFixedExtentStillMountsOncePannedIntoView()
+    public async Task AnInstanceFarBeyondTheOldFixedExtentStillMountsOncePannedIntoView()
     {
         RegisterTestComponent();
         var board = new Board();
@@ -251,25 +229,13 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
 
         Assert.Empty(canvas.FindAll(".component-container"));
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 0,
-                    ClientY = 0,
-                }
-            );
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = -9_950, ClientY = -9_950 });
+        await canvas.Pan(from: (0, 0), to: (-9_950, -9_950));
 
         Assert.Single(canvas.FindAll(".component-container"));
     }
 
     [Fact]
-    public void AnInstanceUnmountsOncePanMovesItOutOfTheWindowedViewport()
+    public async Task AnInstanceUnmountsOncePanMovesItOutOfTheWindowedViewport()
     {
         RegisterTestComponent();
         var board = new Board();
@@ -281,19 +247,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
 
         Assert.Single(canvas.FindAll(".component-container"));
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 0,
-                    ClientY = 0,
-                }
-            );
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = -3000, ClientY = 0 });
+        await canvas.Pan(from: (0, 0), to: (-3000, 0));
 
         Assert.Empty(canvas.FindAll(".component-container"));
     }

@@ -94,7 +94,7 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         canvas
-            .Find(".diagram-canvas")
+            .Find(".selection-bounding-box")
             .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
         canvas
             .Find(".diagram-canvas")
@@ -175,7 +175,7 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         Assert.Equal(2, board.Groups.Count);
 
         canvas
-            .Find(".diagram-canvas")
+            .Find(".selection-bounding-box")
             .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
         canvas
             .Find(".diagram-canvas")

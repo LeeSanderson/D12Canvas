@@ -73,10 +73,9 @@ public sealed class MarqueeVisualTests : IAsyncLifetime
     {
         var (from, to) = await PlaceTwoInstances();
 
-        // A plain drag pans the canvas (pre-existing behaviour) - Shift+drag draws the marquee
-        // instead, the same real Mouse.Down/Move technique DragMoveVisualTests uses.
+        // A plain primary drag on empty canvas draws the marquee, driven with the same real
+        // Mouse.Down/Move technique DragMoveVisualTests uses.
         await _page.Mouse.MoveAsync(from.X, from.Y);
-        await _page.Keyboard.DownAsync("Shift");
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync(to.X, to.Y);
 
@@ -85,7 +84,6 @@ public sealed class MarqueeVisualTests : IAsyncLifetime
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
 
         await _page.Mouse.UpAsync();
-        await _page.Keyboard.UpAsync("Shift");
     }
 
     [Fact]
@@ -94,11 +92,9 @@ public sealed class MarqueeVisualTests : IAsyncLifetime
         var (from, to) = await PlaceTwoInstances();
 
         await _page.Mouse.MoveAsync(from.X, from.Y);
-        await _page.Keyboard.DownAsync("Shift");
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync(to.X, to.Y);
         await _page.Mouse.UpAsync();
-        await _page.Keyboard.UpAsync("Shift");
 
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(2);

@@ -77,17 +77,7 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 100,
-                    ClientY = 100,
-                }
-            );
-        canvas.Find(".diagram-canvas").MouseMove(new MouseEventArgs { ClientX = 50, ClientY = 40 }); // pans by (-50, -60)
+        await canvas.Pan(from: (100, 100), to: (50, 40)); // pans by (-50, -60)
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 

@@ -124,21 +124,11 @@ public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
     }
 
     [Fact]
-    public void PanningShiftsTheGridPhaseWithoutChangingItsSpacing()
+    public async Task PanningShiftsTheGridPhaseWithoutChangingItsSpacing()
     {
         var canvas = Render<DiagramCanvas>();
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 0,
-                    ClientY = 0,
-                }
-            );
-        canvas.Find(".diagram-canvas").MouseMove(new MouseEventArgs { ClientX = 15, ClientY = -5 });
+        await canvas.Pan(from: (0, 0), to: (15, -5));
 
         var layer = Assert.Single(canvas.FindAll(".grid-layer"));
         var style = layer.GetAttribute("style")!;

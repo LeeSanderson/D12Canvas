@@ -71,23 +71,13 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
     }
 
     [Fact]
-    public void ConvertsTheDropPointToBoardCoordinatesAccountingForPan()
+    public async Task ConvertsTheDropPointToBoardCoordinatesAccountingForPan()
     {
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 100,
-                    ClientY = 100,
-                }
-            );
-        canvas.Find(".diagram-canvas").MouseMove(new MouseEventArgs { ClientX = 50, ClientY = 40 }); // pans by (-50, -60)
+        await canvas.Pan(from: (100, 100), to: (50, 40)); // pans by (-50, -60)
 
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });

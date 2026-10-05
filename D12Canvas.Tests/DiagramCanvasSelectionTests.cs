@@ -87,7 +87,7 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
     }
 
     [Fact]
-    public void ClickingEmptyCanvasClearsTheSelection()
+    public async Task ClickingEmptyCanvasClearsTheSelection()
     {
         var board = new Board();
         AddInstance(board, 0);
@@ -96,7 +96,7 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         canvas.Find(".component-container").Click();
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
 
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.ClickCanvas(200, 200);
 
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
     }
@@ -116,13 +116,10 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
     }
 
-    // A plain drag on empty canvas still pans (Shift+drag draws a marquee instead - see
-    // DiagramCanvasMarqueeSelectTests). A pan drag starts and ends with mousedown/mouseup on the
-    // same element, so the browser's native click fires right after it - without the _dragMoved
-    // guard, panning after selecting something would immediately clear the selection as an
-    // unintended side effect of "click empty canvas clears selection".
+    // A pan is a drag with the middle or secondary button; only a release below the drag
+    // threshold on the primary button is the click that clears the selection.
     [Fact]
-    public void PanningTheCanvasDoesNotClearAnExistingSelection()
+    public async Task PanningTheCanvasDoesNotClearAnExistingSelection()
     {
         var board = new Board();
         AddInstance(board, 0);
@@ -131,21 +128,7 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         canvas.Find(".component-container").Click();
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
 
-        // A real pan drag ends with mousedown/mouseup on the same element (the canvas
-        // background), so the browser fires a native click right after - simulated here since
-        // bUnit doesn't chain that automatically from Move/Up.
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    Button = 0,
-                    ClientX = 100,
-                    ClientY = 100,
-                }
-            );
-        canvas.Find(".diagram-canvas").MouseMove(new MouseEventArgs { ClientX = 50, ClientY = 40 });
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.Pan(from: (100, 100), to: (50, 40));
 
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
     }

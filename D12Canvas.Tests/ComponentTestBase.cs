@@ -75,6 +75,7 @@ public abstract class ComponentTestBase : BunitContext
             );
         SetupDisposableCleanupHandle(module, "addResizeListener");
         SetupDisposableCleanupHandle(module, "addKeyboardListener");
+        SetupDisposableCleanupHandle(module, "addPointerListener");
 
         module.SetupVoid("focusGroupTabStop", _ => true).SetVoidResult();
         module.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();

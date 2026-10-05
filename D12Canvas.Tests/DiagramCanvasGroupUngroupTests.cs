@@ -109,7 +109,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.ClickCanvas(400, 400);
 
         // A plain click on just the second member - not shift-click - still selects both, since
         // it now belongs to a Group.
@@ -134,7 +134,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 
         Assert.Empty(board.Groups);
 
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.ClickCanvas(400, 400);
         canvas.FindAll(".component-container")[0].Click();
 
         var containers = canvas.FindAll(".component-container");
@@ -205,7 +205,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         Assert.Single(board.Groups);
 
         // Clicking one member alone once again selects both, since the group is back.
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.ClickCanvas(400, 400);
         canvas.FindAll(".component-container")[0].Click();
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
@@ -277,7 +277,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 
         // The inner group still converges selection on click; the third instance (a former outer
         // member, never itself grouped) is independently selectable again.
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.ClickCanvas(400, 400);
         canvas.FindAll(".component-container")[0].Click();
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
@@ -312,7 +312,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 
         // And the three are now independently selectable - clicking just the loose instance
         // selects only it.
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.ClickCanvas(400, 400);
         canvas.FindAll(".component-container")[2].Click();
         containers = canvas.FindAll(".component-container");
         Assert.Null(containers[0].GetAttribute("aria-selected"));

@@ -110,7 +110,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
     }
 
     [Fact]
-    public void ClickingEmptyCanvasClearsAnEdgeSelection()
+    public async Task ClickingEmptyCanvasClearsAnEdgeSelection()
     {
         var board = new Board();
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
@@ -119,7 +119,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         canvas.Find(".edge-line").Click();
         Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
 
-        canvas.Find(".diagram-canvas").Click();
+        await canvas.ClickCanvas(400, 400);
 
         Assert.Null(canvas.Find(".edge-line").GetAttribute("aria-selected"));
     }

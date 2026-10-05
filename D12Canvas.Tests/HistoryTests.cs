@@ -7,6 +7,37 @@ namespace D12Canvas.Tests;
 public class HistoryTests
 {
     [Fact]
+    public void WhileLockedNothingIsAppliedUndoneOrRedoneAndUnlockLetsItThrough()
+    {
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 50, 50)
+        );
+        var history = new CommandHistory();
+        history.Do(
+            new ChangeBoundsCommand(instance, new Bounds(0, 0, 50, 50), new Bounds(10, 10, 50, 50))
+        );
+        history.Undo();
+
+        history.Lock();
+        history.Redo();
+        Assert.Equal(new Bounds(0, 0, 50, 50), instance.Bounds);
+        history.Do(
+            new ChangeBoundsCommand(instance, new Bounds(0, 0, 50, 50), new Bounds(20, 20, 50, 50))
+        );
+        Assert.Equal(new Bounds(0, 0, 50, 50), instance.Bounds);
+        Assert.True(history.CanRedo);
+        history.Redo();
+        Assert.Equal(new Bounds(0, 0, 50, 50), instance.Bounds);
+        history.Unlock();
+
+        history.Redo();
+
+        Assert.Equal(new Bounds(10, 10, 50, 50), instance.Bounds);
+    }
+
+    [Fact]
     public void DoAppliesTheCommandImmediately()
     {
         var instance = new ComponentInstance(

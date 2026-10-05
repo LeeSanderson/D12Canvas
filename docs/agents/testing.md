@@ -17,6 +17,8 @@ For a single class, or to pass other MTP runner flags (e.g. `-parallel none`): `
     dotnet build D12Canvas.Tests/D12Canvas.Tests.csproj
     ./D12Canvas.Tests/bin/Debug/net10.0/D12Canvas.Tests.exe -class D12Canvas.Tests.SomeTestClass
 
+Pointer gestures are driven through the canvas's four public entry points (`CanvasPointer` in the test project wraps them), never by dispatching mouse events at the canvas. `DiagramCanvasPointerGestureTests` enumerates the closed `GestureKind` set with one release-reliability case and one cancel case per member; adding a gesture fails that theory until its cases exist.
+
 ## Playwright visual tests (rendered visual states)
 
 **Standing rule (unchanged from the README):** any change that adds or changes a rendered visual state on the canvas needs a new/updated screenshot case in `D12Canvas.VisualTests`.
@@ -42,3 +44,5 @@ Then build and run. On Git Bash for Windows, `-v $PWD:/workspace`-style volume a
 ### Updating baselines
 
 See the root `README.md`'s "Updating baselines" section for the full step-by-step. In short: a real diff writes `*.received.png`/`*.received.html` next to the existing `*.verified.*` files - inspect the `.received.*` output, confirm the new rendering is correct, then overwrite the matching `.verified.*` file with it (delete the `.received.*` after) and commit both.
+
+Two things are scrubbed out of the HTML snapshot before comparison (see `ModuleInitializer`): entity ids, which appear as `Guid_1`, `Guid_2` and so on in order of first appearance because a demo page seeds fresh ids on every load, and Blazor's `_bl_N` element-reference attributes, whose numbering is not stable on a page with two canvases. Verify writes a received copy of every target when a test fails, so a `.received.png` beside a changed `.received.html` is not by itself evidence that the screenshot changed; compare it before folding it.

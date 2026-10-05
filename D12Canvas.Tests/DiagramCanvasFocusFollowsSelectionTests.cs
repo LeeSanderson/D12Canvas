@@ -146,7 +146,7 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         canvas.FindAll(".component-container")[0].Click();
         canvas.FindAll(".component-container")[1].Click(new MouseEventArgs { ShiftKey = true });
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
-        canvas.Find(".diagram-canvas").Click(); // clear the selection first
+        await canvas.ClickCanvas(400, 400); // clear the selection first
 
         canvas.Find(".group-tab-stop").Focus();
 

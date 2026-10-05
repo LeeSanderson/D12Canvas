@@ -143,7 +143,7 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-        <div class="canvas-container"><!--!--><div class="diagram-container" _bl_2=""><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg></div></div></div><!--!-->
+        <div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg></div></div></div><!--!-->
 
 <!--!--><style>
     .diagram-container {
@@ -209,7 +209,11 @@
         position: relative;
         cursor: grab;
     }
-    
+
+    .diagram-canvas:focus {
+        outline: none;
+    }
+
     .diagram-canvas:active {
         cursor: grabbing;
     }
@@ -232,7 +236,7 @@
     .selection-bounding-box {
         position: absolute;
         border: 1px solid #2f80ed;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 1000;
     }
 
@@ -517,7 +521,7 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-        <div class="canvas-container"><!--!--><div class="diagram-container" _bl_3=""><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg></div></div></div><!--!-->
+        <div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1);"><!--!--><svg class="edges-layer"></svg></div></div></div><!--!-->
 
 <!--!--><style>
     .diagram-container {
@@ -583,7 +587,11 @@
         position: relative;
         cursor: grab;
     }
-    
+
+    .diagram-canvas:focus {
+        outline: none;
+    }
+
     .diagram-canvas:active {
         cursor: grabbing;
     }
@@ -606,7 +614,7 @@
     .selection-bounding-box {
         position: absolute;
         border: 1px solid #2f80ed;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 1000;
     }
 

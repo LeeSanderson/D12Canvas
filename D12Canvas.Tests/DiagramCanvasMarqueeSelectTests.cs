@@ -1,5 +1,6 @@
 using Bunit;
 using D12Canvas.Model;
+using D12Canvas.Pointer;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,11 +8,11 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Marquee + shift-click multi-select. A plain drag on empty canvas still pans (pre-existing
-// behaviour); Shift+drag draws an intersection-based marquee instead, pairing with Shift-click's
-// existing "multi-select gesture" meaning. A drag starting inside the current selection's own
-// combined bounding box does neither - reserved for the group-move-as-a-unit gesture, so it's
-// deliberately inert for now.
+// Marquee + shift-click multi-select, driven through the pointer entry points the browser-side
+// listener calls. A plain primary drag on empty canvas draws an intersection-based marquee that
+// replaces the selection; Shift+drag adds the band's contents to the selection instead; the
+// middle and secondary buttons pan. A press inside the multi-selection's own box lands on the box,
+// not the canvas, so it is never a marquee.
 public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -51,26 +52,15 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
     }
 
     [Fact]
-    public void ShiftDraggingOnEmptyCanvasRendersAVisibleMarqueeThatTracksTheDragAndDisappearsOnRelease()
+    public async Task DraggingOnEmptyCanvasRendersAVisibleMarqueeThatTracksTheDragAndDisappearsOnRelease()
     {
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         Assert.Empty(canvas.FindAll(".marquee-select"));
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    ClientX = 20,
-                    ClientY = 30,
-                    ShiftKey = true,
-                }
-            );
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 120, ClientY = 90 });
+        await canvas.Press(20, 30);
+        await canvas.Move(120, 90);
 
         var marquee = canvas.Find(".marquee-select");
         var style = marquee.GetAttribute("style");
@@ -79,21 +69,19 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         Assert.Contains("width: 100px", style);
         Assert.Contains("height: 60px", style);
 
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 120, ClientY = 90 });
+        await canvas.Release(120, 90);
 
         Assert.Empty(canvas.FindAll(".marquee-select"));
     }
 
     [Fact]
-    public void APlainDragWithoutShiftPansInsteadOfDrawingAMarquee()
+    public async Task AMiddleDragPansInsteadOfDrawingAMarquee()
     {
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(new MouseEventArgs { ClientX = 100, ClientY = 100 });
-        canvas.Find(".diagram-canvas").MouseMove(new MouseEventArgs { ClientX = 50, ClientY = 40 });
+        await canvas.Press(100, 100, PointerPress.MiddleButton);
+        await canvas.Move(50, 40);
 
         Assert.Empty(canvas.FindAll(".marquee-select"));
         Assert.Contains(
@@ -103,7 +91,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
     }
 
     [Fact]
-    public void MarqueeSelectsEveryInstanceItIntersectsIncludingOnesOnlyPartiallyOverlapped()
+    public async Task MarqueeSelectsEveryInstanceItIntersectsIncludingOnesOnlyPartiallyOverlapped()
     {
         var board = new Board();
         AddInstance(board, 60, 60); // fully inside the drag rectangle (0,0)-(200,200)
@@ -111,20 +99,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 400, 400); // untouched
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    ClientX = 0,
-                    ClientY = 0,
-                    ShiftKey = true,
-                }
-            );
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 200, ClientY = 200 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 200, ClientY = 200 });
+        await canvas.Marquee(from: (0, 0), to: (200, 200));
 
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
@@ -133,31 +108,20 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
     }
 
     [Fact]
-    public void MarqueeWorksWhenDraggedInAnyDirection()
+    public async Task MarqueeWorksWhenDraggedInAnyDirection()
     {
         var board = new Board();
         AddInstance(board, 60, 60);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         // Dragged from bottom-right up to top-left (negative deltas), not the usual direction.
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    ClientX = 200,
-                    ClientY = 200,
-                    ShiftKey = true,
-                }
-            );
-        canvas.Find(".diagram-canvas").MouseMove(new MouseEventArgs { ClientX = 0, ClientY = 0 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 0, ClientY = 0 });
+        await canvas.Marquee(from: (200, 200), to: (0, 0));
 
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
     }
 
     [Fact]
-    public void MarqueeReplacesAnExistingSelectionRatherThanAddingToIt()
+    public async Task MarqueeReplacesAnExistingSelectionRatherThanAddingToIt()
     {
         var board = new Board();
         AddInstance(board, 0, 0);
@@ -170,20 +134,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
             canvas.FindAll(".component-container")[0].GetAttribute("aria-selected")
         );
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    ClientX = 280,
-                    ClientY = 280,
-                    ShiftKey = true,
-                }
-            );
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 400 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 400 });
+        await canvas.Marquee(from: (280, 280), to: (400, 400));
 
         var containers = canvas.FindAll(".component-container");
         Assert.Null(containers[0].GetAttribute("aria-selected"));
@@ -191,7 +142,47 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
     }
 
     [Fact]
-    public void MarqueeAccountsForZoomWhenConvertingScreenCoordinatesToBoardSpace()
+    public async Task ShiftDragAddsTheBandsContentsToTheExistingSelectionAcrossSweeps()
+    {
+        var board = new Board();
+        AddInstance(board, 0, 0);
+        AddInstance(board, 300, 300);
+        AddInstance(board, 600, 600);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.FindAll(".component-container")[0].Click();
+
+        await canvas.Marquee(from: (280, 280), to: (400, 400), shift: true);
+        await canvas.Marquee(from: (580, 580), to: (700, 700), shift: true);
+
+        var containers = canvas.FindAll(".component-container");
+        Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
+        Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
+        Assert.Equal("true", containers[2].GetAttribute("aria-selected"));
+    }
+
+    [Fact]
+    public async Task AShiftMarqueeThatSweepsBackOffAnInstanceLeavesThePressTimeSelectionIntact()
+    {
+        var board = new Board();
+        AddInstance(board, 0, 0);
+        AddInstance(board, 300, 300);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.FindAll(".component-container")[0].Click();
+
+        await canvas.Press(280, 280, shift: true);
+        await canvas.Move(400, 400, shift: true);
+        await canvas.Move(290, 290, shift: true);
+        await canvas.Release(290, 290);
+
+        var containers = canvas.FindAll(".component-container");
+        Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
+        Assert.Null(containers[1].GetAttribute("aria-selected"));
+    }
+
+    [Fact]
+    public async Task MarqueeAccountsForZoomWhenConvertingScreenCoordinatesToBoardSpace()
     {
         var board = new Board();
         AddInstance(board, 210, 210);
@@ -202,22 +193,27 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         // At scale 1.1, this 220px screen-space drag reaches only ~200 board units - short of the
         // instance's (210,210) origin. If the conversion ignored zoom (treating screen pixels as
         // board units 1:1), the same drag would reach 220 and wrongly intersect it.
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(
-                new MouseEventArgs
-                {
-                    ClientX = 0,
-                    ClientY = 0,
-                    ShiftKey = true,
-                }
-            );
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 220, ClientY = 220 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 220, ClientY = 220 });
+        await canvas.Marquee(from: (0, 0), to: (220, 220));
 
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
+    }
+
+    [Fact]
+    public async Task MarqueeAccountsForPanWhenConvertingScreenCoordinatesToBoardSpace()
+    {
+        var board = new Board();
+        AddInstance(board, 60, 60);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        await canvas.Pan(from: (0, 0), to: (200, 200));
+
+        // The instance now sits at screen (260, 260). A band over screen (0,0)-(100,100) reads
+        // board (-200,-200)-(-100,-100) and misses it; one over (250,250)-(350,350) hits it.
+        await canvas.Marquee(from: (0, 0), to: (100, 100));
+        Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
+
+        await canvas.Marquee(from: (250, 250), to: (350, 350));
+        Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
     }
 
     [Fact]
@@ -276,19 +272,11 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
     }
 
-    // A drag starting inside the selection's own combined bounding box - but on empty space, not
-    // on either instance itself - used to be deliberately inert, and this test asserted exactly
-    // that: no pan, no marquee, selection undisturbed. That drag was later given a real job
-    // (moving the whole selection as one unit) - see
-    // DiagramCanvasMultiSelectionMoveResizeTests.DraggingEmptySpaceWithinTheBoundingBoxMoves...
-    // and ...TheBoardIsUnchangedMidGroupMoveAndOnlyUpdatesOnRelease, which cover the same gesture
-    // (still no pan, still no marquee, still doesn't clear the selection) plus its new effect.
-
-    // A stationary click (no movement) on empty space still clears the selection, even when that
-    // point happens to fall within the selection's combined bounding box - only a real drag from
-    // there does something else now (the group move).
+    // The multi-selection's box is a solid hit target, so a press inside it never reaches the
+    // canvas: a stationary press-release on the box leaves the selection alone, where the same
+    // press on empty canvas outside the box clears it.
     [Fact]
-    public void AStationaryClickWithinTheSelectionBoundsStillClearsTheSelection()
+    public async Task AStationaryPressOnTheSelectionBoxLeavesTheSelectionAloneWhereOneOnEmptyCanvasClearsIt()
     {
         var board = new Board();
         AddInstance(board, 0, 0);
@@ -299,11 +287,15 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         containers[0].Click();
         containers[1].Click(new MouseEventArgs { ShiftKey = true });
 
-        canvas
-            .Find(".diagram-canvas")
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
+        var box = canvas.Find(".selection-bounding-box");
+        box.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
         canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 150, ClientY = 25 });
-        canvas.Find(".diagram-canvas").Click();
+
+        containers = canvas.FindAll(".component-container");
+        Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
+        Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
+
+        await canvas.ClickCanvas(150, 200);
 
         containers = canvas.FindAll(".component-container");
         Assert.Null(containers[0].GetAttribute("aria-selected"));

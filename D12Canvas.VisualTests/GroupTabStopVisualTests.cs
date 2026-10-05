@@ -70,11 +70,9 @@ public sealed class GroupTabStopVisualTests : IAsyncLifetime
         );
 
         await _page.Mouse.MoveAsync(from.Item1, from.Item2);
-        await _page.Keyboard.DownAsync("Shift");
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync(to.Item1, to.Item2);
         await _page.Mouse.UpAsync();
-        await _page.Keyboard.UpAsync("Shift");
 
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(2);
