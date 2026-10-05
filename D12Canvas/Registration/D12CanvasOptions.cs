@@ -64,7 +64,8 @@ public sealed class D12CanvasOptions
                 builder.Role,
                 builder.DefaultSize,
                 builder.Category,
-                editableProperties
+                editableProperties,
+                AssetReferenceSchema.DiscoverFrom(typeof(TProps))
             )
         );
 

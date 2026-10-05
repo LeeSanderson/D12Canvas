@@ -1,3 +1,4 @@
+using System.Reflection;
 using D12Canvas.Panel;
 
 namespace D12Canvas.Registration;
@@ -16,5 +17,8 @@ public sealed record ComponentRegistration(
     // null (the default for every existing call site, including every existing test's
     // ComponentRegistration) means "no editable properties" - D12CanvasOptions.RegisterComponent
     // always resolves this to a concrete (possibly empty) list before it reaches here.
-    IReadOnlyList<EditableProperty>? EditableProperties = null
+    IReadOnlyList<EditableProperty>? EditableProperties = null,
+    // The TProps properties declared [AssetReference], discovered by RegisterComponent in the same
+    // pass as EditableProperties. null means none, and a type with none costs nothing at render.
+    IReadOnlyList<PropertyInfo>? AssetReferences = null
 );

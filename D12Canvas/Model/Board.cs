@@ -5,10 +5,34 @@ public sealed class Board
     private readonly Dictionary<Guid, ComponentInstance> _components = new();
     private readonly Dictionary<Guid, Group> _groups = new();
     private readonly Dictionary<Guid, Edge> _edges = new();
+    private readonly Dictionary<string, Asset> _assets = new(StringComparer.Ordinal);
 
     public IReadOnlyCollection<ComponentInstance> Components => _components.Values;
     public IReadOnlyCollection<Group> Groups => _groups.Values;
     public IReadOnlyCollection<Edge> Edges => _edges.Values;
+    public IReadOnlyCollection<Asset> Assets => _assets.Values;
+
+    // The only public way bytes enter a board. Content-addressed and idempotent: the same bytes
+    // added twice are one asset, and the return value is the reference string a declared props
+    // property stores. Outside history, because creating the instance that refers to the asset is
+    // the undoable act; nothing removes an asset during a session, so undo never needs the bytes.
+    public string AddAsset(byte[] data, string mimeType)
+    {
+        var id = Asset.IdFor(data);
+        _assets.TryAdd(id, new Asset(id, mimeType, data.ToArray()));
+        return AssetReference.Format(id);
+    }
+
+    internal void AddAsset(Asset asset) => _assets.TryAdd(asset.Id, asset);
+
+    public Asset? GetAsset(string id) => _assets.TryGetValue(id, out var asset) ? asset : null;
+
+    // An edge's label is a full ComponentInstance that lives on its edge rather than in
+    // Components, so anything that must see every instance on the board walks this instead.
+    internal IEnumerable<ComponentInstance> InstancesIncludingEdgeLabels() =>
+        _components.Values.Concat(
+            _edges.Values.Select(edge => edge.Label).OfType<ComponentInstance>()
+        );
 
     public void AddComponent(ComponentInstance instance) => _components.Add(instance.Id, instance);
 

@@ -14,11 +14,6 @@ namespace D12Canvas;
 // DiagramCanvas, so it also subscribes to DiagramCanvas.SelectionChanged to know when to re-render.
 public partial class PropertyPanel : IDisposable
 {
-    private static readonly MethodInfo MemberwiseCloneMethod = typeof(object).GetMethod(
-        "MemberwiseClone",
-        BindingFlags.NonPublic | BindingFlags.Instance
-    )!;
-
     [Inject]
     private IComponentRegistry Registry { get; set; } = null!;
 
@@ -232,7 +227,7 @@ public partial class PropertyPanel : IDisposable
                 continue;
             }
 
-            changes.Add((instance.Id, before, CloneWithChange(before, property, newValue)));
+            changes.Add((instance.Id, before, PropsCopy.With(before, property, newValue)));
         }
 
         if (changes.Count == 0)
@@ -258,17 +253,5 @@ public partial class PropertyPanel : IDisposable
         }
 
         return Convert.ChangeType(raw, targetType, CultureInfo.InvariantCulture);
-    }
-
-    // A TProps record is immutable - editing one field normally means a `with` expression, but the
-    // panel only ever sees Props as an opaque object, so it has no compile-time TProps
-    // to write `with` against. MemberwiseClone + a single reflected overwrite is the generic
-    // equivalent: it copies every field byte-for-byte (so unrelated properties are untouched) and
-    // leaves the original object - which becomes MutateEntityCommand's "before" - unmodified.
-    private static object CloneWithChange(object props, PropertyInfo property, object? newValue)
-    {
-        var clone = MemberwiseCloneMethod.Invoke(props, null)!;
-        property.SetValue(clone, newValue);
-        return clone;
     }
 }

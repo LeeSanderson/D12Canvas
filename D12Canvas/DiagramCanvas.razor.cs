@@ -1426,7 +1426,8 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        _history.Do(new MutateEntityCommand(instance, before, after));
+        var (committedBefore, unresolvedAfter) = UnresolvedForCommit(instance, before, after);
+        _history.Do(new MutateEntityCommand(instance, committedBefore, unresolvedAfter));
         StateHasChanged();
     }
 
@@ -1445,7 +1446,12 @@ public partial class DiagramCanvas : IAsyncDisposable
             var instance = ResolvePropsEntity(instanceId);
             if (instance is not null)
             {
-                commands.Add(new MutateEntityCommand(instance, before, after));
+                var (committedBefore, unresolvedAfter) = UnresolvedForCommit(
+                    instance,
+                    before,
+                    after
+                );
+                commands.Add(new MutateEntityCommand(instance, committedBefore, unresolvedAfter));
             }
         }
 
@@ -1699,8 +1705,32 @@ public partial class DiagramCanvas : IAsyncDisposable
     // [Parameter] public TProps Props { get; set; }
     private const string PropsParameterName = "Props";
 
-    private static IDictionary<string, object> GetComponentParameters(ComponentInstance instance) =>
-        new Dictionary<string, object> { [PropsParameterName] = instance.Props };
+    private readonly AssetReferenceResolver _assetReferenceResolver = new();
+
+    // The props object a component actually binds, with any asset reference already swapped for
+    // its data: URI. The same object goes to the ComponentContainer's Props parameter, so an
+    // asset arriving after the first render changes what the container compares and it re-renders
+    // its child; an unchanged, already-resolved props object is the same cached copy both times.
+    private object BoundProps(ComponentInstance instance, ComponentRegistration registration) =>
+        _assetReferenceResolver.Resolve(instance, registration, Board!);
+
+    // The inverse at the commit point: a component edits the props it was bound with, so a
+    // declared reference comes back as a data URI unless it is put back here.
+    private (object Before, object After) UnresolvedForCommit(
+        ComponentInstance instance,
+        object before,
+        object after
+    ) =>
+        _assetReferenceResolver.Unresolve(
+            instance,
+            Registry.Resolve(instance.ComponentTypeKey),
+            Board!,
+            before,
+            after
+        );
+
+    private static IDictionary<string, object> ComponentParameters(object boundProps) =>
+        new Dictionary<string, object> { [PropsParameterName] = boundProps };
 
     // Recomputed whenever DiagramCanvas re-renders. That's driven entirely by the pan/zoom/
     // resize events that already call StateHasChanged (throttled for pan, see HandleMouseMove) -

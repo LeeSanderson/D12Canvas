@@ -1,13 +1,22 @@
+using System.Text.Json.Serialization;
 using D12Canvas.Model;
 
 namespace D12Canvas.Persistence;
 
+// Assets is omitted from the JSON entirely when null, so a board with no assets serialises
+// byte-for-byte as it did before the field existed, and defaults to null on read so a board saved
+// before it existed still deserializes - the same "field didn't exist yet" convention Groups and
+// Edges use.
 internal sealed record BoardEnvelope(
     int SchemaVersion,
     IReadOnlyList<ComponentInstanceEnvelope> Components,
     IReadOnlyList<GroupEnvelope>? Groups = null,
-    IReadOnlyList<EdgeEnvelope>? Edges = null
+    IReadOnlyList<EdgeEnvelope>? Edges = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        IReadOnlyList<AssetEnvelope>? Assets = null
 );
+
+internal sealed record AssetEnvelope(string Id, string MimeType, byte[] Data);
 
 // CustomPorts defaults to null so a board saved before this property existed - missing it
 // entirely - still deserializes, same "field didn't exist yet" convention the Edge-level fields

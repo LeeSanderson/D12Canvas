@@ -23,10 +23,27 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             CurrentSchemaVersion,
             board.Components.Select(ToComponentEnvelope).ToList(),
             board.Groups.Select(ToGroupEnvelope).ToList(),
-            board.Edges.Select(ToEdgeEnvelope).ToList()
+            board.Edges.Select(ToEdgeEnvelope).ToList(),
+            ReferencedAssetEnvelopes(board)
         );
 
         return JsonSerializer.Serialize(envelope, Options);
+    }
+
+    // Only the assets some entity still refers to reach the file; an abandoned one stays in
+    // memory until the board is reloaded. Null rather than empty so the property is omitted.
+    private IReadOnlyList<AssetEnvelope>? ReferencedAssetEnvelopes(Board board)
+    {
+        var assets = ReferencedAssets
+            .IdsReferencedBy(board.InstancesIncludingEdgeLabels(), _registry)
+            .Distinct(StringComparer.Ordinal)
+            .Select(board.GetAsset)
+            .OfType<Asset>()
+            .OrderBy(asset => asset.Id, StringComparer.Ordinal)
+            .Select(asset => new AssetEnvelope(asset.Id, asset.MimeType, asset.Data))
+            .ToList();
+
+        return assets.Count == 0 ? null : assets;
     }
 
     public Board Deserialize(string json)
@@ -38,6 +55,11 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         EnsureSupportedSchemaVersion(envelope.SchemaVersion);
 
         var board = new Board();
+
+        foreach (var assetEnvelope in envelope.Assets ?? [])
+        {
+            board.AddAsset(FromAssetEnvelope(assetEnvelope));
+        }
 
         foreach (var componentEnvelope in envelope.Components)
         {
@@ -73,6 +95,17 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         var board = new Board();
         var warnings = new List<BoardDeserializeWarning>();
 
+        if (root.TryGetProperty(nameof(BoardEnvelope.Assets), out var assetsElement))
+        {
+            ParseEntries<AssetEnvelope>(
+                assetsElement,
+                nameof(AssetEnvelope.Id),
+                nameof(BoardEnvelope.Assets),
+                warnings,
+                (_, assetEnvelope) => board.AddAsset(FromAssetEnvelope(assetEnvelope))
+            );
+        }
+
         ParseEntries<ComponentInstanceEnvelope>(
             root.GetProperty(nameof(BoardEnvelope.Components)),
             nameof(ComponentInstanceEnvelope.Id),
@@ -91,8 +124,35 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             DeserializeEdgesPartial(edgesElement, board, warnings);
         }
 
+        WarnAboutMissingAssets(board, warnings);
+
         return new PartialBoardDeserializeResult(board, warnings);
     }
+
+    // A reference to an asset the file does not carry degrades rather than failing: the reference
+    // is left in place, so the built-in Image lands on its "Image unavailable" state, and the
+    // partial path says which instance points at what. The strict path tolerates it silently.
+    private void WarnAboutMissingAssets(Board board, List<BoardDeserializeWarning> warnings)
+    {
+        foreach (var instance in board.InstancesIncludingEdgeLabels())
+        {
+            foreach (var assetId in ReferencedAssets.IdsReferencedBy([instance], _registry))
+            {
+                if (board.GetAsset(assetId) is null)
+                {
+                    warnings.Add(
+                        new BoardDeserializeWarning(
+                            instance.Id.ToString(),
+                            $"References missing asset '{assetId}'."
+                        )
+                    );
+                }
+            }
+        }
+    }
+
+    private static Asset FromAssetEnvelope(AssetEnvelope envelope) =>
+        new(envelope.Id, envelope.MimeType, envelope.Data);
 
     // An edge referencing a missing instance is tolerated, not fatal - Board.ResolveEndpoint
     // already tolerates a dangling PortEndpoint componentId at read time (Model/Board.cs), so a

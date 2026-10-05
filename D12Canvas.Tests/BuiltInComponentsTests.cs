@@ -170,6 +170,17 @@ public class BuiltInComponentsTests
         );
     }
 
+    // Url may hold an asset reference in place of an ordinary URL, so the canvas resolves it
+    // before the Image ever sees it. No other built-in property holds stored content.
+    [Fact]
+    public void ImageUrlIsTheOnlyBuiltInAssetReference()
+    {
+        Assert.Equal("Url", Assert.Single(RegisterAndResolve("image").AssetReferences!).Name);
+        Assert.Empty(RegisterAndResolve("rectangle").AssetReferences!);
+        Assert.Empty(RegisterAndResolve("sticky-note").AssetReferences!);
+        Assert.Empty(RegisterAndResolve("text").AssetReferences!);
+    }
+
     private static ComponentRegistration RegisterAndResolve(string key)
     {
         var services = new ServiceCollection();
