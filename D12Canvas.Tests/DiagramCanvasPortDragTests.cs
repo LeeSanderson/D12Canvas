@@ -245,12 +245,11 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         Assert.Single(board.Edges);
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
-        var handle = canvas
-            .FindAll(".component-container")[0]
-            .QuerySelector(".resize-handle.bottom-right")!;
-        handle.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 150 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 190, ClientY = 170 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 190, ClientY = 170 });
+        canvas.DragHandle(
+            canvas.FindAll(".component-container")[0].QuerySelector(".resize-handle.bottom-right")!,
+            (150, 150),
+            (190, 170)
+        );
 
         Assert.Equal(new Bounds(100, 100, 90, 70), source.Bounds);
 

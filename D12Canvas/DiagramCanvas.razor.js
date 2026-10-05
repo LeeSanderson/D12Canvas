@@ -85,13 +85,11 @@ const NATIVELY_INTERACTIVE = "input, textarea, button, select, a[href], [tabinde
 // no gesture. Preventing the pointerdown would suppress the compatibility mouse events those
 // handlers rely on. Roles leave this set as their gestures move onto the spine.
 const LEGACY_PRIMARY_ROLES = new Set([
-    "resize-handle",
     "port",
     "port-strip",
     "edge",
     "edge-endpoint",
-    "edge-label",
-    "selection-handle"
+    "edge-label"
 ]);
 
 function isNativelyInteractive(element) {

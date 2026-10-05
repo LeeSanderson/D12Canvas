@@ -115,10 +115,7 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         // Combined bbox starts at (0,0,200,50). Growing it to (0,0,300,100) scales x1.5/x2.
-        var handle = canvas.Find(".group-resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 250 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 250 });
+        canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (400, 250));
 
         Assert.Equal(new Bounds(0, 0, 75, 100), first.Bounds);
         Assert.Equal(new Bounds(150, 0, 150, 100), second.Bounds);
@@ -142,10 +139,7 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         // Combined bbox starts at (0,0,200,50), bottom-right corner (200,50). Dragging the
         // top-left handle outward (up-and-left) grows the bbox to (-20,-10,220,60) - the
         // opposite (bottom-right) corner must stay at exactly (200,50).
-        var handle = canvas.Find(".group-resize-handle.top-left");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 280, ClientY = 190 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 280, ClientY = 190 });
+        canvas.DragHandle(canvas.Find(".group-resize-handle.top-left"), (300, 200), (280, 190));
 
         Assert.Equal(-20, first.Bounds.X, precision: 10);
         Assert.Equal(-10, first.Bounds.Y, precision: 10);
@@ -200,10 +194,7 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // outer group = {inner, C}
 
         // Combined bbox is (0,0)-(400,50) = 400x50. Growing width to 800 doubles every x-extent.
-        var handle = canvas.Find(".group-resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 400, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 800, ClientY = 200 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 800, ClientY = 200 });
+        canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (400, 200), (800, 200));
 
         Assert.Equal(new Bounds(0, 0, 100, 50), a.Bounds);
         Assert.Equal(new Bounds(200, 0, 100, 50), b.Bounds);

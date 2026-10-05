@@ -114,10 +114,18 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         Assert.NotNull(box);
         var handleX = box!.X + box.Width / 2;
         var handleY = box.Y + box.Height / 2;
+        var selectionBox = _page.Locator(".selection-bounding-box");
+        var start = await selectionBox.BoundingBoxAsync();
+        Assert.NotNull(start);
 
         await _page.Mouse.MoveAsync((float)handleX, (float)handleY);
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)(handleX + 80), (float)(handleY + 40));
+        await GestureWaits.UntilBoxAsync(
+            selectionBox,
+            current => current.Width > start!.Width + 40,
+            "the selection growing mid-resize"
+        );
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
 
@@ -127,7 +135,7 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
     // Regression coverage for a real bug once found here: a handle's own mousedown/mouseup with
     // no movement in between fires a native click, which used to bubble to a canvas click handler
     // that cleared the selection. The canvas no longer listens for clicks, and a press on the
-    // handle is left to the handle's own handler; a real browser proves the selection survives.
+    // handle is a resize whose click changes nothing; a real browser proves the selection survives.
     [Fact]
     public async Task StationaryClickOnGroupResizeHandle_DoesNotClearSelection()
     {

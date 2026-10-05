@@ -79,11 +79,6 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public EventCallback OnFocus { get; set; }
 
-    // Fired once, on release, with the instance's final Bounds after a handle-drag resize - a
-    // resize is one gesture, recorded once on commit and never per intermediate frame.
-    [Parameter]
-    public EventCallback<Bounds> OnResized { get; set; }
-
     // Fired the instant a port is pressed - DiagramCanvas owns the rest of the
     // connector-drag gesture (live preview, drop hit-test) from there, since a completed
     // connection spans two different instances.
@@ -122,13 +117,9 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private bool _editMode;
     private bool _isDragging;
-    private bool _isResizing;
-    private ResizeDirection _currentResizeDirection;
     private MouseEventArgs? _dragStart;
     private double _startX;
     private double _startY;
-    private double _startWidth;
-    private double _startHeight;
 
     // True for the span of a single mousedown - set synchronously in StartPortDrag
     // (before OnPortDragStart's async invocation, so it's already true by the time this same
@@ -253,7 +244,7 @@ public partial class ComponentContainer : IAsyncDisposable
         if (!_editMode)
             return;
 
-        if (!_isResizing && !wasPortDragging)
+        if (!wasPortDragging)
         {
             _isDragging = true;
             _dragStart = e;
@@ -266,25 +257,13 @@ public partial class ComponentContainer : IAsyncDisposable
     {
         // While a connector drag is in progress (started here or on any other
         // instance), DiagramCanvas owns the whole gesture - forward raw client coordinates
-        // rather than running this container's own move/resize logic. Needed even when the
+        // rather than running this container's own move logic. Needed even when the
         // cursor never leaves this container's own bounding box (e.g. still near the source
         // port), since @onmousemove:stopPropagation would otherwise keep DiagramCanvas from ever
         // seeing the event.
         if (ParentCanvas?.IsConnectingPort == true)
         {
             ParentCanvas.UpdatePortDrag(e.ClientX, e.ClientY);
-            return;
-        }
-
-        // Resizing isn't gated by _editMode: a resize-handle mousedown only ever arms _isResizing
-        // when its handle actually rendered (IsSelected || _editMode, see the .razor markup), so
-        // this branch already can't fire for an instance that's neither selected nor editing.
-        if (_isResizing && _dragStart != null)
-        {
-            var (deltaX, deltaY) = ScaledDelta(_dragStart, e);
-
-            ApplyResize(deltaX, deltaY);
-            NotifyStateChanged();
             return;
         }
 
@@ -328,36 +307,13 @@ public partial class ComponentContainer : IAsyncDisposable
             return;
         }
 
-        if (_isResizing)
-        {
-            _isResizing = false;
-
-            // Skip the callback entirely for a plain click on a handle - nothing actually moved.
-            if (X != _startX || Y != _startY || Width != _startWidth || Height != _startHeight)
-            {
-                OnResized.InvokeAsync(new Bounds(X, Y, Width, Height));
-            }
-        }
-
         _isDragging = false;
         _dragStart = null;
     }
 
-    private void StartResize(MouseEventArgs e, ResizeDirection direction)
-    {
-        _isResizing = true;
-        _currentResizeDirection = direction;
-        _dragStart = e;
-        _startX = X;
-        _startY = Y;
-        _startWidth = Width;
-        _startHeight = Height;
-    }
-
     // A port's own mousedown (standard or custom - PortRef covers both). Doesn't
-    // stop propagation, so it bubbles up to HandleMouseDown afterwards (same ordering the resize
-    // handles above rely on) - setting _isPortDragging first stops that handler from also arming
-    // an instance move.
+    // stop propagation, so it bubbles up to HandleMouseDown afterwards - setting _isPortDragging
+    // first stops that handler from also arming an instance move.
     private void StartPortDrag(MouseEventArgs e, PortRef port)
     {
         _isPortDragging = true;
@@ -422,23 +378,6 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private static string FormatPercent(double fraction) =>
         (fraction * 100).ToString(CultureInfo.InvariantCulture);
-
-    private void ApplyResize(double deltaX, double deltaY)
-    {
-        var resized = ResizeMath.Apply(
-            new Bounds(_startX, _startY, _startWidth, _startHeight),
-            _currentResizeDirection,
-            deltaX,
-            deltaY,
-            ResizeMath.DefaultMinWidth,
-            ResizeMath.DefaultMinHeight
-        );
-
-        X = resized.X;
-        Y = resized.Y;
-        Width = resized.Width;
-        Height = resized.Height;
-    }
 
     private void SwitchToEditMode()
     {

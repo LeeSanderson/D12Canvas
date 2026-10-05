@@ -67,12 +67,20 @@ public sealed class ResizeVisualTests : IAsyncLifetime
     public async Task ResizeInProgress_MatchesBaseline()
     {
         var (handleX, handleY) = await PlaceSelectAndLocateBottomRightHandle();
+        var target = _page.Locator(".component-container");
+        var start = await target.BoundingBoxAsync();
+        Assert.NotNull(start);
 
         // A plain mouse drag (not native HTML5 drag-and-drop) - Chromium repaints normally while
         // it's in flight, matching DragMoveVisualTests' own approach.
         await _page.Mouse.MoveAsync((float)handleX, (float)handleY);
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)(handleX + 80), (float)(handleY + 40));
+        await GestureWaits.UntilBoxAsync(
+            target,
+            current => current.Width > start!.Width + 40,
+            "the shape growing mid-resize"
+        );
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
 

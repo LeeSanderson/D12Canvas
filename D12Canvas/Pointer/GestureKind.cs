@@ -8,6 +8,7 @@ internal enum GestureKind
     Pan,
     MarqueeSelect,
     MoveSelection,
+    ResizeSelection,
     Native,
 }
 

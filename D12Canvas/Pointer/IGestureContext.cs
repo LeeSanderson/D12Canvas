@@ -29,6 +29,9 @@ internal interface IGestureContext
     // snap-to-grid off.
     (double X, double Y) SnapToGrid(double x, double y);
 
+    // The spacing SnapToGrid rounds to, in board units, or null with snap-to-grid off.
+    double? GridSpacing { get; }
+
     void ShowMarquee(Bounds? boardBounds);
 
     // Replaces the gesture preview's bounds overrides. Board is not touched.

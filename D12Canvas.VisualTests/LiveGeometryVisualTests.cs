@@ -5,8 +5,8 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A shape pressed cold and dragged, held mid-drag: it is selected by the press, drawn where the
-// gesture preview puts it, and the edge attached to it follows rather than waiting for release.
+// A shape held mid-drag or mid-resize is drawn where the gesture preview puts it, and the edge
+// attached to it follows rather than waiting for release. A cold drag is selected by its press.
 public sealed class LiveGeometryVisualTests : IAsyncLifetime
 {
     private static readonly PageScreenshotOptions ScreenshotOptions = new()
@@ -66,24 +66,6 @@ public sealed class LiveGeometryVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
     }
 
-    // Moves reach C# at most once per animation frame, so the last one can land after the mouse
-    // call returns.
-    private static async Task WaitUntilMovedPastAsync(ILocator locator, double leftOf)
-    {
-        for (var attempt = 0; attempt < 50; attempt++)
-        {
-            var current = await locator.BoundingBoxAsync();
-            if (current is not null && current.X < leftOf)
-            {
-                return;
-            }
-
-            await Task.Delay(100);
-        }
-
-        Assert.Fail($"The dragged instance never moved left of x={leftOf}.");
-    }
-
     [Fact]
     public async Task AttachedEdgeFollowsAColdDragMidGesture_MatchesBaseline()
     {
@@ -99,7 +81,39 @@ public sealed class LiveGeometryVisualTests : IAsyncLifetime
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync(startX - 200, startY + 330, new() { Steps = 4 });
         await Expect(rectangle).ToHaveAttributeAsync("aria-selected", "true");
-        await WaitUntilMovedPastAsync(rectangle, box.X - 150);
+        await GestureWaits.UntilBoxAsync(
+            rectangle,
+            current => current.X < box.X - 150,
+            $"the dragged instance left of x={box.X - 150}"
+        );
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+
+        await _page.Mouse.UpAsync();
+    }
+
+    [Fact]
+    public async Task AttachedEdgeFollowsAResizeMidGesture_MatchesBaseline()
+    {
+        await ConnectRectangleToStickyNoteAsync();
+        var rectangle = _page.Locator(".component-container[aria-label='Rectangle']");
+        await rectangle.ClickAsync();
+        await Expect(rectangle).ToHaveAttributeAsync("aria-selected", "true");
+        var box = await rectangle.BoundingBoxAsync();
+        var handle = await rectangle.Locator(".resize-handle.left").BoundingBoxAsync();
+        Assert.NotNull(box);
+        Assert.NotNull(handle);
+        var startX = handle!.X + handle.Width / 2;
+        var startY = handle.Y + handle.Height / 2;
+
+        await _page.Mouse.MoveAsync(startX, startY);
+        await _page.Mouse.DownAsync();
+        await _page.Mouse.MoveAsync(startX - 200, startY, new() { Steps = 4 });
+        await GestureWaits.UntilBoxAsync(
+            rectangle,
+            current => current.Width > box!.Width + 120,
+            "the rectangle growing mid-resize"
+        );
 
         await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
 

@@ -4,8 +4,9 @@ using Xunit;
 namespace D12Canvas.Tests;
 
 // The secondary and middle buttons pan whatever they land on; only the primary button reads the
-// role. The spine owns the primary button on bare canvas, on instances and the selection box, and
-// on author content; the resize, port and edge roles are still served by the old handlers.
+// role. The spine owns the primary button on bare canvas, on instances, the selection box and every
+// resize handle, and on author content; the port and edge roles are still served by the old
+// handlers.
 public class PressToKindTests
 {
     public static IEnumerable<object[]> EveryRole() =>
@@ -52,6 +53,8 @@ public class PressToKindTests
     [Theory]
     [InlineData(HitRole.Instance, "MoveSelection")]
     [InlineData(HitRole.SelectionBounds, "MoveSelection")]
+    [InlineData(HitRole.ResizeHandle, "ResizeSelection")]
+    [InlineData(HitRole.SelectionHandle, "ResizeSelection")]
     [InlineData(HitRole.AuthorContent, "Native")]
     public void ThePrimaryButtonOnBoardContentResolvesByRole(string role, string expected)
     {
@@ -62,13 +65,11 @@ public class PressToKindTests
     }
 
     [Theory]
-    [InlineData(HitRole.ResizeHandle)]
     [InlineData(HitRole.Port)]
     [InlineData(HitRole.PortStrip)]
     [InlineData(HitRole.Edge)]
     [InlineData(HitRole.EdgeEndpoint)]
     [InlineData(HitRole.EdgeLabel)]
-    [InlineData(HitRole.SelectionHandle)]
     public void ThePrimaryButtonOnARoleTheOldHandlersStillServeIsNotOwned(string role)
     {
         Assert.Null(

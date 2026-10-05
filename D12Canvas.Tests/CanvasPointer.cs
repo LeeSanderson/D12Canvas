@@ -17,12 +17,13 @@ internal static class CanvasPointer
         int button = PointerPress.PrimaryButton,
         bool shift = false,
         string role = HitRole.Canvas,
-        Guid? entityId = null
+        Guid? entityId = null,
+        string? part = null
     ) =>
         canvas.InvokeAsync(
             () =>
                 canvas.Instance.OnPointerPressed(
-                    PointerEvents.Press(role, button, x, y, entityId, shift)
+                    PointerEvents.Press(role, button, x, y, entityId, shift, part: part)
                 )
         );
 
@@ -171,6 +172,37 @@ internal static class CanvasPointer
     )
     {
         canvas.PressOn(canvas.Find(".selection-bounding-box"), from, role: HitRole.SelectionBounds);
+        canvas.MoveTo(to);
+        canvas.ReleaseAt(to);
+    }
+
+    // A primary press on a resize handle, a shape's own or the selection box's, as the listener
+    // reports it: the handle's role and part, and the entity of the shape it sits on, if any.
+    public static void PressHandle(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement handle,
+        (double X, double Y) at
+    )
+    {
+        var press = PointerEvents.Press(
+            handle.GetAttribute("data-d12-role")!,
+            PointerPress.PrimaryButton,
+            at.X,
+            at.Y,
+            handle.Closest("[data-d12-entity]") is { } entity ? EntityOf(entity) : null,
+            part: handle.GetAttribute("data-d12-part")
+        );
+        canvas.InvokeAsync(() => canvas.Instance.OnPointerPressed(press)).GetAwaiter().GetResult();
+    }
+
+    public static void DragHandle(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement handle,
+        (double X, double Y) from,
+        (double X, double Y) to
+    )
+    {
+        canvas.PressHandle(handle, from);
         canvas.MoveTo(to);
         canvas.ReleaseAt(to);
     }

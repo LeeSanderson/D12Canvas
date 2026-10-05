@@ -123,10 +123,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.ClickOn(canvas.Find(".component-container"));
-        var handle = canvas.Find(".resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 225 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 225 });
+        canvas.DragHandle(canvas.Find(".resize-handle.bottom-right"), (300, 200), (340, 225));
         Assert.Equal(new Bounds(100, 100, 90, 75), instance.Bounds);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -142,10 +139,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.ClickOn(canvas.Find(".component-container"));
-        var handle = canvas.Find(".resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 225 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 225 });
+        canvas.DragHandle(canvas.Find(".resize-handle.bottom-right"), (300, 200), (340, 225));
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
         await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
@@ -186,10 +180,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
         canvas.ClickOn(containers[1], shift: true);
-        var handle = canvas.Find(".group-resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 250 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 250 });
+        canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (400, 250));
         Assert.Equal(new Bounds(0, 0, 75, 100), first.Bounds);
         Assert.Equal(new Bounds(150, 0, 150, 100), second.Bounds);
 
@@ -238,10 +229,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        var handle = canvas.Find(".group-resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 250 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 250 });
+        canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (400, 250));
         Assert.Equal(new Bounds(0, 0, 75, 100), first.Bounds);
         Assert.Equal(new Bounds(150, 0, 150, 100), second.Bounds);
 

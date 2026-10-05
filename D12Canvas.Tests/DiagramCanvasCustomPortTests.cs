@@ -188,12 +188,11 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
         targetPort.MouseUp(new MouseEventArgs { ClientX = 300, ClientY = 150 });
         Assert.Single(board.Edges);
 
-        var handle = canvas
-            .FindAll(".component-container")[0]
-            .QuerySelector(".resize-handle.bottom-right")!;
-        handle.MouseDown(new MouseEventArgs { ClientX = 200, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 240, ClientY = 220 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 240, ClientY = 220 });
+        canvas.DragHandle(
+            canvas.FindAll(".component-container")[0].QuerySelector(".resize-handle.bottom-right")!,
+            (200, 200),
+            (240, 220)
+        );
 
         Assert.Equal(new Bounds(100, 100, 140, 120), source.Bounds);
         var line = canvas.Find(".edge-line");

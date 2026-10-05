@@ -65,8 +65,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     // the first selected before the press. A pan starts with the middle button at (0, 0) and
     // drags to (50, 30). A marquee starts on empty canvas at (380, 380) and drags over the second
     // instance, replacing the selection. A move presses the second instance, which selects it, and
-    // drags it by (50, 40). A press on the second instance's own content adds it to the selection
-    // and holds nothing, so no move or release of it ever arrives.
+    // drags it by (50, 40). A resize presses the first instance's bottom-right handle and grows it
+    // by (50, 40). A press on the second instance's own content adds it to the selection and holds
+    // nothing, so no move or release of it ever arrives.
     private IRenderedComponent<DiagramCanvas> RenderSeededBoard(out Board board)
     {
         var seeded = new Board();
@@ -97,6 +98,16 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 await canvas.Press(410, 410, role: HitRole.Instance, entityId: SecondId(canvas));
                 await canvas.Move(460, 450);
                 break;
+            case GestureKind.ResizeSelection:
+                await canvas.Press(
+                    150,
+                    150,
+                    role: HitRole.ResizeHandle,
+                    entityId: FirstId(canvas),
+                    part: "bottom-right"
+                );
+                await canvas.Move(200, 190);
+                break;
             case GestureKind.Native:
                 await canvas.Press(
                     410,
@@ -110,6 +121,12 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         }
     }
 
+    private static Guid FirstId(IRenderedComponent<DiagramCanvas> canvas) =>
+        Guid.Parse(canvas.FindAll(".component-container")[0].GetAttribute("data-d12-entity")!);
+
+    private static string FirstStyle(IRenderedComponent<DiagramCanvas> canvas) =>
+        canvas.FindAll(".component-container")[0].GetAttribute("style")!;
+
     private static Guid SecondId(IRenderedComponent<DiagramCanvas> canvas) =>
         Guid.Parse(canvas.FindAll(".component-container")[1].GetAttribute("data-d12-entity")!);
 
@@ -122,6 +139,7 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
             GestureKind.Pan => PointerPress.MiddleButton,
             GestureKind.MarqueeSelect => PointerPress.PrimaryButton,
             GestureKind.MoveSelection => PointerPress.PrimaryButton,
+            GestureKind.ResizeSelection => PointerPress.PrimaryButton,
             GestureKind.Native => PointerPress.PrimaryButton,
             _ => throw new ArgumentOutOfRangeException(
                 nameof(kind),
@@ -150,6 +168,11 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 Assert.Null(AriaSelected(canvas, 0));
                 Assert.Equal("true", AriaSelected(canvas, 1));
                 break;
+            case GestureKind.ResizeSelection:
+                Assert.Contains("width: 100px; height: 90px", FirstStyle(canvas));
+                Assert.Equal("true", AriaSelected(canvas, 0));
+                Assert.Null(AriaSelected(canvas, 1));
+                break;
             case GestureKind.Native:
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 Assert.Equal("true", AriaSelected(canvas, 1));
@@ -177,6 +200,11 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 break;
             case GestureKind.MoveSelection:
                 Assert.Contains("left: 400px; top: 400px", SecondStyle(canvas));
+                Assert.Equal("true", AriaSelected(canvas, 0));
+                Assert.Null(AriaSelected(canvas, 1));
+                break;
+            case GestureKind.ResizeSelection:
+                Assert.Contains("width: 50px; height: 50px", FirstStyle(canvas));
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 Assert.Null(AriaSelected(canvas, 1));
                 break;

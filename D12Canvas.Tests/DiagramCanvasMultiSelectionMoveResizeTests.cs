@@ -219,10 +219,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         SelectBoth(canvas);
 
         // Combined bbox starts at (0,0,200,50). Growing it to (0,0,300,100) scales x1.5/x2.
-        var handle = canvas.Find(".group-resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 250 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 250 });
+        canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (400, 250));
 
         Assert.Equal(new Bounds(0, 0, 75, 100), first.Bounds);
         Assert.Equal(new Bounds(150, 0, 150, 100), second.Bounds);
@@ -241,10 +238,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         // Combined bbox starts at (0,0,200,50), bottom-right corner (200,50). Dragging the
         // top-left handle outward (up-and-left) grows the bbox to (-20,-10,220,60) - the
         // opposite (bottom-right) corner must stay at exactly (200,50).
-        var handle = canvas.Find(".group-resize-handle.top-left");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 280, ClientY = 190 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 280, ClientY = 190 });
+        canvas.DragHandle(canvas.Find(".group-resize-handle.top-left"), (300, 200), (280, 190));
 
         Assert.Equal(-20, first.Bounds.X, precision: 10);
         Assert.Equal(-10, first.Bounds.Y, precision: 10);
@@ -269,9 +263,8 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         SelectBoth(canvas);
 
-        var handle = canvas.Find(".group-resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 250 });
+        canvas.PressHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200));
+        canvas.MoveTo((400, 250));
 
         Assert.Equal(new Bounds(0, 0, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(100, 0, 100, 50), second.Bounds);
@@ -279,9 +272,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         Assert.Contains("width: 75px", containers[0].GetAttribute("style"));
         Assert.Contains("width: 150px", containers[1].GetAttribute("style"));
 
-        canvas
-            .Find(".group-resize-handle.bottom-right")
-            .MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 250 });
+        canvas.ReleaseAt((400, 250));
 
         Assert.Equal(new Bounds(0, 0, 75, 100), first.Bounds);
         Assert.Equal(new Bounds(150, 0, 150, 100), second.Bounds);
@@ -298,10 +289,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
         SelectBoth(canvas);
 
-        var handle = canvas.Find(".group-resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = 344, ClientY = 222 });
-        handle.MouseUp(new MouseEventArgs { ClientX = 344, ClientY = 222 });
+        canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (344, 222));
 
         // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the
         // decimal literal 1.1, so this can't disagree with production code over double rounding.
@@ -331,10 +319,11 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         // Both members already sit at the 50x50 floor a lone instance's own resize handles
         // enforce. A large inward drag must be fully absorbed by the group resize's own clamp
         // rather than proportionally scaling either member smaller than that.
-        var handle = canvas.Find(".group-resize-handle.bottom-right");
-        handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        handle.MouseMove(new MouseEventArgs { ClientX = -700, ClientY = -800 });
-        handle.MouseUp(new MouseEventArgs { ClientX = -700, ClientY = -800 });
+        canvas.DragHandle(
+            canvas.Find(".group-resize-handle.bottom-right"),
+            (300, 200),
+            (-700, -800)
+        );
 
         Assert.Equal(new Bounds(0, 0, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(100, 0, 50, 50), second.Bounds);
@@ -364,10 +353,27 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         );
     }
 
-    // A stationary click (mousedown/mouseup, no movement) on a group-resize handle must not wipe
-    // the selection the bounding box itself belongs to. The canvas no longer listens for clicks
-    // at all, so nothing is there to wipe it; covered through a real browser by
-    // MultiSelectionMoveResizeVisualTests.StationaryClickOnGroupResizeHandle_DoesNotClearSelection.
+    [Fact]
+    public async Task AStationaryClickOnAGroupResizeHandleKeepsTheSelectionAndLeavesNoHistoryEntry()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 0, 0);
+        var second = AddInstance(board, 300, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.DragOn(canvas.FindAll(".component-container")[1], (310, 10), (330, 10));
+        SelectBoth(canvas);
+
+        canvas.PressHandle(canvas.Find(".group-resize-handle.left"), (0, 25));
+        canvas.ReleaseAt((0, 25));
+
+        Assert.All(
+            canvas.FindAll(".component-container"),
+            container => Assert.Equal("true", container.GetAttribute("aria-selected"))
+        );
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+        Assert.Equal(new Bounds(0, 0, 50, 50), first.Bounds);
+        Assert.Equal(new Bounds(300, 0, 50, 50), second.Bounds);
+    }
 
     [Fact]
     public void IndividualResizeHandlesAreHiddenWhileMultiSelectedAndReappearOnceSelectionShrinksToOne()

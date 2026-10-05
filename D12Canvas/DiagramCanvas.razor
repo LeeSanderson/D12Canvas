@@ -155,7 +155,6 @@
                                                 Addressable="@(!IsGrouped(instance.Id))"
                                                 Props="boundProps"
                                                 OnFocus="@(() => FocusEntity(instance.Id))"
-                                                OnResized="@((bounds) => ResizeComponent(instance.Id, bounds))"
                                                 OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
                                                 FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
                                                 FocusedCustomPortId="@FocusedCustomPortIdFor(instance.Id)"
@@ -217,17 +216,17 @@
             {
                 @* The box is a solid hit target: a press anywhere inside the multi-selection's
                    bounds lands on it rather than on whatever sits beneath, and moves the whole
-                   selection. Each handle stops its mousedown so it arms a resize. *@
+                   selection. A press on one of its handles resizes the selection instead. *@
                 <div class="selection-bounding-box" style="@SelectionBoundingBoxStyle"
                      data-d12-role="@HitRole.SelectionBounds">
-                    <div class="group-resize-handle top-left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top-left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.TopLeft))" @onmousedown:stopPropagation></div>
-                    <div class="group-resize-handle top" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Top))" @onmousedown:stopPropagation></div>
-                    <div class="group-resize-handle top-right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top-right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.TopRight))" @onmousedown:stopPropagation></div>
-                    <div class="group-resize-handle right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Right))" @onmousedown:stopPropagation></div>
-                    <div class="group-resize-handle bottom-right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom-right" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.BottomRight))" @onmousedown:stopPropagation></div>
-                    <div class="group-resize-handle bottom" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Bottom))" @onmousedown:stopPropagation></div>
-                    <div class="group-resize-handle bottom-left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom-left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.BottomLeft))" @onmousedown:stopPropagation></div>
-                    <div class="group-resize-handle left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="left" @onmousedown="@((e) => StartGroupResize(e, ResizeDirection.Left))" @onmousedown:stopPropagation></div>
+                    <div class="group-resize-handle top-left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top-left"></div>
+                    <div class="group-resize-handle top" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top"></div>
+                    <div class="group-resize-handle top-right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top-right"></div>
+                    <div class="group-resize-handle right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="right"></div>
+                    <div class="group-resize-handle bottom-right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom-right"></div>
+                    <div class="group-resize-handle bottom" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom"></div>
+                    <div class="group-resize-handle bottom-left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom-left"></div>
+                    <div class="group-resize-handle left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="left"></div>
                 </div>
             }
             @ChildContent

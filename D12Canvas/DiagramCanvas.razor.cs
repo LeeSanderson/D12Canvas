@@ -197,19 +197,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private LiveGeometry Live => new(Board!, _preview);
 
-    // Group resize is driven entirely by the selection bounding box's own handles (rendered by
-    // DiagramCanvas, not any individual ComponentContainer - see IsMultiSelected). Members' bounds
-    // are scaled proportionally relative to the bbox they started at, published to the gesture
-    // preview every tick and committed once, on release.
-    private bool _isGroupResizing;
-    private ResizeDirection _groupResizeDirection;
-    private MouseEventArgs? _groupResizeAnchor;
-    private Bounds _groupResizeStartBounds;
-    private Bounds _groupResizeCurrentBounds;
-    private Dictionary<Guid, Bounds> _groupResizeMemberStartBounds = new();
-    private double _groupResizeMinBboxWidth;
-    private double _groupResizeMinBboxHeight;
-
     // Connector drag-in-progress state - lives here, not on Board,
     // the same reasoning as every other momentary gesture tracked in this file. Owned centrally
     // (rather than by the source ComponentContainer) because a completed connection spans two
@@ -400,6 +387,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             GestureKind.Pan => new PanGesture(press, context),
             GestureKind.MarqueeSelect => new MarqueeSelectGesture(press, context),
             GestureKind.MoveSelection => new MoveSelectionGesture(press, context),
+            GestureKind.ResizeSelection => new ResizeSelectionGesture(press, context),
             GestureKind.Native => new NativeGesture(press, context),
             _ => throw new InvalidOperationException($"No gesture is built for {kind}."),
         };
@@ -614,6 +602,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         public void ClearSelection() => canvas.SetSelection([], null);
 
         public (double X, double Y) SnapToGrid(double x, double y) => canvas.SnapPoint(x, y);
+
+        public double? GridSpacing => canvas.SnapToGrid ? canvas.DominantGridSpacing() : null;
 
         public void ShowMarquee(Bounds? boardBounds) => canvas._marqueeBounds = boardBounds;
 
@@ -1493,21 +1483,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         NotifySelectionChanged();
     }
 
-    // Fired once by ComponentContainer's OnResized, on release, with the instance's final Bounds.
-    // A multi-selected instance never reaches here for resize (its own handles are suppressed
-    // while IsMultiSelected - see ComponentContainer), so this needs no group branch.
-    private void ResizeComponent(Guid instanceId, Bounds bounds)
-    {
-        var instance = Board?.GetComponent(instanceId);
-        if (instance is null)
-        {
-            return;
-        }
-
-        _history.Do(new ChangeBoundsCommand(instance, instance.Bounds, bounds));
-        StateHasChanged();
-    }
-
     // Fired by a ComponentContainer's own port mousedown (OnPortDragStart).
     // _isConnectingPort must flip synchronously, in this same call - a real browser's very next
     // mousemove/mouseup can arrive before an awaited JS round-trip resolves (unlike bUnit's mock,
@@ -1824,135 +1799,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         return $"left: {midX - width / 2}px; top: {midY - height / 2}px; width: {width}px; height: {height}px;";
     }
 
-    // Armed by one of the group bounding-box overlay's own 8 handles (never an
-    // individual instance's handles - those are suppressed while multi-selected). Snapshots each
-    // member's committed Bounds plus the bbox they currently form.
-    private void StartGroupResize(MouseEventArgs e, ResizeDirection direction)
-    {
-        if (Board is null)
-        {
-            return;
-        }
-
-        var bbox = SelectedInstancesBounds();
-        if (bbox is null)
-        {
-            return;
-        }
-
-        _groupResizeMemberStartBounds = ExpandedSelection()
-            .ToDictionary(id => id, id => Board.GetComponent(id)!.Bounds);
-        _groupResizeStartBounds = bbox.Value;
-        _groupResizeCurrentBounds = bbox.Value;
-        _groupResizeDirection = direction;
-        _groupResizeAnchor = e;
-        (_groupResizeMinBboxWidth, _groupResizeMinBboxHeight) = MinBoundingBoxSizeFor(
-            bbox.Value,
-            _groupResizeMemberStartBounds.Values
-        );
-        _isGroupResizing = true;
-    }
-
-    // The smallest the bbox's width/height can shrink to while every member's own proportionally-
-    // scaled size stays at or above ResizeMath's per-instance floor - so a group resize can never
-    // shrink an individual member smaller than that same member's own handles ever could (the same
-    // per-instance invariant, extended to the group case). Derived per member (width/height independently,
-    // since they scale independently) and taken as the most restrictive (largest) requirement
-    // across the whole selection.
-    private static (double MinWidth, double MinHeight) MinBoundingBoxSizeFor(
-        Bounds bbox,
-        IEnumerable<Bounds> members
-    )
-    {
-        var minWidth = ResizeMath.DefaultMinWidth;
-        var minHeight = ResizeMath.DefaultMinHeight;
-
-        foreach (var member in members)
-        {
-            if (member.Width > 0)
-            {
-                minWidth = Math.Max(
-                    minWidth,
-                    ResizeMath.DefaultMinWidth * bbox.Width / member.Width
-                );
-            }
-
-            if (member.Height > 0)
-            {
-                minHeight = Math.Max(
-                    minHeight,
-                    ResizeMath.DefaultMinHeight * bbox.Height / member.Height
-                );
-            }
-        }
-
-        return (minWidth, minHeight);
-    }
-
-    private void ApplyGroupResize(MouseEventArgs e)
-    {
-        var (deltaX, deltaY) = ScaledDelta(_groupResizeAnchor!, e);
-        _groupResizeCurrentBounds = ResizeMath.Apply(
-            _groupResizeStartBounds,
-            _groupResizeDirection,
-            deltaX,
-            deltaY,
-            _groupResizeMinBboxWidth,
-            _groupResizeMinBboxHeight
-        );
-        _preview.Publish(
-            _groupResizeMemberStartBounds.ToDictionary(
-                member => member.Key,
-                member =>
-                    ScaleWithinBoundingBox(
-                        member.Value,
-                        _groupResizeStartBounds,
-                        _groupResizeCurrentBounds
-                    )
-            )
-        );
-    }
-
-    // One CompositeCommand for the whole gesture, so a single undo reverts every member together.
-    private void CommitGroupResize()
-    {
-        if (Board is null)
-        {
-            return;
-        }
-
-        var commands = new List<ICommand>();
-        foreach (var (id, startBounds) in _groupResizeMemberStartBounds)
-        {
-            var member = Board.GetComponent(id);
-            if (member is null)
-            {
-                continue;
-            }
-
-            var after = ScaleWithinBoundingBox(
-                startBounds,
-                _groupResizeStartBounds,
-                _groupResizeCurrentBounds
-            );
-            commands.Add(new ChangeBoundsCommand(member, startBounds, after));
-        }
-
-        if (commands.Count > 0)
-        {
-            _history.Do(new CompositeCommand(commands));
-        }
-    }
-
-    // Pan cancels out of a screen-space delta - only the canvas's current zoom scale matters.
-    // Same reasoning as ComponentContainer's own ScaledDelta, duplicated rather than shared since
-    // that one also accounts for a ParentCanvas cascading parameter DiagramCanvas doesn't need.
-    private (double DeltaX, double DeltaY) ScaledDelta(MouseEventArgs from, MouseEventArgs to) =>
-        (
-            (to.ClientX - from.ClientX) / _zoomPanTracker.Scale,
-            (to.ClientY - from.ClientY) / _zoomPanTracker.Scale
-        );
-
     // The registered TComponent's props parameter is a fixed contract:
     // [Parameter] public TProps Props { get; set; }
     private const string PropsParameterName = "Props";
@@ -2215,21 +2061,14 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static double PositiveMod(double value, double modulus) =>
         ((value % modulus) + modulus) % modulus;
 
-    // The canvas-level mouse plumbing left for the gestures the old interaction layer still owns:
-    // the connector drag and the multi-selection box's resize. Each goes when its gesture moves
-    // onto the spine. A press the spine owns prevents its pointerdown, so these never fire for it.
+    // The canvas-level mouse plumbing left for the one gesture the old interaction layer still
+    // owns, the connector drag. It goes when that gesture moves onto the spine. A press the spine
+    // owns prevents its pointerdown, so these never fire for it.
     private void HandleMouseMove(MouseEventArgs e)
     {
         if (_isConnectingPort)
         {
             UpdatePortDrag(e.ClientX, e.ClientY);
-            return;
-        }
-
-        if (_isGroupResizing)
-        {
-            ApplyGroupResize(e);
-            StateHasChanged();
         }
     }
 
@@ -2238,25 +2077,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (_isConnectingPort)
         {
             CompletePortDrag(e.ClientX, e.ClientY);
-            return;
         }
-
-        if (!_isGroupResizing)
-        {
-            return;
-        }
-
-        // A single-commit gesture: Board is written once, here, and only if the drag actually
-        // resized anything - a plain click on a handle is a no-op.
-        if (!_groupResizeCurrentBounds.Equals(_groupResizeStartBounds))
-        {
-            CommitGroupResize();
-        }
-
-        _isGroupResizing = false;
-        _groupResizeAnchor = null;
-        _preview.Clear();
-        StateHasChanged();
     }
 
     // Screen (client) coordinates to board space, given the container's own page position -
@@ -2291,28 +2112,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         var expanded = ExpandedSelection();
         return Bounds.Union(
             Board.Components.Where(instance => expanded.Contains(instance.Id)).Select(Live.BoundsOf)
-        );
-    }
-
-    // A member's start-of-gesture Bounds, re-expressed as the same relative position/size within
-    // the bbox's current (possibly live-preview) extent - the core of "resize handles on the
-    // selection's bounding box scale all members proportionally".
-    private static Bounds ScaleWithinBoundingBox(
-        Bounds memberStart,
-        Bounds bboxStart,
-        Bounds bboxCurrent
-    )
-    {
-        var scaleX = bboxStart.Width > 0 ? bboxCurrent.Width / bboxStart.Width : 1;
-        var scaleY = bboxStart.Height > 0 ? bboxCurrent.Height / bboxStart.Height : 1;
-        var relativeX = memberStart.X - bboxStart.X;
-        var relativeY = memberStart.Y - bboxStart.Y;
-
-        return new Bounds(
-            bboxCurrent.X + relativeX * scaleX,
-            bboxCurrent.Y + relativeY * scaleY,
-            memberStart.Width * scaleX,
-            memberStart.Height * scaleY
         );
     }
 
