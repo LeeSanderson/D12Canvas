@@ -76,6 +76,61 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         Assert.DoesNotContain("selected", line.ClassList);
     }
 
+    // The line paints and takes no presses; the stroke over it is the hit region, sized against
+    // the scale the content publishes so it stays 20 screen pixels wide at any zoom.
+    [Fact]
+    public void AnEdgeIsHitByItsOwnRegionAndNotByTheLineThatPaintsIt()
+    {
+        var board = new Board();
+        var edge = AddEdgeBetween(
+            board,
+            AddInstance(board, 100, 100),
+            AddInstance(board, 250, 100)
+        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        Assert.Null(canvas.Find(".edge-line").GetAttribute("data-d12-role"));
+        var region = canvas.Find(".edge-hit");
+        Assert.Equal("edge", region.GetAttribute("data-d12-role"));
+        Assert.Equal(edge.Id.ToString(), region.GetAttribute("data-d12-entity"));
+        Assert.Contains("--d12-scale: 1;", canvas.Find(".canvas-content").GetAttribute("style"));
+    }
+
+    [Fact]
+    public void ClickingAnEdgesLabelSelectsTheEdge()
+    {
+        var board = new Board();
+        var edge = AddEdgeBetween(
+            board,
+            AddInstance(board, 100, 100),
+            AddInstance(board, 250, 100)
+        );
+        edge.Label = new ComponentInstance(
+            ComponentTypeKey,
+            new TestProps(),
+            new Bounds(0, 0, 40, 20)
+        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.ClickElement(canvas.Find(".edge-label"));
+
+        Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
+    }
+
+    [Fact]
+    public async Task APressOnAnEdgeThatBecomesADragSelectsNothing()
+    {
+        var board = new Board();
+        AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.PressElement(canvas.Find(".edge-hit"), (200, 125));
+        await canvas.Move(400, 300);
+        await canvas.Release(400, 300);
+
+        Assert.Null(canvas.Find(".edge-line").GetAttribute("aria-selected"));
+    }
+
     [Fact]
     public void ClickingAnEdgeSelectsItWithAVisibleAffordanceAndAriaSelected()
     {
@@ -83,7 +138,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
 
         var line = canvas.Find(".edge-line");
         Assert.Equal("true", line.GetAttribute("aria-selected"));
@@ -98,11 +153,8 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         AddEdgeBetween(board, AddInstance(board, 0, 200), AddInstance(board, 100, 200));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        // Re-fetched between clicks: the first click's selection change re-renders every
-        // .edge-line element with a freshly-captured onclick lambda, which invalidates any
-        // element reference obtained before that render (bUnit's stale-element pitfall).
-        canvas.FindAll(".edge-line")[0].Click();
-        canvas.FindAll(".edge-line")[1].Click();
+        canvas.ClickElement(canvas.FindAll(".edge-hit")[0]);
+        canvas.ClickElement(canvas.FindAll(".edge-hit")[1]);
 
         var lines = canvas.FindAll(".edge-line");
         Assert.Null(lines[0].GetAttribute("aria-selected"));
@@ -116,7 +168,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
         Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
 
         await canvas.ClickCanvas(400, 400);
@@ -131,7 +183,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
         Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
@@ -146,7 +198,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
         Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
@@ -171,7 +223,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
             canvas.FindAll(".component-container")[0].GetAttribute("aria-selected")
         );
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
 
         Assert.Null(canvas.FindAll(".component-container")[0].GetAttribute("aria-selected"));
         Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));

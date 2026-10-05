@@ -113,6 +113,37 @@ public sealed class PortDragVisualTests : IAsyncLifetime
         await _page.Mouse.UpAsync();
     }
 
+    // Grabbing a port that already anchors an edge carries that end: the pending line, from the
+    // end that stays put to the pointer, is the only thing drawing the edge.
+    [Fact]
+    public async Task CarryingAnAttachedEndMidGesture_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Light);
+        var (from, to) = await RectangleToStickyNotePorts();
+        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
+        await _page.Mouse.DownAsync();
+        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
+        await _page.Mouse.UpAsync();
+        await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
+
+        var carriedTo = (X: to.X + 120, Y: to.Y + 30);
+        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
+        await _page.Mouse.DownAsync();
+        await _page.Mouse.MoveAsync((float)carriedTo.X, (float)carriedTo.Y, new() { Steps = 4 });
+
+        await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(0);
+        // The line's box takes in its stroke, so its end sits a couple of pixels past the pointer.
+        await GestureWaits.UntilBoxAsync(
+            _page.Locator(".connector-drag-preview"),
+            box => Math.Abs(box.X + box.Width - carriedTo.X) < 4,
+            "the pending line reaching the pointer"
+        );
+
+        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+
+        await _page.Mouse.UpAsync();
+    }
+
     [Fact]
     public async Task ConnectedEdge_MatchesBaseline()
     {

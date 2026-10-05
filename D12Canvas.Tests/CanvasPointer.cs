@@ -207,6 +207,104 @@ internal static class CanvasPointer
         canvas.ReleaseAt(to);
     }
 
+    // A primary press on any marked element, as the listener reports it: the element's role and
+    // part, and the entity of its nearest marked ancestor, if any.
+    public static void PressElement(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement element,
+        (double X, double Y) at,
+        int pressCount = 1
+    )
+    {
+        var press = PointerEvents.Press(
+            element.GetAttribute("data-d12-role")!,
+            PointerPress.PrimaryButton,
+            at.X,
+            at.Y,
+            element.Closest("[data-d12-entity]") is { } entity ? EntityOf(entity) : null,
+            pressCount: pressCount,
+            part: element.GetAttribute("data-d12-part")
+        );
+        canvas.InvokeAsync(() => canvas.Instance.OnPointerPressed(press)).GetAwaiter().GetResult();
+    }
+
+    // A release with what lies under it, as the listener reports it for a press that carries an
+    // edge end: the element the pointer is over and each marked ancestor, topmost first. No
+    // element means the release is over empty canvas.
+    public static void ReleaseOver(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        (double X, double Y) at,
+        IElement? over = null
+    )
+    {
+        var release = PointerEvents.Release(PointerPress.PrimaryButton, at.X, at.Y) with
+        {
+            Hits = HitsUnder(over),
+        };
+        canvas
+            .InvokeAsync(() => canvas.Instance.OnPointerReleased(release))
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    public static void ClickElement(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement element,
+        int pressCount = 1,
+        (double X, double Y) at = default
+    )
+    {
+        canvas.PressElement(element, at, pressCount);
+        canvas.ReleaseAt(at);
+    }
+
+    public static void DoubleClickElement(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement element,
+        (double X, double Y) at = default
+    )
+    {
+        canvas.ClickElement(element, at: at);
+        canvas.ClickElement(element, pressCount: 2, at: at);
+    }
+
+    // A connector drag from a port, port strip or floating endpoint, dropped over an element or,
+    // with none, over empty canvas.
+    public static void DragConnector(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement from,
+        (double X, double Y) start,
+        (double X, double Y) end,
+        IElement? over = null
+    )
+    {
+        canvas.PressElement(from, start);
+        canvas.MoveTo(end);
+        canvas.ReleaseOver(end, over);
+    }
+
+    private static IReadOnlyList<PointerHit> HitsUnder(IElement? element)
+    {
+        var hits = new List<PointerHit>();
+        for (var current = element; current is not null; current = current.ParentElement)
+        {
+            if (current.GetAttribute("data-d12-role") is { } role)
+            {
+                hits.Add(
+                    new PointerHit(
+                        role,
+                        current.Closest("[data-d12-entity]") is { } entity
+                            ? EntityOf(entity)
+                            : null,
+                        current.GetAttribute("data-d12-part")
+                    )
+                );
+            }
+        }
+
+        return hits;
+    }
+
     private static Guid EntityOf(IElement element) =>
         Guid.Parse(
             element.GetAttribute("data-d12-entity")

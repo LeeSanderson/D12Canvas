@@ -403,7 +403,7 @@ public class PropertyPanelTests : ComponentTestBase
             parameters.Add(p => p.Canvas, canvas.Instance)
         );
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
 
         Assert.NotNull(panel.Find(".d12-property-panel-empty"));
     }

@@ -382,13 +382,11 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         AddInstance(board, 250, 100); // left port at (250, 125)
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[0]
-            .QuerySelector(".port-right")!
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
         var targetPort = containers[1].QuerySelector(".port-left")!;
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        canvas.Find(".edge-line").Click();
+        canvas.MoveTo((250, 125));
+        canvas.ReleaseOver((250, 125), targetPort);
+        canvas.ClickElement(canvas.Find(".edge-hit"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
 

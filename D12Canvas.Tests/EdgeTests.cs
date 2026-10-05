@@ -3,7 +3,7 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The Edge/PortEndpoint model itself - Board's use of it (ResolveEndpoint, FindPortNear, Edges)
+// The Edge/PortEndpoint model itself - Board's use of it (ResolveEndpoint, Edges)
 // is covered in BoardTests.
 public class EdgeTests
 {

@@ -9,7 +9,7 @@ namespace D12Canvas.Tests;
 
 // Drag port-to-port creates an edge. A connector drag is a distinct gesture from drag-move/resize
 // - it never mutates Bounds, and Board only ever learns about the new Edge once the gesture
-// resolves against a target port on release.
+// resolves what lies under the pointer on release.
 public class DiagramCanvasPortDragTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -54,21 +54,27 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         return instance;
     }
 
+    // From the first instance's right port at (150, 125) to the second's left port at (250, 125).
+    private static void ConnectRightToLeft(IRenderedComponent<DiagramCanvas> canvas)
+    {
+        var containers = canvas.FindAll(".component-container");
+        canvas.DragConnector(
+            containers[0].QuerySelector(".port-right")!,
+            (150, 125),
+            (250, 125),
+            over: containers[1].QuerySelector(".port-left")
+        );
+    }
+
     [Fact]
     public void DraggingFromAPortToAnotherInstancesPortCreatesAnEdge()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        var target = AddInstance(board, 250, 100); // left port at (250, 125)
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        var containers = canvas.FindAll(".component-container");
-        var sourcePort = containers[0].QuerySelector(".port-right")!;
-        var targetPort = containers[1].QuerySelector(".port-left")!;
-
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        ConnectRightToLeft(canvas);
 
         var edge = Assert.Single(board.Edges);
         Assert.Equal(new PortEndpoint(source.Id, PortId.Right), edge.Source);
@@ -76,18 +82,30 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task CreatingAnEdgeIsOneHistoryEntry()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100);
+        AddInstance(board, 250, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        ConnectRightToLeft(canvas);
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Empty(board.Edges);
+    }
+
+    [Fact]
     public void MidDragRendersAConnectorDragPreviewLineFollowingThePointer()
     {
         var board = new Board();
-        AddInstance(board, 100, 100); // right port at (150, 125)
+        AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 180, ClientY = 130 });
+        canvas.PressElement(sourcePort, (150, 125));
+        canvas.MoveTo((180, 130));
 
         Assert.Empty(canvas.FindAll(".edge-line"));
         var preview = canvas.Find(".connector-drag-preview");
@@ -97,21 +115,35 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         Assert.Equal("130", preview.GetAttribute("y2"));
     }
 
+    // A press below the threshold draws nothing, and every port shows only once the line does.
+    [Fact]
+    public void PortsShowOnEveryShapeOnlyWhileTheLineIsDrawn()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
+
+        canvas.PressElement(sourcePort, (150, 125));
+        Assert.Empty(canvas.FindAll(".connector-drag-preview"));
+        Assert.DoesNotContain("connecting", canvas.Find(".diagram-canvas").ClassName);
+
+        canvas.MoveTo((180, 130));
+        Assert.Contains("connecting", canvas.Find(".diagram-canvas").ClassName);
+
+        canvas.ReleaseOver((180, 130));
+        Assert.DoesNotContain("connecting", canvas.Find(".diagram-canvas").ClassName);
+    }
+
     [Fact]
     public void ACreatedEdgeRendersAsALineBetweenBothPortsAndThePreviewIsGone()
     {
         var board = new Board();
-        AddInstance(board, 100, 100); // right port at (150, 125)
-        AddInstance(board, 250, 100); // left port at (250, 125)
+        AddInstance(board, 100, 100);
+        AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        var containers = canvas.FindAll(".component-container");
-        containers[0]
-            .QuerySelector(".port-right")!
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        var targetPort = containers[1].QuerySelector(".port-left")!;
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        ConnectRightToLeft(canvas);
 
         Assert.Empty(canvas.FindAll(".connector-drag-preview"));
         var line = canvas.Find(".edge-line");
@@ -121,22 +153,18 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         Assert.Equal("125", line.GetAttribute("y2"));
     }
 
-    // Dropping on empty canvas now creates the edge with a floating endpoint at the release
-    // point, rather than cancelling the gesture (the original placeholder behaviour) - see
-    // DiagramCanvasFloatingEndpointTests for the rest of that coverage.
+    // Dropping on empty canvas creates the edge with a floating endpoint at the release point -
+    // see DiagramCanvasFloatingEndpointTests for the rest of that coverage.
     [Fact]
     public void DroppingOnEmptyCanvasCreatesAnEdgeWithAFloatingEndpoint()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
+        var source = AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        var background = canvas.Find(".diagram-canvas");
-        background.MouseMove(new MouseEventArgs { ClientX = 190, ClientY = 400 });
-        background.MouseUp(new MouseEventArgs { ClientX = 190, ClientY = 400 });
+        canvas.DragConnector(sourcePort, (150, 125), (190, 400));
 
         var edge = Assert.Single(board.Edges);
         Assert.Equal(new PortEndpoint(source.Id, PortId.Right), edge.Source);
@@ -144,16 +172,50 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         Assert.Empty(canvas.FindAll(".connector-drag-preview"));
     }
 
+    // Only a port pins; a drop on a shape's body leaves the end floating.
+    [Fact]
+    public void DroppingOnAnotherShapesBodyLeavesTheEndFloating()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100);
+        AddInstance(board, 250, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var containers = canvas.FindAll(".component-container");
+        canvas.DragConnector(
+            containers[0].QuerySelector(".port-right")!,
+            (150, 125),
+            (270, 120),
+            over: containers[1]
+        );
+
+        Assert.Equal(new FloatingEndpoint(270, 120), Assert.Single(board.Edges).Target);
+    }
+
     [Fact]
     public void DroppingBackOnTheSameStartingPortCreatesNoEdge()
     {
         var board = new Board();
-        AddInstance(board, 100, 100); // right port at (150, 125)
+        AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        sourcePort.MouseUp(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        canvas.PressElement(sourcePort, (150, 125));
+        canvas.MoveTo((200, 125));
+        canvas.MoveTo((150, 125));
+        canvas.ReleaseOver((150, 125), sourcePort);
+
+        Assert.Empty(board.Edges);
+    }
+
+    [Fact]
+    public void AClickOnAPortCreatesNothing()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.ClickElement(canvas.Find(".component-container").QuerySelector(".port-right")!);
 
         Assert.Empty(board.Edges);
     }
@@ -162,40 +224,39 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     public void StartingADragOnASelectedInstancesPortNeverInitiatesAMove()
     {
         var board = new Board();
-        var instance = AddInstance(board, 100, 100); // right port at (150, 125)
+        var instance = AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        var background = canvas.Find(".diagram-canvas");
-        background.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 400 });
-        background.MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 400 });
+        canvas.DragConnector(sourcePort, (150, 125), (400, 400));
 
         Assert.Equal(new Bounds(100, 100, 50, 50), instance.Bounds);
     }
 
     [Fact]
-    public void EscapeCancelsAnInProgressConnectorDragAndFurtherMovementStillDoesNotMoveTheInstance()
+    public void EscapeCancelsAnInProgressConnectorDragAndTheReleaseCreatesNothing()
     {
         var board = new Board();
-        var instance = AddInstance(board, 100, 100); // right port at (150, 125)
+        var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        canvas.PressElement(sourcePort, (150, 125));
+        canvas.MoveTo((300, 300));
 
         canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
+        Assert.Empty(canvas.FindAll(".connector-drag-preview"));
 
-        var container = canvas.Find(".component-container");
-        container.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 400 });
-        container.MouseUp(new MouseEventArgs { ClientX = 400, ClientY = 400 });
+        canvas.MoveTo((400, 400));
+        canvas.ReleaseOver((400, 400));
 
         Assert.Empty(board.Edges);
+        Assert.Empty(canvas.FindAll(".connector-drag-preview"));
         Assert.Equal(new Bounds(100, 100, 50, 50), instance.Bounds);
     }
 
@@ -203,17 +264,11 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     public void AnAttachedEdgeTracksItsSourceInstanceAfterItMoves()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        AddInstance(board, 250, 100); // left port at (250, 125)
+        var source = AddInstance(board, 100, 100);
+        AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        var containers = canvas.FindAll(".component-container");
-        containers[0]
-            .QuerySelector(".port-right")!
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        var targetPort = containers[1].QuerySelector(".port-left")!;
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        ConnectRightToLeft(canvas);
         Assert.Single(board.Edges);
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
@@ -231,17 +286,11 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     public void AnAttachedEdgeTracksItsSourceInstanceAfterItResizes()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        AddInstance(board, 250, 100); // left port at (250, 125)
+        var source = AddInstance(board, 100, 100);
+        AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        var containers = canvas.FindAll(".component-container");
-        containers[0]
-            .QuerySelector(".port-right")!
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        var targetPort = containers[1].QuerySelector(".port-left")!;
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        ConnectRightToLeft(canvas);
         Assert.Single(board.Edges);
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
@@ -259,30 +308,22 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     }
 
     [Fact]
-    public void DraggingFromAPortToAnotherInstancesPortCreatesAnEdgeWhenZoomedIn()
+    public void ThePreviewEndsAtTheBoardPointUnderThePointerWhenZoomedIn()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        var target = AddInstance(board, 250, 100); // left port at (250, 125)
+        AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
 
-        // Client coordinates scale with zoom (same ToBoardPoint conversion every other gesture
-        // uses) - board-space port positions don't move, so the client point landing exactly on
-        // one scales by the same factor. Regression case for a fixed bug where the connector
-        // drag's hit-tolerance was incorrectly descaled by zoom a second time, on top of this.
-        var scale = 1.0 + 0.1;
-        var containers = canvas.FindAll(".component-container");
-        var sourcePort = containers[0].QuerySelector(".port-right")!;
-        var targetPort = containers[1].QuerySelector(".port-left")!;
+        // Container coordinates scale with zoom (same ToBoardPoint conversion every other gesture
+        // uses), so a pointer at 1.1 times a board point is over that point.
+        var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
+        canvas.PressElement(sourcePort, (150 * 1.1, 125 * 1.1));
+        canvas.MoveTo((200 * 1.1, 300 * 1.1));
 
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150 * scale, ClientY = 125 * scale });
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250 * scale, ClientY = 125 * scale });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250 * scale, ClientY = 125 * scale });
-
-        var edge = Assert.Single(board.Edges);
-        Assert.Equal(new PortEndpoint(source.Id, PortId.Right), edge.Source);
-        Assert.Equal(new PortEndpoint(target.Id, PortId.Left), edge.Target);
+        var preview = canvas.Find(".connector-drag-preview");
+        Assert.Equal(200, double.Parse(preview.GetAttribute("x2")!), 6);
+        Assert.Equal(300, double.Parse(preview.GetAttribute("y2")!), 6);
     }
 }

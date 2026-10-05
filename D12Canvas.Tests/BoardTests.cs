@@ -661,113 +661,8 @@ public class BoardTests
         Assert.Null(point);
     }
 
-    // FindPortNear is the connector-drag drop hit-test. Ports are discrete named points, so this
-    // only resolves within a tolerance of an instance's actual port points.
-    [Fact]
-    public void FindPortNearReturnsThePortWithinTolerance()
-    {
-        var board = new Board();
-        var instance = new ComponentInstance(
-            "sticky-note",
-            new TestProps(),
-            new Bounds(100, 100, 40, 20)
-        );
-        board.AddComponent(instance);
-
-        var found = board.FindPortNear((141, 111), tolerance: 5);
-
-        Assert.Equal(new PortEndpoint(instance.Id, PortId.Right), found);
-    }
-
-    [Fact]
-    public void FindPortNearReturnsNullWhenNothingIsWithinTolerance()
-    {
-        var board = new Board();
-        var instance = new ComponentInstance(
-            "sticky-note",
-            new TestProps(),
-            new Bounds(100, 100, 40, 20)
-        );
-        board.AddComponent(instance);
-
-        var found = board.FindPortNear((141, 111), tolerance: 0.5);
-
-        Assert.Null(found);
-    }
-
-    [Fact]
-    public void FindPortNearPicksTheClosestPortAcrossMultipleInstances()
-    {
-        var board = new Board();
-        var near = new ComponentInstance(
-            "sticky-note",
-            new TestProps(),
-            new Bounds(100, 100, 40, 20)
-        );
-        var far = new ComponentInstance(
-            "sticky-note",
-            new TestProps(),
-            new Bounds(300, 300, 40, 20)
-        );
-        board.AddComponent(near);
-        board.AddComponent(far);
-
-        // (140, 110) is exactly "near"'s right port and far away from every port on "far".
-        var found = board.FindPortNear((140, 110), tolerance: 50);
-
-        Assert.Equal(new PortEndpoint(near.Id, PortId.Right), found);
-    }
-
-    [Fact]
-    public void FindPortNearOnAnEmptyBoardReturnsNull()
-    {
-        var board = new Board();
-
-        Assert.Null(board.FindPortNear((0, 0), tolerance: 1000));
-    }
-
-    // A custom port is hit-tested exactly like a standard one - it must attach exactly as
-    // standard ports do.
-    [Fact]
-    public void FindPortNearReturnsACustomPortWithinTolerance()
-    {
-        var board = new Board();
-        var instance = new ComponentInstance(
-            "sticky-note",
-            new TestProps(),
-            new Bounds(100, 100, 40, 20)
-        );
-        var port = new PortDef(0.25, 0);
-        instance.CustomPorts.Add(port);
-        board.AddComponent(instance);
-
-        // Custom port sits at (110, 100) - fraction (0.25, 0) of a 40x20 box at (100, 100).
-        var found = board.FindPortNear((111, 101), tolerance: 5);
-
-        Assert.Equal(new CustomPortEndpoint(instance.Id, port.Id), found);
-    }
-
-    [Fact]
-    public void FindPortNearPicksTheCloserOfAStandardAndACustomPortOnTheSameInstance()
-    {
-        var board = new Board();
-        var instance = new ComponentInstance(
-            "sticky-note",
-            new TestProps(),
-            new Bounds(100, 100, 40, 20)
-        );
-        // Right port sits at (140, 110); this custom port sits farther away, at (100, 100).
-        var port = new PortDef(0, 0);
-        instance.CustomPorts.Add(port);
-        board.AddComponent(instance);
-
-        var found = board.FindPortNear((139, 109), tolerance: 50);
-
-        Assert.Equal(new PortEndpoint(instance.Id, PortId.Right), found);
-    }
-
     // FindEdgeAttachedTo distinguishes "start a new edge" from "reposition this edge's existing
-    // endpoint" (DiagramCanvas.StartPortDrag).
+    // endpoint" (DragEdgeEndGesture).
     [Fact]
     public void FindEdgeAttachedToFindsTheEdgeWhosSourceIsThisPort()
     {
@@ -820,7 +715,7 @@ public class BoardTests
 
     // FindEdgeAttachedTo works for a custom port exactly as it does for a standard one - needed
     // so re-grabbing an already-connected custom port starts a "reposition" drag rather than
-    // creating a second edge (DiagramCanvas.StartPortDrag).
+    // creating a second edge (DragEdgeEndGesture).
     [Fact]
     public void FindEdgeAttachedToFindsTheEdgeWhoseSourceIsACustomPort()
     {

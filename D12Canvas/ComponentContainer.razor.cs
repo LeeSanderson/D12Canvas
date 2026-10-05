@@ -79,12 +79,6 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public EventCallback OnFocus { get; set; }
 
-    // Fired the instant a port is pressed - DiagramCanvas owns the rest of the
-    // connector-drag gesture (live preview, drop hit-test) from there, since a completed
-    // connection spans two different instances.
-    [Parameter]
-    public EventCallback<PortDragStartEventArgs> OnPortDragStart { get; set; }
-
     // This instance's own runtime-added ports - instance-scoped state that
     // lives on ComponentInstance itself, passed down the same way Props is.
     [Parameter]
@@ -103,12 +97,6 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public Guid? FocusedCustomPortId { get; set; }
 
-    // Fired when a double-click on one of the four border strips adds a custom port -
-    // DiagramCanvas owns turning this into an undoable AddCustomPortCommand, since it alone knows
-    // which ComponentInstance this container renders.
-    [Parameter]
-    public EventCallback<PortDef> OnAddCustomPort { get; set; }
-
     [Parameter]
     public EventCallback<ComponentContainerStateChangedEventArgs> OnStateChanged { get; set; }
 
@@ -121,12 +109,6 @@ public partial class ComponentContainer : IAsyncDisposable
     private double _startX;
     private double _startY;
 
-    // True for the span of a single mousedown - set synchronously in StartPortDrag
-    // (before OnPortDragStart's async invocation, so it's already true by the time this same
-    // mousedown bubbles up from the port) and consumed/cleared immediately in HandleMouseDown.
-    // Deliberately not left true for the gesture's whole duration: the connector drag's eventual
-    // mouseup can land on a completely different instance, so this container may never see it.
-    private bool _isPortDragging;
     private ElementReference _containerRef;
     private DotNetObjectReference<ComponentContainer>? _dotNetRef;
     private IJSObjectReference? _jsModule;
@@ -233,40 +215,17 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseDown(MouseEventArgs e)
     {
-        // _isPortDragging only needs to survive from the port's own mousedown handler
-        // to this same event's bubble arriving here - captured and cleared immediately so it
-        // can't leak into a later, unrelated mousedown on this same container (this container may
-        // never see the connector-drag gesture's own eventual mouseup/mousemove at all, since
-        // that could land on a completely different instance - see HandleMouseMove/Up below).
-        var wasPortDragging = _isPortDragging;
-        _isPortDragging = false;
-
         if (!_editMode)
             return;
 
-        if (!wasPortDragging)
-        {
-            _isDragging = true;
-            _dragStart = e;
-            _startX = X;
-            _startY = Y;
-        }
+        _isDragging = true;
+        _dragStart = e;
+        _startX = X;
+        _startY = Y;
     }
 
     private void HandleMouseMove(MouseEventArgs e)
     {
-        // While a connector drag is in progress (started here or on any other
-        // instance), DiagramCanvas owns the whole gesture - forward raw client coordinates
-        // rather than running this container's own move logic. Needed even when the
-        // cursor never leaves this container's own bounding box (e.g. still near the source
-        // port), since @onmousemove:stopPropagation would otherwise keep DiagramCanvas from ever
-        // seeing the event.
-        if (ParentCanvas?.IsConnectingPort == true)
-        {
-            ParentCanvas.UpdatePortDrag(e.ClientX, e.ClientY);
-            return;
-        }
-
         if (!_editMode)
             return;
 
@@ -298,49 +257,9 @@ public partial class ComponentContainer : IAsyncDisposable
 
     private void HandleMouseUp(MouseEventArgs e)
     {
-        // Same forwarding as HandleMouseMove above - this may be the source
-        // instance's own port drag ending on itself, or a drop landing on a different instance's
-        // body (its own @onmouseup:stopPropagation would otherwise swallow the release).
-        if (ParentCanvas?.IsConnectingPort == true)
-        {
-            ParentCanvas.CompletePortDrag(e.ClientX, e.ClientY);
-            return;
-        }
-
         _isDragging = false;
         _dragStart = null;
     }
-
-    // A port's own mousedown (standard or custom - PortRef covers both). Doesn't
-    // stop propagation, so it bubbles up to HandleMouseDown afterwards - setting _isPortDragging
-    // first stops that handler from also arming an instance move.
-    private void StartPortDrag(MouseEventArgs e, PortRef port)
-    {
-        _isPortDragging = true;
-        OnPortDragStart.InvokeAsync(new PortDragStartEventArgs(port, e.ClientX, e.ClientY));
-    }
-
-    // A double-click anywhere along one of the four border strips (rendered
-    // only while ShowSelectionOverlay, see the .razor markup) adds a custom port there. OffsetX/
-    // OffsetY (relative to the strip's own box, which spans the container's full width or height
-    // on its axis - see .port-strip CSS) gives the fraction along that side directly; the
-    // perpendicular fraction is the side's own fixed 0/1, the same border-center convention
-    // StandardPorts already uses.
-    private void AddCustomPort(MouseEventArgs e, PortStripSide side)
-    {
-        var (fractionX, fractionY) = side switch
-        {
-            PortStripSide.Top => (Clamp01(e.OffsetX / Width), 0.0),
-            PortStripSide.Right => (1.0, Clamp01(e.OffsetY / Height)),
-            PortStripSide.Bottom => (Clamp01(e.OffsetX / Width), 1.0),
-            PortStripSide.Left => (0.0, Clamp01(e.OffsetY / Height)),
-            _ => throw new ArgumentOutOfRangeException(nameof(side)),
-        };
-
-        OnAddCustomPort.InvokeAsync(new PortDef(fractionX, fractionY));
-    }
-
-    private static double Clamp01(double value) => Math.Clamp(value, 0, 1);
 
     // A standard port's own CSS class, plus the highlight class while the keyboard
     // connector-attachment gesture has this exact port as FocusedPortId. The side class is derived
@@ -455,15 +374,6 @@ public enum ResizeDirection
     Left,
 }
 
-// Which of the four border strips a double-click-to-add-a-custom-port landed on.
-public enum PortStripSide
-{
-    Top,
-    Right,
-    Bottom,
-    Left,
-}
-
 public class ComponentContainerStateChangedEventArgs : EventArgs
 {
     public double X { get; set; }
@@ -471,18 +381,4 @@ public class ComponentContainerStateChangedEventArgs : EventArgs
     public double Width { get; set; }
     public double Height { get; set; }
     public bool IsEditMode { get; set; }
-}
-
-public class PortDragStartEventArgs : EventArgs
-{
-    public PortRef Port { get; }
-    public double ClientX { get; }
-    public double ClientY { get; }
-
-    public PortDragStartEventArgs(PortRef port, double clientX, double clientY)
-    {
-        Port = port;
-        ClientX = clientX;
-        ClientY = clientY;
-    }
 }

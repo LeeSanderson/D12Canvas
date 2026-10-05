@@ -21,8 +21,6 @@
          @ref="CanvasElement"
          tabindex="-1"
          @onfocus="@HandleCanvasFocus"
-         @onmousemove="@HandleMouseMove"
-         @onmouseup="@HandleMouseUp"
          @onwheel="@HandleMouseWheel"
          @ondragenter="@HandleDragEnterOrOver" @ondragenter:preventDefault="true"
          @ondragover="@HandleDragEnterOrOver" @ondragover:preventDefault="true"
@@ -51,9 +49,11 @@
                             </marker>
                         </defs>
                     }
+                    @* Each edge is drawn by a line that takes no presses and hit by a wider
+                       transparent stroke over it, a constant 20 screen pixels at any zoom. *@
                     @foreach (var edge in Board.Edges)
                     {
-                        if (!IsBeingEdited(edge.Id))
+                        if (!IsCarried(edge.Id))
                         {
                             var line = EdgeLine(edge);
                             if (line is not null)
@@ -64,50 +64,39 @@
                                 {
                                     <line @key="edge.Id" x1="@line.Value.From.X" y1="@line.Value.From.Y" x2="@line.Value.To.X" y2="@line.Value.To.Y"
                                       class="@EdgeLineCssClass(edge.Id)"
-                                      data-d12-role="@HitRole.Edge" data-d12-entity="@edge.Id"
                                       marker-start="@markerStart"
                                       marker-end="@markerEnd"
-                                      aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)"
-                                      @onclick="@(() => SelectEdge(edge.Id))"
-                                      @onclick:stopPropagation
-                                      @ondblclick="@(() => AddEdgeLabel(edge.Id))"
-                                      @ondblclick:stopPropagation />
+                                      aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)" />
+                                    <line @key="@($"{edge.Id}-hit")" x1="@line.Value.From.X" y1="@line.Value.From.Y" x2="@line.Value.To.X" y2="@line.Value.To.Y"
+                                      class="edge-hit"
+                                      data-d12-role="@HitRole.Edge" data-d12-entity="@edge.Id" />
                                 }
                                 else
                                 {
-                                    <path @key="edge.Id" d="@EdgePathD(edge.RoutingStyle, line.Value.From, line.Value.To)"
+                                    var pathD = EdgePathD(edge.RoutingStyle, line.Value.From, line.Value.To);
+                                    <path @key="edge.Id" d="@pathD"
                                       class="@EdgeLineCssClass(edge.Id)"
-                                      data-d12-role="@HitRole.Edge" data-d12-entity="@edge.Id"
                                       marker-start="@markerStart"
                                       marker-end="@markerEnd"
-                                      aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)"
-                                      @onclick="@(() => SelectEdge(edge.Id))"
-                                      @onclick:stopPropagation
-                                      @ondblclick="@(() => AddEdgeLabel(edge.Id))"
-                                      @ondblclick:stopPropagation />
+                                      aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)" />
+                                    <path @key="@($"{edge.Id}-hit")" d="@pathD"
+                                      class="edge-hit"
+                                      data-d12-role="@HitRole.Edge" data-d12-entity="@edge.Id" />
                                 }
                             }
                         }
                     }
-                    @* A draggable marker for each unattached edge endpoint - dropping it
-                       on a port attaches that side; dropping a port that already anchors an edge
-                       here instead (StartPortDrag) detaches that side back to floating. *@
+                    @* A draggable marker for each unattached edge endpoint. *@
                     @foreach (var floating in FloatingEndpoints())
                     {
                         <circle @key="@($"{floating.Edge.Id}-{(floating.IsSource ? "source" : "target")}")"
                                 cx="@floating.X" cy="@floating.Y" r="6" class="floating-endpoint"
-                                data-d12-role="@HitRole.EdgeEndpoint" data-d12-entity="@floating.Edge.Id" data-d12-part="@(floating.IsSource ? "source" : "target")"
-                                @onmousedown="@((e) => StartFloatingEndpointDrag(floating.Edge.Id, floating.IsSource, e))"
-                                @onmousedown:stopPropagation></circle>
+                                data-d12-role="@HitRole.EdgeEndpoint" data-d12-entity="@floating.Edge.Id" data-d12-part="@(floating.IsSource ? "source" : "target")"></circle>
                     }
                 }
-                @if (_isConnectingPort)
+                @if (PendingEdgeLine() is { } pendingLine)
                 {
-                    var preview = ConnectPreviewLine();
-                    if (preview is not null)
-                    {
-                        <line x1="@preview.Value.From.X" y1="@preview.Value.From.Y" x2="@preview.Value.To.X" y2="@preview.Value.To.Y" class="connector-drag-preview" />
-                    }
+                    <line x1="@pendingLine.From.X" y1="@pendingLine.From.Y" x2="@pendingLine.To.X" y2="@pendingLine.To.Y" class="connector-drag-preview" />
                 }
             </svg>
             @if (Board is not null)
@@ -155,11 +144,9 @@
                                                 Addressable="@(!IsGrouped(instance.Id))"
                                                 Props="boundProps"
                                                 OnFocus="@(() => FocusEntity(instance.Id))"
-                                                OnPortDragStart="@((args) => StartPortDrag(instance.Id, args))"
                                                 FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
                                                 FocusedCustomPortId="@FocusedCustomPortIdFor(instance.Id)"
-                                                CustomPorts="instance.CustomPorts"
-                                                OnAddCustomPort="@((port) => AddCustomPort(instance.Id, port))">
+                                                CustomPorts="instance.CustomPorts">
                                 @* Lets a text-carrying built-in (Sticky Note, Text) identify
                                    itself back to ParentCanvas when committing its own inline WYSIWYG edit -
                                    see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
@@ -199,10 +186,9 @@
                     {
                         var labelRegistration = Registry.Resolve(edge.Label!.ComponentTypeKey);
                         <div @key="@($"{edge.Id}-label")" class="edge-label" style="@labelStyle"
-                             data-d12-role="@HitRole.EdgeLabel" data-d12-entity="@edge.Id"
-                             @onmousedown:stopPropagation>
+                             data-d12-role="@HitRole.EdgeLabel" data-d12-entity="@edge.Id">
                             <CascadingValue Value="edge.Label.Id" Name="InstanceId">
-                                <DynamicComponent Type="labelRegistration.ComponentType" Parameters="ComponentParameters(BoundProps(edge.Label, labelRegistration))" />
+                                <DynamicComponent @ref="_mountedLabels[edge.Id]" Type="labelRegistration.ComponentType" Parameters="ComponentParameters(BoundProps(edge.Label, labelRegistration))" />
                             </CascadingValue>
                         </div>
                     }
@@ -430,7 +416,13 @@
         fill: none;
         stroke: #4a4a4a;
         stroke-width: 2;
-        pointer-events: auto;
+    }
+
+    .edge-hit {
+        fill: none;
+        stroke: transparent;
+        stroke-width: calc(20px / var(--d12-scale));
+        pointer-events: stroke;
         cursor: pointer;
     }
 

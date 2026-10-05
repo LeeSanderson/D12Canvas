@@ -9,6 +9,8 @@ internal enum GestureKind
     MarqueeSelect,
     MoveSelection,
     ResizeSelection,
+    DragEdgeEnd,
+    SelectEdge,
     Native,
 }
 

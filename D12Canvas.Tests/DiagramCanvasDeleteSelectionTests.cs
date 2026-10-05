@@ -137,7 +137,7 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
         );
         board.AddEdge(edge);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
 

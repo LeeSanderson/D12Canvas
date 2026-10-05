@@ -113,36 +113,8 @@ public sealed class Board
         return null;
     }
 
-    // Geometric proximity hit-test for a connector-drag drop point - ports are discrete and named
-    // (rejecting nearest-point-on-perimeter), so a drop only resolves to a port when within
-    // tolerance of one of an instance's actual port points, standard or custom. Returns the
-    // closest match across every instance's ports, or null when nothing is within tolerance.
-    public IEdgeEndpoint? FindPortNear((double X, double Y) point, double tolerance)
-    {
-        IEdgeEndpoint? closest = null;
-        var closestDistance = double.MaxValue;
-
-        foreach (var instance in _components.Values)
-        {
-            foreach (var (endpoint, fractionX, fractionY) in AllPorts(instance))
-            {
-                var (portX, portY) = instance.Bounds.PointAtFraction(fractionX, fractionY);
-                var distance = DistanceFrom(portX, portY, point);
-
-                if (distance <= tolerance && distance < closestDistance)
-                {
-                    closestDistance = distance;
-                    closest = endpoint;
-                }
-            }
-        }
-
-        return closest;
-    }
-
     // Every port an instance exposes, standard and custom alike, each already paired with the
-    // IEdgeEndpoint it resolves to - lets FindPortNear hit-test both kinds with a single loop
-    // body instead of repeating it once per kind. Also the ordered list DiagramCanvas's keyboard
+    // IEdgeEndpoint it resolves to - the ordered list DiagramCanvas's keyboard
     // connector-attachment gesture cycles through (Space, once a port is being picked).
     public IEnumerable<(IEdgeEndpoint Endpoint, double FractionX, double FractionY)> AllPorts(
         ComponentInstance instance
@@ -164,13 +136,10 @@ public sealed class Board
         }
     }
 
-    private static double DistanceFrom(double x, double y, (double X, double Y) point) =>
-        Math.Sqrt(Math.Pow(x - point.X, 2) + Math.Pow(y - point.Y, 2));
-
     // Does any edge already anchor to this exact port (standard or custom)? Used to tell "start a
-    // new edge" apart from "reposition this edge's existing endpoint" (see
-    // DiagramCanvas.StartPortDrag). Multiple edges sharing the same port pick whichever is found
-    // first - an acceptable ambiguity that doesn't need resolving here.
+    // new edge" apart from "reposition this edge's existing endpoint" (see DragEdgeEndGesture).
+    // Multiple edges sharing the same port pick whichever is found first - an acceptable
+    // ambiguity that doesn't need resolving here.
     public (Guid EdgeId, bool IsSource)? FindEdgeAttachedTo(IEdgeEndpoint endpoint)
     {
         foreach (var edge in _edges.Values)

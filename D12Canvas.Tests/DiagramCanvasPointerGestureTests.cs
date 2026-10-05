@@ -66,13 +66,21 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     // drags to (50, 30). A marquee starts on empty canvas at (380, 380) and drags over the second
     // instance, replacing the selection. A move presses the second instance, which selects it, and
     // drags it by (50, 40). A resize presses the first instance's bottom-right handle and grows it
-    // by (50, 40). A press on the second instance's own content adds it to the selection and holds
-    // nothing, so no move or release of it ever arrives.
+    // by (50, 40). A connector drag pulls a new edge from the second instance's top port. An edge
+    // joins the two instances, and a press on its line that crosses the threshold is abandoned. A
+    // press on the second instance's own content adds it to the selection and holds nothing, so
+    // no move or release of it ever arrives.
     private IRenderedComponent<DiagramCanvas> RenderSeededBoard(out Board board)
     {
         var seeded = new Board();
-        AddInstance(seeded, 100, 100);
-        AddInstance(seeded, 400, 400);
+        var first = AddInstance(seeded, 100, 100);
+        var second = AddInstance(seeded, 400, 400);
+        seeded.AddEdge(
+            new Edge(
+                new PortEndpoint(first.Id, PortId.Right),
+                new PortEndpoint(second.Id, PortId.Left)
+            )
+        );
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, seeded));
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         board = seeded;
@@ -108,6 +116,20 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 );
                 await canvas.Move(200, 190);
                 break;
+            case GestureKind.DragEdgeEnd:
+                await canvas.Press(
+                    425,
+                    400,
+                    role: HitRole.Port,
+                    entityId: SecondId(canvas),
+                    part: "Top"
+                );
+                await canvas.Move(300, 300);
+                break;
+            case GestureKind.SelectEdge:
+                await canvas.Press(275, 275, role: HitRole.Edge, entityId: EdgeId(canvas));
+                await canvas.Move(300, 300);
+                break;
             case GestureKind.Native:
                 await canvas.Press(
                     410,
@@ -123,6 +145,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
 
     private static Guid FirstId(IRenderedComponent<DiagramCanvas> canvas) =>
         Guid.Parse(canvas.FindAll(".component-container")[0].GetAttribute("data-d12-entity")!);
+
+    private static Guid EdgeId(IRenderedComponent<DiagramCanvas> canvas) =>
+        Guid.Parse(canvas.Find(".edge-hit").GetAttribute("data-d12-entity")!);
 
     private static string FirstStyle(IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.FindAll(".component-container")[0].GetAttribute("style")!;
@@ -140,6 +165,8 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
             GestureKind.MarqueeSelect => PointerPress.PrimaryButton,
             GestureKind.MoveSelection => PointerPress.PrimaryButton,
             GestureKind.ResizeSelection => PointerPress.PrimaryButton,
+            GestureKind.DragEdgeEnd => PointerPress.PrimaryButton,
+            GestureKind.SelectEdge => PointerPress.PrimaryButton,
             GestureKind.Native => PointerPress.PrimaryButton,
             _ => throw new ArgumentOutOfRangeException(
                 nameof(kind),
@@ -172,6 +199,14 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 Assert.Contains("width: 100px; height: 90px", FirstStyle(canvas));
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 Assert.Null(AriaSelected(canvas, 1));
+                break;
+            case GestureKind.DragEdgeEnd:
+                Assert.Single(canvas.FindAll(".connector-drag-preview"));
+                Assert.Equal("true", AriaSelected(canvas, 0));
+                break;
+            case GestureKind.SelectEdge:
+                Assert.Equal("true", AriaSelected(canvas, 0));
+                Assert.Null(canvas.Find(".edge-line").GetAttribute("aria-selected"));
                 break;
             case GestureKind.Native:
                 Assert.Equal("true", AriaSelected(canvas, 0));
@@ -207,6 +242,15 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 Assert.Contains("width: 50px; height: 50px", FirstStyle(canvas));
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 Assert.Null(AriaSelected(canvas, 1));
+                break;
+            case GestureKind.DragEdgeEnd:
+                Assert.Empty(canvas.FindAll(".connector-drag-preview"));
+                Assert.Single(canvas.FindAll(".edge-line"));
+                Assert.Equal("true", AriaSelected(canvas, 0));
+                break;
+            case GestureKind.SelectEdge:
+                Assert.Null(canvas.Find(".edge-line").GetAttribute("aria-selected"));
+                Assert.Equal("true", AriaSelected(canvas, 0));
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "No case for this kind.");

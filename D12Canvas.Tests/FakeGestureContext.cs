@@ -87,6 +87,29 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public void CommitPreview() => Commits.Add(Preview);
 
+    public PendingEdge? PendingEdge { get; private set; }
+    public List<(IEdgeEndpoint Source, IEdgeEndpoint Target)> AddedEdges { get; } = new();
+    public List<(Guid EdgeId, bool IsSource, IEdgeEndpoint Endpoint)> EndpointChanges { get; } =
+        new();
+    public List<(Guid InstanceId, PortDef Port)> AddedCustomPorts { get; } = new();
+    public List<Guid> LabelsAdded { get; } = new();
+    public List<Guid> LabelEditRequests { get; } = new();
+
+    public void PublishPendingEdge(PendingEdge pendingEdge) => PendingEdge = pendingEdge;
+
+    public void AddEdge(IEdgeEndpoint source, IEdgeEndpoint target) =>
+        AddedEdges.Add((source, target));
+
+    public void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint) =>
+        EndpointChanges.Add((edgeId, isSource, endpoint));
+
+    public void AddCustomPort(Guid instanceId, PortDef port) =>
+        AddedCustomPorts.Add((instanceId, port));
+
+    public void AddEdgeLabel(Guid edgeId) => LabelsAdded.Add(edgeId);
+
+    public void BeginLabelEdit(Guid edgeId) => LabelEditRequests.Add(edgeId);
+
     public void BeginInlineEdit(Guid instanceId) => InlineEditRequests.Add(instanceId);
 
     public void OpenContextMenuAt(double containerX, double containerY) =>

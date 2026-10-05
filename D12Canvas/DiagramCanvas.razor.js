@@ -80,17 +80,9 @@ const MULTI_PRESS_WINDOW_MS = 500;
 const MULTI_PRESS_RADIUS_PX = 5;
 const NATIVELY_INTERACTIVE = "input, textarea, button, select, a[href], [tabindex]";
 
-// The primary button on these roles is still served by the per-element handlers of the old
-// interaction layer, so the listener takes none of its decisions for such a press and C# chooses
-// no gesture. Preventing the pointerdown would suppress the compatibility mouse events those
-// handlers rely on. Roles leave this set as their gestures move onto the spine.
-const LEGACY_PRIMARY_ROLES = new Set([
-    "port",
-    "port-strip",
-    "edge",
-    "edge-endpoint",
-    "edge-label"
-]);
+// A primary press on these roles carries an edge end, and its release reports what lies under
+// the pointer, since a captured pointerup is targeted at the canvas whatever it is over.
+const EDGE_END_ROLES = new Set(["port", "port-strip", "edge-endpoint"]);
 
 function isNativelyInteractive(element) {
     return element.matches(NATIVELY_INTERACTIVE) || element.isContentEditable === true;
@@ -134,6 +126,33 @@ function classify(target, canvas) {
     }
 
     return { role: "canvas", entityId: null, part: null, native: false };
+}
+
+// Every marked element under a point, topmost first, each classified as a press on it would be.
+// The browser's own hit test answers, so pointer-events and paint order are respected.
+function hitStackAt(canvas, clientX, clientY) {
+    const hits = [];
+    for (const element of document.elementsFromPoint(clientX, clientY)) {
+        if (element === canvas || !canvas.contains(element)) {
+            continue;
+        }
+
+        const hit = classify(element, canvas);
+        const last = hits[hits.length - 1];
+        if (
+            hit.role === "canvas" ||
+            (last !== undefined &&
+                last.role === hit.role &&
+                last.entityId === hit.entityId &&
+                last.part === hit.part)
+        ) {
+            continue;
+        }
+
+        hits.push({ role: hit.role, entityId: hit.entityId, part: hit.part });
+    }
+
+    return hits;
 }
 
 function hasLiveTextSelectionInside(element) {
@@ -274,10 +293,6 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             ? classify(event.target, canvas)
             : { role: "canvas", entityId: null, part: null, native: false };
 
-        if (event.button === PRIMARY_BUTTON && LEGACY_PRIMARY_ROLES.has(hit.role)) {
-            return;
-        }
-
         // A primary press on author content belongs to the browser: nothing is captured or
         // tracked, so its move and release never reach C#, and C# hears only the press itself.
         // Where an author's marker rather than a control matched, the target cannot take focus,
@@ -309,6 +324,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         press = {
             pointerId: event.pointerId,
             button: event.button,
+            carriesEdgeEnd: event.button === PRIMARY_BUTTON && EDGE_END_ROLES.has(hit.role),
             startClientX: event.clientX,
             startClientY: event.clientY,
             active: false,
@@ -363,13 +379,14 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
 
         flushMove();
         const point = containerPoint(event);
-        endPress();
+        const ended = endPress();
         dotnetRef.invokeMethodAsync("OnPointerReleased", {
             pointerId: event.pointerId,
             button: event.button,
             x: point.x,
             y: point.y,
-            ...modifiersOf(event)
+            ...modifiersOf(event),
+            hits: ended.carriesEdgeEnd ? hitStackAt(canvas, event.clientX, event.clientY) : null
         });
     };
 

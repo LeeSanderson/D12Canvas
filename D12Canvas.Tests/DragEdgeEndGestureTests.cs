@@ -1,0 +1,346 @@
+using D12Canvas.Model;
+using D12Canvas.Pointer;
+using Xunit;
+
+namespace D12Canvas.Tests;
+
+// A press on a port, a port strip or a floating endpoint carries one end of an edge: a new edge
+// pulled from a bare port, or the end of an existing edge. Each tick publishes one pending line
+// from the end that stays put to the pointer, and the release resolves what is under the pointer:
+// a port pins the end to it, anything else leaves it floating at the release point.
+public class DragEdgeEndGestureTests
+{
+    private const string ComponentTypeKey = "test-props";
+
+    private static ComponentInstance AddInstance(Board board, double x, double y)
+    {
+        var instance = new ComponentInstance(
+            ComponentTypeKey,
+            new TestProps(),
+            new Bounds(x, y, 50, 50)
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+
+    private static DragEdgeEndGesture Press(
+        FakeGestureContext context,
+        string role,
+        Guid entityId,
+        string part,
+        double x,
+        double y,
+        int pressCount = 1
+    )
+    {
+        var gesture = new DragEdgeEndGesture(
+            PointerEvents.Press(
+                role,
+                PointerPress.PrimaryButton,
+                x,
+                y,
+                entityId,
+                pressCount: pressCount,
+                part: part
+            ),
+            context
+        );
+        gesture.Begin();
+        return gesture;
+    }
+
+    private static PointerRelease ReleaseAt(double x, double y, params PointerHit[] hits) =>
+        PointerEvents.Release(PointerPress.PrimaryButton, x, y) with
+        {
+            Hits = hits,
+        };
+
+    private static PointerHit PortHit(ComponentInstance instance, string part) =>
+        new(HitRole.Port, instance.Id, part);
+
+    private static PointerHit BodyHit(ComponentInstance instance) =>
+        new(HitRole.Instance, instance.Id, null);
+
+    [Fact]
+    public void ADragFromABarePortPublishesALineFromThatPortToThePointer()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        Assert.Null(context.PendingEdge);
+
+        gesture.Move(PointerEvents.Move(180, 130));
+
+        Assert.Equal(
+            new PendingEdge(null, false, new PortEndpoint(source.Id, PortId.Right), (180, 130)),
+            context.PendingEdge
+        );
+    }
+
+    [Fact]
+    public void TheLineEndsAtTheBoardPointUnderThePointerWhenZoomed()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var zoomPan = new ZoomPanTracker();
+        zoomPan.SetPanPosition(10, 20);
+        var context = new FakeGestureContext(board, zoomPan);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 160, 145);
+        gesture.Move(PointerEvents.Move(210, 220));
+
+        Assert.Equal((200, 200), context.PendingEdge!.Point);
+    }
+
+    [Fact]
+    public void ReleasingOverAnotherShapesPortCreatesAnEdgePinnedToBothPorts()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.Move(PointerEvents.Move(250, 125));
+        gesture.Release(ReleaseAt(250, 125, PortHit(target, "Left"), BodyHit(target)));
+
+        var (from, to) = Assert.Single(context.AddedEdges);
+        Assert.Equal(new PortEndpoint(source.Id, PortId.Right), from);
+        Assert.Equal(new PortEndpoint(target.Id, PortId.Left), to);
+    }
+
+    [Fact]
+    public void ReleasingOverACustomPortPinsToIt()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var custom = new PortDef(0.5, 1.0);
+        target.CustomPorts.Add(custom);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.Move(PointerEvents.Move(275, 150));
+        gesture.Release(ReleaseAt(275, 150, PortHit(target, custom.Id.ToString())));
+
+        Assert.Equal(
+            new CustomPortEndpoint(target.Id, custom.Id),
+            Assert.Single(context.AddedEdges).Target
+        );
+    }
+
+    [Fact]
+    public void ReleasingOverAShapesBodyOrEmptyCanvasLeavesTheEndFloatingAtTheReleasePoint()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var context = new FakeGestureContext(board);
+
+        var overBody = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        overBody.Move(PointerEvents.Move(270, 120));
+        overBody.Release(ReleaseAt(270, 120, BodyHit(target)));
+
+        var overNothing = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        overNothing.Move(PointerEvents.Move(190, 400));
+        overNothing.Release(ReleaseAt(190, 400));
+
+        Assert.Equal(new FloatingEndpoint(270, 120), context.AddedEdges[0].Target);
+        Assert.Equal(new FloatingEndpoint(190, 400), context.AddedEdges[1].Target);
+    }
+
+    // A port beneath the body that is on top is not what the user sees, and a resize handle or the
+    // selection box over a port is chrome the drop looks straight through.
+    [Fact]
+    public void TheTopmostPortOrBodyDecidesAndChromeAboveItIsIgnored()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var below = AddInstance(board, 250, 100);
+        var above = AddInstance(board, 250, 100);
+        var context = new FakeGestureContext(board);
+
+        var throughChrome = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        throughChrome.Move(PointerEvents.Move(250, 125));
+        throughChrome.Release(
+            ReleaseAt(
+                250,
+                125,
+                new PointerHit(HitRole.SelectionBounds, null, null),
+                new PointerHit(HitRole.ResizeHandle, above.Id, "left"),
+                PortHit(above, "Left"),
+                BodyHit(above)
+            )
+        );
+
+        var buried = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        buried.Move(PointerEvents.Move(250, 125));
+        buried.Release(ReleaseAt(250, 125, BodyHit(above), PortHit(below, "Left")));
+
+        Assert.Equal(new PortEndpoint(above.Id, PortId.Left), context.AddedEdges[0].Target);
+        Assert.Equal(new FloatingEndpoint(250, 125), context.AddedEdges[1].Target);
+    }
+
+    [Fact]
+    public void ReleasingBackOnTheStartingPortCreatesNothing()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.Move(PointerEvents.Move(200, 125));
+        gesture.Move(PointerEvents.Move(150, 125));
+        gesture.Release(ReleaseAt(150, 125, PortHit(source, "Right"), BodyHit(source)));
+
+        Assert.Empty(context.AddedEdges);
+    }
+
+    [Fact]
+    public void AClickOnAPortChangesNothing()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.Release(ReleaseAt(150, 125, PortHit(source, "Right")));
+
+        Assert.Empty(context.AddedEdges);
+        Assert.Empty(context.EndpointChanges);
+        Assert.Null(context.PendingEdge);
+    }
+
+    [Fact]
+    public void ADragFromAPortStripPullsAnEdgeFromThatSidesPort()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.PortStrip, source.Id, "bottom", 110, 150);
+        gesture.Move(PointerEvents.Move(110, 300));
+        gesture.Release(ReleaseAt(110, 300));
+
+        var (from, to) = Assert.Single(context.AddedEdges);
+        Assert.Equal(new PortEndpoint(source.Id, PortId.Bottom), from);
+        Assert.Equal(new FloatingEndpoint(110, 300), to);
+    }
+
+    [Fact]
+    public void ADoublePressOnAPortStripAddsACustomPortWhereItLanded()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 100, 100);
+        var context = new FakeGestureContext(board);
+
+        Press(context, HitRole.PortStrip, instance.Id, "top", 110, 100)
+            .Release(ReleaseAt(110, 100));
+        Assert.Empty(context.AddedCustomPorts);
+
+        Press(context, HitRole.PortStrip, instance.Id, "top", 110, 100, pressCount: 2)
+            .Release(ReleaseAt(110, 100));
+
+        var (instanceId, port) = Assert.Single(context.AddedCustomPorts);
+        Assert.Equal(instance.Id, instanceId);
+        Assert.Equal((0.2, 0.0), (port.FractionX, port.FractionY));
+    }
+
+    [Fact]
+    public void ADragFromAPortThatAnchorsAnEdgeCarriesThatEdgesEnd()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new PortEndpoint(target.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, target.Id, "Left", 250, 125);
+        gesture.Move(PointerEvents.Move(300, 300));
+
+        Assert.Equal(
+            new PendingEdge(edge.Id, false, new PortEndpoint(source.Id, PortId.Right), (300, 300)),
+            context.PendingEdge
+        );
+
+        gesture.Release(ReleaseAt(300, 300));
+
+        Assert.Empty(context.AddedEdges);
+        Assert.Equal(
+            (edge.Id, false, (IEdgeEndpoint)new FloatingEndpoint(300, 300)),
+            Assert.Single(context.EndpointChanges)
+        );
+    }
+
+    [Fact]
+    public void ADragFromAFloatingEndpointCarriesItAndCanPinItToAPort()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new FloatingEndpoint(200, 300)
+        );
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.EdgeEndpoint, edge.Id, "target", 200, 300);
+        gesture.Move(PointerEvents.Move(250, 125));
+        gesture.Release(ReleaseAt(250, 125, PortHit(target, "Left")));
+
+        Assert.Equal(
+            (edge.Id, false, (IEdgeEndpoint)new PortEndpoint(target.Id, PortId.Left)),
+            Assert.Single(context.EndpointChanges)
+        );
+    }
+
+    [Fact]
+    public void ADraggedSourceEndDrawsItsLineFromTheTarget()
+    {
+        var board = new Board();
+        var target = AddInstance(board, 250, 100);
+        var edge = new Edge(new FloatingEndpoint(50, 50), new PortEndpoint(target.Id, PortId.Left));
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.EdgeEndpoint, edge.Id, "source", 50, 50);
+        gesture.Move(PointerEvents.Move(70, 60));
+
+        Assert.Equal(
+            new PendingEdge(edge.Id, true, new PortEndpoint(target.Id, PortId.Left), (70, 60)),
+            context.PendingEdge
+        );
+    }
+
+    [Fact]
+    public void DroppingAnEndOntoTheOtherEndsPortOrBackWhereItWasChangesNothing()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new PortEndpoint(target.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+
+        var ontoOther = Press(context, HitRole.Port, target.Id, "Left", 250, 125);
+        ontoOther.Move(PointerEvents.Move(150, 125));
+        ontoOther.Release(ReleaseAt(150, 125, PortHit(source, "Right")));
+
+        var backAgain = Press(context, HitRole.Port, target.Id, "Left", 250, 125);
+        backAgain.Move(PointerEvents.Move(300, 125));
+        backAgain.Move(PointerEvents.Move(250, 125));
+        backAgain.Release(ReleaseAt(250, 125, PortHit(target, "Left")));
+
+        Assert.Empty(context.EndpointChanges);
+    }
+}

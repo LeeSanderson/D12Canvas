@@ -130,7 +130,7 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
 
         Assert.Equal(
             "url(#edge-arrow-selected)",
@@ -193,7 +193,7 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
         );
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
         var edge = canvas.Find(".edge-line");
 
         Assert.Equal("url(#edge-arrow-selected)", edge.GetAttribute("marker-start"));

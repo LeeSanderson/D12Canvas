@@ -4,9 +4,7 @@ using Xunit;
 namespace D12Canvas.Tests;
 
 // The secondary and middle buttons pan whatever they land on; only the primary button reads the
-// role. The spine owns the primary button on bare canvas, on instances, the selection box and every
-// resize handle, and on author content; the port and edge roles are still served by the old
-// handlers.
+// role, and every role resolves to exactly one gesture.
 public class PressToKindTests
 {
     public static IEnumerable<object[]> EveryRole() =>
@@ -55,24 +53,16 @@ public class PressToKindTests
     [InlineData(HitRole.SelectionBounds, "MoveSelection")]
     [InlineData(HitRole.ResizeHandle, "ResizeSelection")]
     [InlineData(HitRole.SelectionHandle, "ResizeSelection")]
+    [InlineData(HitRole.Port, "DragEdgeEnd")]
+    [InlineData(HitRole.PortStrip, "DragEdgeEnd")]
+    [InlineData(HitRole.EdgeEndpoint, "DragEdgeEnd")]
+    [InlineData(HitRole.Edge, "SelectEdge")]
+    [InlineData(HitRole.EdgeLabel, "SelectEdge")]
     [InlineData(HitRole.AuthorContent, "Native")]
     public void ThePrimaryButtonOnBoardContentResolvesByRole(string role, string expected)
     {
         Assert.Equal(
             Enum.Parse<GestureKind>(expected),
-            PressToKind.Resolve(PointerEvents.Press(role, PointerPress.PrimaryButton, 0, 0))
-        );
-    }
-
-    [Theory]
-    [InlineData(HitRole.Port)]
-    [InlineData(HitRole.PortStrip)]
-    [InlineData(HitRole.Edge)]
-    [InlineData(HitRole.EdgeEndpoint)]
-    [InlineData(HitRole.EdgeLabel)]
-    public void ThePrimaryButtonOnARoleTheOldHandlersStillServeIsNotOwned(string role)
-    {
-        Assert.Null(
             PressToKind.Resolve(PointerEvents.Press(role, PointerPress.PrimaryButton, 0, 0))
         );
     }

@@ -172,10 +172,12 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         Assert.Equal(2, markers.Count);
         var targetMarker = markers[1];
 
-        targetMarker.MouseDown(new MouseEventArgs { ClientX = 340, ClientY = 250 });
-        var background = canvas.Find(".diagram-canvas");
-        background.MouseMove(new MouseEventArgs { ClientX = 500, ClientY = 425 });
-        background.MouseUp(new MouseEventArgs { ClientX = 500, ClientY = 425 });
+        canvas.DragConnector(
+            targetMarker,
+            (340, 250),
+            (500, 425),
+            over: canvas.Find(".component-container").QuerySelector(".port-left")
+        );
 
         var edge = Assert.Single(board.Edges);
         Assert.Equal(new PortEndpoint(target.Id, PortId.Left), edge.Target);

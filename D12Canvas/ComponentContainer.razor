@@ -25,18 +25,15 @@
         @ChildContent
     </div>
 
-    @* A double-click anywhere along one of these four border strips adds a
-       custom port there. Rendered before the ports below (and so painted underneath them, later
-       markup wins the same stacking-context tie-break the ports/resize-handles comment below
-       relies on) so a standard or custom port's own small hit circle always wins a click over the
-       broader strip beneath it - only the rest of the border reaches this handler. Stops
-       propagation so it doesn't also enter edit mode (the container's own @ondblclick). *@
+    @* The four border strips. A drag from one pulls an edge from that side's port, and a
+       double-press adds a custom port where it landed. Rendered before the ports below, and so
+       painted underneath them, so a port's own small circle always wins over the broader strip. *@
     @if (ShowSelectionOverlay)
     {
-        <div class="port-strip port-strip-top" data-d12-role="@HitRole.PortStrip" data-d12-part="top" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Top))" @ondblclick:stopPropagation></div>
-        <div class="port-strip port-strip-right" data-d12-role="@HitRole.PortStrip" data-d12-part="right" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Right))" @ondblclick:stopPropagation></div>
-        <div class="port-strip port-strip-bottom" data-d12-role="@HitRole.PortStrip" data-d12-part="bottom" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Bottom))" @ondblclick:stopPropagation></div>
-        <div class="port-strip port-strip-left" data-d12-role="@HitRole.PortStrip" data-d12-part="left" @ondblclick="@((e) => AddCustomPort(e, PortStripSide.Left))" @ondblclick:stopPropagation></div>
+        <div class="port-strip port-strip-top" data-d12-role="@HitRole.PortStrip" data-d12-part="top"></div>
+        <div class="port-strip port-strip-right" data-d12-role="@HitRole.PortStrip" data-d12-part="right"></div>
+        <div class="port-strip port-strip-bottom" data-d12-role="@HitRole.PortStrip" data-d12-part="bottom"></div>
+        <div class="port-strip port-strip-left" data-d12-role="@HitRole.PortStrip" data-d12-part="left"></div>
     }
 
     @* The four standard ports are automatic on every instance - no
@@ -45,23 +42,18 @@
        resize) comes for free from positioning each one in plain CSS percentages of this container's
        own box - no per-instance computation needed. Visibility (hover/selection) is CSS-only too
        (see .port rules below), so no C# state or extra render is involved. *@
-    @* Each port's own mousedown starts a connector drag (StartPortDrag) - it doesn't
-       stop propagation, so it still bubbles up to HandleMouseDown afterwards. Each prevents its
-       own mousedown so the drag selects no text; the container itself does not, so an author's
-       own control inside it keeps the browser's focus and text selection. *@
-    <div class="@StandardPortCssClass(PortId.Top)" data-d12-role="@HitRole.Port" data-d12-part="Top" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Top)))" @onmousedown:preventDefault></div>
-    <div class="@StandardPortCssClass(PortId.Right)" data-d12-role="@HitRole.Port" data-d12-part="Right" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Right)))" @onmousedown:preventDefault></div>
-    <div class="@StandardPortCssClass(PortId.Bottom)" data-d12-role="@HitRole.Port" data-d12-part="Bottom" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Bottom)))" @onmousedown:preventDefault></div>
-    <div class="@StandardPortCssClass(PortId.Left)" data-d12-role="@HitRole.Port" data-d12-part="Left" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Left)))" @onmousedown:preventDefault></div>
+    <div class="@StandardPortCssClass(PortId.Top)" data-d12-role="@HitRole.Port" data-d12-part="Top"></div>
+    <div class="@StandardPortCssClass(PortId.Right)" data-d12-role="@HitRole.Port" data-d12-part="Right"></div>
+    <div class="@StandardPortCssClass(PortId.Bottom)" data-d12-role="@HitRole.Port" data-d12-part="Bottom"></div>
+    <div class="@StandardPortCssClass(PortId.Left)" data-d12-role="@HitRole.Port" data-d12-part="Left"></div>
 
-    @* An instance's own runtime-added custom ports - the same drag-to-connect affordance
-       as a standard port (StartPortDrag), just at a user-chosen fractional position instead of a
-       fixed border-center one, so its own inline style (not a CSS class) positions it. *@
+    @* An instance's own runtime-added custom ports - the same affordance as a standard port,
+       just at a user-chosen fractional position instead of a fixed border-center one, so its own
+       inline style (not a CSS class) positions it. *@
     @foreach (var port in CustomPorts)
     {
         <div class="@CustomPortCssClass(port.Id)" style="@CustomPortStyle(port)"
              data-d12-role="@HitRole.Port" data-d12-part="@port.Id"
-             @onmousedown="@((e) => StartPortDrag(e, PortRef.Custom(port.Id)))" @onmousedown:preventDefault
              @key="port.Id"></div>
     }
 
@@ -125,7 +117,8 @@
     }
 
     .component-container:hover .port,
-    .component-container.selected .port {
+    .component-container.selected .port,
+    .diagram-canvas.connecting .port {
         opacity: 1;
         pointer-events: auto;
     }

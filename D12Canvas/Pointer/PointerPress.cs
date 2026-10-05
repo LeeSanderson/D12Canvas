@@ -37,6 +37,8 @@ public sealed record PointerMove(
     bool MetaKey
 );
 
+// Hits is what lies under the release point, topmost first, read only for a press that can drop
+// an edge end, where the captured release's own target says nothing about what is beneath it.
 public sealed record PointerRelease(
     int PointerId,
     int Button,
@@ -45,5 +47,9 @@ public sealed record PointerRelease(
     bool ShiftKey,
     bool CtrlKey,
     bool AltKey,
-    bool MetaKey
+    bool MetaKey,
+    IReadOnlyList<PointerHit>? Hits = null
 );
+
+// One marked element under a point, classified the way a press on it would be.
+public sealed record PointerHit(string Role, Guid? EntityId, string? Part);

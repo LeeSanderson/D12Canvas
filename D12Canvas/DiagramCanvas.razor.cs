@@ -195,28 +195,14 @@ public partial class DiagramCanvas : IAsyncDisposable
     // board.
     private readonly Dictionary<Guid, DynamicComponent> _mountedComponents = new();
 
+    // The label component mounted for each labelled edge, keyed by edge id, kept so a double-press
+    // on a label can open its editor.
+    private readonly Dictionary<Guid, DynamicComponent> _mountedLabels = new();
+
     private LiveGeometry Live => new(Board!, _preview);
 
-    // Connector drag-in-progress state - lives here, not on Board,
-    // the same reasoning as every other momentary gesture tracked in this file. Owned centrally
-    // (rather than by the source ComponentContainer) because a completed connection spans two
-    // different instances.
-    private bool _isConnectingPort;
-    private Guid _connectSourceComponentId;
-    private PortRef _connectSourcePortRef;
-    private (double Left, double Top) _connectContainerOrigin;
-    private (double X, double Y) _connectCurrentPoint;
-
-    // Set when this drag is repositioning an EXISTING edge's endpoint - grabbed from a
-    // port that already anchors an edge (StartPortDrag), or from a floating endpoint's own marker
-    // (StartFloatingEndpointDrag) - rather than creating a brand new one. Null means "creating a
-    // new edge from a bare port" (the original connector-drag path). While set, the edge being edited is
-    // rendered via the drag preview instead of its own normal line (see IsBeingEdited).
-    private Guid? _connectEditingEdgeId;
-    private bool _connectEditingEdgeIsSource;
-
-    // Keyboard-driven connector attachment - the keyboard equivalent of
-    // StartPortDrag/CompletePortDrag above, built entirely from Enter/arrow-key/Space focus
+    // Keyboard-driven connector attachment - the keyboard equivalent of a connector drag, built
+    // entirely from Enter/arrow-key/Space focus
     // navigation rather than a continuous pointer gesture. _portFocusInstanceId/_portFocusEndpoint
     // is the port currently being picked on whichever instance Enter was most recently pressed on
     // (entered/exited by Enter alone - see OnEnterPressed - defaulting each entry to that instance's
@@ -234,19 +220,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     private Guid? _portFocusInstanceId;
     private IEdgeEndpoint _portFocusEndpoint = new PortEndpoint(Guid.Empty, PortId.Top);
     private IEdgeEndpoint? _pendingConnectorSource;
-
-    // Board-space radius a connector-drag release must land within one of an instance's own
-    // standard ports to attach - matches that port affordance's own authored radius
-    // (ComponentContainer.razor: a 20px-diameter circle in the same, zoom-independent local
-    // coordinate space Bounds itself uses; the ancestor .canvas-content's CSS scale transform
-    // only changes its *painted* on-screen footprint, not this board-space size). dropPoint
-    // (from ToBoardPoint) and FindPortNear's own port positions are both already in that same
-    // board space, so this needs no further scaling by zoom.
-    private const double PortHitRadius = 10;
-
-    // Read by ComponentContainer (via the ParentCanvas cascading parameter) so every instance's
-    // own mousemove/mouseup can forward to this gesture instead of running its own drag logic.
-    public bool IsConnectingPort => _isConnectingPort;
 
     private ElementReference ContainerElement;
     private ElementReference CanvasElement;
@@ -344,6 +317,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             _mountedComponents.Remove(id);
         }
 
+        foreach (var id in _mountedLabels.Keys.Where(id => Board?.GetEdge(id)?.Label is null))
+        {
+            _mountedLabels.Remove(id);
+        }
+
         if (_pendingGroupFocus)
         {
             _pendingGroupFocus = false;
@@ -388,6 +366,8 @@ public partial class DiagramCanvas : IAsyncDisposable
             GestureKind.MarqueeSelect => new MarqueeSelectGesture(press, context),
             GestureKind.MoveSelection => new MoveSelectionGesture(press, context),
             GestureKind.ResizeSelection => new ResizeSelectionGesture(press, context),
+            GestureKind.DragEdgeEnd => new DragEdgeEndGesture(press, context),
+            GestureKind.SelectEdge => new SelectEdgeGesture(press, context),
             GestureKind.Native => new NativeGesture(press, context),
             _ => throw new InvalidOperationException($"No gesture is built for {kind}."),
         };
@@ -559,6 +539,34 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
+    private void BeginLabelEdit(Guid edgeId)
+    {
+        if (
+            _mountedLabels.TryGetValue(edgeId, out var mounted)
+            && mounted.Instance is IInlineEditable editable
+        )
+        {
+            editable.BeginEdit();
+        }
+    }
+
+    private void AddEdge(IEdgeEndpoint source, IEdgeEndpoint target)
+    {
+        if (Board is not null)
+        {
+            _history.Do(new AddEdgeCommand(Board, new Edge(source, target)));
+        }
+    }
+
+    private void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint)
+    {
+        if (Board?.GetEdge(edgeId) is { } edge)
+        {
+            var before = isSource ? edge.Source : edge.Target;
+            _history.Do(new ChangeEdgeEndpointCommand(edge, isSource, before, endpoint));
+        }
+    }
+
     // The one focus write per press lands here. The keyboard's anchor goes null with it, since a
     // press invalidates whichever stop the keyboard was on and any port pick in progress there.
     private void HandleCanvasFocus()
@@ -613,6 +621,22 @@ public partial class DiagramCanvas : IAsyncDisposable
         public void CommitPreview() => canvas.CommitPreview();
 
         public void BeginInlineEdit(Guid instanceId) => canvas.BeginInlineEdit(instanceId);
+
+        public void PublishPendingEdge(PendingEdge pendingEdge) =>
+            canvas._preview.PublishPendingEdge(pendingEdge);
+
+        public void AddEdge(IEdgeEndpoint source, IEdgeEndpoint target) =>
+            canvas.AddEdge(source, target);
+
+        public void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint) =>
+            canvas.ChangeEdgeEndpoint(edgeId, isSource, endpoint);
+
+        public void AddCustomPort(Guid instanceId, PortDef port) =>
+            canvas.AddCustomPort(instanceId, port);
+
+        public void AddEdgeLabel(Guid edgeId) => canvas.AddEdgeLabel(edgeId);
+
+        public void BeginLabelEdit(Guid edgeId) => canvas.BeginLabelEdit(edgeId);
 
         public void OpenContextMenuAt(double containerX, double containerY)
         {
@@ -908,10 +932,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Escape's first rung is the pointer gesture that owns the press: cancel it and stop, so one
     // Escape never throws away more than it meant to and a second Escape mid-press does nothing,
     // because the cancelled gesture still owns the pointer until its button comes up. Below that
-    // rung it still clears the selection, and cancels an in-progress connector drag rather than
-    // letting it resolve against wherever the pointer happens to be. Also cancels a half-built
-    // KEYBOARD connection in one press, whether it's still mid-pick (_portFocusInstanceId) or
-    // already has an armed source waiting for a target (_pendingConnectorSource).
+    // rung it clears the selection, and cancels a half-built KEYBOARD connection in one press,
+    // whether it's still mid-pick (_portFocusInstanceId) or already has an armed source waiting
+    // for a target (_pendingConnectorSource).
     [JSInvokable]
     public void OnEscapePressed()
     {
@@ -920,11 +943,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             CancelActiveGesture(restoreSelection: true);
             StateHasChanged();
             return;
-        }
-
-        if (_isConnectingPort)
-        {
-            CancelPortDrag();
         }
 
         _portFocusInstanceId = null;
@@ -942,9 +960,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     // the pick to its Top port - a no-op for anything that isn't a real ComponentInstance (nothing
     // focused yet, or focus is on a Group's own tab stop; groups have no ports). Already picking:
     // the FIRST Enter arms the currently-highlighted port as this connection's source (mirroring
-    // StartPortDrag) and exits port-focus mode so Tab/Shift+Tab can reach the target instance; a
-    // SECOND Enter (reached once a source is already armed) instead completes the connection
-    // exactly like CompletePortDrag's own bare-port branch - including its same "landing back on
+    // a connector drag's press) and exits port-focus mode so Tab/Shift+Tab can reach the target
+    // instance; a SECOND Enter (reached once a source is already armed) instead completes the connection
+    // exactly like a connector drag dropped on a port - including its same "landing back on
     // the exact port the drag started from creates no edge" rule. Only ever reached with the DOM
     // focus actually on a `.component-container` (see the target-scoped guard in
     // DiagramCanvas.razor.js), so it never fires while a Palette button's own native
@@ -1483,164 +1501,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         NotifySelectionChanged();
     }
 
-    // Fired by a ComponentContainer's own port mousedown (OnPortDragStart).
-    // _isConnectingPort must flip synchronously, in this same call - a real browser's very next
-    // mousemove/mouseup can arrive before an awaited JS round-trip resolves (unlike bUnit's mock,
-    // which completes synchronously), and ComponentContainer's own forwarding check would race
-    // against it, silently dropping the gesture's start. The container's page position is instead
-    // refreshed in the background by RefreshConnectContainerOrigin below - a stale origin only
-    // costs a barely-perceptible one-frame offset on the drag-preview's very first paint, self-
-    // correcting on the next mousemove, which is a far cheaper price than the race.
-    private void StartPortDrag(Guid instanceId, PortDragStartEventArgs args)
-    {
-        if (Board is null)
-        {
-            return;
-        }
-
-        // A port that already anchors an edge starts a "reposition this edge's
-        // endpoint" gesture instead of creating a new edge - matches common diagramming-tool UX
-        // (grabbing a connected point moves the connection; grabbing a bare port starts a new one).
-        // Works the same for a custom port as a standard one - PortRef.ToEndpoint resolves either.
-        var attachedEdge = Board.FindEdgeAttachedTo(args.Port.ToEndpoint(instanceId));
-
-        _isConnectingPort = true;
-        _connectSourceComponentId = instanceId;
-        _connectSourcePortRef = args.Port;
-        _connectEditingEdgeId = attachedEdge?.EdgeId;
-        _connectEditingEdgeIsSource = attachedEdge?.IsSource ?? false;
-        _connectCurrentPoint = ToBoardPoint((args.ClientX, args.ClientY), _connectContainerOrigin);
-        StateHasChanged();
-
-        _ = RefreshConnectContainerOrigin();
-    }
-
-    // Grabbing a floating endpoint's own marker starts the same connector-drag gesture
-    // as StartPortDrag, but always originates from an existing Edge - CompletePortDrag mutates
-    // that edge's Source/Target in place rather than creating a new one. Unlike a port press
-    // (nested inside a ComponentContainer, which needs the mousedown-bubbles-then-gate trick), this
-    // marker sits directly on the canvas, so stopping propagation at the marker itself (see the
-    // .razor markup) is enough to keep the canvas's own pan/marquee logic from also engaging.
-    private void StartFloatingEndpointDrag(Guid edgeId, bool isSource, MouseEventArgs e)
-    {
-        if (Board is null)
-        {
-            return;
-        }
-
-        _isConnectingPort = true;
-        _connectEditingEdgeId = edgeId;
-        _connectEditingEdgeIsSource = isSource;
-        _connectCurrentPoint = ToBoardPoint(e, _connectContainerOrigin);
-        StateHasChanged();
-
-        _ = RefreshConnectContainerOrigin();
-    }
-
-    private async Task RefreshConnectContainerOrigin()
-    {
-        var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
-            "getContainerDimensions",
-            ContainerElement
-        );
-        _connectContainerOrigin = (containerRect["left"], containerRect["top"]);
-    }
-
-    // Called both by this class's own HandleMouseMove (pointer over empty canvas) and
-    // by any ComponentContainer forwarding its own mousemove (pointer over an instance's body) -
-    // either way, DiagramCanvas is the single owner of the gesture's live preview.
-    public void UpdatePortDrag(double clientX, double clientY)
-    {
-        if (!_isConnectingPort)
-        {
-            return;
-        }
-
-        _connectCurrentPoint = ToBoardPoint((clientX, clientY), _connectContainerOrigin);
-        StateHasChanged();
-    }
-
-    // Resolves the drop point to a port within PortHitRadius, falling back to a
-    // FloatingEndpoint at the drop point itself when nothing is within tolerance - so a connector
-    // drag always produces a valid endpoint, attached or not. Either creates a brand new Edge
-    // (bare-port origin) or writes the resolved endpoint onto whichever side of an existing Edge
-    // is being repositioned (ApplyEdgeEndpointEdit).
-    public void CompletePortDrag(double clientX, double clientY)
-    {
-        if (!_isConnectingPort || Board is null)
-        {
-            CancelPortDrag();
-            return;
-        }
-
-        var dropPoint = ToBoardPoint((clientX, clientY), _connectContainerOrigin);
-        var hitPort = Board.FindPortNear(dropPoint, PortHitRadius);
-        IEdgeEndpoint resolved = hitPort is { } port
-            ? port
-            : new FloatingEndpoint(dropPoint.X, dropPoint.Y);
-
-        if (_connectEditingEdgeId is { } editingEdgeId)
-        {
-            ApplyEdgeEndpointEdit(editingEdgeId, _connectEditingEdgeIsSource, resolved);
-        }
-        else
-        {
-            var source = _connectSourcePortRef.ToEndpoint(_connectSourceComponentId);
-
-            // Dropping back on the exact port the drag started from creates no edge - a real
-            // gesture always connects two distinct points. IEdgeEndpoint's implementations are all
-            // record structs, so structural equality already covers every shape (standard port,
-            // custom port) without a type-specific comparison - same as ApplyEdgeEndpointEdit below.
-            // Routed through AddEdgeCommand rather than a direct
-            // Board.AddEdge call, so undo removes the created edge and redo restores it with the
-            // same attachments.
-            if (!resolved.Equals(source))
-            {
-                _history.Do(new AddEdgeCommand(Board, new Edge(source, resolved)));
-            }
-        }
-
-        CancelPortDrag();
-    }
-
-    // Writes the drag's resolved endpoint onto whichever side of the edge is being
-    // edited - unless doing so would collapse the edge onto a single point (both ends resolving to
-    // the same port, or both left floating at the same coordinate), in which case the edge is left
-    // exactly as it was before this drag. IEdgeEndpoint's implementations are records, so structural
-    // equality already covers both shapes without a type-specific comparison.
-    private void ApplyEdgeEndpointEdit(Guid edgeId, bool editingSource, IEdgeEndpoint resolved)
-    {
-        var edge = Board!.GetEdge(edgeId);
-        if (edge is null)
-        {
-            return;
-        }
-
-        var other = editingSource ? edge.Target : edge.Source;
-        if (resolved.Equals(other))
-        {
-            return;
-        }
-
-        if (editingSource)
-        {
-            edge.Source = resolved;
-        }
-        else
-        {
-            edge.Target = resolved;
-        }
-    }
-
-    private void CancelPortDrag()
-    {
-        _isConnectingPort = false;
-        _connectSourceComponentId = Guid.Empty;
-        _connectEditingEdgeId = null;
-        _connectEditingEdgeIsSource = false;
-        StateHasChanged();
-    }
-
     // Generic commit point for a built-in's own inline WYSIWYG text edit (or any future
     // opaque Props edit) - Sticky Note and Text call this from their own editor on blur, via the
     // ParentCanvas cascading parameter every built-in already has access to. MutateEntityCommand
@@ -1717,7 +1577,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // The commit point for a border double-click adding a custom port - routed
+    // The commit point for a double-press on a port strip adding a custom port - routed
     // through AddCustomPortCommand so undo removes exactly the port that was added.
     private void AddCustomPort(Guid instanceId, PortDef port)
     {
@@ -1736,9 +1596,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     // D12Canvas's built-ins (BuiltInComponents.RegisterAll) always has this key registered.
     private const string DefaultEdgeLabelComponentTypeKey = "text";
 
-    // An end user double-clicks an edge's line to add a label - a no-op if it already
-    // has one (double-clicking elsewhere on the line never clobbers an existing label; editing it
-    // further goes through the label's own dblclick-to-edit, not this) or if the edge's own line
+    // An end user double-presses an edge's line to add a label - a no-op if it already
+    // has one (a double-press elsewhere on the line never clobbers an existing label; editing it
+    // further goes through a double-press on the label itself, not this) or if the edge's own line
     // can't currently be resolved (a dangling endpoint). The new label is a default (empty) Text
     // instance centered on the edge's current midpoint - Bounds.X/Y are never read again afterwards
     // (see EdgeLabelStyle), only Width/Height matter, the same "position is always live-derived,
@@ -1776,10 +1636,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     // positioning, only Width/Height are read. The anchor is the straight-line midpoint between the
     // two endpoints regardless of the edge's own RoutingStyle - a reasonable approximation for
     // Orthogonal/Curved too, not full on-path placement.
-    // While THIS edge's endpoint is mid-drag (IsBeingEdited), its own normal line is
-    // suppressed in favour of ConnectPreviewLine - the label follows that same live preview instead
-    // of the edge's last-committed (pre-drag) endpoints, so it doesn't visually detach and freeze
-    // for the duration of the drag.
+    // While a connector drag carries one of this edge's ends, the label follows the pending line
+    // rather than the edge's committed endpoints, so it doesn't detach and freeze mid-drag.
     private string? EdgeLabelStyle(Edge edge)
     {
         if (edge.Label is null)
@@ -1787,7 +1645,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return null;
         }
 
-        var line = IsBeingEdited(edge.Id) ? ConnectPreviewLine() : EdgeLine(edge);
+        var line = IsCarried(edge.Id) ? PendingEdgeLine() : EdgeLine(edge);
         if (line is null)
         {
             return null;
@@ -1972,8 +1830,12 @@ public partial class DiagramCanvas : IAsyncDisposable
                 Board.GetComponent(id) is not null || Board.GetGroup(id) is not null
             );
 
+    // While a connector drag is drawing its line every port is shown and hittable, so the drop can
+    // find the one under the pointer; hover cannot do that while the canvas holds the capture.
     private string CanvasCssClass =>
-        _isDragOverBoard ? "diagram-canvas drag-over" : "diagram-canvas";
+        "diagram-canvas"
+        + (_isDragOverBoard ? " drag-over" : "")
+        + (_preview.PendingEdge is not null ? " connecting" : "");
 
     // Same handler for both events - dragenter and dragover mark the same "still hovering" state.
     private void HandleDragEnterOrOver(DragEventArgs e) => _isDragOverBoard = true;
@@ -1981,7 +1843,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void HandleDragLeave(DragEventArgs e) => _isDragOverBoard = false;
 
     private string ContentStyle =>
-        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale});";
+        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale}); --d12-scale: {_zoomPanTracker.Scale};";
 
     // board units - layer 0's spacing, and (at scale 1.0) also its on-screen px spacing, matching
     // the legacy fixed grid's look at the default zoom level.
@@ -2061,29 +1923,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static double PositiveMod(double value, double modulus) =>
         ((value % modulus) + modulus) % modulus;
 
-    // The canvas-level mouse plumbing left for the one gesture the old interaction layer still
-    // owns, the connector drag. It goes when that gesture moves onto the spine. A press the spine
-    // owns prevents its pointerdown, so these never fire for it.
-    private void HandleMouseMove(MouseEventArgs e)
-    {
-        if (_isConnectingPort)
-        {
-            UpdatePortDrag(e.ClientX, e.ClientY);
-        }
-    }
-
-    private void HandleMouseUp(MouseEventArgs e)
-    {
-        if (_isConnectingPort)
-        {
-            CompletePortDrag(e.ClientX, e.ClientY);
-        }
-    }
-
-    // Screen (client) coordinates to board space, given the container's own page position -
-    // shared by the marquee gesture, HandleDrop below, and the connector-drag
-    // gesture, whose coordinates arrive as raw doubles rather than a MouseEventArgs when
-    // forwarded from a ComponentContainer.
+    // Screen (client) coordinates to board space, given the container's own page position. The
+    // pointer gestures pass an origin of zero, since their coordinates arrive container-relative.
     private (double X, double Y) ToBoardPoint(
         (double ClientX, double ClientY) client,
         (double Left, double Top) containerOrigin
@@ -2131,39 +1972,20 @@ public partial class DiagramCanvas : IAsyncDisposable
         return from is null || to is null ? null : (from.Value, to.Value);
     }
 
-    // The in-progress connector drag-preview: from a fixed origin to wherever the pointer
-    // currently is in board space. While repositioning an existing edge's endpoint,
-    // the fixed origin is the edge's OTHER endpoint (not the one being dragged) - that edge's own
-    // normal line is suppressed for the duration (see IsBeingEdited), so this preview is the only
-    // thing representing it. Otherwise (creating a brand new edge) the origin is the bare port
-    // the drag started from.
-    private ((double X, double Y) From, (double X, double Y) To)? ConnectPreviewLine()
+    // The pending edge line a connector drag publishes, from the end that stays put to the
+    // pointer. While it carries an existing edge's end it is the only thing drawing that edge.
+    private ((double X, double Y) From, (double X, double Y) To)? PendingEdgeLine()
     {
-        if (!_isConnectingPort || Board is null)
+        if (Board is null || _preview.PendingEdge is not { } pending)
         {
             return null;
         }
 
-        var from = _connectEditingEdgeId is { } editingEdgeId
-            ? ResolveOtherEndpoint(editingEdgeId, _connectEditingEdgeIsSource)
-            : Board.ResolveEndpoint(_connectSourcePortRef.ToEndpoint(_connectSourceComponentId));
-
-        return from is null ? null : (from.Value, _connectCurrentPoint);
+        var from = Live.ResolveEndpoint(pending.Anchor);
+        return from is null ? null : (from.Value, pending.Point);
     }
 
-    private (double X, double Y)? ResolveOtherEndpoint(Guid edgeId, bool draggingSource)
-    {
-        var edge = Board!.GetEdge(edgeId);
-        if (edge is null)
-        {
-            return null;
-        }
-
-        var other = draggingSource ? edge.Target : edge.Source;
-        return Board.ResolveEndpoint(other);
-    }
-
-    // An end user clicks an edge to select it - the edge counterpart to
+    // A click on an edge selects it - the edge counterpart to
     // SelectComponent, but kept as its own exclusive slot (see _selectedEdgeId) since edges don't
     // participate in multi-select, grouping, or move/resize as a unit.
     private void SelectEdge(Guid edgeId)
@@ -2219,17 +2041,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         return selected ? "url(#edge-arrow-selected)" : "url(#edge-arrow)";
     }
 
-    // True while the given edge is being repositioned mid-drag (either endpoint) - its
-    // normal line is suppressed for the duration in favour of the drag preview, since one <line>
-    // element represents both ends together.
-    private bool IsBeingEdited(Guid edgeId) => _isConnectingPort && _connectEditingEdgeId == edgeId;
+    private bool IsCarried(Guid edgeId) => _preview.PendingEdge?.EdgeId == edgeId;
 
-    // True only while THIS SPECIFIC SIDE of the edge is the one being dragged - unlike
-    // IsBeingEdited, this doesn't suppress the untouched side's own floating marker (each marker is
-    // independent, so an edge with one attached and one floating end shouldn't hide the floating
-    // one while the attached end is what's being re-dragged).
-    private bool IsEndpointBeingEdited(Guid edgeId, bool isSource) =>
-        IsBeingEdited(edgeId) && _connectEditingEdgeIsSource == isSource;
+    private bool IsEndCarried(Guid edgeId, bool isSource) =>
+        IsCarried(edgeId) && _preview.PendingEdge!.IsSource == isSource;
 
     // Every persisted (not currently being dragged) floating endpoint across the whole
     // Board, each with a stable render key - an edge can have zero, one, or both ends floating.
@@ -2242,12 +2057,12 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         foreach (var edge in Board.Edges)
         {
-            if (edge.Source is FloatingEndpoint source && !IsEndpointBeingEdited(edge.Id, true))
+            if (edge.Source is FloatingEndpoint source && !IsEndCarried(edge.Id, true))
             {
                 yield return (edge, true, source.X, source.Y);
             }
 
-            if (edge.Target is FloatingEndpoint target && !IsEndpointBeingEdited(edge.Id, false))
+            if (edge.Target is FloatingEndpoint target && !IsEndCarried(edge.Id, false))
             {
                 yield return (edge, false, target.X, target.Y);
             }
@@ -2375,7 +2190,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // same drop point / viewport-center-plus-cascade point every other placement gesture uses
     // - a fixed-length horizontal segment rather than a single point, so the new edge is
     // immediately visible and grabbable rather than a zero-length line. Routed through AddEdgeCommand
-    // exactly like a connector drag's own edge creation (CompletePortDrag), so undo/redo
+    // exactly like a connector drag's own edge creation, so undo/redo
     // treats it identically.
     private const double ConnectorDefaultHalfLength = 40;
 

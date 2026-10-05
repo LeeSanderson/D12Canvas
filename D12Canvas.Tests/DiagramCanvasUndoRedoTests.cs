@@ -481,12 +481,10 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0]
-            .QuerySelector(".port-right")!
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
         var targetPort = containers[1].QuerySelector(".port-left")!;
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        canvas.MoveTo((250, 125));
+        canvas.ReleaseOver((250, 125), targetPort);
         Assert.Single(board.Edges);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -503,12 +501,10 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0]
-            .QuerySelector(".port-right")!
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
         var targetPort = containers[1].QuerySelector(".port-left")!;
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        canvas.MoveTo((250, 125));
+        canvas.ReleaseOver((250, 125), targetPort);
         var createdId = Assert.Single(board.Edges).Id;
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -530,15 +526,13 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var target = AddInstance(board, 250, 100); // left port at (250, 125)
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[0]
-            .QuerySelector(".port-right")!
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
         var targetPort = containers[1].QuerySelector(".port-left")!;
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        canvas.MoveTo((250, 125));
+        canvas.ReleaseOver((250, 125), targetPort);
         var edgeId = Assert.Single(board.Edges).Id;
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         Assert.Empty(board.Edges);
 
@@ -557,13 +551,12 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var source = AddInstance(board, 100, 100); // right port at (150, 125)
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        var background = canvas.Find(".diagram-canvas");
-        background.MouseMove(new MouseEventArgs { ClientX = 190, ClientY = 400 });
-        background.MouseUp(new MouseEventArgs { ClientX = 190, ClientY = 400 });
+        canvas.PressElement(sourcePort, (150, 125));
+        canvas.MoveTo((190, 400));
+        canvas.ReleaseOver((190, 400));
         var edgeId = Assert.Single(board.Edges).Id;
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         Assert.Empty(board.Edges);
 
@@ -583,14 +576,12 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         AddInstance(board, 250, 100); // left port at (250, 125)
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[0]
-            .QuerySelector(".port-right")!
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
+        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
         var targetPort = containers[1].QuerySelector(".port-left")!;
-        targetPort.MouseMove(new MouseEventArgs { ClientX = 250, ClientY = 125 });
-        targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
+        canvas.MoveTo((250, 125));
+        canvas.ReleaseOver((250, 125), targetPort);
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 

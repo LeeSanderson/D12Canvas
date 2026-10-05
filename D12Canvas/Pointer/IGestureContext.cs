@@ -41,6 +41,18 @@ internal interface IGestureContext
     // instance whose previewed bounds equal its committed bounds.
     void CommitPreview();
 
+    // Replaces the gesture preview's pending edge line. Board is not touched.
+    void PublishPendingEdge(PendingEdge pendingEdge);
+
+    // Each of these is one history entry.
+    void AddEdge(IEdgeEndpoint source, IEdgeEndpoint target);
+    void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint);
+    void AddCustomPort(Guid instanceId, PortDef port);
+    void AddEdgeLabel(Guid edgeId);
+
+    // Asks the edge's label to open its inline editor, as BeginInlineEdit does for an instance.
+    void BeginLabelEdit(Guid edgeId);
+
     // Asks the instance to open its inline editor. Does nothing for an instance that is not
     // addressable, not mounted as its full component, or of a type that declines editing.
     void BeginInlineEdit(Guid instanceId);

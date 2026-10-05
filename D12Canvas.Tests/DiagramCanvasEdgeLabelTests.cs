@@ -89,7 +89,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var edge = AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".edge-line").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
 
         Assert.NotNull(edge.Label);
         Assert.Equal("text", edge.Label!.ComponentTypeKey);
@@ -103,10 +103,10 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var board = new Board();
         var edge = AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".edge-line").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
         var firstLabel = edge.Label;
 
-        canvas.Find(".edge-line").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
 
         Assert.Same(firstLabel, edge.Label);
         Assert.Single(canvas.FindAll(".edge-label"));
@@ -119,7 +119,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var edge = AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".edge-line").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
         Assert.NotNull(edge.Label);
 
         canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -138,7 +138,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var target = AddInstance(board, 200, 0);
         AddEdgeBetween(board, source, target);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".edge-line").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
         var styleBefore = canvas.Find(".edge-label").GetAttribute("style");
 
         // Move the target instance far away - the label's live-derived midpoint must follow.
@@ -153,10 +153,9 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
     }
 
     // While an existing edge's endpoint is mid-drag (reposition, not a brand-new connection), the
-    // edge's own normal line is suppressed in favour of the live drag preview
-    // (DiagramCanvas.ConnectPreviewLine) - the label must follow that same preview, not the edge's
-    // last-committed (pre-drag) endpoints, or it would visually freeze and detach for the drag's
-    // duration.
+    // edge's own normal line is suppressed in favour of the pending line - the label must follow
+    // that same line, not the edge's last-committed (pre-drag) endpoints, or it would visually
+    // freeze and detach for the drag's duration.
     [Fact]
     public void TheLabelFollowsTheLiveDragPreviewWhileAnEndpointIsBeingRepositioned()
     {
@@ -165,17 +164,15 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var target = AddInstance(board, 250, 100); // left port at (250, 125)
         AddEdgeBetween(board, source, target);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".edge-line").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
         var styleBeforeDrag = canvas.Find(".edge-label").GetAttribute("style");
         Assert.Equal("left: 160px; top: 113px; width: 80px; height: 24px;", styleBeforeDrag);
 
-        // Re-grab the source port (it already anchors an edge, so this starts a reposition drag -
-        // see StartPortDrag) and move away from it without releasing yet.
+        // Re-grab the source port (it already anchors an edge, so this carries that edge's end)
+        // and move away from it without releasing yet.
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
-        sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 150, ClientY = 400 });
+        canvas.PressElement(sourcePort, (150, 125));
+        canvas.MoveTo((150, 400));
 
         // Midpoint of the fixed target port (250, 125) and the live drag point (150, 400).
         var styleDuringDrag = canvas.Find(".edge-label").GetAttribute("style");
@@ -188,9 +185,9 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var board = new Board();
         var edge = AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".edge-line").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
 
-        canvas.Find("p.d12-text").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-label"));
         var editor = canvas.Find("textarea.d12-text-editor");
         editor.Input("Connects A to B");
         editor.Blur();
@@ -211,11 +208,11 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var board = new Board();
         var edge = AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".edge-line").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
         var label = edge.Label;
         Assert.NotNull(label);
 
-        canvas.Find(".edge-line").Click();
+        canvas.ClickElement(canvas.Find(".edge-hit"));
         canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
 
         Assert.Null(board.GetEdge(edge.Id));
@@ -235,8 +232,8 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var board = new Board();
         AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".edge-line").DoubleClick();
-        canvas.Find("p.d12-text").DoubleClick();
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
+        canvas.DoubleClickElement(canvas.Find(".edge-label"));
         canvas.Find("textarea.d12-text-editor").Input("Persisted label");
         canvas.Find("textarea.d12-text-editor").Blur();
 
