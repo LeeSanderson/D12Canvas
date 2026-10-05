@@ -21,6 +21,8 @@ It is unmeasured everywhere. Ticket 41 measured `Ctrl+Arrow`, not its `Shift` va
 - **Windows** is measured before anything is built, by [Ctrl+Shift+Arrow on Windows](../../.scratch/canvas-interaction-quality/issues/63-ctrl-shift-arrow-on-windows.md), with the same probe page. If Windows reserves the chord, this decision reopens on the key alone. The rule, the origin and the guards below do not depend on which chord carries them.
 
   **Addendum (measured by that ticket):** Windows does not reserve it. In Chrome and Edge all four arrows reach the page with `ctrlKey` and `shiftKey` set, `preventDefault` takes, and with `preventDefault` off neither the browser nor the OS does anything. The binding stands. Firefox on Windows was not measured and joins the macOS ticket.
+
+  **Addendum (Firefox on Windows, measured by [Chord survival on macOS and in Firefox](../../.scratch/canvas-interaction-quality/issues/56-chord-survival-macos-firefox.md)):** Firefox 157 does not reserve it either. All four arrows reach the page and `preventDefault` takes. Without `preventDefault`, Firefox starts a text selection and scrolls the page to show it. So the three no-op guards below still call `preventDefault`, as ADR 0026's addendum requires.
 - **macOS** ships as a documented doubt, on the same footing as `Ctrl+Arrow`. The `Ctrl+Shift` and `Cmd+Shift` rows join [Chord survival on macOS and in Firefox](../../.scratch/canvas-interaction-quality/issues/56-chord-survival-macos-firefox.md).
 
 ## What it does

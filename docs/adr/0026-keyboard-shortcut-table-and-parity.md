@@ -16,7 +16,7 @@ Every row is guarded by focus (see the next section). The **Typing** column reco
 | `Shift`+`Arrow` | Coarse nudge | guarded | | ADR 0010, here |
 | `Alt`+`Arrow` | Resize a single instance, opposite edge anchored | guarded | | ADR 0010 |
 | `Alt`+`Shift`+`Arrow` | Resize a single instance, anchor flipped | guarded | | ADR 0010 |
-| `Ctrl`+`Arrow` | Quick-create and connect in that direction. Works in Chrome and Edge on Windows; **macOS unmeasured, see the addendum** | guarded | | ADR 0030 |
+| `Ctrl`+`Arrow` | Quick-create and connect in that direction. Works in Chrome, Edge and Firefox on Windows; **macOS unmeasured, see the addendum** | guarded | | ADR 0030 |
 | `Ctrl`+`Shift`+`Arrow` | `Directional focus`: move focus to the nearest instance or group stop in that direction. **Windows measured before build; macOS unmeasured** | guarded | | ADR 0060 |
 | `Space` | Outside `Additive traversal`, add the focused stop and start it; inside, toggle the focused stop | guarded | | ADR 0059 |
 | `Enter` | Commit a port attachment | scoped to an instance tab stop | | ADR 0010 |
@@ -224,6 +224,8 @@ Separately, this ADR is **silent** on whether an edge is a tab stop rather than 
 **Amended by ADR 0060:** a row is added for `Ctrl`+`Shift`+`Arrow`, `Directional focus`, guarded. It moves focus to the nearest instance or group stop in the arrow's direction, within the current ring, and selects under the weld or moves focus only inside `Additive traversal`. It is a no-op during a pointer gesture, port placement and port picking. Windows is measured before it is built, and macOS is carried as a doubt beside `Ctrl`+`Arrow`.
 
 **Addendum (measured while resolving [Ctrl+Shift+Arrow on Windows](../../.scratch/canvas-interaction-quality/issues/63-ctrl-shift-arrow-on-windows.md)):** in Chrome and Edge on Windows, all four `Ctrl`+`Shift`+`Arrow` chords reach the page and `preventDefault` takes. Neither browser nor the OS acts on them even without it. The row is live on Windows. Firefox and macOS stay with [Chord survival on macOS and in Firefox](../../.scratch/canvas-interaction-quality/issues/56-chord-survival-macos-firefox.md).
+
+**Addendum (Firefox on Windows, measured by [Chord survival on macOS and in Firefox](../../.scratch/canvas-interaction-quality/issues/56-chord-survival-macos-firefox.md)):** in Firefox 157 on Windows, all four `Ctrl`+`Arrow` and all four `Ctrl`+`Shift`+`Arrow` chords reach the page and `preventDefault` takes. Both rows are live there. Unlike Chrome and Edge, Firefox has its own default for both chords on a focused non-editable element. `Ctrl`+`Arrow` scrolls the page, and `Ctrl`+`Down` goes to the bottom. `Ctrl`+`Shift`+`Arrow` starts a text selection. So a row that passes the focus guard and the typing guard must call `preventDefault` even when its own state guard makes it a no-op, such as during a pointer gesture or port placement. Otherwise, in Firefox, an embedded canvas scrolls its host page or selects host text. A row the typing guard rejects must leave the default alone, because there the selection is what the user wants. macOS stays with the same ticket.
 
 **Amended by ADR 0061:** during port picking, `Delete` and `Backspace` remove the highlighted port when it is a custom port that can be removed, keep the pick open with the highlight on the auto stage, and disarm a connector source on that port. With a standard port or the auto stage highlighted they are a no-op, so they no longer delete the instance mid-pick.
 
