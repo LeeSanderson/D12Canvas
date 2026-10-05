@@ -19,9 +19,9 @@ public class PropertyPanelTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "panel-test-component";
 
-    // A second, distinct registered type - PanelTestPropsSecondary.AccentColor shares
-    // PanelTestProps.Tint's "color" SharedTag (matching Kind/CLR type), so the two combine into one
-    // cross-type row; PanelTestPropsSecondary.Note carries no tag, so it must never surface there.
+    // A second, distinct registered type - PanelTestPropsSecondary.AccentColor declares the same
+    // Fill role as PanelTestProps.Tint, so the two combine into one cross-type row;
+    // PanelTestPropsSecondary.Note declares no role, so it must never surface there.
     private const string SecondaryComponentTypeKey = "panel-test-component-secondary";
 
     private readonly ComponentRegistry _registry = new();
@@ -201,11 +201,11 @@ public class PropertyPanelTests : ComponentTestBase
         Assert.Equal("#000000", ((PanelTestProps)second.Props).Tint);
     }
 
-    // Only the properties an author has explicitly tagged as shared (matching SharedTag)
-    // surface for a cross-type selection - PanelTestProps.Label and PanelTestPropsSecondary.Note
-    // carry no tag at all, and must not appear.
+    // Only the properties whose declared role every selected type also declares surface for a
+    // cross-type selection, keyed and labelled by the role - PanelTestProps.Label and
+    // PanelTestPropsSecondary.Note declare no role at all, and must not appear.
     [Fact]
-    public void CrossTypeMultiSelectionSurfacesOnlyExplicitlySharedTaggedProperties()
+    public void CrossTypeMultiSelectionSurfacesOnlyTheRolesEverySelectedTypeDeclares()
     {
         var board = new Board();
         AddInstance(board);
@@ -220,7 +220,8 @@ public class PropertyPanelTests : ComponentTestBase
         containers[1].Click(new MouseEventArgs { ShiftKey = true });
 
         Assert.Single(panel.FindAll(".d12-property-panel-field"));
-        Assert.NotNull(panel.Find("#d12-property-panel-field-color"));
+        Assert.NotNull(panel.Find("#d12-property-panel-field-Fill"));
+        Assert.Equal("Fill", panel.Find(".d12-property-panel-label").TextContent);
         Assert.Empty(panel.FindAll("#d12-property-panel-field-Label"));
         Assert.Empty(panel.FindAll("#d12-property-panel-field-Count"));
         Assert.Empty(panel.FindAll("#d12-property-panel-field-Note"));
@@ -240,7 +241,7 @@ public class PropertyPanelTests : ComponentTestBase
         containers[0].Click();
         containers[1].Click(new MouseEventArgs { ShiftKey = true });
 
-        panel.Find("#d12-property-panel-field-color").Change("#00ff00");
+        panel.Find("#d12-property-panel-field-Fill").Change("#00ff00");
 
         Assert.Equal("#00ff00", ((PanelTestProps)first.Props).Tint);
         Assert.Equal("#00ff00", ((PanelTestPropsSecondary)second.Props).AccentColor);
@@ -259,7 +260,7 @@ public class PropertyPanelTests : ComponentTestBase
         var containers = canvas.FindAll(".component-container");
         containers[0].Click();
         containers[1].Click(new MouseEventArgs { ShiftKey = true });
-        panel.Find("#d12-property-panel-field-color").Change("#00ff00");
+        panel.Find("#d12-property-panel-field-Fill").Change("#00ff00");
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 

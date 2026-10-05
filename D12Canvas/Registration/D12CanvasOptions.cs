@@ -50,12 +50,7 @@ public sealed class D12CanvasOptions
         var editableProperties =
             builder.EditableProperties ?? EditablePropertySchema.DiscoverFrom(typeof(TProps));
 
-        SharedPropertyValidator.ValidateAgainstExisting(
-            editableProperties,
-            _registry.All.Select(registration =>
-                registration.EditableProperties ?? Array.Empty<EditableProperty>()
-            )
-        );
+        PropertyRoleValidator.Validate(editableProperties);
 
         _registry.Register(
             new ComponentRegistration(

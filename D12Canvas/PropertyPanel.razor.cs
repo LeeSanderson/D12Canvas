@@ -62,10 +62,10 @@ public partial class PropertyPanel : IDisposable
 
     // One rendered row. A same-type selection (1 or 2+ instances) maps every
     // target to the SAME reflected PropertyInfo, since they all share one TProps type. A cross-type
-    // multi-selection instead maps each instance to whichever of ITS OWN type's properties carries
-    // the matching SharedTag - the names can differ across types, but SharedPropertyValidator
-    // guarantees every property under a given tag agrees in Kind/CLR type at registration time, so
-    // the row can render (and bulk-commit) as if it were a single property.
+    // multi-selection instead maps each instance to whichever of ITS OWN type's properties declares
+    // the matching PropertyRole - the names can differ across types, but PropertyRoleValidator
+    // guarantees every property declaring a role matches that role's Kind/CLR type at registration
+    // time, so the row can render (and bulk-commit) as if it were a single property.
     private sealed record PanelField(
         string FieldId,
         string Label,
@@ -114,11 +114,12 @@ public partial class PropertyPanel : IDisposable
             ))
             .ToList();
 
-    // Only a tag every selected type's own schema carries surfaces at all -
-    // never inferred from a shared property name, only from an explicit, matching SharedTag. Each
-    // selected instance still reads/writes through its own type's PropertyInfo for that tag; the
-    // field is keyed and labelled by the tag itself rather than any one type's property name, since
-    // the two types are free to name it differently.
+    // Only a role every selected type's own schema declares surfaces at all -
+    // never inferred from a shared property name, only from an explicit, matching PropertyRole.
+    // Each selected instance still reads/writes through its own type's PropertyInfo for that role;
+    // the field is keyed and labelled by the role itself rather than any one type's property name,
+    // since the two types are free to name it differently. Rows follow the first type's schema
+    // order.
     private IReadOnlyList<PanelField> CrossTypeFields(
         IReadOnlyList<string> typeKeys,
         IReadOnlyList<ComponentInstance> instances
@@ -128,41 +129,31 @@ public partial class PropertyPanel : IDisposable
             key => key,
             key => Registry.Resolve(key).EditableProperties ?? Array.Empty<EditableProperty>()
         );
+        var otherSchemas = typeKeys.Skip(1).Select(key => schemasByType[key]).ToList();
 
-        var sharedTags = schemasByType
-            .Values.Select(schema =>
-                schema
-                    .Where(property => property.SharedTag is not null)
-                    .Select(property => property.SharedTag!)
-                    .ToHashSet()
+        return schemasByType[typeKeys[0]]
+            .Where(property => property.Role is not null)
+            .Select(property => (Representative: property, Role: property.Role!.Value))
+            .Where(entry =>
+                otherSchemas.All(schema => schema.Any(other => other.Role == entry.Role))
             )
-            .Aggregate(
-                (a, b) =>
-                {
-                    a.IntersectWith(b);
-                    return a;
-                }
-            );
-
-        return sharedTags
-            .Select(tag =>
+            .Select(entry =>
             {
-                var representative = schemasByType[typeKeys[0]]
-                    .First(property => property.SharedTag == tag);
+                var (representative, role) = entry;
                 var targets = instances
                     .Select(instance =>
                         (
                             instance,
                             schemasByType[instance.ComponentTypeKey]
-                                .First(property => property.SharedTag == tag)
+                                .First(property => property.Role == role)
                                 .Property
                         )
                     )
                     .ToList();
 
                 return new PanelField(
-                    FieldId: $"d12-property-panel-field-{tag}",
-                    Label: tag,
+                    FieldId: $"d12-property-panel-field-{role}",
+                    Label: PropertyRoleDeclarations.For(role).Label,
                     Kind: representative.Kind,
                     Options: representative.Options,
                     CustomEditor: representative.CustomEditor,

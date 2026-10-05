@@ -9,14 +9,14 @@ namespace D12Canvas.Tests;
 // Text), plus one field per EditorKind the panel supports (Label/Count, Tint/Flag/Mode,
 // CustomValue), all at once. Trailing defaults keep every earlier call site intact. CustomValue
 // carries no [PanelEditable] - a Custom-kind property can only come from the registration
-// builder, so PropertyPanelTests wires it in itself. Tint carries SharedTag "color" -
-// PanelTestPropsSecondary.AccentColor matches it, standing in for two distinct component types
-// opting the same conceptual property into cross-type editing.
+// builder, so PropertyPanelTests wires it in itself. Tint declares the Fill role -
+// PanelTestPropsSecondary.AccentColor declares the same one, standing in for two distinct
+// component types whose differently-named properties play one role in cross-type editing.
 internal sealed record PanelTestProps(
     string Content,
     [property: PanelEditable(EditorKind.Text)] string Label,
     [property: PanelEditable(EditorKind.Number)] double Count,
-    [property: PanelEditable(EditorKind.Color, SharedTag = "color")] string Tint = "#000000",
+    [property: PanelEditable(EditorKind.Color, PropertyRole.Fill)] string Tint = "#000000",
     [property: PanelEditable(EditorKind.Checkbox)] bool Flag = false,
     [property: PanelEditable(EditorKind.Dropdown, Options = new[] { "a", "b", "c" })]
         string Mode = "a",

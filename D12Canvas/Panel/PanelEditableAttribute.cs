@@ -13,14 +13,20 @@ public sealed class PanelEditableAttribute : Attribute
     // the fixed set of choices the <select> renders.
     public string[]? Options { get; set; }
 
-    // Opts this property into cross-type matching - a multi-selection spanning two different
-    // component types merges their properties into one editable row only when both carry the
-    // same SharedTag (never inferred from name alone). SharedPropertyValidator enforces, at
-    // registration time, that every property sharing a tag agrees in EditorKind and CLR type.
-    public string? SharedTag { get; set; }
+    // The role this property plays, from the closed PropertyRole set. A role is what admits the
+    // property to the property bar and what merges it with another type's property in a cross-type
+    // multi-selection (never inferred from name alone). Each role declares the EditorKind and CLR
+    // type it expects; PropertyRoleValidator enforces agreement at registration time.
+    public PropertyRole? Role { get; }
 
     public PanelEditableAttribute(EditorKind kind)
     {
         Kind = kind;
+    }
+
+    public PanelEditableAttribute(EditorKind kind, PropertyRole role)
+    {
+        Kind = kind;
+        Role = role;
     }
 }

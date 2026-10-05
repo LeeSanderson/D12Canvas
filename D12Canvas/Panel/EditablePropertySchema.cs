@@ -44,7 +44,7 @@ public static class EditablePropertySchema
             property,
             attribute.Kind,
             attribute.Options,
-            SharedTag: attribute.SharedTag
+            Role: attribute.Role
         );
     }
 }

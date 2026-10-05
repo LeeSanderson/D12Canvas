@@ -95,7 +95,9 @@ public class BuiltInComponentsTests
 
     // Every visual/style prop the four built-ins declare is panel-editable through one of the
     // full built-in EditorKind set - Text content fields (StickyNote/Text's Text, Image's Url
-    // which is reserved for the Custom escape hatch) stay deliberately excluded.
+    // which is reserved for the Custom escape hatch) stay deliberately excluded. Each one also
+    // declares the role it plays, which is what lets a cross-type built-in selection share a row: a
+    // sticky note's Color is its background and plays Fill, while a text's Color plays TextColour.
     [Fact]
     public void RectangleEditablePropertiesCoverFillColorStrokeColorAndStrokeWidth()
     {
@@ -104,11 +106,11 @@ public class BuiltInComponentsTests
         Assert.Equivalent(
             new[]
             {
-                ("FillColor", EditorKind.Color),
-                ("StrokeColor", EditorKind.Color),
-                ("StrokeWidth", EditorKind.Number),
+                ("FillColor", EditorKind.Color, PropertyRole.Fill),
+                ("StrokeColor", EditorKind.Color, PropertyRole.Stroke),
+                ("StrokeWidth", EditorKind.Number, PropertyRole.StrokeWidth),
             },
-            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind))
+            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind, p.Role))
         );
     }
 
@@ -120,11 +122,11 @@ public class BuiltInComponentsTests
         Assert.Equivalent(
             new[]
             {
-                ("Color", EditorKind.Color),
-                ("TextColor", EditorKind.Color),
-                ("FontSize", EditorKind.Number),
+                ("Color", EditorKind.Color, PropertyRole.Fill),
+                ("TextColor", EditorKind.Color, PropertyRole.TextColour),
+                ("FontSize", EditorKind.Number, PropertyRole.FontSize),
             },
-            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind))
+            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind, p.Role))
         );
     }
 
@@ -136,12 +138,12 @@ public class BuiltInComponentsTests
         Assert.Equivalent(
             new[]
             {
-                ("Color", EditorKind.Color),
-                ("FontSize", EditorKind.Number),
-                ("FontWeight", EditorKind.Dropdown),
-                ("TextAlign", EditorKind.Dropdown),
+                ("Color", EditorKind.Color, PropertyRole.TextColour),
+                ("FontSize", EditorKind.Number, PropertyRole.FontSize),
+                ("FontWeight", EditorKind.Dropdown, PropertyRole.FontWeight),
+                ("TextAlign", EditorKind.Dropdown, PropertyRole.TextAlign),
             },
-            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind))
+            registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind, p.Role))
         );
         Assert.Equal(
             ["normal", "bold"],

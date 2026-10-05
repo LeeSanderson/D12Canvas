@@ -313,10 +313,10 @@ public class D12CanvasOptionsTests
         Assert.Same(overrideSchema, options.Registry.Resolve("widget").EditableProperties);
     }
 
-    // SharedTag flows from [PanelEditable] into the discovered EditableProperty schema exactly
-    // like Kind/Options - it's what SharedPropertyValidator checks across types.
+    // The role flows from [PanelEditable] into the discovered EditableProperty schema exactly
+    // like Kind/Options - it's what PropertyRoleValidator checks and what the panel merges on.
     [Fact]
-    public void RegisterComponentDiscoversSharedTagFromPanelEditableAttribute()
+    public void RegisterComponentDiscoversTheRoleFromPanelEditableAttribute()
     {
         var options = new D12CanvasOptions();
 
@@ -334,13 +334,13 @@ public class D12CanvasOptionsTests
             .Registry.Resolve("widget")
             .EditableProperties!.Single(p => p.Property.Name == nameof(PanelTestProps.Tint));
 
-        Assert.Equal("color", tint.SharedTag);
+        Assert.Equal(PropertyRole.Fill, tint.Role);
     }
 
-    // Two properties on different types can carry the same SharedTag as long as they agree in
-    // EditorKind and CLR type - registering the second one must not throw.
+    // Two properties on different types can declare the same role; each is checked against the
+    // role's own declaration, never against the other type, so registering both must not throw.
     [Fact]
-    public void RegisterComponentWithACompatibleSharedTagOnADifferentTypeDoesNotThrow()
+    public void RegisterComponentWithTheSameRoleOnADifferentTypeDoesNotThrow()
     {
         var options = new D12CanvasOptions();
         options.RegisterComponent<TestComponentDouble, PanelTestProps>(
@@ -371,75 +371,84 @@ public class D12CanvasOptionsTests
             options.Registry.Resolve("widget-b").EditableProperties!,
             p =>
                 p.Property.Name == nameof(PanelTestPropsSecondary.AccentColor)
-                && p.SharedTag == "color"
+                && p.Role == PropertyRole.Fill
         );
     }
 
-    // "A mismatch is a registration-time error, not a silent merge" - a SharedTag reused with a
-    // different EditorKind is caught here, naming both conflicting properties.
+    // "A mismatch is a registration-time error, not a silent merge" - a property whose EditorKind
+    // disagrees with its role fails on its own registration, with no other type involved, naming
+    // the type and property.
     [Fact]
-    public void RegisterComponentWithASharedTagMismatchedEditorKindThrowsNamingBothProperties()
+    public void RegisterComponentWithARoleKindMismatchThrowsNamingTheProperty()
     {
         var options = new D12CanvasOptions();
-        options.RegisterComponent<TestComponentDouble, PanelTestProps>(
-            "widget-a",
-            builder =>
-            {
-                builder.DisplayName = "Widget A";
-                builder.AccessibleName = "Widget A";
-                builder.DefaultProps = new PanelTestProps("", "", 0);
-            }
-        );
 
-        var exception = Assert.Throws<SharedPropertyMismatchException>(
+        var exception = Assert.Throws<PropertyRoleMismatchException>(
             () =>
-                options.RegisterComponent<TestComponentDouble, PropsWithMismatchedSharedTagKind>(
-                    "widget-b",
+                options.RegisterComponent<TestComponentDouble, PropsWithRoleKindMismatch>(
+                    "widget",
                     builder =>
                     {
-                        builder.DisplayName = "Widget B";
-                        builder.AccessibleName = "Widget B";
-                        builder.DefaultProps = new PropsWithMismatchedSharedTagKind();
+                        builder.DisplayName = "Widget";
+                        builder.AccessibleName = "Widget";
+                        builder.DefaultProps = new PropsWithRoleKindMismatch();
                     }
                 )
         );
 
-        Assert.Equal("color", exception.SharedTag);
-        Assert.Equal(typeof(PanelTestProps), exception.ExistingPropsType);
-        Assert.Equal(nameof(PanelTestProps.Tint), exception.ExistingPropertyName);
-        Assert.Equal(typeof(PropsWithMismatchedSharedTagKind), exception.NewPropsType);
-        Assert.Equal(nameof(PropsWithMismatchedSharedTagKind.Tint), exception.NewPropertyName);
+        Assert.Equal(nameof(PropsWithRoleKindMismatch.Tint), exception.PropertyName);
+        Assert.Throws<UnknownComponentKeyException>(() => options.Registry.Resolve("widget"));
     }
 
-    // Same as above, but the mismatch is in CLR type (int vs string) rather than EditorKind.
+    // Same as above, but the mismatch is in CLR type (int vs string) rather than EditorKind. What
+    // the exception carries is PropertyRolesTests' concern; here it is enough that registration
+    // refuses the type.
     [Fact]
-    public void RegisterComponentWithASharedTagMismatchedClrTypeThrowsNamingBothProperties()
+    public void RegisterComponentWithARoleClrTypeMismatchThrowsNamingTheProperty()
     {
         var options = new D12CanvasOptions();
-        options.RegisterComponent<TestComponentDouble, PanelTestProps>(
-            "widget-a",
-            builder =>
-            {
-                builder.DisplayName = "Widget A";
-                builder.AccessibleName = "Widget A";
-                builder.DefaultProps = new PanelTestProps("", "", 0);
-            }
-        );
 
-        var exception = Assert.Throws<SharedPropertyMismatchException>(
+        var exception = Assert.Throws<PropertyRoleMismatchException>(
             () =>
-                options.RegisterComponent<TestComponentDouble, PropsWithMismatchedSharedTagClrType>(
-                    "widget-b",
+                options.RegisterComponent<TestComponentDouble, PropsWithRoleClrTypeMismatch>(
+                    "widget",
                     builder =>
                     {
-                        builder.DisplayName = "Widget B";
-                        builder.AccessibleName = "Widget B";
-                        builder.DefaultProps = new PropsWithMismatchedSharedTagClrType();
+                        builder.DisplayName = "Widget";
+                        builder.AccessibleName = "Widget";
+                        builder.DefaultProps = new PropsWithRoleClrTypeMismatch();
                     }
                 )
         );
 
-        Assert.Equal("color", exception.SharedTag);
-        Assert.Equal(typeof(PropsWithMismatchedSharedTagClrType), exception.NewPropsType);
+        Assert.Equal(nameof(PropsWithRoleClrTypeMismatch.Tint), exception.PropertyName);
+    }
+
+    // A builder-supplied schema bypasses attribute discovery but not role validation.
+    [Fact]
+    public void RegisterComponentValidatesRolesOnABuilderSuppliedSchemaToo()
+    {
+        var options = new D12CanvasOptions();
+        var mismatched = new EditableProperty(
+            typeof(PanelTestProps).GetProperty(nameof(PanelTestProps.Label))!,
+            EditorKind.Text,
+            Role: PropertyRole.Fill
+        );
+
+        var exception = Assert.Throws<PropertyRoleMismatchException>(
+            () =>
+                options.RegisterComponent<TestComponentDouble, PanelTestProps>(
+                    "widget",
+                    builder =>
+                    {
+                        builder.DisplayName = "Widget";
+                        builder.AccessibleName = "Widget";
+                        builder.DefaultProps = new PanelTestProps("", "", 0);
+                        builder.EditableProperties = [mismatched];
+                    }
+                )
+        );
+
+        Assert.Equal(nameof(PanelTestProps.Label), exception.PropertyName);
     }
 }
