@@ -24,7 +24,11 @@ internal sealed class FakeGestureContext : IGestureContext
     public Bounds? Marquee { get; private set; }
     public List<(double X, double Y)> ContextMenuOpenings { get; } = new();
     public Func<Guid, Guid> EffectiveId { get; set; } = id => id;
-    public Func<ComponentInstance, bool> MarqueeCandidate { get; set; } = _ => true;
+    public double? GridSpacing { get; set; }
+    public IReadOnlyDictionary<Guid, Bounds> Preview { get; private set; } =
+        new Dictionary<Guid, Bounds>();
+    public List<IReadOnlyDictionary<Guid, Bounds>> Commits { get; } = new();
+    public List<Guid> InlineEditRequests { get; } = new();
 
     public (double X, double Y) ToBoardPoint(double containerX, double containerY) =>
         ((containerX - ZoomPan.PanX) / ZoomPan.Scale, (containerY - ZoomPan.PanY) / ZoomPan.Scale);
@@ -33,7 +37,16 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public bool IsSelected(Guid effectiveId) => SelectedInstanceIds.Contains(effectiveId);
 
-    public bool IsMarqueeCandidate(ComponentInstance instance) => MarqueeCandidate(instance);
+    public IReadOnlyList<ComponentInstance> SelectedInstances() =>
+        SelectedInstanceIds
+            .SelectMany(ExpandedIds)
+            .Distinct()
+            .Select(id => Board!.GetComponent(id))
+            .OfType<ComponentInstance>()
+            .ToList();
+
+    private IEnumerable<Guid> ExpandedIds(Guid id) =>
+        Board!.GetGroup(id) is { } group ? group.MemberIds.SelectMany(ExpandedIds) : [id];
 
     public void ReplaceSelection(IEnumerable<Guid> effectiveIds)
     {
@@ -41,6 +54,14 @@ internal sealed class FakeGestureContext : IGestureContext
         SelectedInstanceIds.UnionWith(effectiveIds);
         SelectedEdgeId = null;
     }
+
+    public void AddToSelection(Guid effectiveId)
+    {
+        SelectedInstanceIds.Add(effectiveId);
+        SelectedEdgeId = null;
+    }
+
+    public void RemoveFromSelection(Guid effectiveId) => SelectedInstanceIds.Remove(effectiveId);
 
     public void SelectEdge(Guid edgeId)
     {
@@ -54,7 +75,19 @@ internal sealed class FakeGestureContext : IGestureContext
         SelectedEdgeId = null;
     }
 
+    public (double X, double Y) SnapToGrid(double x, double y) =>
+        GridSpacing is { } spacing
+            ? (Math.Round(x / spacing) * spacing, Math.Round(y / spacing) * spacing)
+            : (x, y);
+
     public void ShowMarquee(Bounds? boardBounds) => Marquee = boardBounds;
+
+    public void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides) =>
+        Preview = boundsOverrides;
+
+    public void CommitPreview() => Commits.Add(Preview);
+
+    public void BeginInlineEdit(Guid instanceId) => InlineEditRequests.Add(instanceId);
 
     public void OpenContextMenuAt(double containerX, double containerY) =>
         ContextMenuOpenings.Add((containerX, containerY));

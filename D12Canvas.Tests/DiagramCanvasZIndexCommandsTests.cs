@@ -52,13 +52,13 @@ public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
     }
 
     private static void Select(IRenderedComponent<DiagramCanvas> canvas, int index) =>
-        canvas.FindAll(".component-container")[index].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[index]);
 
     private static void SelectBoth(IRenderedComponent<DiagramCanvas> canvas)
     {
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
     }
 
     [Fact]
@@ -216,8 +216,8 @@ public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
         var second = AddInstance(board, 200, zIndex: 8);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[1].Click();
-        containers[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[1]);
+        canvas.ClickOn(containers[2], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSendToBackPressed());
 

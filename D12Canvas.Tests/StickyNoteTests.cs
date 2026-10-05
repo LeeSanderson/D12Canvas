@@ -45,13 +45,13 @@ public class StickyNoteTests : ComponentTestBase
     }
 
     [Fact]
-    public void DoubleClickEntersEditModeRenderingATextEditorInPlaceOfTheParagraph()
+    public void BeginEditRendersATextEditorInPlaceOfTheParagraph()
     {
         var stickyNote = Render<StickyNote>(parameters =>
             parameters.Add(p => p.Props, new StickyNoteProps("Original", "#ff0000", "#00ff00", 20))
         );
 
-        stickyNote.Find("p.d12-sticky-note-text").DoubleClick();
+        stickyNote.InvokeAsync(stickyNote.Instance.BeginEdit);
 
         Assert.Empty(stickyNote.FindAll("p.d12-sticky-note-text"));
         Assert.Single(stickyNote.FindAll("textarea.d12-sticky-note-editor"));
@@ -63,7 +63,7 @@ public class StickyNoteTests : ComponentTestBase
         var stickyNote = Render<StickyNote>(parameters =>
             parameters.Add(p => p.Props, new StickyNoteProps("Original", "#ff0000", "#00ff00", 20))
         );
-        stickyNote.Find("p.d12-sticky-note-text").DoubleClick();
+        stickyNote.InvokeAsync(stickyNote.Instance.BeginEdit);
         var editor = stickyNote.Find("textarea.d12-sticky-note-editor");
         editor.Input("Changed but discarded");
 
@@ -79,7 +79,7 @@ public class StickyNoteTests : ComponentTestBase
         var stickyNote = Render<StickyNote>(parameters =>
             parameters.Add(p => p.Props, new StickyNoteProps("Original", "#ff0000", "#00ff00", 20))
         );
-        stickyNote.Find("p.d12-sticky-note-text").DoubleClick();
+        stickyNote.InvokeAsync(stickyNote.Instance.BeginEdit);
         var editor = stickyNote.Find("textarea.d12-sticky-note-editor");
         editor.Input("Edited locally");
 

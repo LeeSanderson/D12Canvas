@@ -7,6 +7,8 @@ internal enum GestureKind
 {
     Pan,
     MarqueeSelect,
+    MoveSelection,
+    Native,
 }
 
 internal enum GesturePhase

@@ -113,7 +113,7 @@ public class PropertyPanelTests : ComponentTestBase
     }
 
     private static void Select(IRenderedComponent<DiagramCanvas> canvas) =>
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
     // A nullable colour prop holding null means "follow the theme". The colour input cannot show
     // absence (it would display #000000 and a confirmed pick would freeze it), so the row marks
@@ -215,8 +215,8 @@ public class PropertyPanelTests : ComponentTestBase
         );
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
         Assert.NotNull(panel.Find("#d12-property-panel-field-Label"));
         Assert.NotNull(panel.Find("#d12-property-panel-field-Count"));
@@ -236,8 +236,8 @@ public class PropertyPanelTests : ComponentTestBase
             parameters.Add(p => p.Canvas, canvas.Instance)
         );
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
         panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
 
@@ -256,8 +256,8 @@ public class PropertyPanelTests : ComponentTestBase
             parameters.Add(p => p.Canvas, canvas.Instance)
         );
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -281,8 +281,8 @@ public class PropertyPanelTests : ComponentTestBase
         );
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
         Assert.Single(panel.FindAll(".d12-property-panel-field"));
         Assert.NotNull(panel.Find("#d12-property-panel-field-Fill"));
@@ -303,8 +303,8 @@ public class PropertyPanelTests : ComponentTestBase
             parameters.Add(p => p.Canvas, canvas.Instance)
         );
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
         panel.Find("#d12-property-panel-field-Fill").Change("#00ff00");
 
@@ -323,8 +323,8 @@ public class PropertyPanelTests : ComponentTestBase
             parameters.Add(p => p.Canvas, canvas.Instance)
         );
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         panel.Find("#d12-property-panel-field-Fill").Change("#00ff00");
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -348,8 +348,8 @@ public class PropertyPanelTests : ComponentTestBase
         );
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         Assert.NotNull(panel.Find(".d12-property-panel-empty"));
@@ -372,11 +372,11 @@ public class PropertyPanelTests : ComponentTestBase
         );
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        canvas.FindAll(".component-container")[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
 
         Assert.NotNull(panel.Find(".d12-property-panel-empty"));
     }

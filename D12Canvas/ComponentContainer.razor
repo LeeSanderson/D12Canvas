@@ -11,15 +11,13 @@
      tabindex="@(Focusable ? "0" : null)"
      data-d12-role="@HitRole.Instance"
      data-d12-entity="@EntityId"
+     data-d12-unaddressable="@(Addressable ? null : "true")"
      @onmousedown="HandleMouseDown"
      @onmousedown:stopPropagation
-     @onmousedown:preventDefault="true"
      @onmousemove="HandleMouseMove"
      @onmousemove:stopPropagation
      @onmouseup="HandleMouseUp"
      @onmouseup:stopPropagation
-     @onclick="HandleClick"
-     @onclick:stopPropagation
      @onfocus="HandleFocus"
      @ondblclick="SwitchToEditMode">
 
@@ -49,11 +47,13 @@
        (see .port rules below), so no C# state or extra render is involved. *@
     @* Each port's own mousedown starts a connector drag (StartPortDrag) - it doesn't
        stop propagation, so it still bubbles up to HandleMouseDown afterwards, matching how the
-       resize handles below interact with that same handler. *@
-    <div class="@StandardPortCssClass(PortId.Top)" data-d12-role="@HitRole.Port" data-d12-part="Top" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Top)))"></div>
-    <div class="@StandardPortCssClass(PortId.Right)" data-d12-role="@HitRole.Port" data-d12-part="Right" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Right)))"></div>
-    <div class="@StandardPortCssClass(PortId.Bottom)" data-d12-role="@HitRole.Port" data-d12-part="Bottom" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Bottom)))"></div>
-    <div class="@StandardPortCssClass(PortId.Left)" data-d12-role="@HitRole.Port" data-d12-part="Left" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Left)))"></div>
+       resize handles below interact with that same handler. Each prevents its own mousedown so the
+       drag selects no text; the container itself does not, so an author's own control inside it
+       keeps the browser's focus and text selection. *@
+    <div class="@StandardPortCssClass(PortId.Top)" data-d12-role="@HitRole.Port" data-d12-part="Top" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Top)))" @onmousedown:preventDefault></div>
+    <div class="@StandardPortCssClass(PortId.Right)" data-d12-role="@HitRole.Port" data-d12-part="Right" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Right)))" @onmousedown:preventDefault></div>
+    <div class="@StandardPortCssClass(PortId.Bottom)" data-d12-role="@HitRole.Port" data-d12-part="Bottom" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Bottom)))" @onmousedown:preventDefault></div>
+    <div class="@StandardPortCssClass(PortId.Left)" data-d12-role="@HitRole.Port" data-d12-part="Left" @onmousedown="@((e) => StartPortDrag(e, PortRef.Standard(PortId.Left)))" @onmousedown:preventDefault></div>
 
     @* An instance's own runtime-added custom ports - the same drag-to-connect affordance
        as a standard port (StartPortDrag), just at a user-chosen fractional position instead of a
@@ -62,20 +62,20 @@
     {
         <div class="@CustomPortCssClass(port.Id)" style="@CustomPortStyle(port)"
              data-d12-role="@HitRole.Port" data-d12-part="@port.Id"
-             @onmousedown="@((e) => StartPortDrag(e, PortRef.Custom(port.Id)))"
+             @onmousedown="@((e) => StartPortDrag(e, PortRef.Custom(port.Id)))" @onmousedown:preventDefault
              @key="port.Id"></div>
     }
 
     @if (ShowSelectionOverlay)
     {
-        <div class="resize-handle top-left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopLeft))"></div>
-        <div class="resize-handle top" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top" @onmousedown="@((e) => StartResize(e, ResizeDirection.Top))"></div>
-        <div class="resize-handle top-right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopRight))"></div>
-        <div class="resize-handle right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="right" @onmousedown="@((e) => StartResize(e, ResizeDirection.Right))"></div>
-        <div class="resize-handle bottom-right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomRight))"></div>
-        <div class="resize-handle bottom" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom" @onmousedown="@((e) => StartResize(e, ResizeDirection.Bottom))"></div>
-        <div class="resize-handle bottom-left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomLeft))"></div>
-        <div class="resize-handle left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="left" @onmousedown="@((e) => StartResize(e, ResizeDirection.Left))"></div>
+        <div class="resize-handle top-left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopLeft))" @onmousedown:preventDefault></div>
+        <div class="resize-handle top" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top" @onmousedown="@((e) => StartResize(e, ResizeDirection.Top))" @onmousedown:preventDefault></div>
+        <div class="resize-handle top-right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.TopRight))" @onmousedown:preventDefault></div>
+        <div class="resize-handle right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="right" @onmousedown="@((e) => StartResize(e, ResizeDirection.Right))" @onmousedown:preventDefault></div>
+        <div class="resize-handle bottom-right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom-right" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomRight))" @onmousedown:preventDefault></div>
+        <div class="resize-handle bottom" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom" @onmousedown="@((e) => StartResize(e, ResizeDirection.Bottom))" @onmousedown:preventDefault></div>
+        <div class="resize-handle bottom-left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom-left" @onmousedown="@((e) => StartResize(e, ResizeDirection.BottomLeft))" @onmousedown:preventDefault></div>
+        <div class="resize-handle left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="left" @onmousedown="@((e) => StartResize(e, ResizeDirection.Left))" @onmousedown:preventDefault></div>
     }
 </div>
 

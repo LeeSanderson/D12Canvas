@@ -89,15 +89,12 @@ public abstract class ComponentTestBase : BunitContext
         module.SetupModule(identifier, _ => true).SetupVoid("dispose", _ => true).SetVoidResult();
     }
 
-    // Every test that renders a ComponentContainer needs this - a plain click always attempts
-    // the click-driven half of focus-follows-selection (ComponentContainer.HandleClick calling
-    // focusElement), regardless of whether a given test cares about edit-mode's click-outside
-    // behaviour too, so all three are configured together rather than per-test.
+    // Every test that renders a ComponentContainer needs this, since edit mode's click-outside
+    // registration can run whether or not a given test cares about it.
     protected void SetupComponentContainerJsModule()
     {
         var module = JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
         module.SetupVoid("registerClickOutside", _ => true).SetVoidResult();
         module.SetupVoid("unregisterClickOutside").SetVoidResult();
-        module.SetupVoid("focusElement", _ => true).SetVoidResult();
     }
 }

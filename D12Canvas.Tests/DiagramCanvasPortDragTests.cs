@@ -166,7 +166,7 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
         sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
@@ -184,7 +184,7 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100); // right port at (150, 125)
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
         sourcePort.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 125 });
@@ -216,11 +216,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
         Assert.Single(board.Edges);
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         var sourceContainer = canvas.FindAll(".component-container")[0];
-        sourceContainer.MouseDown(new MouseEventArgs { ClientX = 120, ClientY = 120 });
-        sourceContainer.MouseMove(new MouseEventArgs { ClientX = 220, ClientY = 170 });
-        sourceContainer.MouseUp(new MouseEventArgs { ClientX = 220, ClientY = 170 });
+        canvas.DragOn(sourceContainer, (120, 120), (220, 170));
 
         Assert.Equal(new Bounds(200, 150, 50, 50), source.Bounds);
 
@@ -246,7 +244,7 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         targetPort.MouseUp(new MouseEventArgs { ClientX = 250, ClientY = 125 });
         Assert.Single(board.Edges);
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         var handle = canvas
             .FindAll(".component-container")[0]
             .QuerySelector(".resize-handle.bottom-right")!;

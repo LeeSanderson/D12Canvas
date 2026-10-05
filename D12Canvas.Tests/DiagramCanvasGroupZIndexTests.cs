@@ -57,8 +57,8 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
     private static void SelectBoth(IRenderedComponent<DiagramCanvas> canvas)
     {
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
     }
 
     [Fact]
@@ -90,8 +90,8 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
         var second = AddInstance(board, 200, zIndex: 8);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[1].Click();
-        containers[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[1]);
+        canvas.ClickOn(containers[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSendToBackPressed());
@@ -130,8 +130,8 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
         var second = AddInstance(board, 200, zIndex: 8); // group
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[1].Click();
-        containers[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[1]);
+        canvas.ClickOn(containers[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSendBackwardPressed());
@@ -159,7 +159,7 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas); // selects A and B
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}
-        canvas.FindAll(".component-container")[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // outer group = {inner, C}
         Assert.Equal(2, board.Groups.Count);
 

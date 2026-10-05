@@ -1,5 +1,6 @@
 using Bunit;
 using D12Canvas.Model;
+using D12Canvas.Pointer;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,8 +61,8 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
     private static void SelectBoth(IRenderedComponent<DiagramCanvas> canvas)
     {
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
     }
 
     [Fact]
@@ -75,9 +76,7 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        containers[0].MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
-        containers[0].MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        canvas.DragOn(containers[0], (300, 200), (340, 175));
 
         Assert.Equal(new Bounds(140, 75, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(340, 75, 50, 50), second.Bounds);
@@ -93,13 +92,13 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        canvas
-            .Find(".selection-bounding-box")
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 200, ClientY = 75 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 200, ClientY = 75 });
+        canvas.PressOn(
+            canvas.Find(".selection-bounding-box"),
+            (150, 25),
+            role: HitRole.SelectionBounds
+        );
+        canvas.MoveTo((200, 75));
+        canvas.ReleaseAt((200, 75));
 
         Assert.Equal(new Bounds(50, 50, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(350, 50, 50, 50), second.Bounds);
@@ -170,17 +169,17 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}
 
         // Inner group is now the whole selection; shift-click C to add it, then group again to nest.
-        canvas.FindAll(".component-container")[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // outer group = {inner, C}
         Assert.Equal(2, board.Groups.Count);
 
-        canvas
-            .Find(".selection-bounding-box")
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 200, ClientY = 75 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 200, ClientY = 75 });
+        canvas.PressOn(
+            canvas.Find(".selection-bounding-box"),
+            (150, 25),
+            role: HitRole.SelectionBounds
+        );
+        canvas.MoveTo((200, 75));
+        canvas.ReleaseAt((200, 75));
 
         Assert.Equal(new Bounds(50, 50, 50, 50), a.Bounds);
         Assert.Equal(new Bounds(150, 50, 50, 50), b.Bounds);
@@ -197,7 +196,7 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas); // selects A and B
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}
-        canvas.FindAll(".component-container")[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // outer group = {inner, C}
 
         // Combined bbox is (0,0)-(400,50) = 400x50. Growing width to 800 doubles every x-extent.

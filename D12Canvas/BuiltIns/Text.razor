@@ -1,4 +1,5 @@
 @namespace D12Canvas.BuiltIns
+@implements IInlineEditable
 
 @if (_isEditing)
 {
@@ -60,14 +61,16 @@ else
         ThemedDefault.Override("--d12-board-text-override", Props.Color)
         + $"font-size: {Props.FontSize}px; font-weight: {Props.FontWeight}; text-align: {Props.TextAlign};";
 
-    // A Text-type field is edited inline/WYSIWYG on the canvas, never through the
-    // property panel. stopPropagation keeps this double-click from also reaching
-    // ComponentContainer's own unrelated legacy edit mode (drag/resize without prior selection).
-    private void BeginEdit()
+    // A Text-type field is edited inline/WYSIWYG on the canvas, never through the property panel.
+    // The canvas calls this for a Text on the board. The paragraph's own double-click still calls it
+    // for an edge label, whose presses the canvas does not own yet; stopPropagation keeps that
+    // double-click from reaching ComponentContainer's legacy edit mode.
+    public void BeginEdit()
     {
         _editBuffer = Props.Text;
         _isEditing = true;
         _focusPending = true;
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -93,7 +96,7 @@ else
 
     // Committing on blur is exactly one MutateEntityCommand, routed through
     // ParentCanvas.CommitPropsChange - a no-op edit (blur with no change) records nothing,
-    // matching ComponentContainer's own no-movement guard for OnMoved/OnResized.
+    // the same way a pointer gesture commits only what actually changed.
     private void CommitEdit()
     {
         _isEditing = false;

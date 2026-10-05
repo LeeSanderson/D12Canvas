@@ -112,7 +112,7 @@ public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
         );
         board.AddComponent(existing);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 

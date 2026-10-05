@@ -71,11 +71,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         canvas.Instance.Changed += (_, _) => changedCount++;
 
         var container = canvas.Find(".component-container");
-        container.Click();
+        canvas.ClickOn(container);
         container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        container.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
-        container.MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        canvas.DragOn(container, (300, 200), (340, 175));
         Assert.Equal(1, changedCount);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -90,11 +88,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         var container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        container.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
-        container.MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        canvas.DragOn(container, (300, 200), (340, 175));
         Assert.Equal(new Bounds(140, 75, 50, 50), instance.Bounds);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -109,11 +105,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         var container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        container.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
-        container.MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        canvas.DragOn(container, (300, 200), (340, 175));
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
         await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
@@ -128,7 +122,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         var handle = canvas.Find(".resize-handle.bottom-right");
         handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
         handle.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 225 });
@@ -147,7 +141,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         var handle = canvas.Find(".resize-handle.bottom-right");
         handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
         handle.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 225 });
@@ -168,12 +162,10 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         containers = canvas.FindAll(".component-container");
-        containers[0].MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        containers[0].MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
-        containers[0].MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        canvas.DragOn(containers[0], (300, 200), (340, 175));
         Assert.Equal(new Bounds(140, 75, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(340, 75, 50, 50), second.Bounds);
 
@@ -192,8 +184,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         var handle = canvas.Find(".group-resize-handle.bottom-right");
         handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
         handle.MouseMove(new MouseEventArgs { ClientX = 400, ClientY = 250 });
@@ -218,14 +210,12 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         containers = canvas.FindAll(".component-container");
-        containers[0].MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        containers[0].MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
-        containers[0].MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        canvas.DragOn(containers[0], (300, 200), (340, 175));
         Assert.Equal(new Bounds(140, 75, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(340, 75, 50, 50), second.Bounds);
 
@@ -244,8 +234,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         var handle = canvas.Find(".group-resize-handle.bottom-right");
@@ -275,8 +265,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         await canvas.InvokeAsync(() => canvas.Instance.OnBringToFrontPressed());
         Assert.Equal(4, first.ZIndex);
@@ -298,8 +288,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         await canvas.InvokeAsync(() => canvas.Instance.OnBringForwardPressed());
         Assert.Equal(2, first.ZIndex);
@@ -318,18 +308,14 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         var container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        container.MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
-        container.MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        canvas.DragOn(container, (300, 200), (340, 175));
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
         // A fresh gesture after the undo - the undone move must never come back via redo.
         container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        container.MouseMove(new MouseEventArgs { ClientX = 260, ClientY = 190 });
-        container.MouseUp(new MouseEventArgs { ClientX = 260, ClientY = 190 });
+        canvas.DragOn(container, (300, 200), (260, 190));
         Assert.Equal(new Bounds(60, 90, 50, 50), instance.Bounds);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
@@ -430,7 +416,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         Assert.Empty(board.Components);
@@ -448,7 +434,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -465,8 +451,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var second = AddInstance(board, 100, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         Assert.Empty(board.Components);
@@ -486,8 +472,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         AddInstance(board, 100, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 

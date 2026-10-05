@@ -1,5 +1,6 @@
 using Bunit;
 using D12Canvas.Model;
+using D12Canvas.Pointer;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,8 +63,8 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
     private static void SelectBoth(IRenderedComponent<DiagramCanvas> canvas)
     {
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         AddInstance(board, 0, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         Assert.Empty(canvas.FindAll(".selection-bounding-box"));
     }
@@ -106,9 +107,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         SelectBoth(canvas);
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        containers[0].MouseMove(new MouseEventArgs { ClientX = 340, ClientY = 175 });
-        containers[0].MouseUp(new MouseEventArgs { ClientX = 340, ClientY = 175 });
+        canvas.DragOn(containers[0], (300, 200), (340, 175));
 
         Assert.Equal(new Bounds(140, 75, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(340, 75, 50, 50), second.Bounds);
@@ -126,13 +125,13 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         // (150, 25) sits inside the combined bounding box (0,0)-(350,50) but isn't over either
         // instance; the box itself is the hit target there.
-        canvas
-            .Find(".selection-bounding-box")
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 200, ClientY = 75 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 200, ClientY = 75 });
+        canvas.PressOn(
+            canvas.Find(".selection-bounding-box"),
+            (150, 25),
+            role: HitRole.SelectionBounds
+        );
+        canvas.MoveTo((200, 75));
+        canvas.ReleaseAt((200, 75));
 
         Assert.Equal(new Bounds(50, 50, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(350, 50, 50, 50), second.Bounds);
@@ -152,15 +151,15 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         SelectBoth(canvas);
 
-        canvas
-            .Find(".selection-bounding-box")
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 200, ClientY = 75 });
+        canvas.PressOn(
+            canvas.Find(".selection-bounding-box"),
+            (150, 25),
+            role: HitRole.SelectionBounds
+        );
+        canvas.MoveTo((200, 75));
 
         // Mid-drag: this isn't a pan, and no marquee was drawn - the whole gesture instead lives
-        // in the live preview each member's own style reflects (via EffectiveBounds); Board's own
+        // in the gesture preview each member's own style reflects; Board's own
         // Bounds haven't been touched yet.
         Assert.Empty(canvas.FindAll(".marquee-select"));
         Assert.Contains(
@@ -175,7 +174,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         Assert.Equal(new Bounds(0, 0, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(300, 0, 50, 50), second.Bounds);
 
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 200, ClientY = 75 });
+        canvas.ReleaseAt((200, 75));
 
         Assert.Equal(new Bounds(50, 50, 50, 50), first.Bounds);
         Assert.Equal(new Bounds(350, 50, 50, 50), second.Bounds);
@@ -192,13 +191,13 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
         SelectBoth(canvas);
 
-        canvas
-            .Find(".selection-bounding-box")
-            .MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
-        canvas
-            .Find(".diagram-canvas")
-            .MouseMove(new MouseEventArgs { ClientX = 194, ClientY = 47 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 194, ClientY = 47 });
+        canvas.PressOn(
+            canvas.Find(".selection-bounding-box"),
+            (150, 25),
+            role: HitRole.SelectionBounds
+        );
+        canvas.MoveTo((194, 47));
+        canvas.ReleaseAt((194, 47));
 
         // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the
         // decimal literal 1.1, so this can't disagree with production code over double rounding.
@@ -385,7 +384,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         // A plain click collapses the selection down to just this one - its own handles should
         // reappear, and the group overlay should disappear.
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         Assert.Empty(canvas.FindAll(".selection-bounding-box"));
         Assert.Equal(8, canvas.FindAll(".resize-handle").Count);

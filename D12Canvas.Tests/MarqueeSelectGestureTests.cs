@@ -84,25 +84,6 @@ public class MarqueeSelectGestureTests
     }
 
     [Fact]
-    public void AnInstanceThatIsNotACandidateIsNeverSwept()
-    {
-        var board = new Board();
-        var tooSmallToHit = AddInstance(board, 20, 20);
-        var context = new FakeGestureContext(board)
-        {
-            MarqueeCandidate = instance => instance.Id != tooSmallToHit.Id,
-        };
-        var marquee = new MarqueeSelectGesture(
-            PointerEvents.Press(HitRole.Canvas, PointerPress.PrimaryButton, 0, 0),
-            context
-        );
-
-        marquee.Move(PointerEvents.Move(100, 100));
-
-        Assert.Empty(context.SelectedInstanceIds);
-    }
-
-    [Fact]
     public void AGroupedMemberIsSweptAsItsGroup()
     {
         var board = new Board();

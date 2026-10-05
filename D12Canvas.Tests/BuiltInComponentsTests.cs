@@ -181,6 +181,16 @@ public class BuiltInComponentsTests
         Assert.Empty(RegisterAndResolve("text").AssetReferences!);
     }
 
+    [Theory]
+    [InlineData("sticky-note", true)]
+    [InlineData("text", true)]
+    [InlineData("rectangle", false)]
+    [InlineData("image", false)]
+    public void EditabilityComesFromTheComponentType(string key, bool expected)
+    {
+        Assert.Equal(expected, RegisterAndResolve(key).IsInlineEditable);
+    }
+
     private static ComponentRegistration RegisterAndResolve(string key)
     {
         var services = new ServiceCollection();

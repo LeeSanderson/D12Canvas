@@ -1,4 +1,5 @@
 @namespace D12Canvas.BuiltIns
+@implements IInlineEditable
 
 <div class="d12-sticky-note" style="@Style">
     @if (_isEditing)
@@ -15,7 +16,7 @@
     }
     else
     {
-        <p class="d12-sticky-note-text" style="@TextStyle" @ondblclick="BeginEdit" @ondblclick:stopPropagation>@Props.Text</p>
+        <p class="d12-sticky-note-text" style="@TextStyle">@Props.Text</p>
     }
 </div>
 
@@ -68,14 +69,14 @@
 
     private string TextStyle => $"color: {Props.TextColor}; font-size: {Props.FontSize}px;";
 
-    // A Text-type field is edited inline/WYSIWYG on the canvas, never through the
-    // property panel. stopPropagation keeps this double-click from also reaching
-    // ComponentContainer's own unrelated legacy edit mode (drag/resize without prior selection).
-    private void BeginEdit()
+    // A Text-type field is edited inline/WYSIWYG on the canvas, never through the property panel.
+    // The canvas calls this from outside any event of this component's own, so it renders itself.
+    public void BeginEdit()
     {
         _editBuffer = Props.Text;
         _isEditing = true;
         _focusPending = true;
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -101,7 +102,7 @@
 
     // Committing on blur is exactly one MutateEntityCommand, routed through
     // ParentCanvas.CommitPropsChange - a no-op edit (blur with no change) records nothing,
-    // matching ComponentContainer's own no-movement guard for OnMoved/OnResized.
+    // the same way a pointer gesture commits only what actually changed.
     private void CommitEdit()
     {
         _isEditing = false;

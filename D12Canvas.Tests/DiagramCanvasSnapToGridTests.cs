@@ -182,12 +182,9 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, true)
         );
 
-        canvas.Find(".component-container").Click();
-        var container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
+        canvas.ClickOn(canvas.Find(".component-container"));
         // Raw delta (33, -4) would land the instance at (133, 96) - both off the 20-unit grid.
-        container.MouseMove(new MouseEventArgs { ClientX = 333, ClientY = 196 });
-        container.MouseUp(new MouseEventArgs { ClientX = 333, ClientY = 196 });
+        canvas.DragOn(canvas.Find(".component-container"), (300, 200), (333, 196));
 
         Assert.Equal(new Bounds(140, 100, 50, 50), instance.Bounds);
     }
@@ -211,17 +208,13 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, true)
         );
 
-        canvas.Find(".component-container").Click();
-        var container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
-        container.MouseMove(new MouseEventArgs { ClientX = 333, ClientY = 196 }); // -> snaps to (140, 100)
-        container.MouseUp(new MouseEventArgs { ClientX = 333, ClientY = 196 });
+        canvas.ClickOn(canvas.Find(".component-container"));
+        // -> snaps to (140, 100)
+        canvas.DragOn(canvas.Find(".component-container"), (300, 200), (333, 196));
         Assert.Equal(new Bounds(140, 100, 50, 50), instance.Bounds);
 
-        container.MouseDown(new MouseEventArgs { ClientX = 400, ClientY = 400 });
         // Raw delta (5, 3) would land at (145, 103), which snaps right back to (140, 100).
-        container.MouseMove(new MouseEventArgs { ClientX = 405, ClientY = 403 });
-        container.MouseUp(new MouseEventArgs { ClientX = 405, ClientY = 403 });
+        canvas.DragOn(canvas.Find(".component-container"), (400, 400), (405, 403));
         Assert.Equal(new Bounds(140, 100, 50, 50), instance.Bounds);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());

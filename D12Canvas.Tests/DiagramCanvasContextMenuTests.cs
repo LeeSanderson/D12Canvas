@@ -61,8 +61,8 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     private static void SelectBoth(IRenderedComponent<DiagramCanvas> canvas)
     {
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
     }
 
     private static async Task RightClick(
@@ -100,7 +100,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         await RightClick(canvas, instance, x: 37, y: 19);
 
@@ -117,7 +117,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var first = AddInstance(board, 0);
         var second = AddInstance(board, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         await RightClick(canvas, second);
 
@@ -151,7 +151,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
 
@@ -165,7 +165,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.Press(
             10,
@@ -191,7 +191,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         await RightClick(canvas, instance);
 
@@ -248,7 +248,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         await RightClick(canvas, instance);
 
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Delete").Click();
@@ -263,7 +263,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         await RightClick(canvas, instance);
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Delete").Click();
 
@@ -320,7 +320,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         AddInstance(board, 100, zIndex: 1);
         AddInstance(board, 200, zIndex: 9);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         await RightClick(canvas, target);
 
         canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == label).Click();
@@ -335,7 +335,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         await RightClick(canvas, instance);
 
         canvas.Find(".d12-context-menu").KeyDown(new KeyboardEventArgs { Key = "Escape" });

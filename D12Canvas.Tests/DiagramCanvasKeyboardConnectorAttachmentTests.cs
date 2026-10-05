@@ -217,8 +217,8 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
         AddInstance(board, "Second", 100, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         canvas.Find(".group-tab-stop").Focus();
 

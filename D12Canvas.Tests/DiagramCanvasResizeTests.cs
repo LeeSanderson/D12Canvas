@@ -60,7 +60,7 @@ public class DiagramCanvasResizeTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100, 50, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         var handle = canvas.Find(".resize-handle.bottom-right");
         handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
@@ -78,7 +78,7 @@ public class DiagramCanvasResizeTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         var handle = canvas.Find(".resize-handle.bottom-right");
         handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
@@ -101,7 +101,7 @@ public class DiagramCanvasResizeTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100, 50, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         var handle = canvas.Find(".resize-handle.bottom-right");
         handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });
@@ -127,7 +127,7 @@ public class DiagramCanvasResizeTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         var handle = canvas.Find(".resize-handle.top-left");
         handle.MouseDown(new MouseEventArgs { ClientX = 300, ClientY = 200 });

@@ -21,6 +21,7 @@
     private static readonly Guid SourceId = Guid.Parse("a0000000-0000-0000-0000-000000000001");
     private static readonly Guid TargetId = Guid.Parse("a0000000-0000-0000-0000-000000000002");
     private static readonly Guid LooseEndId = Guid.Parse("a0000000-0000-0000-0000-000000000003");
+    private static readonly Guid NoteId = Guid.Parse("a0000000-0000-0000-0000-000000000004");
     private static readonly Guid LabelledEdgeId = Guid.Parse("e0000000-0000-0000-0000-000000000001");
     private static readonly Guid FloatingEdgeId = Guid.Parse("e0000000-0000-0000-0000-000000000002");
 
@@ -44,6 +45,14 @@
         var source = AddRectangle(board, SourceId, 40, 40);
         var target = AddRectangle(board, TargetId, 360, 40);
         var looseEnd = AddRectangle(board, LooseEndId, 40, 260);
+        board.AddComponent(
+            new ComponentInstance(
+                "sticky-note",
+                new StickyNoteProps("select this text please", "#FFEB3B", "#000000", 14),
+                new Bounds(560, 200, 120, 100),
+                id: NoteId
+            )
+        );
 
         board.AddEdge(
             new Edge(

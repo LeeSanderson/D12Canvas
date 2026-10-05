@@ -149,7 +149,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         canvas.Find(".edge-line").Click();
         Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         Assert.Null(canvas.Find(".edge-line").GetAttribute("aria-selected"));
         Assert.Equal(
@@ -165,7 +165,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         Assert.Equal(
             "true",
             canvas.FindAll(".component-container")[0].GetAttribute("aria-selected")

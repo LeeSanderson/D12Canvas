@@ -52,8 +52,8 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
     private static void SelectBoth(IRenderedComponent<DiagramCanvas> canvas)
     {
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
@@ -113,7 +113,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 
         // A plain click on just the second member - not shift-click - still selects both, since
         // it now belongs to a Group.
-        canvas.FindAll(".component-container")[1].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[1]);
 
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
@@ -135,7 +135,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         Assert.Empty(board.Groups);
 
         await canvas.ClickCanvas(400, 400);
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
@@ -148,7 +148,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUngroupPressed());
 
@@ -206,7 +206,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 
         // Clicking one member alone once again selects both, since the group is back.
         await canvas.ClickCanvas(400, 400);
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
         Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
@@ -226,7 +226,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 
         // The inner group is now the whole selection; shift-click the third (ungrouped) instance
         // to add it alongside the group.
-        canvas.FindAll(".component-container")[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
@@ -265,7 +265,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         var innerGroup = Assert.Single(board.Groups);
-        canvas.FindAll(".component-container")[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         // The outer (nesting) group is the whole selection right now - ungroup dissolves only it.
@@ -278,7 +278,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         // The inner group still converges selection on click; the third instance (a former outer
         // member, never itself grouped) is independently selectable again.
         await canvas.ClickCanvas(400, 400);
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
         Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
@@ -298,7 +298,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         Assert.Single(board.Groups);
         // Selection is now the group alone; shift-click the third (ungrouped) instance to select
         // the group *and* a plain, non-grouped instance together.
-        canvas.FindAll(".component-container")[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUngroupPressed());
 
@@ -313,7 +313,7 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         // And the three are now independently selectable - clicking just the loose instance
         // selects only it.
         await canvas.ClickCanvas(400, 400);
-        canvas.FindAll(".component-container")[2].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[2]);
         containers = canvas.FindAll(".component-container");
         Assert.Null(containers[0].GetAttribute("aria-selected"));
         Assert.Null(containers[1].GetAttribute("aria-selected"));

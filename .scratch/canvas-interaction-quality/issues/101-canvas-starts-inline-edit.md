@@ -6,6 +6,8 @@
 
 **Status:** ready-for-agent
 
+**Already shipped with ticket 74:** `IInlineEditable` with a parameterless `BeginEdit()` on `StickyNote` and `Text`, `ComponentRegistration.IsInlineEditable` derived from the component type, and a double-press on an addressable, mounted instance calling `BeginEdit()` through the `DynamicComponent` ref. Ticket 74 took pointer capture on instance presses, which retargets the browser's `dblclick` to the canvas, so this had to move forward to keep double-click editing working. `StickyNote`'s own `@ondblclick` is gone. `Text`'s stays only because edge labels are still on the legacy press path and reach it that way; delete it when the edge-label double-press goes through the canvas. Still to do here: select-all on entry, `preventScroll` on the editor's focus, F2, edit-on-create, the pan-into-view rule, Escape commits and `CommitInlineEdit`.
+
 - [ ] Double-pressing a text or sticky note opens its editor with all text selected; F2 on a focused one does the same
 - [ ] Placing a text from the palette by click, by Enter and by drop opens it for typing
 - [ ] Escape commits the typed text and focus lands on the shape's tab stop; blur commits as before

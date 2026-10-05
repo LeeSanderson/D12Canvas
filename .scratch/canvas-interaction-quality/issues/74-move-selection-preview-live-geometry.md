@@ -12,17 +12,27 @@
 
 **Blocked by:** 71 (Pointer arbitration spine)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Press-to-select-and-drag works on a single shape and on a multi-selection; a member press keeps the selection until release; Shift behaves exactly as today for append and toggle
-- [ ] Attached edges follow the shape throughout the drag; snapping is visible during the drag and nothing jumps at release
-- [ ] A drag back to its starting point leaves no history entry; one drag is one undo step
-- [ ] A release outside the canvas or past the clipped edge commits the move and enters history
-- [ ] A shape dragged in from off-screen stays mounted until release; a placeholdered participant does not swap mid-gesture
-- [ ] A click on an LOD placeholder selects it and a marquee over it takes it
-- [ ] A press inside an inline editor's textarea keeps the browser's focus and text selection
-- [ ] The release-reliability theory gains `MoveSelection` and `Native`
-- [ ] Gesture-object tests over a fake context assert what `MoveSelection` publishes and commits, read through the preview; the press-to-kind table gains the `instance`, `selection-bounds` and `author-content` rows
-- [ ] Drag-move, multi-selection move, selection, focus-follows-selection, undo-redo and LOD tests that dispatched mouse events are rewritten at the new seams
-- [ ] A mid-drag visual baseline exists; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Gesture preview`, `Live geometry`, `Bounds`, `LOD placeholder` and `Snap-to-grid` terms describe what shipped
+- [x] Press-to-select-and-drag works on a single shape and on a multi-selection; a member press keeps the selection until release; Shift behaves exactly as today for append and toggle
+- [x] Attached edges follow the shape throughout the drag; snapping is visible during the drag and nothing jumps at release
+- [x] A drag back to its starting point leaves no history entry; one drag is one undo step
+- [x] A release outside the canvas or past the clipped edge commits the move and enters history
+- [x] A shape dragged in from off-screen stays mounted until release; a placeholdered participant does not swap mid-gesture
+- [x] A click on an LOD placeholder selects it and a marquee over it takes it
+- [x] A press inside an inline editor's textarea keeps the browser's focus and text selection
+- [x] The release-reliability theory gains `MoveSelection` and `Native`
+- [x] Gesture-object tests over a fake context assert what `MoveSelection` publishes and commits, read through the preview; the press-to-kind table gains the `instance`, `selection-bounds` and `author-content` rows
+- [x] Drag-move, multi-selection move, selection, focus-follows-selection, undo-redo and LOD tests that dispatched mouse events are rewritten at the new seams
+- [x] A mid-drag visual baseline exists; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Gesture preview`, `Live geometry`, `Bounds`, `LOD placeholder` and `Snap-to-grid` terms describe what shipped
+
+## Comments
+
+Built as specified, with one addition. The canvas now takes pointer capture on an instance press, so the browser sends the `dblclick` to the canvas and the built-ins' own `@ondblclick="BeginEdit"` never ran. Double-click editing broke in the browser while bUnit stayed green. With the user's agreement, ticket 101's seam came forward: `IInlineEditable`, `ComponentRegistration.IsInlineEditable`, and a double-press on an addressable, mounted instance calling `BeginEdit()` through a `DynamicComponent` ref. Ticket 101 lists what it still owns.
+
+The textarea probe drives the real sticky-note editor, opened by a double-click, rather than an injected textarea. The probe page gained a sticky note at a fixed id for it.
+
+A press on the `selection-bounds` role carries no entity, so a click inside the box over a member keeps the selection rather than collapsing to the member. Ticket 82's hit stack owns that. Group resize is still on the legacy mouse handlers and publishes to the gesture preview directly, so Escape, blur and a Board swap do not cancel it and history is not locked during it, the same exposure `EffectiveBounds` had. Ticket 75 moves it onto the spine.
+
+A press now focuses the canvas rather than the instance, so a clicked shape shows the `.selected` outline that the container's `:focus` rule used to hide. That moved 12 PNGs.

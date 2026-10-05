@@ -24,7 +24,6 @@ internal sealed class MarqueeSelectGesture : PointerGesture
         Context.ShowMarquee(band);
 
         var swept = (Context.Board?.Components ?? [])
-            .Where(instance => Context.IsMarqueeCandidate(instance))
             .Where(instance => instance.Bounds.Intersects(band))
             .Select(instance => Context.EffectiveSelectionId(instance.Id));
 

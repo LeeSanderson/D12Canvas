@@ -12,7 +12,7 @@ namespace D12Canvas.Tests;
 // traversal itself needs no test here - it falls out for free from correct tabindex + DOM order,
 // neither of which bUnit's AngleSharp-backed DOM has any special-cased browser tab logic to
 // bypass; these tests instead verify the two things that make that native behaviour correct
-// (tabindex placement, DOM order) and the C# side of the onfocus/onclick wiring.
+// (tabindex placement, DOM order) and the C# side of the onfocus wiring.
 public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -88,8 +88,8 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         AddInstance(board, "First", x: 0, y: 0);
         AddInstance(board, "Second", x: 100, y: 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.FindAll(".component-container")[0].Click();
-        canvas.FindAll(".component-container")[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
+        canvas.ClickOn(canvas.FindAll(".component-container")[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         var containers = canvas.FindAll(".component-container");
@@ -108,8 +108,8 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         AddInstance(board, "First", x: 0, y: 0);
         AddInstance(board, "Second", x: 100, y: 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.FindAll(".component-container")[0].Click();
-        canvas.FindAll(".component-container")[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
+        canvas.ClickOn(canvas.FindAll(".component-container")[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUngroupPressed());
@@ -127,7 +127,7 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         AddInstance(board, "First", x: 0, y: 0);
         AddInstance(board, "Second", x: 100, y: 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         canvas.FindAll(".component-container")[1].Focus();
 
@@ -143,8 +143,8 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         AddInstance(board, "First", x: 0, y: 0);
         AddInstance(board, "Second", x: 100, y: 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.FindAll(".component-container")[0].Click();
-        canvas.FindAll(".component-container")[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
+        canvas.ClickOn(canvas.FindAll(".component-container")[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         await canvas.ClickCanvas(400, 400); // clear the selection first
 
@@ -156,54 +156,32 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         Assert.Equal("true", canvas.Find(".group-tab-stop").GetAttribute("aria-selected"));
     }
 
+    // Focus drives selection and never the reverse: the browser-side listener's one focus write
+    // per press goes to the canvas, and no click outcome, plain or Shift, on a grouped member or
+    // not, asks for any further focus move.
     [Fact]
-    public void APlainClickOnAnUngroupedInstanceMovesDomFocusToIt()
-    {
-        var board = new Board();
-        AddInstance(board, "Only", x: 0, y: 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-
-        canvas.Find(".component-container").Click();
-
-        Assert.Single(JSInterop.Invocations["focusElement"]);
-    }
-
-    [Fact]
-    public void AShiftClickDoesNotMoveDomFocus()
+    public async Task NoClickOnAnInstanceMovesDomFocus()
     {
         var board = new Board();
         AddInstance(board, "First", x: 0, y: 0);
         AddInstance(board, "Second", x: 100, y: 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        // The first, plain click focuses; the second, shift-click, must not add a further
-        // invocation - only the one from the plain click above should exist.
-        canvas.FindAll(".component-container")[0].Click();
-        canvas.FindAll(".component-container")[1].Click(new MouseEventArgs { ShiftKey = true });
-
-        Assert.Single(JSInterop.Invocations["focusElement"]);
-    }
-
-    [Fact]
-    public async Task ClickingAGroupedMemberDoesNotMoveDomFocus()
-    {
-        var board = new Board();
-        AddInstance(board, "First", x: 0, y: 0);
-        AddInstance(board, "Second", x: 100, y: 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        // This plain click, before grouping, does invoke focusElement once (the member is still
-        // individually focusable at this point).
-        canvas.FindAll(".component-container")[0].Click();
-        canvas.FindAll(".component-container")[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
+        canvas.ClickOn(canvas.FindAll(".component-container")[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
-        var invocationsBeforeGroupedClick = JSInterop.Invocations["focusElement"].Count;
+        var focusCallsAfterGrouping = FocusCalls();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
-        // A plain click on the now-grouped member - it has no tabindex, so focusElement is never
-        // invoked for it (see ComponentContainer.HandleClick's Focusable guard).
-        canvas.FindAll(".component-container")[0].Click();
-
-        Assert.Equal(invocationsBeforeGroupedClick, JSInterop.Invocations["focusElement"].Count);
+        Assert.Equal(["focusGroupTabStop"], focusCallsAfterGrouping);
+        Assert.Equal(focusCallsAfterGrouping, FocusCalls());
     }
+
+    private List<string> FocusCalls() =>
+        JSInterop
+            .Invocations.Select(invocation => invocation.Identifier)
+            .Where(identifier => identifier.StartsWith("focus"))
+            .ToList();
 
     [Fact]
     public async Task GroupingASelectionMovesDomFocusToTheNewGroupsOwnTabStop()
@@ -212,8 +190,8 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         AddInstance(board, "First", x: 0, y: 0);
         AddInstance(board, "Second", x: 100, y: 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.FindAll(".component-container")[0].Click();
-        canvas.FindAll(".component-container")[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
+        canvas.ClickOn(canvas.FindAll(".component-container")[1], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
@@ -232,8 +210,8 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         AddInstance(board, "Below", x: 0, y: 300);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[1].Click();
-        containers[2].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[1]);
+        canvas.ClickOn(containers[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         // Filtered to actually-tabbable elements: the now-grouped members' own containers still

@@ -128,7 +128,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 300, 300);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         Assert.Equal(
             "true",
             canvas.FindAll(".component-container")[0].GetAttribute("aria-selected")
@@ -150,7 +150,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 600, 600);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         await canvas.Marquee(from: (280, 280), to: (400, 400), shift: true);
         await canvas.Marquee(from: (580, 580), to: (700, 700), shift: true);
@@ -169,7 +169,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 300, 300);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         await canvas.Press(280, 280, shift: true);
         await canvas.Move(400, 400, shift: true);
@@ -225,8 +225,8 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
         containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
@@ -242,10 +242,10 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         containers = canvas.FindAll(".component-container");
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[1], shift: true);
 
         containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
@@ -261,11 +261,11 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
         containers = canvas.FindAll(".component-container");
-        containers[1].Click();
+        canvas.ClickOn(containers[1]);
 
         containers = canvas.FindAll(".component-container");
         Assert.Null(containers[0].GetAttribute("aria-selected"));
@@ -284,12 +284,15 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
-        var box = canvas.Find(".selection-bounding-box");
-        box.MouseDown(new MouseEventArgs { ClientX = 150, ClientY = 25 });
-        canvas.Find(".diagram-canvas").MouseUp(new MouseEventArgs { ClientX = 150, ClientY = 25 });
+        canvas.PressOn(
+            canvas.Find(".selection-bounding-box"),
+            (150, 25),
+            role: HitRole.SelectionBounds
+        );
+        canvas.ReleaseAt((150, 25));
 
         containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));

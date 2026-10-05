@@ -96,7 +96,7 @@ public abstract class InteractionProbe : IAsyncLifetime
         Page = await _context.NewPageAsync();
         ConsoleErrors.Attach(Page);
         await Page.GotoAsync(ProbePagePath);
-        await Expect(Page.Locator(".component-container")).ToHaveCountAsync(3);
+        await Expect(Page.Locator(".component-container")).ToHaveCountAsync(4);
         await SettleAsync();
         await ClearCallsAsync();
     }

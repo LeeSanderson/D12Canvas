@@ -51,6 +51,12 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         return instance;
     }
 
+    private static void DoublePressTheNote(IRenderedComponent<DiagramCanvas> canvas)
+    {
+        canvas.ClickOn(canvas.Find(".component-container"));
+        canvas.ClickOn(canvas.Find(".component-container"), pressCount: 2);
+    }
+
     [Fact]
     public async Task BlurAfterEditingCommitsOneMutateEntityCommand()
     {
@@ -58,7 +64,7 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         var instance = AddStickyNote(board, "Original");
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find("p.d12-sticky-note-text").DoubleClick();
+        DoublePressTheNote(canvas);
         var editor = canvas.Find("textarea.d12-sticky-note-editor");
         editor.Input("Edited");
         editor.Blur();
@@ -80,7 +86,7 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         AddStickyNote(board, "Original");
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find("p.d12-sticky-note-text").DoubleClick();
+        DoublePressTheNote(canvas);
         canvas.Find("textarea.d12-sticky-note-editor").Input("Edited");
         canvas.Find("textarea.d12-sticky-note-editor").Blur();
 
@@ -93,7 +99,7 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         var board = new Board();
         AddStickyNote(board, "Original");
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find("p.d12-sticky-note-text").DoubleClick();
+        DoublePressTheNote(canvas);
         canvas.Find("textarea.d12-sticky-note-editor").Input("Edited");
         canvas.Find("textarea.d12-sticky-note-editor").Blur();
 
@@ -102,24 +108,34 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         Assert.Contains("Original", canvas.Find("p.d12-sticky-note-text").TextContent);
     }
 
-    // ComponentContainer has its own unrelated legacy double-click ("SwitchToEditMode" - free
-    // drag/resize without prior selection, predates the Board-backed canvas). Entering the inline
-    // WYSIWYG editor must stop that double-click from also bubbling up and engaging it - otherwise
-    // the container would gain both edit surfaces at once. The editor's own textarea carries the
-    // identical @ondblclick:stopPropagation guard for the same reason, but bUnit's dispatch helper
-    // requires a real handler (not just a stopPropagation modifier) on the element it's invoked on,
-    // so that half of the guard is exercised by code review/the Playwright visual test instead.
     [Fact]
-    public void DoubleClickToEnterInlineEditDoesNotAlsoEngageComponentContainersLegacyEditMode()
+    public void ADoublePressOnAStickyNoteOpensItsEditor()
     {
         var board = new Board();
         AddStickyNote(board, "Original");
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find("p.d12-sticky-note-text").DoubleClick();
+        canvas.ClickOn(canvas.Find(".component-container"));
+        canvas.ClickOn(canvas.Find(".component-container"), pressCount: 2);
 
-        Assert.Single(canvas.FindAll("textarea.d12-sticky-note-editor"));
-        Assert.DoesNotContain("edit-mode", canvas.Find(".component-container").ClassList);
+        var editor = canvas.Find("textarea.d12-sticky-note-editor");
+        Assert.Equal("Original", editor.GetAttribute("value"));
+    }
+
+    [Fact]
+    public void ADoublePressOnAGroupedStickyNoteOpensNoEditor()
+    {
+        var board = new Board();
+        var note = AddStickyNote(board, "Original");
+        var other = AddStickyNote(board, "Other");
+        board.AddGroup(new Group([note.Id, other.Id]));
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var container = canvas.Find($".component-container[data-d12-entity='{note.Id}']");
+        canvas.ClickOn(container);
+        canvas.ClickOn(container, pressCount: 2);
+
+        Assert.Empty(canvas.FindAll("textarea"));
     }
 
     [Fact]
@@ -129,7 +145,7 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         var instance = AddStickyNote(board, "Original");
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find("p.d12-sticky-note-text").DoubleClick();
+        DoublePressTheNote(canvas);
         canvas.Find("textarea.d12-sticky-note-editor").Input("Edited");
         canvas.Find("textarea.d12-sticky-note-editor").Blur();
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -148,14 +164,12 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
 
         // One real gesture before the cancelled edit - if Escape wrongly recorded an entry, a
         // single Undo below would revert that phantom entry instead of this move.
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         var container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 100, ClientY = 100 });
-        container.MouseMove(new MouseEventArgs { ClientX = 150, ClientY = 120 });
-        container.MouseUp(new MouseEventArgs { ClientX = 150, ClientY = 120 });
+        canvas.DragOn(container, (100, 100), (150, 120));
         Assert.NotEqual(new Bounds(0, 0, 200, 200), instance.Bounds);
 
-        canvas.Find("p.d12-sticky-note-text").DoubleClick();
+        DoublePressTheNote(canvas);
         var editor = canvas.Find("textarea.d12-sticky-note-editor");
         editor.Input("Discard me");
         editor.KeyDown(new KeyboardEventArgs { Key = "Escape" });
@@ -174,14 +188,12 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         var instance = AddStickyNote(board, "Same");
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         var container = canvas.Find(".component-container");
-        container.MouseDown(new MouseEventArgs { ClientX = 100, ClientY = 100 });
-        container.MouseMove(new MouseEventArgs { ClientX = 150, ClientY = 120 });
-        container.MouseUp(new MouseEventArgs { ClientX = 150, ClientY = 120 });
+        canvas.DragOn(container, (100, 100), (150, 120));
         Assert.NotEqual(new Bounds(0, 0, 200, 200), instance.Bounds);
 
-        canvas.Find("p.d12-sticky-note-text").DoubleClick();
+        DoublePressTheNote(canvas);
         canvas.Find("textarea.d12-sticky-note-editor").Blur(); // no edit in between
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -195,7 +207,7 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         var board = new Board();
         AddStickyNote(board, "Original");
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find("p.d12-sticky-note-text").DoubleClick();
+        DoublePressTheNote(canvas);
         canvas.Find("textarea.d12-sticky-note-editor").Input("Persisted text");
         canvas.Find("textarea.d12-sticky-note-editor").Blur();
 

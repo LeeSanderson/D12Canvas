@@ -176,33 +176,31 @@ public partial class DiagramCanvas : IAsyncDisposable
     // chosen here once the interop hop lands because the choice needs the selection, and that
     // gesture owns the pointer until its claiming button comes up. Its identity never changes
     // mid-press, only its phase. The selection as it stood at the press is kept so a cancel can
-    // put it back, and the marquee band is the one piece of gesture geometry the canvas renders.
+    // put it back. The marquee band is drawn from its own field, and every other piece of
+    // in-flight geometry is in the gesture preview, read through live geometry.
     private PointerGesture? _activeGesture;
     private SelectionSnapshot? _pressSelection;
     private Bounds? _marqueeBounds;
     private Board? _previousBoard;
+    private readonly GesturePreview _preview = new();
 
-    // Container-relative origin for the gestures the old per-element mouse handlers still own
-    // (the selection box's move and resize, and the connector drag), fetched when one of them
-    // starts since the container can move on the page between renders.
-    private (double Left, double Top) _mouseGestureContainerOrigin;
+    // The participants of the live gesture that have been mounted at some point during it, each
+    // with the placeholder state it was mounted with. Mounting only grows until release, so an
+    // instance carried past the viewport edge stays in the user's hand, and a placeholder never
+    // swaps for the full component mid-gesture or back.
+    private readonly Dictionary<Guid, bool> _stickyParticipants = new();
 
-    // A multi-selection (2+) moves and resizes as a single bounding-box unit.
-    // Move can start two ways - dragging the selection box itself (tracked here, live-previewed
-    // every tick since DiagramCanvas owns the whole gesture) or dragging one of the selected
-    // members directly (ComponentContainer's own existing _isMoving already tracks that member
-    // smoothly; MoveComponent below turns its single OnMoved delta into a one-shot update of every
-    // other member once the gesture commits, rather than routing it through here). Either way
-    // Board is only ever written once, on release, matching every other gesture's discipline.
-    private bool _isGroupMoving;
-    private (double X, double Y) _groupMoveAnchor;
-    private double _groupMoveDeltaX;
-    private double _groupMoveDeltaY;
+    // The full component mounted for each instance, kept so the canvas can ask one to begin an
+    // inline edit. A remount overwrites its entry, and an entry goes once its instance leaves the
+    // board.
+    private readonly Dictionary<Guid, DynamicComponent> _mountedComponents = new();
+
+    private LiveGeometry Live => new(Board!, _preview);
 
     // Group resize is driven entirely by the selection bounding box's own handles (rendered by
     // DiagramCanvas, not any individual ComponentContainer - see IsMultiSelected). Members' bounds
-    // are scaled proportionally relative to the bbox they started at, previewed live via
-    // EffectiveBounds and committed once, on release.
+    // are scaled proportionally relative to the bbox they started at, published to the gesture
+    // preview every tick and committed once, on release.
     private bool _isGroupResizing;
     private ResizeDirection _groupResizeDirection;
     private MouseEventArgs? _groupResizeAnchor;
@@ -270,7 +268,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private IJSObjectReference? _jsModule;
 
     // Set by OnGroupPressed - the new group's own tab stop doesn't exist in the DOM until the
-    // render its grouping triggers actually commits, so the focusElement call has to wait for
+    // render its grouping triggers actually commits, so the focus call has to wait for
     // OnAfterRenderAsync (guaranteed to run after that render lands) rather than firing inline.
     private bool _pendingGroupFocus;
 
@@ -281,7 +279,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private Guid? _pendingPlacementFocusId;
 
     // Whichever entity currently has real DOM focus - kept in sync by FocusEntity (every native
-    // Tab/Shift+Tab landing, and the click-driven focusElement round-trip), and advanced without
+    // Tab/Shift+Tab landing), cleared when a press focuses the canvas, and advanced without
     // selecting by OnCtrlTabPressed. Tracked separately from _selectedInstanceIds because Ctrl+Tab
     // must move focus without touching selection at all.
     private Guid? _focusedTabStopId;
@@ -354,6 +352,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             StateHasChanged();
         }
 
+        foreach (var id in _mountedComponents.Keys.Where(id => Board?.GetComponent(id) is null))
+        {
+            _mountedComponents.Remove(id);
+        }
+
         if (_pendingGroupFocus)
         {
             _pendingGroupFocus = false;
@@ -392,14 +395,23 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         var snapshot = new SelectionSnapshot(_selectedInstanceIds, _selectedEdgeId);
         var context = new CanvasGestureContext(this, snapshot);
-        _pressSelection = snapshot;
-        _activeGesture = kind switch
+        PointerGesture gesture = kind switch
         {
             GestureKind.Pan => new PanGesture(press, context),
             GestureKind.MarqueeSelect => new MarqueeSelectGesture(press, context),
+            GestureKind.MoveSelection => new MoveSelectionGesture(press, context),
+            GestureKind.Native => new NativeGesture(press, context),
             _ => throw new InvalidOperationException($"No gesture is built for {kind}."),
         };
-        _history.Lock();
+        gesture.Begin();
+
+        if (gesture.HoldsPress)
+        {
+            _activeGesture = gesture;
+            _pressSelection = snapshot;
+            _history.Lock();
+        }
+
         StateHasChanged();
     }
 
@@ -415,8 +427,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // The press ends before the gesture acts on its release, so the release is the one write the
-    // board accepts while the gesture still owns it.
+    // History unlocks before the gesture acts on its release, so the release is the one write the
+    // board accepts while the gesture still owns it, and the preview it commits is dropped after.
     [JSInvokable]
     public void OnPointerReleased(PointerRelease release)
     {
@@ -425,9 +437,9 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var gesture = _activeGesture;
+        _history.Unlock();
+        _activeGesture.Release(release);
         EndPress();
-        gesture.Release(release);
         StateHasChanged();
     }
 
@@ -461,6 +473,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _marqueeBounds = null;
+        _preview.Clear();
 
         if (restoreSelection && _pressSelection is { } snapshot)
         {
@@ -483,7 +496,79 @@ public partial class DiagramCanvas : IAsyncDisposable
         _activeGesture = null;
         _pressSelection = null;
         _marqueeBounds = null;
+        _preview.Clear();
+        _stickyParticipants.Clear();
         _history.Unlock();
+    }
+
+    // A participant enters the sticky set the first time its live bounds are inside the viewport
+    // plus overscan, which for one already on screen is the press itself, and its placeholder
+    // state is resolved then from its committed bounds and held until release.
+    private void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides)
+    {
+        _preview.Publish(boundsOverrides);
+        if (Board is null)
+        {
+            return;
+        }
+
+        var mountArea = _zoomPanTracker.Viewport.ExpandedBy(Overscan);
+        foreach (var (id, bounds) in boundsOverrides)
+        {
+            if (
+                !_stickyParticipants.ContainsKey(id)
+                && mountArea.Intersects(bounds)
+                && Board.GetComponent(id) is { } instance
+            )
+            {
+                _stickyParticipants[id] = IsBelowLodThreshold(instance.Bounds);
+            }
+        }
+    }
+
+    // Committed bounds are still the press-time values here, since nothing writes Board
+    // mid-gesture, so each command's before-value comes straight off the field.
+    private void CommitPreview()
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        var commands = new List<ICommand>();
+        foreach (var (id, after) in _preview.BoundsOverrides)
+        {
+            if (Board.GetComponent(id) is { } instance && instance.Bounds != after)
+            {
+                commands.Add(new ChangeBoundsCommand(instance, instance.Bounds, after));
+            }
+        }
+
+        if (commands.Count > 0)
+        {
+            _history.Do(new CompositeCommand(commands));
+        }
+    }
+
+    private void BeginInlineEdit(Guid instanceId)
+    {
+        if (
+            Board?.GetComponent(instanceId) is not { } instance
+            || IsGrouped(instanceId)
+            || IsPlaceholder(instance)
+            || !Registry.Resolve(instance.ComponentTypeKey).IsInlineEditable
+        )
+        {
+            return;
+        }
+
+        if (
+            _mountedComponents.TryGetValue(instanceId, out var mounted)
+            && mounted.Instance is IInlineEditable editable
+        )
+        {
+            editable.BeginEdit();
+        }
     }
 
     // The one focus write per press lands here. The keyboard's anchor goes null with it, since a
@@ -510,17 +595,34 @@ public partial class DiagramCanvas : IAsyncDisposable
         public bool IsSelected(Guid effectiveId) =>
             canvas._selectedInstanceIds.Contains(effectiveId);
 
-        public bool IsMarqueeCandidate(ComponentInstance instance) =>
-            !canvas.IsBelowLodThreshold(instance.Bounds);
+        public IReadOnlyList<ComponentInstance> SelectedInstances() => canvas.ResolvedSelection();
 
         public void ReplaceSelection(IEnumerable<Guid> effectiveIds) =>
             canvas.SetSelection(effectiveIds, null);
+
+        public void AddToSelection(Guid effectiveId) =>
+            canvas.SetSelection(canvas._selectedInstanceIds.Append(effectiveId).ToList(), null);
+
+        public void RemoveFromSelection(Guid effectiveId) =>
+            canvas.SetSelection(
+                canvas._selectedInstanceIds.Where(id => id != effectiveId).ToList(),
+                canvas._selectedEdgeId
+            );
 
         public void SelectEdge(Guid edgeId) => canvas.SelectEdge(edgeId);
 
         public void ClearSelection() => canvas.SetSelection([], null);
 
+        public (double X, double Y) SnapToGrid(double x, double y) => canvas.SnapPoint(x, y);
+
         public void ShowMarquee(Bounds? boardBounds) => canvas._marqueeBounds = boardBounds;
+
+        public void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides) =>
+            canvas.PublishPreview(boundsOverrides);
+
+        public void CommitPreview() => canvas.CommitPreview();
+
+        public void BeginInlineEdit(Guid instanceId) => canvas.BeginInlineEdit(instanceId);
 
         public void OpenContextMenuAt(double containerX, double containerY)
         {
@@ -1391,81 +1493,9 @@ public partial class DiagramCanvas : IAsyncDisposable
         NotifySelectionChanged();
     }
 
-    // Fired once by ComponentContainer's OnMoved, on release - the whole
-    // press-to-release drag is one gesture, so Board is only ever mutated with the final Bounds,
-    // never per intermediate mousemove tick.
-    // When the dragged instance is part of a 2+ multi-selection, the delta between its
-    // own before/after Bounds is applied to every selected member instead of just this one -
-    // preserving relative offsets without needing ComponentContainer itself to know anything about
-    // multi-selection (its own local drag-tracking is unchanged; only this receiving end differs).
-    // Snap-to-grid only applies to this single-instance branch - a multi-selection move keeps every
-    // member's own relative offset intact rather than snapping each one independently.
-    private void MoveComponent(Guid instanceId, Bounds bounds)
-    {
-        var instance = Board?.GetComponent(instanceId);
-        if (instance is null)
-        {
-            return;
-        }
-
-        if (IsMultiSelected(instanceId))
-        {
-            CommitGroupMove(bounds.X - instance.Bounds.X, bounds.Y - instance.Bounds.Y);
-        }
-        else
-        {
-            // Snapping a small drag can round it right back to where the instance already was -
-            // skipped rather than pushing a no-op entry onto the undo stack, matching how
-            // RestackSelection/ApplyZIndexChange already skip a computed-but-unchanged value.
-            var snapped = SnapBounds(bounds);
-            if (snapped != instance.Bounds)
-            {
-                _history.Do(new ChangeBoundsCommand(instance, instance.Bounds, snapped));
-            }
-        }
-
-        StateHasChanged();
-    }
-
-    // Shared by MoveComponent (member-drag trigger) and HandleMouseUp (empty-space-in-bbox
-    // trigger) - applies the same board-space delta to every selected member in one write.
-    // The whole gesture is one CompositeCommand, so a single undo reverts
-    // every member together rather than one at a time.
-    private void CommitGroupMove(double deltaX, double deltaY)
-    {
-        if (Board is null)
-        {
-            return;
-        }
-
-        var commands = new List<ICommand>();
-        foreach (var id in ExpandedSelection())
-        {
-            var member = Board.GetComponent(id);
-            if (member is null)
-            {
-                continue;
-            }
-
-            var before = member.Bounds;
-            var after = new Bounds(
-                before.X + deltaX,
-                before.Y + deltaY,
-                before.Width,
-                before.Height
-            );
-            commands.Add(new ChangeBoundsCommand(member, before, after));
-        }
-
-        if (commands.Count > 0)
-        {
-            _history.Do(new CompositeCommand(commands));
-        }
-    }
-
-    // Same shape as MoveComponent, fired once by ComponentContainer's OnResized. A
-    // multi-selected instance never reaches here for resize (its own handles are suppressed while
-    // IsMultiSelected - see ComponentContainer), so unlike MoveComponent this needs no group branch.
+    // Fired once by ComponentContainer's OnResized, on release, with the instance's final Bounds.
+    // A multi-selected instance never reaches here for resize (its own handles are suppressed
+    // while IsMultiSelected - see ComponentContainer), so this needs no group branch.
     private void ResizeComponent(Guid instanceId, Bounds bounds)
     {
         var instance = Board?.GetComponent(instanceId);
@@ -1796,8 +1826,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // Armed by one of the group bounding-box overlay's own 8 handles (never an
     // individual instance's handles - those are suppressed while multi-selected). Snapshots each
-    // member's own Bounds plus the bbox they currently form, both taken before this gesture flips
-    // _isGroupResizing on, so EffectiveBounds still reads raw Board state for that one snapshot.
+    // member's committed Bounds plus the bbox they currently form.
     private void StartGroupResize(MouseEventArgs e, ResizeDirection direction)
     {
         if (Board is null)
@@ -1871,9 +1900,20 @@ public partial class DiagramCanvas : IAsyncDisposable
             _groupResizeMinBboxWidth,
             _groupResizeMinBboxHeight
         );
+        _preview.Publish(
+            _groupResizeMemberStartBounds.ToDictionary(
+                member => member.Key,
+                member =>
+                    ScaleWithinBoundingBox(
+                        member.Value,
+                        _groupResizeStartBounds,
+                        _groupResizeCurrentBounds
+                    )
+            )
+        );
     }
 
-    // Same one-CompositeCommand-per-gesture treatment as CommitGroupMove.
+    // One CompositeCommand for the whole gesture, so a single undo reverts every member together.
     private void CommitGroupResize()
     {
         if (Board is null)
@@ -1944,11 +1984,36 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static IDictionary<string, object> ComponentParameters(object boundProps) =>
         new Dictionary<string, object> { [PropsParameterName] = boundProps };
 
-    // Recomputed whenever DiagramCanvas re-renders. That's driven entirely by the pan/zoom/
-    // resize events that already call StateHasChanged (throttled for pan, see HandleMouseMove) -
-    // never by a per-frame timer - so the mounted window follows the same cadence.
-    private IReadOnlyCollection<ComponentInstance> VisibleComponents =>
-        Board?.GetVisible(_zoomPanTracker.Viewport, Overscan) ?? Array.Empty<ComponentInstance>();
+    // Recomputed whenever DiagramCanvas re-renders, which pointer moves drive at most once per
+    // animation frame - never a per-frame timer - so the mounted window follows the same cadence.
+    // Windowing reads committed bounds, so a non-participant never mounts or unmounts because of
+    // a gesture, and the live gesture's sticky participants are added on top.
+    private IReadOnlyCollection<ComponentInstance> VisibleComponents
+    {
+        get
+        {
+            if (Board is null)
+            {
+                return Array.Empty<ComponentInstance>();
+            }
+
+            var visible = Board.GetVisible(_zoomPanTracker.Viewport, Overscan);
+            if (_stickyParticipants.Count == 0)
+            {
+                return visible;
+            }
+
+            var visibleIds = visible.Select(instance => instance.Id).ToHashSet();
+            return visible
+                .Concat(
+                    _stickyParticipants
+                        .Keys.Where(id => !visibleIds.Contains(id))
+                        .Select(Board.GetComponent)
+                        .OfType<ComponentInstance>()
+                )
+                .ToList();
+        }
+    }
 
     private bool IsGrouped(Guid instanceId) => Board?.FindContainingGroup(instanceId) is not null;
 
@@ -1957,6 +2022,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     // perpetually placeholdered at a normal zoom just because one axis is small.
     private bool IsBelowLodThreshold(Bounds bounds) =>
         Math.Max(bounds.Width, bounds.Height) * _zoomPanTracker.Scale < LodSizeThreshold;
+
+    // Decided from committed bounds, and frozen for a participant of the live gesture, so the
+    // author's component tree is never mounted or unmounted while the user is holding it.
+    private bool IsPlaceholder(ComponentInstance instance) =>
+        _stickyParticipants.TryGetValue(instance.Id, out var frozen)
+            ? frozen
+            : IsBelowLodThreshold(instance.Bounds);
 
     private static string LodPlaceholderStyle(Bounds bounds, int zIndex) =>
         $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px; z-index: {zIndex};";
@@ -1986,12 +2058,12 @@ public partial class DiagramCanvas : IAsyncDisposable
         var stops = new List<TabStop>();
         foreach (var instance in VisibleComponents)
         {
-            stops.Add(new TabStop(instance, null, EffectiveBounds(instance)));
+            stops.Add(new TabStop(instance, null, Live.BoundsOf(instance)));
         }
 
         foreach (var group in Board.GetVisibleGroups(_zoomPanTracker.Viewport, Overscan))
         {
-            stops.Add(new TabStop(null, group, Board.GetBounds(group)!.Value));
+            stops.Add(new TabStop(null, group, Live.GroupBounds(group)!.Value));
         }
 
         return stops.OrderBy(s => s.Bounds.Y).ThenBy(s => s.Bounds.X).ToList();
@@ -2001,20 +2073,20 @@ public partial class DiagramCanvas : IAsyncDisposable
     // them - a grouped member has an entry in that list too (so it still paints inside its group)
     // but no tabindex of its own (see IsGrouped/ComponentContainer.Focusable), so Ctrl+Tab must
     // skip it exactly the way native Tab already does. An LOD-placeholdered instance (see
-    // IsBelowLodThreshold) is excluded the same way - it renders as a plain, non-interactive div
-    // with no tabindex of its own either.
+    // IsPlaceholder) is excluded the same way - it renders as a plain div with no tabindex of its
+    // own either.
     private List<Guid> FocusableTabStopIds() =>
         OrderedTabStops()
             .Where(stop =>
                 stop.Instance is null
-                || (!IsGrouped(stop.Instance.Id) && !IsBelowLodThreshold(stop.Bounds))
+                || (!IsGrouped(stop.Instance.Id) && !IsPlaceholder(stop.Instance))
             )
             .Select(stop => stop.Instance?.Id ?? stop.Group!.Id)
             .ToList();
 
     // The sole entry point for the "focusing selects" half of focus-follows-selection - reached
-    // only via a tab stop's own @onfocus (native Tab/Shift+Tab navigation, or the click-driven
-    // focusElement call below), never wired to any keyboard shortcut directly. Always a hard
+    // only via a tab stop's own @onfocus (native Tab/Shift+Tab navigation, or a command handing
+    // focus to a new instance or group), never wired to any keyboard shortcut directly. Always a hard
     // single-select, matching "landing focus on an entity selects it outright - there is no
     // separate commit step"; a grouped member is never the id passed here (it has no tab stop of
     // its own), and a top-level Group's own id needs no EffectiveSelectionId resolution
@@ -2025,8 +2097,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         _focusedTabStopId = id;
 
-        // Any genuine focus-changing navigation (Tab, Shift+Tab, a click's own focusElement
-        // round-trip, Ctrl+Tab) invalidates an in-progress port pick (see OnEnterPressed) - it only
+        // Any genuine focus-changing navigation (Tab, Shift+Tab, Ctrl+Tab) invalidates an
+        // in-progress port pick (see OnEnterPressed) - it only
         // makes sense for whichever instance real DOM focus is currently on. Enter/arrow-key port
         // picking never itself moves DOM focus, so this is never cleared out from under a pick still
         // in progress on the same instance.
@@ -2107,21 +2179,23 @@ public partial class DiagramCanvas : IAsyncDisposable
         return GridBaseSpacing * Math.Pow(GridSpacingStep, dominantLevel);
     }
 
-    // A no-op (returns bounds unchanged) whenever SnapToGrid is off - callers apply this
+    // A no-op (returns the point unchanged) whenever SnapToGrid is off - callers apply this
     // unconditionally rather than branching themselves.
-    private Bounds SnapBounds(Bounds bounds)
+    private (double X, double Y) SnapPoint(double x, double y)
     {
         if (!SnapToGrid)
         {
-            return bounds;
+            return (x, y);
         }
 
         var spacing = DominantGridSpacing();
-        return bounds with
-        {
-            X = Math.Round(bounds.X / spacing) * spacing,
-            Y = Math.Round(bounds.Y / spacing) * spacing,
-        };
+        return (Math.Round(x / spacing) * spacing, Math.Round(y / spacing) * spacing);
+    }
+
+    private Bounds SnapBounds(Bounds bounds)
+    {
+        var (x, y) = SnapPoint(bounds.X, bounds.Y);
+        return bounds with { X = x, Y = y };
     }
 
     // background-size/position are computed here (rather than relying on canvas-content's own CSS
@@ -2141,26 +2215,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static double PositiveMod(double value, double modulus) =>
         ((value % modulus) + modulus) % modulus;
 
-    // A press on the multi-selection's own box moves the whole selection. Still driven by the old
-    // interaction layer's mouse events (the box's own mousedown here, the canvas's mousemove and
-    // mouseup below) until MoveSelection takes the selection-bounds role onto the spine.
-    private async Task StartGroupMoveFromSelectionBox(MouseEventArgs e)
-    {
-        var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
-            "getContainerDimensions",
-            ContainerElement
-        );
-        _mouseGestureContainerOrigin = (containerRect["left"], containerRect["top"]);
-        _isGroupMoving = true;
-        _groupMoveAnchor = ToBoardPoint(e, _mouseGestureContainerOrigin);
-        _groupMoveDeltaX = 0;
-        _groupMoveDeltaY = 0;
-    }
-
     // The canvas-level mouse plumbing left for the gestures the old interaction layer still owns:
-    // the connector drag, the multi-selection box's move and its resize. Each goes when its
-    // gesture moves onto the spine. A press the spine owns prevents its pointerdown, so these
-    // never fire for it.
+    // the connector drag and the multi-selection box's resize. Each goes when its gesture moves
+    // onto the spine. A press the spine owns prevents its pointerdown, so these never fire for it.
     private void HandleMouseMove(MouseEventArgs e)
     {
         if (_isConnectingPort)
@@ -2173,15 +2230,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         {
             ApplyGroupResize(e);
             StateHasChanged();
-            return;
-        }
-
-        if (_isGroupMoving)
-        {
-            var current = ToBoardPoint(e, _mouseGestureContainerOrigin);
-            _groupMoveDeltaX = current.X - _groupMoveAnchor.X;
-            _groupMoveDeltaY = current.Y - _groupMoveAnchor.Y;
-            StateHasChanged();
         }
     }
 
@@ -2193,28 +2241,21 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        if (!_isGroupMoving && !_isGroupResizing)
+        if (!_isGroupResizing)
         {
             return;
         }
 
-        // Single-commit gestures: only write to Board once, here, and only if the drag actually
-        // moved anything - a plain click on the box or on a handle is a no-op.
-        if (_isGroupMoving && (_groupMoveDeltaX != 0 || _groupMoveDeltaY != 0))
-        {
-            CommitGroupMove(_groupMoveDeltaX, _groupMoveDeltaY);
-        }
-
-        if (_isGroupResizing && !_groupResizeCurrentBounds.Equals(_groupResizeStartBounds))
+        // A single-commit gesture: Board is written once, here, and only if the drag actually
+        // resized anything - a plain click on a handle is a no-op.
+        if (!_groupResizeCurrentBounds.Equals(_groupResizeStartBounds))
         {
             CommitGroupResize();
         }
 
-        _isGroupMoving = false;
         _isGroupResizing = false;
         _groupResizeAnchor = null;
-        _groupMoveDeltaX = 0;
-        _groupMoveDeltaY = 0;
+        _preview.Clear();
         StateHasChanged();
     }
 
@@ -2238,9 +2279,8 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // The combined bounding box of the current selection, or null when nothing is selected - what
     // positions the selection box, which is itself the hit target for a press inside the
-    // multi-selection's bounds. Reads through EffectiveBounds rather than each
-    // instance's raw Bounds, so it live-tracks during an active group move/resize instead of only
-    // updating once the gesture commits.
+    // multi-selection's bounds. Reads live geometry, so it tracks a move or resize in flight
+    // rather than only updating once the gesture commits.
     private Bounds? SelectedInstancesBounds()
     {
         if (Board is null)
@@ -2250,41 +2290,8 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         var expanded = ExpandedSelection();
         return Bounds.Union(
-            Board
-                .Components.Where(instance => expanded.Contains(instance.Id))
-                .Select(EffectiveBounds)
+            Board.Components.Where(instance => expanded.Contains(instance.Id)).Select(Live.BoundsOf)
         );
-    }
-
-    // An instance's Bounds as they should currently render - offset by the live
-    // in-progress group-move delta, or scaled proportionally within an in-progress group-resize.
-    // Board itself is never touched until the gesture commits (single-write discipline, matching
-    // every other drag), so this is the only place mid-gesture visual feedback comes from.
-    private Bounds EffectiveBounds(ComponentInstance instance)
-    {
-        if (_isGroupMoving && ExpandedSelection().Contains(instance.Id))
-        {
-            return new Bounds(
-                instance.Bounds.X + _groupMoveDeltaX,
-                instance.Bounds.Y + _groupMoveDeltaY,
-                instance.Bounds.Width,
-                instance.Bounds.Height
-            );
-        }
-
-        if (
-            _isGroupResizing
-            && _groupResizeMemberStartBounds.TryGetValue(instance.Id, out var startBounds)
-        )
-        {
-            return ScaleWithinBoundingBox(
-                startBounds,
-                _groupResizeStartBounds,
-                _groupResizeCurrentBounds
-            );
-        }
-
-        return instance.Bounds;
     }
 
     // A member's start-of-gesture Bounds, re-expressed as the same relative position/size within
@@ -2309,13 +2316,18 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    // An edge's rendered endpoints, resolved fresh from Board on every render - this
-    // is what lets an attached edge track its instances through move/resize with no separate
-    // update path. Null (skip rendering) if either endpoint's instance no longer exists.
+    // An edge's rendered endpoints, resolved through live geometry on every render - this is
+    // what lets an attached edge follow its instances through a move or resize in flight with no
+    // separate update path. Null (skip rendering) if either endpoint's instance no longer exists.
     private ((double X, double Y) From, (double X, double Y) To)? EdgeLine(Edge edge)
     {
-        var from = Board?.ResolveEndpoint(edge.Source);
-        var to = Board?.ResolveEndpoint(edge.Target);
+        if (Board is null)
+        {
+            return null;
+        }
+
+        var from = Live.ResolveEndpoint(edge.Source);
+        var to = Live.ResolveEndpoint(edge.Target);
 
         return from is null || to is null ? null : (from.Value, to.Value);
     }
@@ -2453,7 +2465,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // Positions the group bounding-box overlay - reads through SelectedInstancesBounds,
-    // so it live-tracks an in-progress group move/resize the same way the members themselves do.
+    // so it tracks a move or resize in flight the same way the members themselves do.
     private string SelectionBoundingBoxStyle
     {
         get

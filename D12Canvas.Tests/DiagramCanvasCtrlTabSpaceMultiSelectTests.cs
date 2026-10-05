@@ -12,10 +12,8 @@ namespace D12Canvas.Tests;
 // selection's own auto-replace), and Space toggles the focused entity's membership - the keyboard
 // equivalent of a shift-click, via a different key.
 // These tests establish "currently focused" via .Focus() (a real AngleSharp focus event, routing
-// through ComponentContainer.HandleFocus/DiagramCanvas.FocusEntity) rather than .Click() - a plain
-// click's own DOM-focus side effect goes through a stubbed JS focusElement call in this harness,
-// which never fires a real onfocus the way production's real .focus() call does (see
-// DiagramCanvasFocusFollowsSelectionTests for the same convention).
+// through ComponentContainer.HandleFocus/DiagramCanvas.FocusEntity), since a pointer press never
+// moves focus to an instance.
 public class DiagramCanvasCtrlTabSpaceMultiSelectTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -144,7 +142,7 @@ public class DiagramCanvasCtrlTabSpaceMultiSelectTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
         containers[0].Focus();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[1], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSpacePressed());
 
@@ -225,8 +223,8 @@ public class DiagramCanvasCtrlTabSpaceMultiSelectTests : ComponentTestBase
         AddInstance(board, "Third", x: 200, y: 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         await canvas.ClickCanvas(400, 400); // clear the selection first
         canvas.FindAll(".component-container")[2].Focus();

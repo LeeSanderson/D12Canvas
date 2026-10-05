@@ -62,7 +62,7 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
 
         var container = canvas.Find(".component-container");
         Assert.Equal("true", container.GetAttribute("aria-selected"));
@@ -78,8 +78,8 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click();
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1]);
 
         containers = canvas.FindAll(".component-container");
         Assert.Null(containers[0].GetAttribute("aria-selected"));
@@ -93,7 +93,7 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
 
         await canvas.ClickCanvas(200, 200);
@@ -108,7 +108,7 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
@@ -125,7 +125,7 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
 
         await canvas.Pan(from: (100, 100), to: (50, 40));

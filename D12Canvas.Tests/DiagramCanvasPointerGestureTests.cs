@@ -64,14 +64,16 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     // Every case starts on the same board: one instance at (100, 100), another at (400, 400),
     // the first selected before the press. A pan starts with the middle button at (0, 0) and
     // drags to (50, 30). A marquee starts on empty canvas at (380, 380) and drags over the second
-    // instance, replacing the selection.
+    // instance, replacing the selection. A move presses the second instance, which selects it, and
+    // drags it by (50, 40). A press on the second instance's own content adds it to the selection
+    // and holds nothing, so no move or release of it ever arrives.
     private IRenderedComponent<DiagramCanvas> RenderSeededBoard(out Board board)
     {
         var seeded = new Board();
         AddInstance(seeded, 100, 100);
         AddInstance(seeded, 400, 400);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, seeded));
-        canvas.FindAll(".component-container")[0].Click();
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         board = seeded;
         return canvas;
     }
@@ -91,16 +93,36 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 await canvas.Press(380, 380);
                 await canvas.Move(460, 460);
                 break;
+            case GestureKind.MoveSelection:
+                await canvas.Press(410, 410, role: HitRole.Instance, entityId: SecondId(canvas));
+                await canvas.Move(460, 450);
+                break;
+            case GestureKind.Native:
+                await canvas.Press(
+                    410,
+                    410,
+                    role: HitRole.AuthorContent,
+                    entityId: SecondId(canvas)
+                );
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "No case for this kind.");
         }
     }
+
+    private static Guid SecondId(IRenderedComponent<DiagramCanvas> canvas) =>
+        Guid.Parse(canvas.FindAll(".component-container")[1].GetAttribute("data-d12-entity")!);
+
+    private static string SecondStyle(IRenderedComponent<DiagramCanvas> canvas) =>
+        canvas.FindAll(".component-container")[1].GetAttribute("style")!;
 
     private static int ClaimingButton(GestureKind kind) =>
         kind switch
         {
             GestureKind.Pan => PointerPress.MiddleButton,
             GestureKind.MarqueeSelect => PointerPress.PrimaryButton,
+            GestureKind.MoveSelection => PointerPress.PrimaryButton,
+            GestureKind.Native => PointerPress.PrimaryButton,
             _ => throw new ArgumentOutOfRangeException(
                 nameof(kind),
                 kind,
@@ -121,6 +143,15 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
             case GestureKind.MarqueeSelect:
                 Assert.Single(canvas.FindAll(".marquee-select"));
                 Assert.Null(AriaSelected(canvas, 0));
+                Assert.Equal("true", AriaSelected(canvas, 1));
+                break;
+            case GestureKind.MoveSelection:
+                Assert.Contains("left: 450px; top: 440px", SecondStyle(canvas));
+                Assert.Null(AriaSelected(canvas, 0));
+                Assert.Equal("true", AriaSelected(canvas, 1));
+                break;
+            case GestureKind.Native:
+                Assert.Equal("true", AriaSelected(canvas, 0));
                 Assert.Equal("true", AriaSelected(canvas, 1));
                 break;
             default:
@@ -144,9 +175,25 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 Assert.Null(AriaSelected(canvas, 1));
                 break;
+            case GestureKind.MoveSelection:
+                Assert.Contains("left: 400px; top: 400px", SecondStyle(canvas));
+                Assert.Equal("true", AriaSelected(canvas, 0));
+                Assert.Null(AriaSelected(canvas, 1));
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "No case for this kind.");
         }
+    }
+
+    // The one gesture that holds no press: Escape falls straight to its selection-clearing rung,
+    // and the keyboard is never blocked.
+    private static async Task AssertNothingIsHeld(
+        IRenderedComponent<DiagramCanvas> canvas,
+        Board board
+    )
+    {
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+        Assert.Empty(board.Components);
     }
 
     [Theory]
@@ -179,6 +226,14 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         var canvas = RenderSeededBoard(out var board);
 
         await StartAndDrag(canvas, kind);
+        if (kind == GestureKind.Native)
+        {
+            await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
+            Assert.Null(AriaSelected(canvas, 0));
+            Assert.Null(AriaSelected(canvas, 1));
+            return;
+        }
+
         await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
         AssertDragWasCancelled(canvas, kind);
 
@@ -206,6 +261,14 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         var canvas = RenderSeededBoard(out var board);
 
         await StartAndDrag(canvas, kind);
+        if (kind == GestureKind.Native)
+        {
+            await canvas.Cancel("blur");
+            AssertDragTookEffect(canvas, kind);
+            await AssertNothingIsHeld(canvas, board);
+            return;
+        }
+
         await canvas.Cancel("blur");
         AssertDragWasCancelled(canvas, kind);
 
@@ -302,8 +365,8 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         AddInstance(board, 200, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         Assert.Single(board.Groups);
         await canvas.InvokeAsync(() => canvas.Instance.OnUngroupPressed());

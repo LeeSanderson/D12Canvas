@@ -14,7 +14,8 @@ internal static class PointerEvents
         double x,
         double y,
         Guid? entityId = null,
-        bool shift = false
+        bool shift = false,
+        int pressCount = 1
     ) =>
         new(
             PointerId,
@@ -24,7 +25,7 @@ internal static class PointerEvents
             role,
             entityId,
             Part: null,
-            PressCount: 1,
+            PressCount: pressCount,
             x,
             y,
             shift,

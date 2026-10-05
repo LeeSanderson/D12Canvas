@@ -16,6 +16,14 @@ internal abstract class PointerGesture
     public GesturePhase Phase { get; private set; } = GesturePhase.Pointing;
     protected IGestureContext Context { get; }
 
+    // The press-time half of the gesture, run once by the canvas after it has taken the selection
+    // snapshot, so anything the press changes can be put back by a cancel.
+    public void Begin() => OnPress();
+
+    // False for the one gesture that takes no capture and tracks nothing, whose press ends as soon
+    // as it begins.
+    public virtual bool HoldsPress => true;
+
     public bool Owns(int pointerId, int button) =>
         pointerId == Press.PointerId && button == Press.Button;
 
@@ -46,6 +54,8 @@ internal abstract class PointerGesture
     }
 
     public void MarkCancelled() => Phase = GesturePhase.Cancelled;
+
+    protected virtual void OnPress() { }
 
     protected abstract void OnMove(PointerMove move);
 

@@ -58,7 +58,7 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
@@ -77,8 +77,8 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var containers = canvas.FindAll(".component-container");
-        containers[0].Click();
-        containers[1].Click(new MouseEventArgs { ShiftKey = true });
+        canvas.ClickOn(containers[0]);
+        canvas.ClickOn(containers[1], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
 
@@ -99,7 +99,7 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
         board.AddGroup(group);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".component-container").Click();
+        canvas.ClickOn(canvas.Find(".component-container"));
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
 
         Assert.Empty(board.Components);

@@ -57,80 +57,24 @@ public class ComponentContainerTests : ComponentTestBase
     }
 
     [Fact]
-    public void ClickingTheContainerInvokesOnSelect()
+    public void AnAddressableContainerCarriesNoUnaddressableMarker()
     {
-        var selectCount = 0;
-        var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.OnSelect, (bool _) => selectCount++)
-        );
+        var container = Render<ComponentContainer>();
 
-        container.Find(".component-container").Click();
-
-        Assert.Equal(1, selectCount);
+        Assert.False(container.Find(".component-container").HasAttribute("data-d12-unaddressable"));
     }
 
     [Fact]
-    public void ClickingTheContainerWithShiftHeldInvokesOnSelectWithTrue()
+    public void AContainerThatIsNotAddressableCarriesTheMarkerThePointerListenerReads()
     {
-        bool? shiftKeyReceived = null;
         var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.OnSelect, (bool shiftKey) => shiftKeyReceived = shiftKey)
+            parameters.Add(p => p.Addressable, false)
         );
 
-        container.Find(".component-container").Click(new MouseEventArgs { ShiftKey = true });
-
-        Assert.True(shiftKeyReceived);
-    }
-
-    [Fact]
-    public void ClickingTheContainerWithoutShiftInvokesOnSelectWithFalse()
-    {
-        bool? shiftKeyReceived = null;
-        var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.OnSelect, (bool shiftKey) => shiftKeyReceived = shiftKey)
+        Assert.Equal(
+            "true",
+            container.Find(".component-container").GetAttribute("data-d12-unaddressable")
         );
-
-        container.Find(".component-container").Click();
-
-        Assert.False(shiftKeyReceived);
-    }
-
-    [Fact]
-    public void DraggingASelectedContainerInvokesOnMovedWithTheFinalBounds()
-    {
-        Bounds? movedTo = null;
-        var container = Render<ComponentContainer>(parameters =>
-            parameters
-                .Add(p => p.IsSelected, true)
-                .Add(p => p.X, 100)
-                .Add(p => p.Y, 100)
-                .Add(p => p.Width, 50)
-                .Add(p => p.Height, 50)
-                .Add(p => p.OnMoved, (Bounds bounds) => movedTo = bounds)
-        );
-
-        var element = container.Find(".component-container");
-        element.MouseDown(new MouseEventArgs { ClientX = 0, ClientY = 0 });
-        element.MouseMove(new MouseEventArgs { ClientX = 30, ClientY = 10 });
-        element.MouseUp(new MouseEventArgs { ClientX = 30, ClientY = 10 });
-
-        Assert.Equal(new Bounds(130, 110, 50, 50), movedTo);
-    }
-
-    [Fact]
-    public void DraggingAnUnselectedContainerDoesNotInvokeOnMoved()
-    {
-        var invoked = false;
-        var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.OnMoved, (Bounds _) => invoked = true)
-        );
-
-        var element = container.Find(".component-container");
-        element.MouseDown(new MouseEventArgs { ClientX = 0, ClientY = 0 });
-        element.MouseMove(new MouseEventArgs { ClientX = 30, ClientY = 10 });
-        element.MouseUp(new MouseEventArgs { ClientX = 30, ClientY = 10 });
-
-        Assert.False(invoked);
     }
 
     [Fact]

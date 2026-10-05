@@ -85,16 +85,13 @@ const NATIVELY_INTERACTIVE = "input, textarea, button, select, a[href], [tabinde
 // no gesture. Preventing the pointerdown would suppress the compatibility mouse events those
 // handlers rely on. Roles leave this set as their gestures move onto the spine.
 const LEGACY_PRIMARY_ROLES = new Set([
-    "instance",
     "resize-handle",
     "port",
     "port-strip",
     "edge",
     "edge-endpoint",
     "edge-label",
-    "selection-bounds",
-    "selection-handle",
-    "author-content"
+    "selection-handle"
 ]);
 
 function isNativelyInteractive(element) {
@@ -104,10 +101,12 @@ function isNativelyInteractive(element) {
 // The deepest marked element wins, so nested affordances inside a container beat the container
 // with no rule needed, and the entity is the nearest marked ancestor's, so an affordance carries
 // the instance it belongs to. An unmarked natively interactive element, or an author's opt-in
-// marker, met before any role marker makes the press author content. Finding nothing before the
-// canvas element means bare canvas.
+// marker, met before any role marker makes the press author content, and whichever of the two
+// is met first says whether the press landed on something that takes focus by itself. Content
+// inside an instance that is not addressable, a member of a group, is the instance. Finding
+// nothing before the canvas element means bare canvas.
 function classify(target, canvas) {
-    let insideAuthorContent = false;
+    let authorContent = null;
     for (let element = target; element && element !== canvas; element = element.parentElement) {
         if (!(element instanceof Element)) {
             break;
@@ -116,19 +115,27 @@ function classify(target, canvas) {
         const role = element.getAttribute("data-d12-role");
         if (role) {
             const entity = element.closest("[data-d12-entity]");
+            const entityId = entity === null ? null : entity.getAttribute("data-d12-entity");
+            if (authorContent === null || element.hasAttribute("data-d12-unaddressable")) {
+                return { role, entityId, part: element.getAttribute("data-d12-part"), native: false };
+            }
+
             return {
-                role: insideAuthorContent ? "author-content" : role,
-                entityId: entity === null ? null : entity.getAttribute("data-d12-entity"),
-                part: insideAuthorContent ? null : element.getAttribute("data-d12-part")
+                role: "author-content",
+                entityId,
+                part: null,
+                native: authorContent === "inferred"
             };
         }
 
-        if (element.hasAttribute("data-d12-author-content") || isNativelyInteractive(element)) {
-            insideAuthorContent = true;
+        if (authorContent === null && isNativelyInteractive(element)) {
+            authorContent = "inferred";
+        } else if (authorContent === null && element.hasAttribute("data-d12-author-content")) {
+            authorContent = "marked";
         }
     }
 
-    return { role: "canvas", entityId: null, part: null };
+    return { role: "canvas", entityId: null, part: null, native: false };
 }
 
 function hasLiveTextSelectionInside(element) {
@@ -202,6 +209,23 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         return count;
     };
 
+    const pressFor = (event, hit) => {
+        const point = containerPoint(event);
+        return {
+            pointerId: event.pointerId,
+            button: event.button,
+            buttons: event.buttons,
+            pointerType: event.pointerType,
+            role: hit.role,
+            entityId: hit.entityId,
+            part: hit.part,
+            pressCount: pressCountFor(event),
+            x: point.x,
+            y: point.y,
+            ...modifiersOf(event)
+        };
+    };
+
     const flushMove = () => {
         if (press === null) {
             return;
@@ -250,9 +274,24 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
 
         const hit = classifyPresses
             ? classify(event.target, canvas)
-            : { role: "canvas", entityId: null, part: null };
+            : { role: "canvas", entityId: null, part: null, native: false };
 
         if (event.button === PRIMARY_BUTTON && LEGACY_PRIMARY_ROLES.has(hit.role)) {
+            return;
+        }
+
+        // A primary press on author content belongs to the browser: nothing is captured or
+        // tracked, so its move and release never reach C#, and C# hears only the press itself.
+        // Where an author's marker rather than a control matched, the target cannot take focus,
+        // so the browser would hand focus up to the instance's tab stop and select it outright;
+        // that press is prevented and focuses the canvas instead.
+        if (event.button === PRIMARY_BUTTON && hit.role === "author-content") {
+            if (!hit.native) {
+                event.preventDefault();
+                canvas.focus({ preventScroll: true });
+            }
+
+            dotnetRef.invokeMethodAsync("OnPointerPressed", pressFor(event, hit));
             return;
         }
 
@@ -269,7 +308,6 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         canvas.setPointerCapture(event.pointerId);
         canvas.focus({ preventScroll: true });
 
-        const point = containerPoint(event);
         press = {
             pointerId: event.pointerId,
             button: event.button,
@@ -280,19 +318,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             frame: 0
         };
 
-        dotnetRef.invokeMethodAsync("OnPointerPressed", {
-            pointerId: event.pointerId,
-            button: event.button,
-            buttons: event.buttons,
-            pointerType: event.pointerType,
-            role: hit.role,
-            entityId: hit.entityId,
-            part: hit.part,
-            pressCount: pressCountFor(event),
-            x: point.x,
-            y: point.y,
-            ...modifiersOf(event)
-        });
+        dotnetRef.invokeMethodAsync("OnPointerPressed", pressFor(event, hit));
     };
 
     const handlePointerMove = (event) => {

@@ -1,3 +1,4 @@
+using AngleSharp.Dom;
 using Bunit;
 using D12Canvas.Pointer;
 
@@ -82,4 +83,101 @@ internal static class CanvasPointer
         (double X, double Y) to,
         bool shift = false
     ) => canvas.Drag(from, to, PointerPress.PrimaryButton, shift);
+
+    // A primary click on a rendered instance or LOD placeholder, as the listener reports it: the
+    // `instance` role and the entity the element carries. Synchronous, like bUnit's own Click().
+    public static void ClickOn(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement instanceElement,
+        bool shift = false,
+        int pressCount = 1
+    ) =>
+        canvas
+            .InvokeAsync(() =>
+            {
+                canvas.Instance.OnPointerPressed(
+                    PointerEvents.Press(
+                        HitRole.Instance,
+                        PointerPress.PrimaryButton,
+                        0,
+                        0,
+                        EntityOf(instanceElement),
+                        shift,
+                        pressCount
+                    )
+                );
+                canvas.Instance.OnPointerReleased(
+                    PointerEvents.Release(PointerPress.PrimaryButton, 0, 0)
+                );
+            })
+            .GetAwaiter()
+            .GetResult();
+
+    // A primary drag that starts on a rendered instance, from one container-relative point to
+    // another, released where it ends.
+    public static void DragOn(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement instanceElement,
+        (double X, double Y) from,
+        (double X, double Y) to,
+        bool shift = false
+    )
+    {
+        canvas.PressOn(instanceElement, from, shift);
+        canvas.MoveTo(to);
+        canvas.ReleaseAt(to);
+    }
+
+    public static void PressOn(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement element,
+        (double X, double Y) at,
+        bool shift = false,
+        string role = HitRole.Instance
+    ) =>
+        canvas
+            .InvokeAsync(
+                () =>
+                    canvas.Instance.OnPointerPressed(
+                        PointerEvents.Press(
+                            role,
+                            PointerPress.PrimaryButton,
+                            at.X,
+                            at.Y,
+                            role == HitRole.SelectionBounds ? null : EntityOf(element),
+                            shift
+                        )
+                    )
+            )
+            .GetAwaiter()
+            .GetResult();
+
+    public static void MoveTo(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        (double X, double Y) to
+    ) => canvas.Move(to.X, to.Y).GetAwaiter().GetResult();
+
+    public static void ReleaseAt(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        (double X, double Y) at
+    ) => canvas.Release(at.X, at.Y).GetAwaiter().GetResult();
+
+    // The multi-selection's box, pressed and dragged as the listener reports it: the
+    // `selection-bounds` role with no entity.
+    public static void DragSelectionBox(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        (double X, double Y) from,
+        (double X, double Y) to
+    )
+    {
+        canvas.PressOn(canvas.Find(".selection-bounding-box"), from, role: HitRole.SelectionBounds);
+        canvas.MoveTo(to);
+        canvas.ReleaseAt(to);
+    }
+
+    private static Guid EntityOf(IElement element) =>
+        Guid.Parse(
+            element.GetAttribute("data-d12-entity")
+                ?? throw new ArgumentException("The element carries no entity.", nameof(element))
+        );
 }

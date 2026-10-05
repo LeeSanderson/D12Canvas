@@ -5,7 +5,7 @@ namespace D12Canvas.History;
 // Backs arrow-key nudge - moves one or more instances by a board-space delta,
 // uniformly for a single instance, an ad-hoc multi-selection, or a Group's members (DiagramCanvas
 // always resolves the nudge target through ExpandedSelection, the same flattening
-// CommitGroupMove/RestackSelection/ApplyZIndexChange already rely on).
+// RestackSelection/ApplyZIndexChange already rely on).
 // Unlike ChangeBoundsCommand's fixed before/after, Extend grows this same command's accumulated
 // delta in place - DiagramCanvas calls it for every repeat keydown of a held arrow key, so one
 // press-to-release span becomes one history entry instead of one per repeat event.

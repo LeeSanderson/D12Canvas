@@ -53,6 +53,12 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public bool Focusable { get; set; } = true;
 
+    // False while this instance is a member of a group, where a press on the author's own content
+    // must reach the instance rather than the control, so the canvas's pointer listener classifies
+    // it as the instance. Rendered as a marker the listener reads.
+    [Parameter]
+    public bool Addressable { get; set; } = true;
+
     // Never rendered directly by ComponentContainer itself (ChildContent stays an
     // opaque RenderFragment) - carried purely so ShouldRender can detect an in-place Props edit at
     // otherwise-unchanged Bounds/selection, which none of its other compared fields would catch.
@@ -66,11 +72,6 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public bool IsMultiSelected { get; set; }
 
-    // Carries the click's shift-key state so DiagramCanvas can toggle this instance's
-    // membership in a multi-selection instead of always collapsing to single-select.
-    [Parameter]
-    public EventCallback<bool> OnSelect { get; set; }
-
     // Fired when this container's own root element receives DOM focus - native Tab/Shift+Tab
     // navigation lands here with no keyboard wiring of our own needed (see Focusable's tabindex),
     // so this is the sole entry point for the "focusing selects" half of focus-follows-selection.
@@ -78,14 +79,8 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public EventCallback OnFocus { get; set; }
 
-    // Fired once, on release, with the instance's final Bounds - a drag-move is one
-    // gesture (recorded once on gesture commit, never per intermediate frame), so
-    // Board only needs to hear about the end state, not every intermediate mousemove tick.
-    [Parameter]
-    public EventCallback<Bounds> OnMoved { get; set; }
-
-    // Same contract as OnMoved but for a handle-drag resize - fired once, on release,
-    // with the instance's final Bounds.
+    // Fired once, on release, with the instance's final Bounds after a handle-drag resize - a
+    // resize is one gesture, recorded once on commit and never per intermediate frame.
     [Parameter]
     public EventCallback<Bounds> OnResized { get; set; }
 
@@ -135,16 +130,6 @@ public partial class ComponentContainer : IAsyncDisposable
     private double _startWidth;
     private double _startHeight;
 
-    // A separate gesture from the _editMode-gated _isDragging/_isResizing pair above (legacy,
-    // predates the Board-backed canvas - still used standalone by ComponentContainerDemo.razor).
-    // This one triggers on a selected instance without needing edit mode at all, and its own
-    // state never interacts with the legacy fields - moving a selected instance shouldn't require
-    // first entering an editing mode.
-    private bool _isMoving;
-    private MouseEventArgs? _moveStart;
-    private double _moveStartX;
-    private double _moveStartY;
-
     // True for the span of a single mousedown - set synchronously in StartPortDrag
     // (before OnPortDragStart's async invocation, so it's already true by the time this same
     // mousedown bubbles up from the port) and consumed/cleared immediately in HandleMouseDown.
@@ -163,6 +148,7 @@ public partial class ComponentContainer : IAsyncDisposable
     private bool _lastRenderedIsSelected;
     private bool _lastRenderedIsMultiSelected;
     private bool _lastRenderedFocusable;
+    private bool _lastRenderedAddressable;
     private object? _lastRenderedProps;
     private int _lastRenderedZIndex;
 
@@ -205,6 +191,7 @@ public partial class ComponentContainer : IAsyncDisposable
             // this check the tabindex attribute wouldn't update until some unrelated parameter also
             // changed.
             || Focusable != _lastRenderedFocusable
+            || Addressable != _lastRenderedAddressable
             // An in-place Props edit (inline text editing, or any future
             // property-panel edit) at unchanged Bounds/selection would otherwise never reach
             // ChildContent - Props types are records, so this is a cheap structural comparison.
@@ -234,6 +221,7 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedIsSelected = IsSelected;
         _lastRenderedIsMultiSelected = IsMultiSelected;
         _lastRenderedFocusable = Focusable;
+        _lastRenderedAddressable = Addressable;
         _lastRenderedProps = Props;
         _lastRenderedCustomPortsCount = CustomPorts.Count;
         _lastRenderedZIndex = ZIndex;
@@ -250,23 +238,6 @@ public partial class ComponentContainer : IAsyncDisposable
         }
     }
 
-    // A shift-click's own selection-toggle result (DiagramCanvas.SelectComponent) must not be
-    // clobbered by a subsequent hard single-select from OnFocus - so only a plain click drives
-    // DOM focus explicitly here. A plain click on a GROUPED member still selects the whole group
-    // correctly (DiagramCanvas resolves that), but this container has no tabindex while grouped
-    // (Focusable is false), so focusElement is a harmless no-op there - a mouse click on a grouped
-    // member leaves DOM focus wherever it was, a narrow gap left open the same way a marquee's
-    // resulting multi-selection has no single element to focus either.
-    private async Task HandleClick(MouseEventArgs e)
-    {
-        await OnSelect.InvokeAsync(e.ShiftKey);
-
-        if (!e.ShiftKey && Focusable && _jsModule is not null)
-        {
-            await _jsModule.InvokeVoidAsync("focusElement", _containerRef);
-        }
-    }
-
     private Task HandleFocus() => OnFocus.InvokeAsync();
 
     private void HandleMouseDown(MouseEventArgs e)
@@ -278,18 +249,6 @@ public partial class ComponentContainer : IAsyncDisposable
         // that could land on a completely different instance - see HandleMouseMove/Up below).
         var wasPortDragging = _isPortDragging;
         _isPortDragging = false;
-
-        // Only armed when selected-and-not-editing, and only from the container's own body, not a
-        // resize handle or a port: a resize handle's mousedown already set _isResizing (same for
-        // a port's own mousedown and wasPortDragging) - each bubbles here afterwards, and the
-        // matching guard keeps this gesture from also engaging on top of it.
-        if (IsSelected && !_editMode && !_isResizing && !wasPortDragging)
-        {
-            _isMoving = true;
-            _moveStart = e;
-            _moveStartX = X;
-            _moveStartY = Y;
-        }
 
         if (!_editMode)
             return;
@@ -314,15 +273,6 @@ public partial class ComponentContainer : IAsyncDisposable
         if (ParentCanvas?.IsConnectingPort == true)
         {
             ParentCanvas.UpdatePortDrag(e.ClientX, e.ClientY);
-            return;
-        }
-
-        if (_isMoving && _moveStart != null)
-        {
-            var (deltaX, deltaY) = ScaledDelta(_moveStart, e);
-
-            X = _moveStartX + deltaX;
-            Y = _moveStartY + deltaY;
             return;
         }
 
@@ -378,24 +328,11 @@ public partial class ComponentContainer : IAsyncDisposable
             return;
         }
 
-        if (_isMoving)
-        {
-            _isMoving = false;
-            _moveStart = null;
-
-            // Skip the callback entirely for a plain click (mousedown+mouseup with no movement
-            // in between) on an already-selected instance - nothing actually moved.
-            if (X != _moveStartX || Y != _moveStartY)
-            {
-                OnMoved.InvokeAsync(new Bounds(X, Y, Width, Height));
-            }
-        }
-
         if (_isResizing)
         {
             _isResizing = false;
 
-            // Same no-op-on-no-movement guard as OnMoved above.
+            // Skip the callback entirely for a plain click on a handle - nothing actually moved.
             if (X != _startX || Y != _startY || Width != _startWidth || Height != _startHeight)
             {
                 OnResized.InvokeAsync(new Bounds(X, Y, Width, Height));
