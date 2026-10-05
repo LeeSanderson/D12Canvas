@@ -1,7 +1,7 @@
 # Chord survival on macOS and in Firefox
 
 Type: task
-Status: parked
+Status: resolved
 Blocked by:
 
 ## Question
@@ -39,3 +39,14 @@ These rows matter for ADR 0030's `Ctrl+Arrow` macOS doubt. Record the results on
 So the `Ctrl+Arrow` and `Ctrl+Shift+Arrow` bindings hold in Firefox on Windows. But Firefox has a real default action for both chords where Chrome has none, so `preventDefault` matters here. Recorded on ADRs 0026, 0030 and 0060 by addendum.
 
 **Parked again 2026-10-05:** only the macOS rows are left: Safari, Chrome and Firefox, with `Ctrl` and `Cmd`, plain and with `Shift`. Set back to `open` when someone has a Mac.
+
+## Answer
+
+**Windows is measured in all three browsers. macOS is assumed, not measured: we treat it as behaving like Windows.** Decided 2026-10-05 by the dev, because no Mac is available to this effort and none is expected.
+
+- **Windows, measured.** Chrome and Edge (tickets 41 and 63) and Firefox 157 (above) deliver all four `Ctrl+Arrow` and all four `Ctrl+Shift+Arrow` keydowns to the page, and `preventDefault` takes in all three. Firefox alone has a default action for both chords, which is why ADR 0026's addendum makes a no-op row still call `preventDefault`.
+- **macOS, assumed.** `Ctrl/Cmd+Arrow` and `Ctrl/Cmd+Shift+Arrow` are assumed to reach the page in Safari, Chrome and Firefox and to be suppressible by `preventDefault`, as on Windows. The bindings ship as they are, with no platform split.
+- **What the assumption accepts.** ADRs 0026 and 0030 already name macOS defaults that contradict it: `Cmd+Left` and `Cmd+Right` are back and forward in Chrome and Safari, and with Mission Control shortcuts on, `Ctrl+Left`, `Ctrl+Right` and `Ctrl+Up` go to the OS before the browser. If those hold, quick-create and directional focus are partly dead on a Mac, and `Cmd+Left/Right` may navigate away from the page. Nobody has checked the `Shift` variants or the vertical `Cmd` pair.
+- **When to revisit.** The first report from a Mac user, or the first time a Mac is available. The [chord probe page](../assets/41-key-probe.html) and this ticket's checklist still apply as written. A failure reopens ADRs 0030 and 0060 on the binding only. The declined platform split in ADR 0030 is the obvious next step.
+
+Recorded on ADRs 0026, 0030 and 0060 by addendum.

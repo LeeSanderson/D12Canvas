@@ -84,6 +84,8 @@ A platform split was considered and declined for now. ADR 0024 established that 
 
 **Addendum (Firefox on Windows, measured by that ticket):** in Firefox 157 on Windows all four `Ctrl`+`Arrow` chords reach the page and `preventDefault` takes. The binding holds there too. Without `preventDefault`, Firefox scrolls the page: `Left` and `Right` by a step, `Down` to the bottom. So `preventDefault` here is required in Firefox, not a formality as in Chrome. ADR 0026's addendum records what that means for a no-op row. The macOS doubt and the declined platform split still stand.
 
+**Addendum (macOS, assumed when that ticket closed):** no Mac was available, so macOS is assumed to behave like Windows and the chord ships as one binding on every platform. The doubt above is accepted rather than resolved. If the macOS defaults it names win, `Ctrl`+`Left`/`Right`/`Up` go to Mission Control and `Cmd`+`Left`/`Right` navigate back and forward, which leaves the page. The declined platform split is the first thing to reach for when a Mac user reports either.
+
 ## Three cases need no rule
 
 **Only a selected instance offers it.** ADR 0028 renders ports on a single selection and on the one component under the pointer during a live connector drag, and ADR 0027's consequence is that an unrendered port is not hit-testable. So a press on an unselected instance's border classifies as `instance` and becomes `MoveSelection`, and `Quick create` is unreachable there. That is Miro's and FigJam's documented behaviour, both of which describe the dot as appearing on a **selected** object, arrived at here by geometry rather than by a clause.

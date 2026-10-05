@@ -25,6 +25,8 @@ It is unmeasured everywhere. Ticket 41 measured `Ctrl+Arrow`, not its `Shift` va
   **Addendum (Firefox on Windows, measured by [Chord survival on macOS and in Firefox](../../.scratch/canvas-interaction-quality/issues/56-chord-survival-macos-firefox.md)):** Firefox 157 does not reserve it either. All four arrows reach the page and `preventDefault` takes. Without `preventDefault`, Firefox starts a text selection and scrolls the page to show it. So the three no-op guards below still call `preventDefault`, as ADR 0026's addendum requires.
 - **macOS** ships as a documented doubt, on the same footing as `Ctrl+Arrow`. The `Ctrl+Shift` and `Cmd+Shift` rows join [Chord survival on macOS and in Firefox](../../.scratch/canvas-interaction-quality/issues/56-chord-survival-macos-firefox.md).
 
+  **Addendum (assumed when that ticket closed):** no Mac was available, so macOS is assumed to behave like Windows, and the binding ships unchanged there. Nobody has measured `Ctrl+Shift+Arrow` or `Cmd+Shift+Arrow` on a Mac. A Mac report that either is reserved reopens this decision on the key alone, as the Windows bullet above already says.
+
 ## What it does
 
 **It is a focus move.** It lands focus on the target stop's element the way `focusTabStopAt` does, and the stop's own `@onfocus` decides the rest. Under the weld it selects the target. Inside `Additive traversal` it moves focus only and keeps the mode. It is not a command handoff in ADR 0036's sense, because the user picked the target, so it does not end the mode.

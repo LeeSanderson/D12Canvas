@@ -164,6 +164,8 @@ A written spec (PRD) for a full interaction-quality pass on the D12Canvas canvas
 
 - [When `contextmenu` fires, and at what](issues/54-contextmenu-timing-probe.md) — **on Windows, `contextmenu` follows `pointerup` and targets the release element in Chromium and Firefox**, so ADR 0047's verdict at press is needed. The keyboard result goes the other way: preventing the menu keydown stops `contextmenu` only for `Shift+F10` in Chromium. Firefox still fires it for `Shift+F10`, and both engines fire it on keyup for the ContextMenu key. So ADR 0026's binding never owns the menu, and one keypress makes two menu requests. Addenda on ADRs 0047 and 0026. WebKit's keyboard rows are unmeasured. Surfaced [One menu per keyboard menu request](issues/64-one-menu-per-keyboard-menu-request.md).
 
+- [Chord survival on macOS and in Firefox](issues/56-chord-survival-macos-firefox.md) — **Firefox on Windows passes, and macOS is assumed to match Windows without being measured.** Firefox 157 delivers all eight `Ctrl+Arrow` and `Ctrl+Shift+Arrow` keydowns and `preventDefault` takes. Unlike Chrome it has a default for both chords (scroll, text selection), so a row that is a no-op in its current state still calls `preventDefault`. No Mac was available, so both bindings ship unchanged on macOS. This knowingly accepts the Mission Control and back/forward defaults ADRs 0026 and 0030 name. Addenda on ADRs 0026, 0030 and 0060.
+
 ## Not yet specified
 
 - **Implementation tickets for every decision below.** This map follows `d12canvas-next`'s shape: design tickets resolve the fog and seed ADRs, a `spec.md` is written, then implementation tickets land in this same `issues/` directory. None can be phrased until the decisions they implement exist.
