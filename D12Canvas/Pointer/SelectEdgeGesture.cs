@@ -7,6 +7,8 @@ namespace D12Canvas.Pointer;
 internal sealed class SelectEdgeGesture(PointerPress press, IGestureContext context)
     : PointerGesture(press, context)
 {
+    protected override bool HasActivePhase => false;
+
     protected override void OnMove(PointerMove move) { }
 
     protected override void OnRelease(PointerRelease release) { }

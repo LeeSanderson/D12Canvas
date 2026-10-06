@@ -158,7 +158,7 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
 
         for (var i = 0; i < 9; i++) // scale 1.0 -> 0.1, exactly layer 1 dominant (200-unit spacing)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = 100 });
+            canvas.ZoomOut();
         }
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));

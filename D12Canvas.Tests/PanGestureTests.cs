@@ -4,8 +4,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Pan is press-anchored in screen pixels, so what the viewport shows is panOrigin plus the whole
-// distance from the press, never an accumulation of per-tick deltas. A secondary release that
+// Pan holds the board point under the press under the pointer, so what the viewport shows depends
+// on the whole distance from the press, never an accumulation of per-tick deltas, and a viewport
+// change under the press re-anchors to the point then under the pointer. A secondary release that
 // never crossed the threshold is the context menu, resolving the selection at that moment; a
 // middle click is nothing.
 public class PanGestureTests
@@ -205,6 +206,55 @@ public class PanGestureTests
         pan.Release(PointerEvents.Release(PointerPress.SecondaryButton, 400, 400));
 
         Assert.Equal(60, context.ZoomPan.PanX);
+        Assert.Empty(context.ContextMenuOpenings);
+    }
+
+    [Fact]
+    public void AViewportChangeUnderAHeldPanReanchorsSoTheTwoMovementsAdd()
+    {
+        var context = new FakeGestureContext(new Board());
+        var pan = new PanGesture(
+            PointerEvents.Press(HitRole.Canvas, PointerPress.MiddleButton, 200, 200),
+            context
+        );
+        pan.Move(PointerEvents.Move(250, 200));
+
+        context.ZoomPan.Pan(-30, 0);
+        pan.ViewportMoved(PointerEvents.Move(250, 200));
+        pan.Move(PointerEvents.Move(260, 200));
+
+        Assert.Equal(30, context.ZoomPan.PanX);
+    }
+
+    [Fact]
+    public void AZoomBetweenTicksKeepsTheGrabbedBoardPointUnderThePointer()
+    {
+        var context = new FakeGestureContext(new Board());
+        var pan = new PanGesture(
+            PointerEvents.Press(HitRole.Canvas, PointerPress.MiddleButton, 200, 200),
+            context
+        );
+
+        context.ZoomPan.Scale = 2;
+        pan.Move(PointerEvents.Move(260, 180));
+
+        Assert.Equal((200, 200), context.ToBoardPoint(260, 180));
+    }
+
+    [Fact]
+    public void AViewportChangePromotesAPointingSecondaryPressSoItsReleaseOpensNoMenu()
+    {
+        var context = new FakeGestureContext(new Board());
+        var pan = new PanGesture(
+            PointerEvents.Press(HitRole.Canvas, PointerPress.SecondaryButton, 300, 240),
+            context
+        );
+
+        var promoted = pan.ViewportMoved(PointerEvents.Move(300, 240));
+        pan.Release(PointerEvents.Release(PointerPress.SecondaryButton, 300, 240));
+
+        Assert.True(promoted);
+        Assert.Equal(GesturePhase.Active, pan.Phase);
         Assert.Empty(context.ContextMenuOpenings);
     }
 }

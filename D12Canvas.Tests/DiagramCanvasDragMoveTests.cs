@@ -83,7 +83,7 @@ public class DiagramCanvasDragMoveTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100);
         var canvas = RenderCanvas(board);
 
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 });
+        canvas.ZoomIn();
         canvas.DragOn(Container(canvas, instance.Id), (300, 200), (344, 222));
 
         // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the

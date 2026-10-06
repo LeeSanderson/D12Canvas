@@ -446,6 +446,13 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
     window.addEventListener("blur", handleWindowBlur);
 
     return {
+        // C# promotes a press still under the threshold when the viewport moves beneath it, and
+        // from then on every move is forwarded as for a press that crossed it.
+        promote: () => {
+            if (press !== null) {
+                press.active = true;
+            }
+        },
         dispose: () => {
             endPress();
             canvas.removeEventListener("pointerdown", handlePointerDown);
@@ -455,6 +462,109 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             canvas.removeEventListener("lostpointercapture", handleLostPointerCapture);
             canvas.removeEventListener("contextmenu", handleContextMenu);
             window.removeEventListener("blur", handleWindowBlur);
+        }
+    };
+}
+
+// The canvas captures every wheel event over it, so the host page never scrolls or zooms under
+// it. The event's meaning is C#'s; what is decided here is only what C# cannot wait for or has no
+// clock to measure. A wheel gesture is a run of events with no idle gap of WHEEL_GESTURE_IDLE_MS,
+// ended early where the engine marks a momentum tail, and its granularity is read once from the
+// run's first event: a mouse notch arrives in whole pixels or in lines, a trackpad in fractions.
+// Deltas are summed per animation frame, which loses nothing because zoom is multiplicative in
+// deltaY and pan is additive.
+const WHEEL_GESTURE_IDLE_MS = 300;
+const WHEEL_LINE_PX = 100 / 3;
+const DOM_DELTA_LINE = 1;
+const DOM_DELTA_PAGE = 2;
+
+function pixelDeltas(event, container) {
+    const unit =
+        event.deltaMode === DOM_DELTA_LINE
+            ? WHEEL_LINE_PX
+            : event.deltaMode === DOM_DELTA_PAGE
+              ? container.clientHeight
+              : 1;
+    return { deltaX: event.deltaX * unit, deltaY: event.deltaY * unit };
+}
+
+function isCoarse(event) {
+    return (
+        event.deltaMode !== 0 || (Number.isInteger(event.deltaX) && Number.isInteger(event.deltaY))
+    );
+}
+
+export async function addWheelListener(container, dotnetRef) {
+    let run = null;
+    let pending = null;
+    let frame = 0;
+
+    const flush = () => {
+        frame = 0;
+        const input = pending;
+        pending = null;
+        if (input !== null) {
+            dotnetRef.invokeMethodAsync("OnWheel", input);
+        }
+    };
+
+    const sameFrame = (input, event, coarse) =>
+        input.coarse === coarse &&
+        input.shiftKey === event.shiftKey &&
+        input.ctrlKey === event.ctrlKey &&
+        input.altKey === event.altKey &&
+        input.metaKey === event.metaKey;
+
+    const handleWheel = (event) => {
+        event.preventDefault();
+
+        const now = performance.now();
+        const momentum = event.momentum === true;
+        if (
+            run === null ||
+            now - run.lastTime > WHEEL_GESTURE_IDLE_MS ||
+            (run.momentum && !momentum)
+        ) {
+            run = { coarse: isCoarse(event), lastTime: now, momentum };
+        }
+        run.lastTime = now;
+        run.momentum = momentum;
+
+        const rect = container.getBoundingClientRect();
+        const { deltaX, deltaY } = pixelDeltas(event, container);
+        if (pending !== null && !sameFrame(pending, event, run.coarse)) {
+            flush();
+        }
+
+        if (pending === null) {
+            pending = {
+                x: 0,
+                y: 0,
+                deltaX: 0,
+                deltaY: 0,
+                coarse: run.coarse,
+                ...modifiersOf(event)
+            };
+        }
+
+        pending.x = event.clientX - rect.left;
+        pending.y = event.clientY - rect.top;
+        pending.deltaX += deltaX;
+        pending.deltaY += deltaY;
+
+        if (!frame) {
+            frame = requestAnimationFrame(flush);
+        }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
+    return {
+        dispose: () => {
+            if (frame) {
+                cancelAnimationFrame(frame);
+            }
+            container.removeEventListener("wheel", handleWheel, { passive: false });
         }
     };
 }

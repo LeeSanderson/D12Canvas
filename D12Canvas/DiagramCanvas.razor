@@ -21,7 +21,6 @@
          @ref="CanvasElement"
          tabindex="-1"
          @onfocus="@HandleCanvasFocus"
-         @onwheel="@HandleMouseWheel"
          @ondragenter="@HandleDragEnterOrOver" @ondragenter:preventDefault="true"
          @ondragover="@HandleDragEnterOrOver" @ondragover:preventDefault="true"
          @ondragleave="@HandleDragLeave"
@@ -493,7 +492,6 @@
         width: 3000px;
         height: 3000px;
         transform-origin: top left;
-        transition: transform 0.1s ease-out;
     }
 
     .grid-backdrop {

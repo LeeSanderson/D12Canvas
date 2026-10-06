@@ -172,7 +172,7 @@ public class DiagramCanvasAltArrowResizeTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 100, 100, 200, 150);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
+        canvas.ZoomIn(); // zooms to scale 1.1
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnAltArrowKeyPressed("ArrowRight", false));

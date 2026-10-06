@@ -38,7 +38,7 @@
     @if (_board is not null)
     {
         <div class="board-editor-body">
-            <DiagramCanvas @ref="_canvas" Board="_board" />
+            <DiagramCanvas @ref="_canvas" Board="_board" WheelDeviceProfile="_wheelProfile" />
             <div class="board-editor-overlay board-editor-palette">
                 <Palette Canvas="_canvas" />
             </div>
@@ -48,6 +48,16 @@
                     <PropertyPanel Canvas="_canvas" />
                 </div>
             }
+            <div class="board-editor-overlay board-editor-settings">
+                <label>
+                    Wheel
+                    <select @bind="_wheelProfile">
+                        <option value="@WheelDeviceProfile.Auto">Auto</option>
+                        <option value="@WheelDeviceProfile.Mouse">Mouse</option>
+                        <option value="@WheelDeviceProfile.Trackpad">Trackpad</option>
+                    </select>
+                </label>
+            </div>
         </div>
     }
     else if (_notFound)
@@ -129,6 +139,22 @@
         border-radius: 6px;
     }
 
+    .board-editor-settings {
+        top: auto;
+        bottom: 12px;
+        left: 12px;
+        padding: 6px 10px;
+        background: var(--app-surface);
+        border: 1px solid var(--app-border);
+        border-radius: var(--app-radius-sm);
+        color: var(--app-muted-text);
+        font-size: 0.9rem;
+    }
+
+    .board-editor-settings select {
+        margin-left: 6px;
+    }
+
     .board-editor-properties {
         right: 12px;
         width: 260px;
@@ -154,6 +180,7 @@
     private bool _isDirty;
     private bool _hasSelection;
     private bool _autosaveEnabled;
+    private WheelDeviceProfile _wheelProfile = WheelDeviceProfile.Auto;
     private CancellationTokenSource? _autosaveCts;
     private bool _isEditingName;
     private string _nameDraft = "";

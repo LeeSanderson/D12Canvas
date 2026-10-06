@@ -309,5 +309,71 @@ namespace D12Canvas.Tests
             Assert.True(double.IsFinite(viewport.Width));
             Assert.True(double.IsFinite(viewport.Height));
         }
+
+        private (double X, double Y) BoardPointUnder(double x, double y) =>
+            ((x - _tracker.PanX) / _tracker.Scale, (y - _tracker.PanY) / _tracker.Scale);
+
+        [Fact]
+        public void ZoomingAboutAPointKeepsTheBoardPointUnderItInPlace()
+        {
+            _tracker.SetPanPosition(-40, 25);
+            var before = BoardPointUnder(70, 30);
+
+            _tracker.ZoomAbout(70, 30, 1.5);
+
+            var after = BoardPointUnder(70, 30);
+            Assert.Equal(before.X, after.X, precision: 10);
+            Assert.Equal(before.Y, after.Y, precision: 10);
+        }
+
+        [Fact]
+        public void ZoomingAboutAPointMultipliesTheScale()
+        {
+            _tracker.Scale = 2.0;
+
+            _tracker.ZoomAbout(10, 10, 1.5);
+
+            Assert.Equal(3.0, _tracker.Scale, precision: 10);
+        }
+
+        [Fact]
+        public void ZoomingAboutAPointRaisesOneChange()
+        {
+            var changes = 0;
+            _tracker.Changed += (_, _) => changes++;
+
+            _tracker.ZoomAbout(70, 30, 1.5);
+
+            Assert.Equal(1, changes);
+        }
+
+        [Fact]
+        public void ZoomingAboutAPointAtTheLimitLeavesThePanAlone()
+        {
+            _tracker.SetZoomLimits(null, 1.0);
+            _tracker.SetPanPosition(-40, 25);
+            _eventTriggered = false;
+
+            var changed = _tracker.ZoomAbout(70, 30, 1.5);
+
+            Assert.False(changed);
+            Assert.False(_eventTriggered);
+            Assert.Equal(-40, _tracker.PanX);
+            Assert.Equal(25, _tracker.PanY);
+        }
+
+        [Fact]
+        public void ZoomingAboutAPointPastTheLimitStillKeepsThePointUnderIt()
+        {
+            _tracker.SetZoomLimits(null, 1.2);
+            var before = BoardPointUnder(70, 30);
+
+            _tracker.ZoomAbout(70, 30, 3.0);
+
+            var after = BoardPointUnder(70, 30);
+            Assert.Equal(1.2, _tracker.Scale, precision: 10);
+            Assert.Equal(before.X, after.X, precision: 10);
+            Assert.Equal(before.Y, after.Y, precision: 10);
+        }
     }
 }

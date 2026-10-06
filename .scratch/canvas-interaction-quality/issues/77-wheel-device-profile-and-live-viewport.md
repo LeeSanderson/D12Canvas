@@ -8,7 +8,7 @@
 
 **Blocked by:** 74 (MoveSelection, the gesture preview and live geometry)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] With `Mouse`, a wheel notch zooms about the pointer multiplicatively and Shift+wheel pans horizontally; with `Trackpad`, a plain wheel pans with no easing and Ctrl+wheel zooms
 - [ ] `Auto` holds one classification for a run and re-classifies after the idle boundary

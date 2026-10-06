@@ -263,7 +263,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 });
+        canvas.ZoomIn();
 
         Assert.Contains("scale(1.1)", canvas.Find(".canvas-content").GetAttribute("style"));
 

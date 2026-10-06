@@ -90,7 +90,7 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
+        canvas.ZoomIn(); // zooms to scale 1.1
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
@@ -107,7 +107,7 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = 100 }); // zooms to scale 0.9
+        canvas.ZoomOut(); // zooms to scale 0.9
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));

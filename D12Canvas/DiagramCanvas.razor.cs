@@ -59,6 +59,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Parameter]
     public bool EnableSnapToGridShortcut { get; set; } = true;
 
+    // Decides what a plain wheel means, whether Shift binds and whether the wheel's transform
+    // eases. The library renders no control for it and remembers nothing; that is the host's.
+    [Parameter]
+    public WheelDeviceProfile WheelDeviceProfile { get; set; } = WheelDeviceProfile.Auto;
+
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
@@ -179,6 +184,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // put it back. The marquee band is drawn from its own field, and every other piece of
     // in-flight geometry is in the gesture preview, read through live geometry.
     private PointerGesture? _activeGesture;
+    private PointerMove? _lastPointer;
     private SelectionSnapshot? _pressSelection;
     private Bounds? _marqueeBounds;
     private Board? _previousBoard;
@@ -226,6 +232,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     private DotNetObjectReference<DiagramCanvas>? _dotNetObjectRef;
     private List<IJSObjectReference> _cleanupHandles = new List<IJSObjectReference>();
     private IJSObjectReference? _jsModule;
+    private IJSObjectReference? _pointerListener;
+
+    // How long the content's transform eases toward the viewport's last write: the wheel device's
+    // ambient duration when a wheel made that write, and nothing for any other input.
+    private TimeSpan _ambientTransition = TimeSpan.Zero;
+    private bool _applyingWheel;
+    private (double Scale, double PanX, double PanY) _lastTransform = (1, 0, 0);
 
     // Set by OnGroupPressed - the new group's own tab stop doesn't exist in the DOM until the
     // render its grouping triggers actually commits, so the focus call has to wait for
@@ -297,7 +310,7 @@ public partial class DiagramCanvas : IAsyncDisposable
                 _dotNetObjectRef
             );
 
-            var pointerCleanup = await _jsModule.InvokeAsync<IJSObjectReference>(
+            _pointerListener = await _jsModule.InvokeAsync<IJSObjectReference>(
                 "addPointerListener",
                 CanvasElement,
                 ContainerElement,
@@ -305,9 +318,16 @@ public partial class DiagramCanvas : IAsyncDisposable
                 new { classify = true }
             );
 
+            var wheelCleanup = await _jsModule.InvokeAsync<IJSObjectReference>(
+                "addWheelListener",
+                ContainerElement,
+                _dotNetObjectRef
+            );
+
             _cleanupHandles.Add(resizeCleanup);
             _cleanupHandles.Add(keyboardCleanup);
-            _cleanupHandles.Add(pointerCleanup);
+            _cleanupHandles.Add(_pointerListener);
+            _cleanupHandles.Add(wheelCleanup);
 
             StateHasChanged();
         }
@@ -376,6 +396,16 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (gesture.HoldsPress)
         {
             _activeGesture = gesture;
+            _lastPointer = new PointerMove(
+                press.PointerId,
+                press.X,
+                press.Y,
+                press.Buttons,
+                press.ShiftKey,
+                press.CtrlKey,
+                press.AltKey,
+                press.MetaKey
+            );
             _pressSelection = snapshot;
             _history.Lock();
         }
@@ -391,8 +421,50 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
+        _lastPointer = move;
         _activeGesture.Move(move);
         StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnWheel(WheelInput input)
+    {
+        var device = WheelMapping.DeviceFor(input, WheelDeviceProfile);
+        _applyingWheel = true;
+        try
+        {
+            _ambientTransition = WheelMapping.AmbientTransitionFor(device);
+            var changed = WheelMapping.Map(input, device) switch
+            {
+                WheelZoom zoom => _zoomPanTracker.ZoomAbout(zoom.X, zoom.Y, zoom.Factor),
+                WheelPan pan => _zoomPanTracker.Pan(pan.DeltaX, pan.DeltaY),
+                _ => false,
+            };
+            if (changed)
+            {
+                StateHasChanged();
+            }
+        }
+        finally
+        {
+            _applyingWheel = false;
+        }
+    }
+
+    // A live gesture keeps what the pointer holds under the pointer: it runs again from the
+    // pointer's last position, and a press the change promoted out of pointing starts having its
+    // moves forwarded by the listener.
+    private void RunGestureUnderMovedViewport()
+    {
+        if (
+            _activeGesture is { } gesture
+            && _lastPointer is { } pointer
+            && gesture.ViewportMoved(pointer)
+            && _pointerListener is not null
+        )
+        {
+            _ = _pointerListener.InvokeVoidAsync("promote").AsTask();
+        }
     }
 
     // History unlocks before the gesture acts on its release, so the release is the one write the
@@ -462,6 +534,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void EndPress()
     {
         _activeGesture = null;
+        _lastPointer = null;
         _pressSelection = null;
         _marqueeBounds = null;
         _preview.Clear();
@@ -1843,7 +1916,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void HandleDragLeave(DragEventArgs e) => _isDragOverBoard = false;
 
     private string ContentStyle =>
-        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale}); --d12-scale: {_zoomPanTracker.Scale};";
+        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale}); --d12-scale: {_zoomPanTracker.Scale};{AmbientTransitionStyle}";
+
+    private string AmbientTransitionStyle =>
+        _ambientTransition > TimeSpan.Zero
+            ? $" transition: transform {_ambientTransition.TotalMilliseconds}ms ease-out;"
+            : "";
 
     // board units - layer 0's spacing, and (at scale 1.0) also its on-screen px spacing, matching
     // the legacy fixed grid's look at the default zoom level.
@@ -2230,18 +2308,20 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    private void HandleMouseWheel(WheelEventArgs e)
-    {
-        var zoomIn = e.DeltaY < 0;
-        var zoomed = _zoomPanTracker.Zoom(zoomIn);
-        if (zoomed)
-        {
-            StateHasChanged();
-        }
-    }
-
     private void OnZoomPanChanged(object? sender, ZoomPanChangedEventArgs e)
     {
+        if (!_applyingWheel)
+        {
+            _ambientTransition = TimeSpan.Zero;
+        }
+
+        var transform = (_zoomPanTracker.Scale, _zoomPanTracker.PanX, _zoomPanTracker.PanY);
+        if (transform != _lastTransform)
+        {
+            _lastTransform = transform;
+            RunGestureUnderMovedViewport();
+        }
+
         OnZoomOrPanChanged.InvokeAsync(e);
         ZoomOrPanChanged?.Invoke(this, e);
     }

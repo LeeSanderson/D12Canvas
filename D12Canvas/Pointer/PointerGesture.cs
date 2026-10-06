@@ -1,9 +1,10 @@
 namespace D12Canvas.Pointer;
 
 // One owner per press. Identity never changes once chosen; only the phase does: pointing until the
-// first move the listener forwards (which means the drag threshold was crossed), active after,
-// cancelled once Escape or an interruption ended its effects. Cancel itself is canvas-level and
-// has no per-gesture step, so there is no method for it here.
+// first move the listener forwards (which means the drag threshold was crossed) or the first
+// viewport change under the press, active after, cancelled once Escape or an interruption ended its
+// effects. Cancel itself is canvas-level and has no per-gesture step, so there is no method for it
+// here.
 internal abstract class PointerGesture
 {
     protected PointerGesture(PointerPress press, IGestureContext context)
@@ -37,6 +38,28 @@ internal abstract class PointerGesture
         Phase = GesturePhase.Active;
         OnMove(move);
     }
+
+    // False for a gesture whose press ends in a click or not at all, which a viewport change
+    // neither promotes nor re-runs.
+    protected virtual bool HasActivePhase => true;
+
+    // The viewport moved under the press, with the pointer still where it last was. A press still
+    // pointing is promoted, since what it holds would otherwise slide away from the pointer, and
+    // the gesture runs again from the pointer's last position. Returns whether this promoted it.
+    public bool ViewportMoved(PointerMove pointer)
+    {
+        if (Phase == GesturePhase.Cancelled || !HasActivePhase)
+        {
+            return false;
+        }
+
+        var promoted = Phase == GesturePhase.Pointing;
+        Phase = GesturePhase.Active;
+        OnViewportMoved(pointer);
+        return promoted;
+    }
+
+    protected virtual void OnViewportMoved(PointerMove pointer) => OnMove(pointer);
 
     // Release from pointing is the click outcome; release from active commits. A cancelled
     // gesture's release does nothing.

@@ -188,7 +188,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 210, 210);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
+        canvas.ZoomIn(); // zooms to scale 1.1
 
         // At scale 1.1, this 220px screen-space drag reaches only ~200 board units - short of the
         // instance's (210,210) origin. If the conversion ignored zoom (treating screen pixels as

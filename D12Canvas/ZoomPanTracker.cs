@@ -95,13 +95,34 @@ public class ZoomPanTracker
 
     public bool ZoomOut() => SetScale(_scale - 0.1);
 
+    // Multiplies the scale by factor, clamped to the zoom limits, and moves the pan so the board
+    // point under the container point (x, y) stays under it. One change is raised for both.
+    public bool ZoomAbout(double x, double y, double factor)
+    {
+        var newScale = Clamped(_scale * factor);
+        if (newScale == _scale)
+        {
+            return false;
+        }
+
+        var boardX = (x - _panX) / _scale;
+        var boardY = (y - _panY) / _scale;
+        _scale = newScale;
+        _panX = x - boardX * newScale;
+        _panY = y - boardY * newScale;
+        OnChanged();
+        return true;
+    }
+
+    private double Clamped(double scale)
+    {
+        var clamped = Math.Max(_minZoom ?? MinPositiveScale, scale);
+        return _maxZoom is { } maxZoom ? Math.Min(maxZoom, clamped) : clamped;
+    }
+
     private bool SetScale(double newScale)
     {
-        var clamped = Math.Max(_minZoom ?? MinPositiveScale, newScale);
-        if (_maxZoom is { } maxZoom)
-        {
-            clamped = Math.Min(maxZoom, clamped);
-        }
+        var clamped = Clamped(newScale);
 
         if (clamped != _scale)
         {

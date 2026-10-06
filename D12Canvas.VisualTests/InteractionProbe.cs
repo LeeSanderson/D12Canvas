@@ -81,6 +81,9 @@ public abstract class InteractionProbe : IAsyncLifetime
 
     protected IPage Page { get; private set; } = null!;
 
+    // Appended to the probe page's path, for a probe that needs the canvas configured otherwise.
+    protected virtual string ProbePageQuery => "";
+
     protected ConsoleErrorTrap ConsoleErrors { get; } = new();
 
     public async ValueTask InitializeAsync()
@@ -95,7 +98,7 @@ public abstract class InteractionProbe : IAsyncLifetime
         await _context.AddInitScriptAsync(InteropRecorderScript);
         Page = await _context.NewPageAsync();
         ConsoleErrors.Attach(Page);
-        await Page.GotoAsync(ProbePagePath);
+        await Page.GotoAsync(ProbePagePath + ProbePageQuery);
         await Expect(Page.Locator(".component-container")).ToHaveCountAsync(4);
         await SettleAsync();
         await ClearCallsAsync();

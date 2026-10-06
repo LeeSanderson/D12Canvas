@@ -21,7 +21,7 @@ public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
     {
         for (var i = 0; i < times; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 });
+            canvas.ZoomIn();
         }
     }
 
@@ -29,7 +29,7 @@ public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
     {
         for (var i = 0; i < times; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = 100 });
+            canvas.ZoomOut();
         }
     }
 

@@ -188,7 +188,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var second = AddInstance(board, 300, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
+        canvas.ZoomIn(); // zooms to scale 1.1
         SelectBoth(canvas);
 
         canvas.PressOn(
@@ -286,7 +286,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var second = AddInstance(board, 100, 0, 100, 50);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
+        canvas.ZoomIn(); // zooms to scale 1.1
         SelectBoth(canvas);
 
         canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (344, 222));

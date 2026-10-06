@@ -6,8 +6,8 @@ using Xunit;
 namespace D12Canvas.Tests;
 
 // Board extent and zoom range are unbounded by default - a host opts into a ceiling and/or floor
-// via MinZoom/MaxZoom, which the canvas honours through the same mouse-wheel path every other
-// zoom test already drives.
+// via MinZoom/MaxZoom, which the canvas honours through the keyboard zoom path every other zoom
+// test drives.
 public class DiagramCanvasZoomLimitsTests : ComponentTestBase
 {
     public DiagramCanvasZoomLimitsTests()
@@ -20,7 +20,7 @@ public class DiagramCanvasZoomLimitsTests : ComponentTestBase
     {
         for (var i = 0; i < times; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 });
+            canvas.ZoomIn();
         }
     }
 
@@ -28,7 +28,7 @@ public class DiagramCanvasZoomLimitsTests : ComponentTestBase
     {
         for (var i = 0; i < times; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = 100 });
+            canvas.ZoomOut();
         }
     }
 

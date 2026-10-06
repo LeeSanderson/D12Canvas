@@ -93,7 +93,7 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
         var board = new Board();
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
+        canvas.ZoomIn(); // zooms to scale 1.1
 
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });

@@ -1,28 +1,30 @@
 namespace D12Canvas.Pointer;
 
-// The secondary and middle buttons pan whatever they land on. The pan is press-anchored,
-// panOrigin + (current - press) in screen pixels, so a dropped frame costs nothing and the
-// viewport never needs an anchor reset. A secondary release that never crossed the threshold is
-// the context menu: it resolves the selection at that moment, so a right-drag pan never wipes
-// the selection as a side effect, and opens the menu at the press point. A middle click does
-// nothing. The viewport is never restored on cancel.
+// The secondary and middle buttons pan whatever they land on. The pan holds the board point that
+// was under the press under the pointer, so a dropped frame costs nothing and a wheel zoom about
+// the pointer composes with it untouched. Any other viewport change re-anchors to the board point
+// now under the pointer, so the viewport's movement and the hand's add up. A secondary release that
+// never crossed the threshold is the context menu: it resolves the selection at that moment, so a
+// right-drag pan never wipes the selection as a side effect, and opens the menu at the press point.
+// A middle click does nothing. The viewport is never restored on cancel.
 internal sealed class PanGesture : PointerGesture
 {
-    private readonly double _panXAtPress;
-    private readonly double _panYAtPress;
+    private (double X, double Y) _grabbed;
 
     public PanGesture(PointerPress press, IGestureContext context)
         : base(press, context)
     {
-        _panXAtPress = context.ZoomPan.PanX;
-        _panYAtPress = context.ZoomPan.PanY;
+        _grabbed = context.ToBoardPoint(press.X, press.Y);
     }
 
     protected override void OnMove(PointerMove move) =>
         Context.ZoomPan.SetPanPosition(
-            _panXAtPress + (move.X - Press.X),
-            _panYAtPress + (move.Y - Press.Y)
+            move.X - _grabbed.X * Context.ZoomPan.Scale,
+            move.Y - _grabbed.Y * Context.ZoomPan.Scale
         );
+
+    protected override void OnViewportMoved(PointerMove pointer) =>
+        _grabbed = Context.ToBoardPoint(pointer.X, pointer.Y);
 
     protected override void OnRelease(PointerRelease release) { }
 

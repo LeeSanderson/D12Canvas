@@ -134,14 +134,14 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         for (var i = 0; i < 4; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = 100 });
+            canvas.ZoomOut();
         }
 
         canvas.PressOn(canvas.Find(".lod-placeholder"), (10, 10));
         canvas.MoveTo((40, 40));
         for (var i = 0; i < 4; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 });
+            canvas.ZoomIn();
         }
 
         Assert.Single(canvas.FindAll(".lod-placeholder"));
@@ -165,7 +165,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         canvas.MoveTo((40, 40));
         for (var i = 0; i < 4; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = 100 });
+            canvas.ZoomOut();
         }
 
         Assert.Single(canvas.FindAll(".component-container"));
@@ -204,7 +204,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         // 0.64 - four zoom-out notches (-0.1 each) lands at 0.6.
         for (var i = 0; i < 4; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = 100 });
+            canvas.ZoomOut();
         }
 
         Assert.Empty(canvas.FindAll(".component-container"));
@@ -212,7 +212,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
 
         for (var i = 0; i < 4; i++)
         {
-            canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 });
+            canvas.ZoomIn();
         }
 
         Assert.Single(canvas.FindAll(".component-container"));

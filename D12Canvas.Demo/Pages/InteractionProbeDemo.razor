@@ -6,7 +6,7 @@
 <PageTitle>Interaction Probe Demo</PageTitle>
 
 <div class="interaction-probe-canvas">
-    <DiagramCanvas Board="_board" />
+    <DiagramCanvas Board="_board" WheelDeviceProfile="WheelProfile" />
 </div>
 
 <style>
@@ -26,6 +26,14 @@
     private static readonly Guid FloatingEdgeId = Guid.Parse("e0000000-0000-0000-0000-000000000002");
 
     private readonly Board _board = SeedBoard();
+
+    [SupplyParameterFromQuery(Name = "wheel")]
+    public string? Wheel { get; set; }
+
+    private WheelDeviceProfile WheelProfile =>
+        Enum.TryParse<WheelDeviceProfile>(Wheel, ignoreCase: true, out var profile)
+            ? profile
+            : WheelDeviceProfile.Auto;
 
     private static ComponentInstance AddRectangle(Board board, Guid id, double x, double y)
     {

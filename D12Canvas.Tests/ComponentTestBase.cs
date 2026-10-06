@@ -75,18 +75,28 @@ public abstract class ComponentTestBase : BunitContext
             );
         SetupDisposableCleanupHandle(module, "addResizeListener");
         SetupDisposableCleanupHandle(module, "addKeyboardListener");
-        SetupDisposableCleanupHandle(module, "addPointerListener");
+        SetupDisposableCleanupHandle(module, "addWheelListener");
+        PointerListener = SetupDisposableCleanupHandle(module, "addPointerListener");
+        PointerListener.SetupVoid("promote", _ => true).SetVoidResult();
 
         module.SetupVoid("focusGroupTabStop", _ => true).SetVoidResult();
         module.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();
     }
 
+    // The handle the pointer listener returns, for asserting what the canvas tells the listener.
+    protected BunitJSModuleInterop PointerListener { get; private set; } = null!;
+
     // Mocks a call that returns a disposable IJSObjectReference handle (a "dispose"-shaped object,
     // not a bare function - see DiagramCanvas.razor.js) - shared by both cleanup-registering calls
     // DiagramCanvas.OnAfterRenderAsync makes.
-    private static void SetupDisposableCleanupHandle(BunitJSModuleInterop module, string identifier)
+    private static BunitJSModuleInterop SetupDisposableCleanupHandle(
+        BunitJSModuleInterop module,
+        string identifier
+    )
     {
-        module.SetupModule(identifier, _ => true).SetupVoid("dispose", _ => true).SetVoidResult();
+        var handle = module.SetupModule(identifier, _ => true);
+        handle.SetupVoid("dispose", _ => true).SetVoidResult();
+        return handle;
     }
 
     // Every test that renders a ComponentContainer needs this, since edit mode's click-outside

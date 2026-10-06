@@ -10,6 +10,8 @@ internal sealed class NativeGesture(PointerPress press, IGestureContext context)
 {
     public override bool HoldsPress => false;
 
+    protected override bool HasActivePhase => false;
+
     protected override void OnPress()
     {
         if (Press.EntityId is not { } entityId || Context.Board?.GetEdge(entityId) is not null)

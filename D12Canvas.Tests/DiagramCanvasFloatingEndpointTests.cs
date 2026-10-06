@@ -102,7 +102,7 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
 
         var transformBefore = canvas.Find(".canvas-content").GetAttribute("style");
 
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 });
+        canvas.ZoomIn();
 
         var transformAfter = canvas.Find(".canvas-content").GetAttribute("style");
         Assert.NotEqual(transformBefore, transformAfter); // the zoom actually happened

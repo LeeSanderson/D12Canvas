@@ -314,7 +314,7 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Find(".diagram-canvas").Wheel(new WheelEventArgs { DeltaY = -100 }); // zooms to scale 1.1
+        canvas.ZoomIn(); // zooms to scale 1.1
 
         // Container coordinates scale with zoom (same ToBoardPoint conversion every other gesture
         // uses), so a pointer at 1.1 times a board point is over that point.
