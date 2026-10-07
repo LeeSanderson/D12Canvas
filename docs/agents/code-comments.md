@@ -6,7 +6,7 @@ Prefer self-documenting code — clear names, small focused methods — over com
 
 Don't write "Ticket 47: ...", "ADR 0008: ...", or similar attributions in source comments. That belongs in the commit message and PR description, not the code — it rots the moment the ticket closes, and ages badly as the code around it changes.
 
-This matters more than usual in this repo: several components embed their `<style>` block directly in `.razor` markup rather than using `.razor.css` isolation, so anything written inside `<style>` — comments included — renders verbatim into the page and gets baked byte-for-byte into every Playwright visual-test `.verified.html` baseline that includes that component. Editing a single CSS comment can invalidate dozens of screenshot baselines with no functional change behind it. See `.git log` for tickets 60/61 for a real instance of this.
+This matters more than usual in this repo: several components embed their `<style>` block directly in `.razor` markup rather than using `.razor.css` isolation, so anything written inside `<style>` — comments included — renders verbatim into every page that hosts the component. The Playwright visual tests now scrub `<style>` elements from their HTML snapshots, so a CSS comment no longer moves baselines, but it still ships to every consumer's DOM.
 
 ## Style blocks and CSS
 

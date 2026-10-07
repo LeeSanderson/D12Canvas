@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class EdgeSelectionVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -91,6 +84,6 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".edge-line")).ToHaveAttributeAsync("aria-selected", "true");
         await Expect(_page.Locator(".edge-line")).ToHaveClassAsync("edge-line selected");
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }

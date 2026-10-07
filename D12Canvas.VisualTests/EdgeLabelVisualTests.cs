@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class EdgeLabelVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -94,6 +87,6 @@ public sealed class EdgeLabelVisualTests : IAsyncLifetime
         await _page.Locator(".edge-label textarea.d12-text-editor").BlurAsync();
         await Expect(_page.Locator(".edge-label p.d12-text")).ToHaveTextAsync("Connects to");
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }

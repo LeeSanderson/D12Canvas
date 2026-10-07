@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class InlineTextEditingVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -50,6 +43,6 @@ public sealed class InlineTextEditingVisualTests : IAsyncLifetime
         await Expect(_page.Locator("textarea.d12-sticky-note-editor")).ToBeVisibleAsync();
         await Expect(_page.Locator("textarea.d12-sticky-note-editor")).ToBeFocusedAsync();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }

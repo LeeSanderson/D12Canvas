@@ -8,13 +8,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class DragAndDropPlacementVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -66,7 +59,7 @@ public sealed class DragAndDropPlacementVisualTests : IAsyncLifetime
 
         await Expect(target).ToHaveClassAsync(new Regex("drag-over"));
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -85,6 +78,6 @@ public sealed class DragAndDropPlacementVisualTests : IAsyncLifetime
 
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }

@@ -14,13 +14,6 @@ public sealed class PaintLayerVisualTests : IAsyncLifetime
     private const string CrossingId = "b0000000-0000-0000-0000-000000000003";
     private const string HighId = "b0000000-0000-0000-0000-000000000004";
 
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -80,7 +73,7 @@ public sealed class PaintLayerVisualTests : IAsyncLifetime
         Assert.Equal(("instance", CrossingId), await HitAtPageAsync(label.X, label.Y));
 
         await _page.Mouse.MoveAsync(5, 5);
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]

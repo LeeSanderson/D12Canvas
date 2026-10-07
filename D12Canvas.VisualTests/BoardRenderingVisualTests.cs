@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class BoardRenderingVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -42,8 +35,7 @@ public sealed class BoardRenderingVisualTests : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
     [Fact]
-    public async Task RenderedBoard_MatchesBaseline() =>
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+    public async Task RenderedBoard_MatchesBaseline() => await ContentSnapshot.Verify(_page);
 
     [Fact]
     public async Task ZoomedAndPannedBoard_MatchesBaseline()
@@ -71,7 +63,7 @@ public sealed class BoardRenderingVisualTests : IAsyncLifetime
             await _page.Keyboard.PressAsync("ArrowDown"); // pan
         }
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     // Sanity check: zoom has no built-in ceiling by default, so a host can drive it well past the
@@ -94,6 +86,6 @@ public sealed class BoardRenderingVisualTests : IAsyncLifetime
             await _page.Keyboard.PressAsync("PageUp"); // zoom in - scale ends at 10.0x
         }
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }

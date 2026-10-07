@@ -9,13 +9,6 @@ namespace D12Canvas.VisualTests;
 // attached to it follows rather than waiting for release. A cold drag is selected by its press.
 public sealed class LiveGeometryVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -87,7 +80,7 @@ public sealed class LiveGeometryVisualTests : IAsyncLifetime
             $"the dragged instance left of x={box.X - 150}"
         );
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }
@@ -115,7 +108,7 @@ public sealed class LiveGeometryVisualTests : IAsyncLifetime
             "the rectangle growing mid-resize"
         );
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }

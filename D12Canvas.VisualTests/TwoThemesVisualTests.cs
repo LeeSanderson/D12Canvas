@@ -10,13 +10,6 @@ namespace D12Canvas.VisualTests;
 // can carry different themes simultaneously, with no shared global state.
 public sealed class TwoThemesVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -66,5 +59,5 @@ public sealed class TwoThemesVisualTests : IAsyncLifetime
 
     [Fact]
     public async Task TwoIndependentlyThemedPanes_MatchesBaseline() =>
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 }

@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -64,7 +57,7 @@ public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
     {
         await PlaceTwoOverlappingInstancesWithTheFirstSelected();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -84,7 +77,7 @@ public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
         );
         Assert.True(selectedZIndex > otherZIndex);
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     private static async Task<int> ZIndexOf(ILocator container)

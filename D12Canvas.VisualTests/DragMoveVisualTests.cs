@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class DragMoveVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -67,7 +60,7 @@ public sealed class DragMoveVisualTests : IAsyncLifetime
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)(startX + 80), (float)(startY + 40));
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }
@@ -81,6 +74,6 @@ public sealed class DragMoveVisualTests : IAsyncLifetime
         await _page.Mouse.MoveAsync((float)(startX + 80), (float)(startY + 40));
         await _page.Mouse.UpAsync();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }

@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class PortsVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -66,7 +59,7 @@ public sealed class PortsVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".port").First).ToHaveCSSAsync("opacity", "1");
         await Expect(target).Not.ToHaveAttributeAsync("aria-selected", "true");
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     // Not a screenshot baseline (no Verify call) - this is a geometric assertion, checked with

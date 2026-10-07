@@ -13,13 +13,6 @@ namespace D12Canvas.VisualTests;
 // coverage.
 public sealed class PropertyPanelVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -65,7 +58,7 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
 
         await Expect(_page.Locator(".d12-property-panel-empty")).ToBeVisibleAsync();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -77,7 +70,7 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
         await Expect(_page.Locator("#d12-property-panel-field-StrokeWidth")).ToBeVisibleAsync();
         await Expect(_page.Locator("#d12-property-panel-field-FillColor")).ToBeVisibleAsync();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -89,7 +82,7 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
         await Expect(_page.Locator("#d12-property-panel-field-StrokeWidth")).ToBeVisibleAsync();
         await Expect(_page.Locator("#d12-property-panel-field-FillColor")).ToBeVisibleAsync();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -100,7 +93,7 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
 
         await Expect(_page.Locator("#d12-property-panel-field-FontWeight")).ToBeVisibleAsync();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -111,7 +104,7 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
 
         await Expect(_page.Locator("#d12-property-panel-field-FontWeight")).ToBeVisibleAsync();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -122,6 +115,6 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
 
         await Expect(_page.Locator(".demo-note-color-editor")).ToBeVisibleAsync();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }

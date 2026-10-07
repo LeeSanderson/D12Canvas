@@ -56,7 +56,8 @@ Two layers, per the project's [layered testing strategy](.scratch/d12canvas-next
 - **Playwright for .NET** (`D12Canvas.VisualTests`) — screenshot-diff coverage of rendered visual
   states (layout, CSS positioning, zoom/pan) that bUnit can't see, driven against the real
   `D12Canvas.Demo` app. Baselines are the committed `*.verified.png`/`*.verified.html` files
-  alongside the tests, generated and diffed via
+  alongside the tests, taken of each demo page's content area with style elements scrubbed from
+  the HTML, generated and diffed via
   [Verify.Playwright](https://github.com/VerifyTests/Verify.HeadlessBrowsers). The same project
   holds the interaction probes, which drive the browser and assert DOM or interop state rather
   than pixels; see `docs/agents/testing.md`.

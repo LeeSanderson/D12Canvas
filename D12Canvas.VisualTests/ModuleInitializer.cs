@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 using VerifyTests;
@@ -26,10 +27,23 @@ public static partial class ModuleInitializer
         VerifierSettings.ScrubLinesWithReplace(line =>
             BlazorElementReferenceMarker().Replace(line, "")
         );
+        VerifierSettings.AddScrubber("html", RemoveStyleElements);
         Assertions.SetDefaultExpectTimeout(DefaultExpectTimeoutMilliseconds);
         FuzzyPngComparer.Register();
     }
 
+    // Components render their CSS as inline style elements, so every snapshot would otherwise
+    // carry a copy of every rule and a one-line CSS edit would move every HTML baseline. The
+    // screenshot already shows what the CSS does, so the HTML snapshot keeps markup only.
+    private static void RemoveStyleElements(StringBuilder html)
+    {
+        var scrubbed = StyleElement().Replace(html.ToString(), "");
+        html.Clear().Append(scrubbed);
+    }
+
     [GeneratedRegex(@" _bl_\d+=""""")]
     private static partial Regex BlazorElementReferenceMarker();
+
+    [GeneratedRegex(@"<style\b[^>]*>.*?</style>", RegexOptions.Singleline)]
+    private static partial Regex StyleElement();
 }

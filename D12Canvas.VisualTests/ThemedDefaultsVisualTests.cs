@@ -9,13 +9,6 @@ namespace D12Canvas.VisualTests;
 // board reads correctly under both themes, while an authored colour is taken literally on both.
 public sealed class ThemedDefaultsVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -65,5 +58,5 @@ public sealed class ThemedDefaultsVisualTests : IAsyncLifetime
 
     [Fact]
     public async Task ThemedDefaultsOnBothPanes_MatchesBaseline() =>
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 }

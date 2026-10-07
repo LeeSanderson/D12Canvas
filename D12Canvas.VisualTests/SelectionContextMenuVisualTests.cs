@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -62,7 +55,7 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
         await NewPageAsync(ColorScheme.Light);
         await OpenContextMenuOnASelectedInstance();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -71,7 +64,7 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
         await NewPageAsync(ColorScheme.Dark);
         await OpenContextMenuOnASelectedInstance();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     // Places two cascaded, overlapping instances (the +20,+20 click-to-add offset doesn't fully
@@ -112,7 +105,7 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
 
         await Expect(_page.GetByRole(AriaRole.Menuitem, new() { Name = "Group" }))
             .ToBeVisibleAsync();
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]

@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class ResizeVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -60,7 +53,7 @@ public sealed class ResizeVisualTests : IAsyncLifetime
     {
         await PlaceSelectAndLocateBottomRightHandle();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -82,7 +75,7 @@ public sealed class ResizeVisualTests : IAsyncLifetime
             "the shape growing mid-resize"
         );
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }

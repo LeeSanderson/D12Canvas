@@ -7,13 +7,6 @@ namespace D12Canvas.VisualTests;
 
 public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -83,7 +76,7 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".selection-bounding-box")).ToBeVisibleAsync();
         await Expect(_page.Locator(".group-resize-handle")).ToHaveCountAsync(8);
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     // A persisted Group's bounding box (computed on demand from its members, never stored)
@@ -101,7 +94,7 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".selection-bounding-box")).ToBeVisibleAsync();
         await Expect(_page.Locator(".group-resize-handle")).ToHaveCountAsync(8);
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -127,7 +120,7 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
             "the selection growing mid-resize"
         );
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }

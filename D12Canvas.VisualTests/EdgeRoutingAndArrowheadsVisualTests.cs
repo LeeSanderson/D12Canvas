@@ -14,13 +14,6 @@ namespace D12Canvas.VisualTests;
 // panel isn't built yet).
 public sealed class EdgeRoutingAndArrowheadsVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -96,6 +89,6 @@ public sealed class EdgeRoutingAndArrowheadsVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".edges-layer > line.edge-line")).ToHaveCountAsync(3);
         await Expect(_page.Locator(".edges-layer > path.edge-line")).ToHaveCountAsync(2);
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }

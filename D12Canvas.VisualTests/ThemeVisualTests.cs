@@ -10,13 +10,6 @@ namespace D12Canvas.VisualTests;
 // takes precedence over the OS preference.
 public sealed class ThemeVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -122,7 +115,7 @@ public sealed class ThemeVisualTests : IAsyncLifetime
 
         await DrawMarqueeAcross(from, to);
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }
@@ -135,7 +128,7 @@ public sealed class ThemeVisualTests : IAsyncLifetime
 
         await DrawMarqueeAcross(from, to);
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }
@@ -149,7 +142,7 @@ public sealed class ThemeVisualTests : IAsyncLifetime
 
         await DrawMarqueeAcross(from, to);
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }

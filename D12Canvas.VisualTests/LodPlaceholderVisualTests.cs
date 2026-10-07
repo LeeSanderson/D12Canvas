@@ -9,13 +9,6 @@ namespace D12Canvas.VisualTests;
 // placeholder once its on-screen size drops below the default threshold.
 public sealed class LodPlaceholderVisualTests : IAsyncLifetime
 {
-    private static readonly PageScreenshotOptions ScreenshotOptions = new()
-    {
-        FullPage = true,
-        Type = ScreenshotType.Png,
-        Animations = ScreenshotAnimations.Disabled,
-    };
-
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -75,7 +68,7 @@ public sealed class LodPlaceholderVisualTests : IAsyncLifetime
         await NewPageAsync(ColorScheme.Light);
         await ZoomOutUntilEveryInstanceIsBelowLodThreshold();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]
@@ -84,6 +77,6 @@ public sealed class LodPlaceholderVisualTests : IAsyncLifetime
         await NewPageAsync(ColorScheme.Dark);
         await ZoomOutUntilEveryInstanceIsBelowLodThreshold();
 
-        await Verify(_page).PageScreenshotOptions(ScreenshotOptions);
+        await ContentSnapshot.Verify(_page);
     }
 }
