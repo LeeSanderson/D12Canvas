@@ -93,7 +93,7 @@ public sealed class GroupTabStopVisualTests : IAsyncLifetime
             .ClickAsync(
                 new()
                 {
-                    Position = new Position { X = 900, Y = 500 },
+                    Position = new Position { X = 380, Y = 560 },
                 }
             );
         await Expect(_page.Locator(".selection-bounding-box")).Not.ToBeVisibleAsync();

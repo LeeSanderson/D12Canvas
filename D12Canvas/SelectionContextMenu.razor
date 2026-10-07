@@ -17,15 +17,18 @@
         <button type="button" class="d12-context-menu-item" role="menuitem"
                 @onclick="InvokeUngroup">Ungroup</button>
     }
-    <div class="d12-context-menu-separator" role="separator"></div>
-    <button type="button" class="d12-context-menu-item" role="menuitem"
-            @onclick="InvokeBringToFront">Bring to Front</button>
-    <button type="button" class="d12-context-menu-item" role="menuitem"
-            @onclick="InvokeBringForward">Bring Forward</button>
-    <button type="button" class="d12-context-menu-item" role="menuitem"
-            @onclick="InvokeSendBackward">Send Backward</button>
-    <button type="button" class="d12-context-menu-item" role="menuitem"
-            @onclick="InvokeSendToBack">Send to Back</button>
+    @if (CanArrange)
+    {
+        <div class="d12-context-menu-separator" role="separator"></div>
+        <button type="button" class="d12-context-menu-item" role="menuitem"
+                @onclick="InvokeBringToFront">Bring to Front</button>
+        <button type="button" class="d12-context-menu-item" role="menuitem"
+                @onclick="InvokeBringForward">Bring Forward</button>
+        <button type="button" class="d12-context-menu-item" role="menuitem"
+                @onclick="InvokeSendBackward">Send Backward</button>
+        <button type="button" class="d12-context-menu-item" role="menuitem"
+                @onclick="InvokeSendToBack">Send to Back</button>
+    }
 </div>
 
 <style>

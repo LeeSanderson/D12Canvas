@@ -26,6 +26,9 @@ public partial class SelectionContextMenu : IAsyncDisposable
     public bool CanUngroup { get; set; }
 
     [Parameter]
+    public bool CanArrange { get; set; } = true;
+
+    [Parameter]
     public EventCallback OnDelete { get; set; }
 
     [Parameter]

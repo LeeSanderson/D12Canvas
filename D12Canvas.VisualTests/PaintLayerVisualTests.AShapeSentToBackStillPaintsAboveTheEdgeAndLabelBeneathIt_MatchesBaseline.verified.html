@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/app.css">
     <link rel="icon" type="image/png" href="favicon.png">
     <link href="D12Canvas.Demo.styles.css" rel="stylesheet">
-<!--!--><!--!--><!--!--><title>Placement Demo</title><!--!--><!--!--><!--!--></head>
+<!--!--><!--!--><!--!--><title>Paint Layers Demo</title><!--!--><!--!--><!--!--></head>
 
 <body>
     <div id="app"><!--!--><!--!--><!--!--><!--!--><div class="page" b-k7rv4lobv5=""><div class="sidebar" b-k7rv4lobv5=""><!--!--><div class="top-row ps-3 navbar navbar-dark" b-91fadkni91=""><div class="container-fluid" b-91fadkni91=""><!--!--><a class="navbar-brand" href="" b-91fadkni91="">D12Canvas.Demo</a>
@@ -25,7 +25,7 @@
             <!--!--><a href="palette-demo" class="nav-link"><!--!-->
                 Palette Demo
             </a><!--!-->
-            <!--!--><a href="placement-demo" class="nav-link active" aria-current="page"><!--!-->
+            <!--!--><a href="placement-demo" class="nav-link"><!--!-->
                 Placement Demo
             </a><!--!-->
             <!--!--><a href="save-load-demo" class="nav-link"><!--!-->
@@ -37,124 +37,38 @@
 
     <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="placement-demo-layout"><div class="palette-slot"><!--!--><div class="d12-palette" role="region" aria-label="Component palette"><div class="d12-palette-category"><h3 class="d12-palette-category-title">Notes</h3><!--!-->
-            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Demo note" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">📝</span><span class="d12-palette-entry-name">Demo Note</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Stress Test</h3><!--!-->
-            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Stress item" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">▦</span><span class="d12-palette-entry-name">Stress Item</span></button></li></ul></div><div class="d12-palette-category"><h3 class="d12-palette-category-title">Basic Shapes</h3><!--!-->
-            <ul class="d12-palette-entries"><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Rectangle" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">▭</span><span class="d12-palette-entry-name">Rectangle</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Sticky Note" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🗒️</span><span class="d12-palette-entry-name">Sticky Note</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Text" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🔤</span><span class="d12-palette-entry-name">Text</span></button></li><li class="d12-palette-entry"><button type="button" class="d12-palette-entry-button" aria-label="Image" draggable="true"><span class="d12-palette-entry-icon" aria-hidden="true">🖼️</span><span class="d12-palette-entry-name">Image</span></button></li></ul></div><button type="button" class="d12-palette-entry-button" aria-label="Connector" draggable="true"><!--!--><span class="d12-palette-entry-name">Connector</span></button></div><!--!-->
-
-<!--!--><style>
-    .d12-palette {
-        --d12-surface: #fff;
-        --d12-border: #ccc;
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #666;
-        --d12-text: #212529;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        font-family:
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
-        background: var(--d12-surface);
-        border: 1px solid var(--d12-border);
-        border-radius: 6px;
-        padding: 12px;
-        box-sizing: border-box;
-        color: var(--d12-text);
-    }
-
-    @media (prefers-color-scheme: dark) {
-        .d12-palette {
-            --d12-surface: #2a2a2a;
-            --d12-border: rgba(255, 255, 255, 0.12);
-            --d12-accent: #2f80ed;
-            --d12-muted-text: #a0a0a0;
-            --d12-text: #e8e8e8;
-        }
-    }
-
-    .d12-palette[data-d12-theme="light"],
-    [data-d12-theme="light"] .d12-palette {
-        --d12-surface: #fff;
-        --d12-border: #ccc;
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #666;
-        --d12-text: #212529;
-    }
-
-    .d12-palette[data-d12-theme="dark"],
-    [data-d12-theme="dark"] .d12-palette {
-        --d12-surface: #2a2a2a;
-        --d12-border: rgba(255, 255, 255, 0.12);
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #a0a0a0;
-        --d12-text: #e8e8e8;
-    }
-
-    .d12-palette-category-title {
-        margin: 0 0 6px;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        color: var(--d12-muted-text);
-    }
-
-    .d12-palette-entries {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .d12-palette-entry-button {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        padding: 6px 8px;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        background: transparent;
-        cursor: pointer;
-        text-align: left;
-        font: inherit;
-        color: inherit;
-    }
-
-    .d12-palette-entry-button:hover {
-        background: color-mix(in srgb, var(--d12-border) 25%, var(--d12-surface));
-        border-color: var(--d12-border);
-    }
-
-    .d12-palette-entry-icon {
-        font-size: 16px;
-        line-height: 1;
-    }
-
-    .d12-palette-entry-name {
-        font-size: 13px;
-    }
-</style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1); --d12-scale: 1;"><!--!--><div class="edge-band"><svg class="edges-layer"></svg></div><!--!-->
-            <div class="instance-layer"><!--!--><div class="component-container selected" style="left: 108px; top: 224px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
-
-<!--!--><style>
-    .demo-note {
+<div class="paint-layers-canvas"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1); --d12-scale: 1;"><!--!--><div class="edge-band"><svg class="edges-layer"><!--!--><defs><marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead"></path></marker>
+                            <marker id="edge-arrow-selected" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead selected"></path></marker></defs><line x1="180" y1="205" x2="480" y2="205" class="edge-line" marker-end="url(#edge-arrow)"></line><!--!-->
+                                    <line x1="180" y1="205" x2="480" y2="205" class="edge-hit" data-d12-role="edge" data-d12-entity="Guid_1"></line><line x1="110" y1="250" x2="340" y2="390" class="edge-line" marker-end="url(#edge-arrow)"></line><!--!-->
+                                    <line x1="110" y1="250" x2="340" y2="390" class="edge-hit" data-d12-role="edge" data-d12-entity="Guid_2"></line></svg><div class="edge-label" style="left: 300px; top: 190px; width: 60px; height: 30px;" data-d12-role="edge-label" data-d12-entity="Guid_1"><!--!--><!--!--><!--!--><p class="d12-text" style="font-size: 14px; font-weight: normal; text-align: center;">Label</p><!--!--><style>
+    .d12-text {
         width: 100%;
         height: 100%;
         box-sizing: border-box;
-        padding: 10px;
-        border-radius: 4px;
-        font-size: 14px;
+        margin: 0;
+        color: var(--d12-board-text-override, var(--d12-board-text));
     }
 
-    .demo-note p {
-        margin: 0;
+    .d12-text-editor {
+        display: block;
+        font-family: inherit;
+        border: none;
+        outline: 1px dashed rgba(0, 0, 0, 0.4);
+        resize: none;
+        background: transparent;
+        padding: 0;
+    }
+</style></div></div><!--!-->
+            <div class="instance-layer"><!--!--><div class="component-container" style="left: 270px; top: 150px; width: 120px; height: 110px; z-index: -1;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_3"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #ffe0b2; border-width: 2px;"></div><!--!-->
+
+<!--!--><style>
+    .d12-rectangle {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        background-color: var(--d12-board-fill-override, var(--d12-board-fill));
+        border-style: solid;
+        border-color: var(--d12-board-stroke-override, var(--d12-board-stroke));
     }
 </style></div><div class="port port-top" data-d12-role="port" data-d12-part="Top"></div><!--!-->
     <div class="port port-right" data-d12-role="port" data-d12-part="Right"></div><!--!-->
@@ -322,18 +236,547 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Stress item" aria-selected="true" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_2"><div class="container-content"><!--!--><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
+</style><!--!--><div class="component-container" style="left: 40px; top: 160px; width: 140px; height: 90px; z-index: 1;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_4"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #cfe3ff; border-width: 2px;"></div><!--!-->
 
 <!--!--><style>
-    .stress-item {
+    .d12-rectangle {
         width: 100%;
         height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-family: monospace;
-        font-size: 12px;
+        box-sizing: border-box;
+        background-color: var(--d12-board-fill-override, var(--d12-board-fill));
+        border-style: solid;
+        border-color: var(--d12-board-stroke-override, var(--d12-board-stroke));
+    }
+</style></div><div class="port port-top" data-d12-role="port" data-d12-part="Top"></div><!--!-->
+    <div class="port port-right" data-d12-role="port" data-d12-part="Right"></div><!--!-->
+    <div class="port port-bottom" data-d12-role="port" data-d12-part="Bottom"></div><!--!-->
+    <div class="port port-left" data-d12-role="port" data-d12-part="Left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
+    }
+
+    .component-container:focus {
+        outline: none;
+    }
+
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        cursor: crosshair;
+    }
+
+    .component-container:hover .port,
+    .component-container.selected .port,
+    .diagram-canvas.connecting .port {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
+    }
+
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><!--!--><div class="component-container" style="left: 480px; top: 160px; width: 140px; height: 90px; z-index: 2;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_5"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #cfe3ff; border-width: 2px;"></div><!--!-->
+
+<!--!--><style>
+    .d12-rectangle {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        background-color: var(--d12-board-fill-override, var(--d12-board-fill));
+        border-style: solid;
+        border-color: var(--d12-board-stroke-override, var(--d12-board-stroke));
+    }
+</style></div><div class="port port-top" data-d12-role="port" data-d12-part="Top"></div><!--!-->
+    <div class="port port-right" data-d12-role="port" data-d12-part="Right"></div><!--!-->
+    <div class="port port-bottom" data-d12-role="port" data-d12-part="Bottom"></div><!--!-->
+    <div class="port port-left" data-d12-role="port" data-d12-part="Left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
+    }
+
+    .component-container:focus {
+        outline: none;
+    }
+
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        cursor: crosshair;
+    }
+
+    .component-container:hover .port,
+    .component-container.selected .port,
+    .diagram-canvas.connecting .port {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
+    }
+
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><!--!--><div class="component-container" style="left: 270px; top: 340px; width: 140px; height: 100px; z-index: 1500;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_6"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #d7f5d0; border-width: 2px;"></div><!--!-->
+
+<!--!--><style>
+    .d12-rectangle {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        background-color: var(--d12-board-fill-override, var(--d12-board-fill));
+        border-style: solid;
+        border-color: var(--d12-board-stroke-override, var(--d12-board-stroke));
+    }
+</style></div><div class="port port-top" data-d12-role="port" data-d12-part="Top"></div><!--!-->
+    <div class="port port-right" data-d12-role="port" data-d12-part="Right"></div><!--!-->
+    <div class="port port-bottom" data-d12-role="port" data-d12-part="Bottom"></div><!--!-->
+    <div class="port port-left" data-d12-role="port" data-d12-part="Left"></div></div><!--!-->
+
+<!--!--><style>
+    .component-container {
+        position: absolute;
+        min-width: 100px;
+        min-height: 100px;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+        cursor: move;
+    }
+
+    .container-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .component-container.selected {
+        outline: 2px solid #2f80ed;
+        outline-offset: 2px;
+    }
+
+    .component-container:focus {
+        outline: none;
+    }
+
+    .port {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        cursor: crosshair;
+    }
+
+    .component-container:hover .port,
+    .component-container.selected .port,
+    .diagram-canvas.connecting .port {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .port.port-focused {
+        opacity: 1;
+        outline: 3px solid #f39c12;
+        outline-offset: 2px;
+    }
+
+    .port-top {
+        top: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-right {
+        top: calc(50% - 10px);
+        right: -10px;
+    }
+
+    .port-bottom {
+        bottom: -10px;
+        left: calc(50% - 10px);
+    }
+
+    .port-left {
+        top: calc(50% - 10px);
+        left: -10px;
+    }
+
+    .port-strip {
+        position: absolute;
+        cursor: copy;
+    }
+
+    .port-strip-top,
+    .port-strip-bottom {
+        left: 0;
+        right: 0;
+        height: 14px;
+    }
+
+    .port-strip-top {
+        top: -7px;
+    }
+
+    .port-strip-bottom {
+        bottom: -7px;
+    }
+
+    .port-strip-left,
+    .port-strip-right {
+        top: 0;
+        bottom: 0;
+        width: 14px;
+    }
+
+    .port-strip-left {
+        left: -7px;
+    }
+
+    .port-strip-right {
+        right: -7px;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #3498db;
+        border-radius: 50%;
+    }
+
+    .top-left {
+        top: -5px;
+        left: -5px;
+        cursor: nwse-resize;
+    }
+
+    .top {
+        top: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .top-right {
+        top: -5px;
+        right: -5px;
+        cursor: nesw-resize;
+    }
+
+    .right {
+        top: calc(50% - 5px);
+        right: -5px;
+        cursor: ew-resize;
+    }
+
+    .bottom-right {
+        bottom: -5px;
+        right: -5px;
+        cursor: nwse-resize;
+    }
+
+    .bottom {
+        bottom: -5px;
+        left: calc(50% - 5px);
+        cursor: ns-resize;
+    }
+
+    .bottom-left {
+        bottom: -5px;
+        left: -5px;
+        cursor: nesw-resize;
+    }
+
+    .left {
+        top: calc(50% - 5px);
+        left: -5px;
+        cursor: ew-resize;
+    }
+</style><!--!--><div class="component-container" style="left: 480px; top: 340px; width: 140px; height: 100px; z-index: 1501;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_7"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #d7f5d0; border-width: 2px;"></div><!--!-->
+
+<!--!--><style>
+    .d12-rectangle {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        background-color: var(--d12-board-fill-override, var(--d12-board-fill));
+        border-style: solid;
+        border-color: var(--d12-board-stroke-override, var(--d12-board-stroke));
     }
 </style></div><div class="port port-top" data-d12-role="port" data-d12-part="Top"></div><!--!-->
     <div class="port port-right" data-d12-role="port" data-d12-part="Right"></div><!--!-->
@@ -503,14 +946,7 @@
     }
 </style></div><!--!-->
             <div class="guide-layer"></div>
-            <div class="selection-chrome"><svg class="chrome-strokes"></svg><div class="selection-bounding-box" style="left: 108px; top: 224px; width: 220px; height: 170px;" data-d12-role="selection-bounds"><div class="group-resize-handle top-left" data-d12-role="selection-handle" data-d12-part="top-left"></div><!--!-->
-                    <div class="group-resize-handle top" data-d12-role="selection-handle" data-d12-part="top"></div><!--!-->
-                    <div class="group-resize-handle top-right" data-d12-role="selection-handle" data-d12-part="top-right"></div><!--!-->
-                    <div class="group-resize-handle right" data-d12-role="selection-handle" data-d12-part="right"></div><!--!-->
-                    <div class="group-resize-handle bottom-right" data-d12-role="selection-handle" data-d12-part="bottom-right"></div><!--!-->
-                    <div class="group-resize-handle bottom" data-d12-role="selection-handle" data-d12-part="bottom"></div><!--!-->
-                    <div class="group-resize-handle bottom-left" data-d12-role="selection-handle" data-d12-part="bottom-left"></div><!--!-->
-                    <div class="group-resize-handle left" data-d12-role="selection-handle" data-d12-part="left"></div></div></div></div></div></div><!--!-->
+            <div class="selection-chrome"><svg class="chrome-strokes"><circle cx="340" cy="390" r="6" class="floating-endpoint" data-d12-role="edge-endpoint" data-d12-entity="Guid_2" data-d12-part="target"></circle></svg></div></div></div></div><!--!-->
 
 <!--!--><style>
     .diagram-container {
@@ -794,22 +1230,12 @@
             linear-gradient(to right, var(--d12-border) 1px, transparent 1px),
             linear-gradient(to bottom, var(--d12-border) 1px, transparent 1px);
     }
-</style></div></div><!--!-->
+</style></div><!--!-->
 
 <!--!--><style>
-    .placement-demo-layout {
-        display: flex;
-        gap: 16px;
-    }
-
-    .palette-slot {
-        width: 260px;
-        padding: 16px;
-    }
-
-    .canvas-container {
-        flex: 1;
-        height: 600px;
+    .paint-layers-canvas {
+        width: 700px;
+        height: 500px;
         border: 1px solid #ccc;
     }
 </style></article></main></div><!--!-->

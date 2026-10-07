@@ -37,7 +37,8 @@
 
     <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 3.000000000000001px 3.000000000000001px; background-position: 8.881784197001252E-14px 1.0000000000000595px; opacity: 0.17609125905568135;"></div><div class="grid-layer" style="background-size: 30.000000000000007px 30.000000000000007px; background-position: 7.105427357601002E-14px 10.00000000000005px; opacity: 0.8239087409443187;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(-300px, -200px) scale(1.5000000000000004); --d12-scale: 1.5000000000000004;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container" style="left: 460px; top: 20px; width: 240px; height: 180px; z-index: 6;" role="group" aria-label="Image" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1"><div class="container-content"><!--!--><!--!--><!--!--><img class="d12-image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAASSURBVBhXY3DMfPgfGTOQLgAAUD8ooVtGnUoAAAAASUVORK5CYII=" alt="Image built-in" style="object-fit: cover;"><!--!--><style>
+<div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 3.000000000000001px 3.000000000000001px; background-position: 8.881784197001252E-14px 1.0000000000000595px; opacity: 0.17609125905568135;"></div><div class="grid-layer" style="background-size: 30.000000000000007px 30.000000000000007px; background-position: 7.105427357601002E-14px 10.00000000000005px; opacity: 0.8239087409443187;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(-300px, -200px) scale(1.5000000000000004); --d12-scale: 1.5000000000000004;"><!--!--><div class="edge-band"><svg class="edges-layer"></svg></div><!--!-->
+            <div class="instance-layer"><!--!--><div class="component-container" style="left: 460px; top: 20px; width: 240px; height: 180px; z-index: 6;" role="group" aria-label="Image" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1"><div class="container-content"><!--!--><!--!--><!--!--><img class="d12-image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAASSURBVBhXY3DMfPgfGTOQLgAAUD8ooVtGnUoAAAAASUVORK5CYII=" alt="Image built-in" style="object-fit: cover;"><!--!--><style>
     .d12-image {
         width: 100%;
         height: 100%;
@@ -1322,7 +1323,9 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style></div></div></div><!--!-->
+</style></div><!--!-->
+            <div class="guide-layer"></div>
+            <div class="selection-chrome"><svg class="chrome-strokes"></svg></div></div></div></div><!--!-->
 
 <!--!--><style>
     .diagram-container {
@@ -1382,10 +1385,8 @@
     }
 
     .diagram-canvas {
-        width: 100%;
-        height: 100%;
-        grid-row: 1;
-        position: relative;
+        position: absolute;
+        inset: 0;
         cursor: grab;
     }
 
@@ -1416,7 +1417,6 @@
         position: absolute;
         border: 1px solid #2f80ed;
         pointer-events: auto;
-        z-index: 1000;
     }
 
     .group-tab-stop {
@@ -1485,14 +1485,25 @@
         cursor: ew-resize;
     }
 
-    .edges-layer {
+    .edge-band,
+    .instance-layer,
+    .guide-layer,
+    .selection-chrome {
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
+        isolation: isolate;
+    }
+
+    .edges-layer,
+    .chrome-strokes {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1px;
+        height: 1px;
+        overflow: visible;
         pointer-events: none;
-        z-index: 0;
     }
 
     .edge-line {
@@ -1573,8 +1584,6 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 3000px;
-        height: 3000px;
         transform-origin: top left;
     }
 

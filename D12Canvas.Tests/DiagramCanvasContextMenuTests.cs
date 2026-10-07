@@ -363,4 +363,52 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
 
         Assert.Null(board.GetEdge(edge.Id));
     }
+
+    [Fact]
+    public async Task RightClickOnAnEdgeOffersNoArrangementRows()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 0);
+        var target = AddInstance(board, 200);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new PortEndpoint(target.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        await RightClickEdge(canvas, edge);
+
+        Assert.Equal(
+            ["Delete"],
+            canvas.FindAll(".d12-context-menu-item").Select(item => item.TextContent)
+        );
+        Assert.Empty(canvas.FindAll(".d12-context-menu-separator"));
+    }
+
+    [Fact]
+    public async Task LayeringChordsWithAnEdgeSelectedChangeNothing()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 0, zIndex: 3);
+        var target = AddInstance(board, 200, zIndex: 4);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new PortEndpoint(target.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        await RightClickEdge(canvas, edge);
+
+        await canvas.InvokeAsync(() =>
+        {
+            canvas.Instance.OnBringToFrontPressed();
+            canvas.Instance.OnBringForwardPressed();
+            canvas.Instance.OnSendBackwardPressed();
+            canvas.Instance.OnSendToBackPressed();
+        });
+
+        Assert.Equal((3, 4), (source.ZIndex, target.ZIndex));
+        Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
+    }
 }

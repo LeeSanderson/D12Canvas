@@ -1475,6 +1475,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     private bool CanUngroupSelection =>
         _selectedInstanceIds.Any(id => Board?.GetGroup(id) is not null);
 
+    private bool CanArrangeSelection => _selectedInstanceIds.Count > 0;
+
     private void CloseContextMenu()
     {
         _contextMenu = null;

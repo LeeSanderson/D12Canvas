@@ -55,10 +55,11 @@ export function focusGroupTabStop(container) {
 
 // Ctrl+Tab's own DOM-focus move - targets the Nth currently-focusable tab stop by position, in
 // the same document order DiagramCanvas.FocusableTabStopIds computes its own index against
-// (every rendered tab stop carries tabindex="0"; a grouped member's container carries none, so
-// it's naturally excluded here the same way it's excluded there).
+// (every rendered tab stop carries tabindex="0" and lives in the instance layer; a grouped
+// member's container carries none, so it's naturally excluded here the same way it's excluded
+// there).
 export function focusTabStopAt(container, index) {
-    const stops = container.querySelectorAll('[tabindex="0"]');
+    const stops = container.querySelectorAll('.instance-layer [tabindex="0"]');
     if (index >= 0 && index < stops.length) {
         stops[index].focus();
     }

@@ -145,7 +145,7 @@
 </style>
 
 @code {
-    private const int CanvasSize = 3000; // matches DiagramCanvas's hardcoded canvas size
+    private const int ScatterExtent = 3000;
 
     private record StressNode(int Id, double X, double Y, double Width, double Height, string Color);
 
@@ -214,8 +214,8 @@
         var nodes = new List<StressNode>(count);
         for (var i = 0; i < count; i++)
         {
-            var x = rnd.NextDouble() * (CanvasSize - width);
-            var y = rnd.NextDouble() * (CanvasSize - height);
+            var x = rnd.NextDouble() * (ScatterExtent - width);
+            var y = rnd.NextDouble() * (ScatterExtent - height);
             nodes.Add(new StressNode(i, x, y, width, height, palette[i % palette.Length]));
         }
         return nodes;

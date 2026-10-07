@@ -1,0 +1,74 @@
+@page "/paint-layers-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Paint Layers Demo</PageTitle>
+
+<div class="paint-layers-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .paint-layers-canvas {
+        width: 700px;
+        height: 500px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid LeftId = Guid.Parse("b0000000-0000-0000-0000-000000000001");
+    private static readonly Guid RightId = Guid.Parse("b0000000-0000-0000-0000-000000000002");
+    private static readonly Guid CrossingId = Guid.Parse("b0000000-0000-0000-0000-000000000003");
+    private static readonly Guid HighId = Guid.Parse("b0000000-0000-0000-0000-000000000004");
+    private static readonly Guid HigherId = Guid.Parse("b0000000-0000-0000-0000-000000000005");
+
+    private readonly Board _board = SeedBoard();
+
+    private static ComponentInstance AddRectangle(
+        Board board,
+        Guid id,
+        Bounds bounds,
+        int zIndex,
+        string fill
+    )
+    {
+        var instance = new ComponentInstance(
+            "rectangle",
+            new RectangleProps(fill, null, 2),
+            bounds,
+            zIndex,
+            id: id
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        AddRectangle(board, CrossingId, new Bounds(270, 150, 120, 110), 0, "#ffe0b2");
+        var left = AddRectangle(board, LeftId, new Bounds(40, 160, 140, 90), 1, "#cfe3ff");
+        var right = AddRectangle(board, RightId, new Bounds(480, 160, 140, 90), 2, "#cfe3ff");
+        AddRectangle(board, HighId, new Bounds(270, 340, 140, 100), 1500, "#d7f5d0");
+        AddRectangle(board, HigherId, new Bounds(480, 340, 140, 100), 1501, "#d7f5d0");
+
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(left.Id, PortId.Right),
+                new PortEndpoint(right.Id, PortId.Left),
+                label: new ComponentInstance(
+                    "text",
+                    new TextProps("Label", null, 14, "normal", "center"),
+                    new Bounds(0, 0, 60, 30)
+                )
+            )
+        );
+        board.AddEdge(
+            new Edge(new PortEndpoint(left.Id, PortId.Bottom), new FloatingEndpoint(340, 390))
+        );
+
+        return board;
+    }
+}
