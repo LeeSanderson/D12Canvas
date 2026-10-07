@@ -20,7 +20,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     public DiagramCanvasPointerGestureTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

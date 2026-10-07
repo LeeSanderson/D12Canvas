@@ -1,16 +1,11 @@
 using System.Globalization;
 using D12Canvas.Model;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-public partial class ComponentContainer : IAsyncDisposable
+public partial class ComponentContainer
 {
-    [Inject]
-    private IJSRuntime JavaScriptRuntime { get; set; } = null!;
-
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
@@ -25,9 +20,6 @@ public partial class ComponentContainer : IAsyncDisposable
 
     [Parameter]
     public double Height { get; set; } = 150;
-
-    [Parameter]
-    public bool InitialEditMode { get; set; }
 
     [Parameter]
     public int ZIndex { get; set; }
@@ -97,27 +89,10 @@ public partial class ComponentContainer : IAsyncDisposable
     [Parameter]
     public Guid? FocusedCustomPortId { get; set; }
 
-    [Parameter]
-    public EventCallback<ComponentContainerStateChangedEventArgs> OnStateChanged { get; set; }
-
-    [CascadingParameter(Name = "ParentCanvas")]
-    private DiagramCanvas? ParentCanvas { get; set; }
-
-    private bool _editMode;
-    private bool _isDragging;
-    private MouseEventArgs? _dragStart;
-    private double _startX;
-    private double _startY;
-
-    private ElementReference _containerRef;
-    private DotNetObjectReference<ComponentContainer>? _dotNetRef;
-    private IJSObjectReference? _jsModule;
-
     private double _lastRenderedX;
     private double _lastRenderedY;
     private double _lastRenderedWidth;
     private double _lastRenderedHeight;
-    private bool _lastRenderedEditMode;
     private bool _lastRenderedIsSelected;
     private bool _lastRenderedIsMultiSelected;
     private bool _lastRenderedFocusable;
@@ -138,14 +113,7 @@ public partial class ComponentContainer : IAsyncDisposable
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
 
     private string ContainerCssClass =>
-        IsSelected
-            ? $"component-container {(_editMode ? "edit-mode" : "view-mode")} selected"
-            : $"component-container {(_editMode ? "edit-mode" : "view-mode")}";
-
-    protected override void OnInitialized()
-    {
-        _editMode = InitialEditMode;
-    }
+        IsSelected ? "component-container selected" : "component-container";
 
     protected override bool ShouldRender()
     {
@@ -156,7 +124,6 @@ public partial class ComponentContainer : IAsyncDisposable
             || Y != _lastRenderedY
             || Width != _lastRenderedWidth
             || Height != _lastRenderedHeight
-            || _editMode != _lastRenderedEditMode
             || IsSelected != _lastRenderedIsSelected
             || IsMultiSelected != _lastRenderedIsMultiSelected
             // A Group/Ungroup command flips Focusable (and so the rendered tabindex) alone, at
@@ -184,13 +151,12 @@ public partial class ComponentContainer : IAsyncDisposable
             || FocusedCustomPortId != _lastRenderedFocusedCustomPortId;
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnAfterRender(bool firstRender)
     {
         _lastRenderedX = X;
         _lastRenderedY = Y;
         _lastRenderedWidth = Width;
         _lastRenderedHeight = Height;
-        _lastRenderedEditMode = _editMode;
         _lastRenderedIsSelected = IsSelected;
         _lastRenderedIsMultiSelected = IsMultiSelected;
         _lastRenderedFocusable = Focusable;
@@ -200,66 +166,9 @@ public partial class ComponentContainer : IAsyncDisposable
         _lastRenderedZIndex = ZIndex;
         _lastRenderedFocusedPortId = FocusedPortId;
         _lastRenderedFocusedCustomPortId = FocusedCustomPortId;
-
-        if (firstRender)
-        {
-            _jsModule = await JavaScriptRuntime.InvokeAsync<IJSObjectReference>(
-                "import",
-                "./_content/D12Canvas/ComponentContainer.razor.js"
-            );
-            _dotNetRef = DotNetObjectReference.Create(this);
-        }
     }
 
     private Task HandleFocus() => OnFocus.InvokeAsync();
-
-    private void HandleMouseDown(MouseEventArgs e)
-    {
-        if (!_editMode)
-            return;
-
-        _isDragging = true;
-        _dragStart = e;
-        _startX = X;
-        _startY = Y;
-    }
-
-    private void HandleMouseMove(MouseEventArgs e)
-    {
-        if (!_editMode)
-            return;
-
-        if (_isDragging && _dragStart != null)
-        {
-            var (deltaX, deltaY) = ScaledDelta(_dragStart, e);
-
-            X = _startX + deltaX;
-            Y = _startY + deltaY;
-
-            NotifyStateChanged();
-        }
-    }
-
-    // Pan cancels out of a screen-space delta - only the canvas's current zoom scale matters.
-    private (double DeltaX, double DeltaY) ScaledDelta(MouseEventArgs from, MouseEventArgs to)
-    {
-        double deltaX = to.ClientX - from.ClientX;
-        double deltaY = to.ClientY - from.ClientY;
-
-        if (ParentCanvas != null)
-        {
-            deltaX /= ParentCanvas.ZoomPanTracker.Scale;
-            deltaY /= ParentCanvas.ZoomPanTracker.Scale;
-        }
-
-        return (deltaX, deltaY);
-    }
-
-    private void HandleMouseUp(MouseEventArgs e)
-    {
-        _isDragging = false;
-        _dragStart = null;
-    }
 
     // A standard port's own CSS class, plus the highlight class while the keyboard
     // connector-attachment gesture has this exact port as FocusedPortId. The side class is derived
@@ -286,99 +195,13 @@ public partial class ComponentContainer : IAsyncDisposable
     private string CustomPortCssClass(Guid portId) =>
         FocusedCustomPortId == portId ? "port custom-port port-focused" : "port custom-port";
 
-    // The shared visibility gate for the border strips and the resize handles - both
-    // are selection-driven overlay affordances, suppressed for a multi-selected member (the
-    // shared bounding-box overlay grows its own handles instead) but shown during edit mode too,
-    // same as resize handles always have been.
-    private bool ShowSelectionOverlay => (IsSelected && !IsMultiSelected) || _editMode;
+    // The shared visibility gate for the border strips and the resize handles, suppressed for a
+    // multi-selected member, whose shared bounding-box overlay grows its own handles instead.
+    private bool ShowSelectionOverlay => IsSelected && !IsMultiSelected;
 
     private static string CustomPortStyle(PortDef port) =>
         $"left: calc({FormatPercent(port.FractionX)}% - 10px); top: calc({FormatPercent(port.FractionY)}% - 10px);";
 
     private static string FormatPercent(double fraction) =>
         (fraction * 100).ToString(CultureInfo.InvariantCulture);
-
-    private void SwitchToEditMode()
-    {
-        _editMode = true;
-        StateHasChanged();
-        RegisterClickOutsideHandler();
-    }
-
-    private void ExitEditMode()
-    {
-        if (_editMode)
-        {
-            _editMode = false;
-            StateHasChanged();
-            UnregisterClickOutsideHandler();
-        }
-    }
-
-    [JSInvokable]
-    public void OnClickOutside()
-    {
-        ExitEditMode();
-    }
-
-    private async void RegisterClickOutsideHandler()
-    {
-        if (_jsModule != null && _editMode)
-        {
-            await _jsModule.InvokeVoidAsync("registerClickOutside", _containerRef, _dotNetRef);
-        }
-    }
-
-    private async void UnregisterClickOutsideHandler()
-    {
-        if (_jsModule != null)
-        {
-            await _jsModule.InvokeVoidAsync("unregisterClickOutside");
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        UnregisterClickOutsideHandler();
-        _dotNetRef?.Dispose();
-        if (_jsModule != null)
-        {
-            await _jsModule.DisposeAsync();
-        }
-    }
-
-    private void NotifyStateChanged()
-    {
-        OnStateChanged.InvokeAsync(
-            new ComponentContainerStateChangedEventArgs
-            {
-                X = X,
-                Y = Y,
-                Width = Width,
-                Height = Height,
-                IsEditMode = _editMode,
-            }
-        );
-    }
-}
-
-public enum ResizeDirection
-{
-    TopLeft,
-    Top,
-    TopRight,
-    Right,
-    BottomRight,
-    Bottom,
-    BottomLeft,
-    Left,
-}
-
-public class ComponentContainerStateChangedEventArgs : EventArgs
-{
-    public double X { get; set; }
-    public double Y { get; set; }
-    public double Width { get; set; }
-    public double Height { get; set; }
-    public bool IsEditMode { get; set; }
 }

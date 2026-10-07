@@ -98,13 +98,4 @@ public abstract class ComponentTestBase : BunitContext
         handle.SetupVoid("dispose", _ => true).SetVoidResult();
         return handle;
     }
-
-    // Every test that renders a ComponentContainer needs this, since edit mode's click-outside
-    // registration can run whether or not a given test cares about it.
-    protected void SetupComponentContainerJsModule()
-    {
-        var module = JSInterop.SetupModule("./_content/D12Canvas/ComponentContainer.razor.js");
-        module.SetupVoid("registerClickOutside", _ => true).SetVoidResult();
-        module.SetupVoid("unregisterClickOutside").SetVoidResult();
-    }
 }

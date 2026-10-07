@@ -19,7 +19,6 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
     public DiagramCanvasConnectorPaletteTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

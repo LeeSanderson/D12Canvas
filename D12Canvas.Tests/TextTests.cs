@@ -46,13 +46,13 @@ public class TextTests : ComponentTestBase
     }
 
     [Fact]
-    public void DoubleClickEntersEditModeRenderingATextEditorInPlaceOfTheParagraph()
+    public void BeginEditRendersATextEditorInPlaceOfTheParagraph()
     {
         var text = Render<Text>(parameters =>
             parameters.Add(p => p.Props, new TextProps("Original", "#000000", 16, "normal", "left"))
         );
 
-        text.Find("p.d12-text").DoubleClick();
+        text.InvokeAsync(text.Instance.BeginEdit);
 
         Assert.Empty(text.FindAll("p.d12-text"));
         Assert.Single(text.FindAll("textarea.d12-text-editor"));
@@ -64,7 +64,7 @@ public class TextTests : ComponentTestBase
         var text = Render<Text>(parameters =>
             parameters.Add(p => p.Props, new TextProps("Original", "#000000", 16, "normal", "left"))
         );
-        text.Find("p.d12-text").DoubleClick();
+        text.InvokeAsync(text.Instance.BeginEdit);
         var editor = text.Find("textarea.d12-text-editor");
         editor.Input("Changed but discarded");
 
@@ -80,7 +80,7 @@ public class TextTests : ComponentTestBase
         var text = Render<Text>(parameters =>
             parameters.Add(p => p.Props, new TextProps("Original", "#000000", 16, "normal", "left"))
         );
-        text.Find("p.d12-text").DoubleClick();
+        text.InvokeAsync(text.Instance.BeginEdit);
         var editor = text.Find("textarea.d12-text-editor");
         editor.Input("Edited locally");
 

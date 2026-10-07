@@ -19,9 +19,6 @@
             <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
                 Child Component Test
             </a><!--!-->
-            <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
-                Component Container Demo
-            </a><!--!-->
             <!--!--><a href="board-demo" class="nav-link"><!--!-->
                 Board Demo
             </a><!--!-->
@@ -46,7 +43,7 @@
                                     <line x1="560" y1="110" x2="700" y2="170" class="edge-hit" data-d12-role="edge" data-d12-entity="Guid_2"></line><line x1="960" y1="110" x2="1100" y2="170" class="edge-line"></line><!--!-->
                                     <line x1="960" y1="110" x2="1100" y2="170" class="edge-hit" data-d12-role="edge" data-d12-entity="Guid_3"></line><path d="M 160 310 L 230 310 L 230 410 L 300 410" class="edge-line" marker-end="url(#edge-arrow)"></path><!--!-->
                                     <path d="M 160 310 L 230 310 L 230 410 L 300 410" class="edge-hit" data-d12-role="edge" data-d12-entity="Guid_4"></path><path d="M 160 510 C 230 510 230 610 300 610" class="edge-line" marker-end="url(#edge-arrow)"></path><!--!-->
-                                    <path d="M 160 510 C 230 510 230 610 300 610" class="edge-hit" data-d12-role="edge" data-d12-entity="Guid_5"></path></svg><!--!--><div class="component-container view-mode" style="left: 60px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_6"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+                                    <path d="M 160 510 C 230 510 230 610 300 610" class="edge-hit" data-d12-role="edge" data-d12-entity="Guid_5"></path></svg><!--!--><div class="component-container" style="left: 60px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_6"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -68,6 +65,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -76,15 +74,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -231,7 +220,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 460px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_7"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 460px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_7"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -253,6 +242,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -261,15 +251,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -416,7 +397,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 860px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_8"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 860px; top: 80px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_8"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -438,6 +419,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -446,15 +428,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -601,7 +574,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 300px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_9"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 300px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_9"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -623,6 +596,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -631,15 +605,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -786,7 +751,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 700px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_10"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 700px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_10"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -808,6 +773,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -816,15 +782,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -971,7 +928,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 1100px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_11"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 1100px; top: 140px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_11"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -993,6 +950,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -1001,15 +959,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -1156,7 +1105,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 60px; top: 280px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_12"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 60px; top: 280px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_12"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -1178,6 +1127,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -1186,15 +1136,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -1341,7 +1282,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 300px; top: 380px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_13"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 300px; top: 380px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_13"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -1363,6 +1304,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -1371,15 +1313,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -1526,7 +1459,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 60px; top: 480px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_14"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 60px; top: 480px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_14"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -1548,6 +1481,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -1556,15 +1490,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -1711,7 +1636,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 300px; top: 580px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_15"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
+</style><!--!--><div class="component-container" style="left: 300px; top: 580px; width: 100px; height: 60px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_15"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="--d12-board-fill-override: #e3f2fd; --d12-board-stroke-override: #1565c0; border-width: 3px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -1733,6 +1658,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -1741,15 +1667,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {

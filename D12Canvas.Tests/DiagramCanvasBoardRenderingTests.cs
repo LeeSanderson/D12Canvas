@@ -15,7 +15,6 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
     public DiagramCanvasBoardRenderingTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
     }
 
     private void RegisterTestComponent(

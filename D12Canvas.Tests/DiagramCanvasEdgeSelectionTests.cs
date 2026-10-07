@@ -19,7 +19,6 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
     public DiagramCanvasEdgeSelectionTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

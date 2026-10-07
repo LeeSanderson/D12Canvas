@@ -21,7 +21,6 @@ public class DiagramCanvasCtrlTabSpaceMultiSelectTests : ComponentTestBase
     public DiagramCanvasCtrlTabSpaceMultiSelectTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

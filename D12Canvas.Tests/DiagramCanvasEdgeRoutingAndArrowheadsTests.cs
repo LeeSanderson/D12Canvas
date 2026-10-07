@@ -20,7 +20,6 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
     public DiagramCanvasEdgeRoutingAndArrowheadsTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

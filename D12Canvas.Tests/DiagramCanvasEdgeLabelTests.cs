@@ -23,7 +23,6 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
     public DiagramCanvasEdgeLabelTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

@@ -15,7 +15,6 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
     public DiagramCanvasPlacementTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
     }
 
     private void RegisterTestComponent(ComponentSize? defaultSize)

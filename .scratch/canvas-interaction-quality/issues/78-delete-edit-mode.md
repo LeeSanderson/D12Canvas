@@ -4,12 +4,18 @@
 
 **Blocked by:** 75 (ResizeSelection), 76 (DragEdgeEnd and SelectEdge)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The container has no mouse, click, double-click or focus bindings of its own and no JavaScript module; its public surface loses the three edit-mode members
-- [ ] The container demo page and its nav entry are gone; the deleted nav row moves every existing `.verified.html` and `.png`, which is planned churn
-- [ ] The pointer listener has no per-role allowance; every one of the eleven roles reaches C#
-- [ ] The container's `ShouldRender` no longer compares edit-mode state
-- [ ] Container tests that drove edit mode or the click-outside callback are deleted or rewritten; the test base no longer mocks the container module
-- [ ] Full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Component container` term describes what shipped
+- [x] The container has no mouse, click or double-click bindings and no JavaScript module, and keeps only the tab stop's `@onfocus` that ADR 0036 names as the one route by which focus selects; its public surface loses the three edit-mode members
+- [x] The container demo page and its nav entry are gone; the deleted nav row moves every existing `.verified.html` and `.png`, which is planned churn
+- [x] The pointer listener has no per-role allowance; every one of the eleven roles reaches C#
+- [x] The container's `ShouldRender` no longer compares edit-mode state
+- [x] Container tests that drove edit mode or the click-outside callback are deleted or rewritten; the test base no longer mocks the container module
+- [x] Full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Component container` term describes what shipped
+
+## Comments
+
+The pointer listener's per-role allowance had already gone with ticket 76, so no listener change was needed. The `classify` option on `addPointerListener` stays because ADR 0018 reserves `classify: false` for the minimap.
+
+All 56 `.verified.html` files moved for the nav row, the `view-mode` class and the merged style rule. 54 `.png` baselines moved for the nav row, the change ADR 0035 predicted. Twelve of them also differ by one channel step on an antialiased palette corner, well inside the comparer's tolerance.

@@ -20,7 +20,6 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
     public DiagramCanvasMarqueeSelectTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

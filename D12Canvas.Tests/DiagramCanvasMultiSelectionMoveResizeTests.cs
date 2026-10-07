@@ -23,7 +23,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
     public DiagramCanvasMultiSelectionMoveResizeTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

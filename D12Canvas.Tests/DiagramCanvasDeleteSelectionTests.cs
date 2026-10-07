@@ -20,7 +20,6 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
     public DiagramCanvasDeleteSelectionTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

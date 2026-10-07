@@ -20,7 +20,6 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
     public DiagramCanvasFocusFollowsSelectionTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

@@ -18,7 +18,6 @@ public class DiagramCanvasDragMoveTests : ComponentTestBase
     public DiagramCanvasDragMoveTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

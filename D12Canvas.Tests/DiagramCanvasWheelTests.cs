@@ -19,7 +19,6 @@ public class DiagramCanvasWheelTests : ComponentTestBase
     public DiagramCanvasWheelTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

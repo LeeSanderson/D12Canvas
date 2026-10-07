@@ -19,9 +19,6 @@
             <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
                 Child Component Test
             </a><!--!-->
-            <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
-                Component Container Demo
-            </a><!--!-->
             <!--!--><a href="board-demo" class="nav-link"><!--!-->
                 Board Demo
             </a><!--!-->
@@ -40,7 +37,7 @@
 
     <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="themed-defaults-layout"><div class="theme-pane" data-d12-theme="light"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1); --d12-scale: 1;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode" style="left: 40px; top: 40px; width: 240px; height: 140px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="border-width: 2px;"></div><!--!-->
+<div class="themed-defaults-layout"><div class="theme-pane" data-d12-theme="light"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1); --d12-scale: 1;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container" style="left: 40px; top: 40px; width: 240px; height: 140px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="border-width: 2px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -62,6 +59,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -70,15 +68,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -225,7 +214,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 60px; top: 90px; width: 200px; height: 40px; z-index: 1;" role="group" aria-label="Text" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_2"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="font-size: 18px; font-weight: normal; text-align: center;">Themed default text</p><!--!--><style>
+</style><!--!--><div class="component-container" style="left: 60px; top: 90px; width: 200px; height: 40px; z-index: 1;" role="group" aria-label="Text" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_2"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="font-size: 18px; font-weight: normal; text-align: center;">Themed default text</p><!--!--><style>
     .d12-text {
         width: 100%;
         height: 100%;
@@ -254,6 +243,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -262,15 +252,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -417,7 +398,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 40px; top: 220px; width: 240px; height: 40px; z-index: 2;" role="group" aria-label="Text" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_3"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="--d12-board-text-override: #1565c0; font-size: 18px; font-weight: bold; text-align: left;">Authored colour stays</p><!--!--><style>
+</style><!--!--><div class="component-container" style="left: 40px; top: 220px; width: 240px; height: 40px; z-index: 2;" role="group" aria-label="Text" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_3"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="--d12-board-text-override: #1565c0; font-size: 18px; font-weight: bold; text-align: left;">Authored colour stays</p><!--!--><style>
     .d12-text {
         width: 100%;
         height: 100%;
@@ -446,6 +427,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -454,15 +436,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -888,7 +861,7 @@
             linear-gradient(to bottom, var(--d12-border) 1px, transparent 1px);
     }
 </style></div><!--!-->
-    <div class="theme-pane" data-d12-theme="dark"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1); --d12-scale: 1;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode" style="left: 40px; top: 40px; width: 240px; height: 140px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_4"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="border-width: 2px;"></div><!--!-->
+    <div class="theme-pane" data-d12-theme="dark"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1); --d12-scale: 1;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container" style="left: 40px; top: 40px; width: 240px; height: 140px; z-index: 0;" role="group" aria-label="Rectangle" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_4"><div class="container-content"><!--!--><!--!--><!--!--><div class="d12-rectangle" style="border-width: 2px;"></div><!--!-->
 
 <!--!--><style>
     .d12-rectangle {
@@ -910,6 +883,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -918,15 +892,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -1073,7 +1038,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 60px; top: 90px; width: 200px; height: 40px; z-index: 1;" role="group" aria-label="Text" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_5"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="font-size: 18px; font-weight: normal; text-align: center;">Themed default text</p><!--!--><style>
+</style><!--!--><div class="component-container" style="left: 60px; top: 90px; width: 200px; height: 40px; z-index: 1;" role="group" aria-label="Text" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_5"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="font-size: 18px; font-weight: normal; text-align: center;">Themed default text</p><!--!--><style>
     .d12-text {
         width: 100%;
         height: 100%;
@@ -1102,6 +1067,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -1110,15 +1076,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -1265,7 +1222,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode" style="left: 40px; top: 220px; width: 240px; height: 40px; z-index: 2;" role="group" aria-label="Text" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_6"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="--d12-board-text-override: #1565c0; font-size: 18px; font-weight: bold; text-align: left;">Authored colour stays</p><!--!--><style>
+</style><!--!--><div class="component-container" style="left: 40px; top: 220px; width: 240px; height: 40px; z-index: 2;" role="group" aria-label="Text" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_6"><div class="container-content"><!--!--><!--!--><!--!--><p class="d12-text" style="--d12-board-text-override: #1565c0; font-size: 18px; font-weight: bold; text-align: left;">Authored colour stays</p><!--!--><style>
     .d12-text {
         width: 100%;
         height: 100%;
@@ -1294,6 +1251,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -1302,15 +1260,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {

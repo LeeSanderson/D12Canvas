@@ -17,7 +17,6 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
     public DiagramCanvasFloatingEndpointTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

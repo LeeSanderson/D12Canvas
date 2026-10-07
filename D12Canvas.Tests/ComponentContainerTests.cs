@@ -7,31 +7,28 @@ namespace D12Canvas.Tests;
 
 public class ComponentContainerTests : ComponentTestBase
 {
-    public ComponentContainerTests()
-    {
-        SetupComponentContainerJsModule();
-    }
-
     [Fact]
-    public void ComponentContainer_ImportsColocatedJsModule()
-    {
-        var container = Render<ComponentContainer>();
-
-        Assert.Contains("view-mode", container.Find(".component-container").ClassList);
-    }
-
-    [Fact]
-    public void ComponentContainer_ClickOutside_ExitsEditMode()
+    public void AContainerOutsideABoardIsAPositionedBoxWithItsContentAndNoAffordances()
     {
         var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.InitialEditMode, true)
+            parameters
+                .Add(p => p.X, 40)
+                .Add(p => p.Y, 60)
+                .Add(p => p.Width, 120)
+                .Add(p => p.Height, 80)
+                .AddChildContent("<span class=\"author-box\">Hello</span>")
         );
 
-        Assert.Contains("edit-mode", container.Find(".component-container").ClassList);
-
-        container.InvokeAsync(() => container.Instance.OnClickOutside());
-
-        Assert.Contains("view-mode", container.Find(".component-container").ClassList);
+        var containerElement = container.Find(".component-container");
+        Assert.Equal(
+            "left: 40px; top: 60px; width: 120px; height: 80px; z-index: 0;",
+            containerElement.GetAttribute("style")
+        );
+        Assert.Single(container.FindAll(".container-content .author-box"));
+        Assert.Equal(["component-container"], containerElement.ClassList);
+        Assert.Empty(container.FindAll(".resize-handle"));
+        Assert.Empty(container.FindAll(".port-strip"));
+        Assert.Null(containerElement.GetAttribute("data-d12-entity"));
     }
 
     [Fact]
@@ -139,20 +136,10 @@ public class ComponentContainerTests : ComponentTestBase
     }
 
     [Fact]
-    public void UnselectedInstanceOutsideEditModeOmitsResizeHandles()
+    public void UnselectedInstanceOmitsResizeHandles()
     {
         var container = Render<ComponentContainer>();
 
         Assert.Empty(container.FindAll(".resize-handle"));
-    }
-
-    [Fact]
-    public void EditModeInstanceRendersResizeHandlesEvenWhenUnselected()
-    {
-        var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.InitialEditMode, true)
-        );
-
-        Assert.Equal(8, container.FindAll(".resize-handle").Count);
     }
 }

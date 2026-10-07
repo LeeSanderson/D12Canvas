@@ -15,7 +15,7 @@ _Avoid_: shape, node — not used anywhere in this codebase; "component" is the 
 A placed occurrence of a component type on a board, with its own bounds and props value.
 
 **Component container**:
-The box a component instance is rendered in: it positions the instance at its `Bounds`, hosts the author's component as its content, and declares what is hittable. It has one rendering, and `Selection` alone decides whether its affordances appear. Used outside a `Board` it is a positioned box with content and nothing more, showing no affordances and answering no `Pointer gesture`, because classification carries an entity id and a container that is not board content has none (ADR 0035).
+The box a component instance is rendered in: it positions the instance at its `Bounds`, hosts the author's component as its content, and declares what is hittable. It has one rendering, and `Selection` alone decides whether its affordances appear. It binds no pointer event and loads no JavaScript; its one binding is focus on its tab stop, the route by which `Tab` traversal selects (ADR 0036). Used outside a `Board` it is a positioned box with content and nothing more, showing no affordances and answering no `Pointer gesture`, because classification carries an entity id and a container that is not board content has none (ADR 0035).
 _Avoid_: edit mode — a retired second rendering with its own entry gesture, deleted because it never had a working way in and out at the same time (ADR 0035).
 
 **Inline edit**:

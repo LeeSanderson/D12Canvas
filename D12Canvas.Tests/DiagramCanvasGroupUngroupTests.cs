@@ -18,7 +18,6 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
     public DiagramCanvasGroupUngroupTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

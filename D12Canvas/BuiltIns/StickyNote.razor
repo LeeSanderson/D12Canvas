@@ -9,10 +9,7 @@
                   @ref="_editorRef"
                   @bind="_editBuffer" @bind:event="oninput"
                   @onblur="CommitEdit"
-                  @onkeydown="HandleEditorKeyDown" @onkeydown:stopPropagation
-                  @onmousedown:stopPropagation
-                  @onclick:stopPropagation
-                  @ondblclick:stopPropagation></textarea>
+                  @onkeydown="HandleEditorKeyDown" @onkeydown:stopPropagation></textarea>
     }
     else
     {

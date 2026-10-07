@@ -21,7 +21,6 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     public DiagramCanvasContextMenuTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
         var contextMenuModule = JSInterop.SetupModule(
             "./_content/D12Canvas/SelectionContextMenu.razor.js"
         );

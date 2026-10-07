@@ -21,7 +21,6 @@ public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
     public DiagramCanvasKeyboardPlacementTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

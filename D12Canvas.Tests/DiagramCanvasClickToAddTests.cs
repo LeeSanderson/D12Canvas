@@ -16,7 +16,6 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
     public DiagramCanvasClickToAddTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
     }
 
     private void RegisterTestComponent(ComponentSize? defaultSize)

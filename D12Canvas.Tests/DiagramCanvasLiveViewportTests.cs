@@ -17,7 +17,6 @@ public class DiagramCanvasLiveViewportTests : ComponentTestBase
     public DiagramCanvasLiveViewportTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

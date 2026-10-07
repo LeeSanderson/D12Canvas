@@ -22,7 +22,6 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
     public DiagramCanvasGroupZIndexTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

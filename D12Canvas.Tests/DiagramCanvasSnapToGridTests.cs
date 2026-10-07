@@ -19,7 +19,6 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
     public DiagramCanvasSnapToGridTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

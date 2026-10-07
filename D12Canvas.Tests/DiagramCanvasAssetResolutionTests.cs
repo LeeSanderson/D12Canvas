@@ -18,7 +18,6 @@ public class DiagramCanvasAssetResolutionTests : ComponentTestBase
     public DiagramCanvasAssetResolutionTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var options = new D12CanvasOptions();
         AssetTestComponent.Register(options);

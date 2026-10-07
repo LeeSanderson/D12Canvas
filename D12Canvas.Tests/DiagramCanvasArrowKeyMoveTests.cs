@@ -19,7 +19,6 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     public DiagramCanvasArrowKeyMoveTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

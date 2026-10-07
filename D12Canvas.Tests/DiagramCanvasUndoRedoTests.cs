@@ -19,7 +19,6 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public DiagramCanvasUndoRedoTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

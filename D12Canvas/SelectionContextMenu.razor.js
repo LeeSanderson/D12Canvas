@@ -1,5 +1,4 @@
-// Dismiss-on-outside-click, the same technique ComponentContainer.razor.js already uses
-// for exiting inline-edit mode - a capture-phase mousedown listener on document, so it fires before
+// Dismiss-on-outside-click: a capture-phase mousedown listener on document, so it fires before
 // any other handler on the clicked element itself.
 let handler = null;
 

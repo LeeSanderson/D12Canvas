@@ -29,7 +29,6 @@ public class PropertyPanelTests : ComponentTestBase
     public PropertyPanelTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         _registry.Register(
             new ComponentRegistration(

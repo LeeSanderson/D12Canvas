@@ -24,7 +24,6 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
     public DiagramCanvasKeyboardConnectorAttachmentTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

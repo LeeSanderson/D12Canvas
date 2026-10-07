@@ -2,8 +2,7 @@
 @using D12Canvas.Model
 @using D12Canvas.Pointer
 
-<div @ref="_containerRef"
-     class="@ContainerCssClass"
+<div class="@ContainerCssClass"
      style="@ContainerStyle"
      role="@Role"
      aria-label="@AccessibleName"
@@ -12,14 +11,7 @@
      data-d12-role="@HitRole.Instance"
      data-d12-entity="@EntityId"
      data-d12-unaddressable="@(Addressable ? null : "true")"
-     @onmousedown="HandleMouseDown"
-     @onmousedown:stopPropagation
-     @onmousemove="HandleMouseMove"
-     @onmousemove:stopPropagation
-     @onmouseup="HandleMouseUp"
-     @onmouseup:stopPropagation
-     @onfocus="HandleFocus"
-     @ondblclick="SwitchToEditMode">
+     @onfocus="HandleFocus">
 
     <div class="container-content">
         @ChildContent
@@ -76,6 +68,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -84,15 +77,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {

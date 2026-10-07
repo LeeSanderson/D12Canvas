@@ -18,7 +18,6 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
     public DiagramCanvasLodPlaceholderTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
     }
 
     private void RegisterTestComponent(string? icon = "★")

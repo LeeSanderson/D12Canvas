@@ -19,9 +19,6 @@
             <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
                 Child Component Test
             </a><!--!-->
-            <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
-                Component Container Demo
-            </a><!--!-->
             <!--!--><a href="board-demo" class="nav-link"><!--!-->
                 Board Demo
             </a><!--!-->
@@ -143,7 +140,7 @@
         font-size: 13px;
     }
 </style></div><!--!-->
-    <div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1); --d12-scale: 1;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode selected" style="left: 108px; top: 224px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
+    <div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 20px 20px; background-position: 0px 0px; opacity: 1;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(1); --d12-scale: 1;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container selected" style="left: 108px; top: 224px; width: 200px; height: 150px; z-index: 0;" role="group" aria-label="Demo note" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1" aria-selected="true"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>New note</p></div><!--!-->
 
 <!--!--><style>
     .demo-note {
@@ -169,6 +166,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -177,15 +175,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {
@@ -332,7 +321,7 @@
         left: -5px;
         cursor: ew-resize;
     }
-</style><!--!--><div class="component-container view-mode selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Stress item" aria-selected="true" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_2"><div class="container-content"><!--!--><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
+</style><!--!--><div class="component-container selected" style="left: 128px; top: 244px; width: 200px; height: 150px; z-index: 1;" role="group" aria-label="Stress item" aria-selected="true" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_2"><div class="container-content"><!--!--><!--!--><!--!--><div class="stress-item" style="background:#e74c3c;">0</div><!--!-->
 
 <!--!--><style>
     .stress-item {
@@ -356,6 +345,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -364,15 +354,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {

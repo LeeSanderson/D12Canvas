@@ -17,7 +17,6 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
     public DiagramCanvasCustomPortTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

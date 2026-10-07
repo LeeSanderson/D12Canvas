@@ -8,14 +8,11 @@
               @ref="_editorRef"
               @bind="_editBuffer" @bind:event="oninput"
               @onblur="CommitEdit"
-              @onkeydown="HandleEditorKeyDown" @onkeydown:stopPropagation
-              @onmousedown:stopPropagation
-              @onclick:stopPropagation
-              @ondblclick:stopPropagation></textarea>
+              @onkeydown="HandleEditorKeyDown" @onkeydown:stopPropagation></textarea>
 }
 else
 {
-    <p class="d12-text" style="@Style" @ondblclick="BeginEdit" @ondblclick:stopPropagation>@Props.Text</p>
+    <p class="d12-text" style="@Style">@Props.Text</p>
 }
 
 <style>
@@ -62,9 +59,7 @@ else
         + $"font-size: {Props.FontSize}px; font-weight: {Props.FontWeight}; text-align: {Props.TextAlign};";
 
     // A Text-type field is edited inline/WYSIWYG on the canvas, never through the property panel.
-    // The canvas calls this for a Text on the board. The paragraph's own double-click still calls it
-    // for an edge label, whose presses the canvas does not own yet; stopPropagation keeps that
-    // double-click from reaching ComponentContainer's legacy edit mode.
+    // The canvas calls this for a Text on the board and for an edge label.
     public void BeginEdit()
     {
         _editBuffer = Props.Text;

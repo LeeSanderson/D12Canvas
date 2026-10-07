@@ -18,7 +18,6 @@ public class DiagramCanvasAltArrowResizeTests : ComponentTestBase
     public DiagramCanvasAltArrowResizeTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

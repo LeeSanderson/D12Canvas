@@ -19,7 +19,6 @@ public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
     public DiagramCanvasZIndexCommandsTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

@@ -13,7 +13,6 @@ public class DiagramCanvasZoomLimitsTests : ComponentTestBase
     public DiagramCanvasZoomLimitsTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
     }
 
     private static void ZoomIn(IRenderedComponent<DiagramCanvas> canvas, int times)

@@ -19,9 +19,6 @@
             <!--!--><a href="ChildComponentTest" class="nav-link"><!--!-->
                 Child Component Test
             </a><!--!-->
-            <!--!--><a href="componentcontainer-demo" class="nav-link"><!--!-->
-                Component Container Demo
-            </a><!--!-->
             <!--!--><a href="board-demo" class="nav-link active" aria-current="page"><!--!-->
                 Board Demo
             </a><!--!-->
@@ -40,7 +37,7 @@
 
     <main b-k7rv4lobv5=""><article class="content" style="height: 92vh;" b-k7rv4lobv5=""><!--!--><!--!--><!--!--><!--!-->
 
-<div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 19.999999999999964px 19.999999999999964px; background-position: 0px 0px; opacity: 0.9999999999999992;"></div><div class="grid-layer" style="background-size: 199.99999999999966px 199.99999999999966px; background-position: 0px 0px; opacity: 7.771561172376096E-16;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(9.999999999999982); --d12-scale: 9.999999999999982;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container view-mode" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" role="group" aria-label="Demo note" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>Welcome to D12Canvas</p></div><!--!-->
+<div class="canvas-container"><!--!--><div class="diagram-container"><!--!--><div class="grid-backdrop"></div><div class="grid-layer" style="background-size: 19.999999999999964px 19.999999999999964px; background-position: 0px 0px; opacity: 0.9999999999999992;"></div><div class="grid-layer" style="background-size: 199.99999999999966px 199.99999999999966px; background-position: 0px 0px; opacity: 7.771561172376096E-16;"></div><div class="diagram-canvas" tabindex="-1"><div class="canvas-content" style="transform: translate(0px, 0px) scale(9.999999999999982); --d12-scale: 9.999999999999982;"><!--!--><svg class="edges-layer"></svg><!--!--><div class="component-container" style="left: 120px; top: 80px; width: 220px; height: 140px; z-index: 1;" role="group" aria-label="Demo note" tabindex="0" data-d12-role="instance" data-d12-entity="Guid_1"><div class="container-content"><!--!--><!--!--><!--!--><div class="demo-note" style="background-color: #ffd966;"><p>Welcome to D12Canvas</p></div><!--!-->
 
 <!--!--><style>
     .demo-note {
@@ -66,6 +63,7 @@
         min-width: 100px;
         min-height: 100px;
         box-sizing: border-box;
+        border: 1px solid transparent;
         cursor: move;
     }
 
@@ -74,15 +72,6 @@
         height: 100%;
         position: relative;
         overflow: hidden;
-    }
-
-    .component-container.edit-mode {
-        border: 2px solid #3498db;
-        padding: 2px;
-    }
-
-    .component-container.view-mode {
-        border: 1px solid transparent;
     }
 
     .component-container.selected {

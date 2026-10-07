@@ -20,7 +20,6 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
     public DiagramCanvasInlineTextEditingTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

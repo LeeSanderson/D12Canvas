@@ -21,7 +21,6 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
     public DiagramCanvasGroupMoveResizeTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var registry = new ComponentRegistry();
         registry.Register(

@@ -14,7 +14,6 @@ public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
     public DiagramCanvasAdaptiveGridTests()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
     }
 
     private static void ZoomIn(IRenderedComponent<DiagramCanvas> canvas, int times)

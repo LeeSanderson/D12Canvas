@@ -181,7 +181,6 @@ public class PaletteTests : ComponentTestBase
     {
         RegisterComponent("rectangle", "Rectangle", "Rectangle");
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
@@ -213,7 +212,6 @@ public class PaletteTests : ComponentTestBase
     {
         RegisterComponent("rectangle", "Rectangle", "Rectangle");
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
@@ -230,7 +228,6 @@ public class PaletteTests : ComponentTestBase
     {
         RegisterComponent("rectangle", "Rectangle", "Rectangle");
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
@@ -271,7 +268,6 @@ public class PaletteTests : ComponentTestBase
     public void DragStartOnTheConnectorEntryBeginsAConnectorPaletteDragOnTheWiredCanvas()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
@@ -288,7 +284,6 @@ public class PaletteTests : ComponentTestBase
     public void ClickingTheConnectorEntryPlacesAFloatingEdgeOnTheWiredCanvas()
     {
         SetupDiagramCanvasJsModule();
-        SetupComponentContainerJsModule();
 
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
