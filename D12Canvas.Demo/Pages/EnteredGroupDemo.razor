@@ -1,0 +1,49 @@
+@page "/entered-group-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Entered Group Demo</PageTitle>
+
+<div class="entered-group-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .entered-group-canvas {
+        width: 700px;
+        height: 400px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid FirstId = Guid.Parse("c0000000-0000-0000-0000-000000000001");
+    private static readonly Guid SecondId = Guid.Parse("c0000000-0000-0000-0000-000000000002");
+    private static readonly Guid ThirdId = Guid.Parse("c0000000-0000-0000-0000-000000000003");
+    private static readonly Guid OutsideId = Guid.Parse("c0000000-0000-0000-0000-000000000004");
+
+    private readonly Board _board = SeedBoard();
+
+    private static Guid AddRectangle(Board board, Guid id, Bounds bounds, string fill)
+    {
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps(fill, null, 2), bounds, id: id)
+        );
+        return id;
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        var first = AddRectangle(board, FirstId, new Bounds(60, 80, 140, 90), "#cfe3ff");
+        var second = AddRectangle(board, SecondId, new Bounds(240, 80, 120, 90), "#d7f5d0");
+        var third = AddRectangle(board, ThirdId, new Bounds(240, 200, 120, 90), "#d7f5d0");
+        AddRectangle(board, OutsideId, new Bounds(480, 140, 140, 90), "#ffe0b2");
+
+        var nested = new Group([second, third]);
+        board.AddGroup(nested);
+        board.AddGroup(new Group([first, nested.Id]));
+        return board;
+    }
+}

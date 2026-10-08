@@ -151,18 +151,36 @@ public class MoveSelectionGestureTests
     }
 
     [Fact]
-    public void ADoubleClickAsksForAnInlineEditOnThePressedEntity()
+    public void ADoubleClickOnAnAddressableInstanceAsksForAnInlineEdit()
+    {
+        var board = new Board();
+        var pressed = AddInstance(board, 0, 0);
+        var context = new FakeGestureContext(board);
+
+        var move = PressInstance(context, pressed.Id, 10, 10, pressCount: 2);
+        move.Release(ReleaseAt(10, 10));
+
+        Assert.Equal([pressed.Id], context.InlineEditRequests);
+        Assert.Empty(context.EnteredGroups);
+    }
+
+    [Fact]
+    public void ADoubleClickOnAMemberOfAGroupNotEnteredEntersItAndSelectsTheMember()
     {
         var board = new Board();
         var member = AddInstance(board, 0, 0);
         var group = new Group([member.Id, AddInstance(board, 100, 0).Id]);
         board.AddGroup(group);
-        var context = new FakeGestureContext(board) { EffectiveId = _ => group.Id };
+        var context = new FakeGestureContext(board);
+        context.EffectiveId = id => context.EnteredGroups.Contains(group.Id) ? id : group.Id;
+        context.SelectedInstanceIds.Add(group.Id);
 
         var move = PressInstance(context, member.Id, 10, 10, pressCount: 2);
         move.Release(ReleaseAt(10, 10));
 
-        Assert.Equal([member.Id], context.InlineEditRequests);
+        Assert.Equal([group.Id], context.EnteredGroups);
+        Assert.Equal([member.Id], context.SelectedInstanceIds);
+        Assert.Empty(context.InlineEditRequests);
     }
 
     [Fact]

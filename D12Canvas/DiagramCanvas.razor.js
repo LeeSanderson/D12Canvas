@@ -94,7 +94,8 @@ function isNativelyInteractive(element) {
 // the instance it belongs to. An unmarked natively interactive element, or an author's opt-in
 // marker, met before any role marker makes the press author content, and whichever of the two
 // is met first says whether the press landed on something that takes focus by itself. Content
-// inside an instance that is not addressable, a member of a group, is the instance. Finding
+// inside an instance that is not addressable, one inside a group that is not entered, is the
+// instance, which C# marks on the render and this walk only reads. Finding
 // nothing before the canvas element means bare canvas.
 function classify(target, canvas) {
     let authorContent = null;
@@ -581,10 +582,14 @@ function isEditableTarget(target) {
     );
 }
 
-// Enter means "commit this port attachment", which is defined only on one of the canvas's own
-// instance tab stops, so the Enter row is scoped to them.
-function isComponentContainerTarget(target) {
-    return target instanceof Element && target.classList.contains("component-container");
+// Enter commits a port attachment on one of the canvas's own instance tab stops and enters the
+// group on a group's tab stop, so the Enter row is scoped to those two.
+function isCanvasTabStopTarget(target) {
+    return (
+        target instanceof Element &&
+        (target.classList.contains("component-container") ||
+            target.classList.contains("group-tab-stop"))
+    );
 }
 
 function isNothingFocused() {
@@ -684,7 +689,7 @@ export async function addKeyboardListener(element, dotnetRef) {
                 dotnetRef.invokeMethodAsync("OnEscapePressed");
                 break;
             case "Enter":
-                if (isComponentContainerTarget(event.target)) {
+                if (isCanvasTabStopTarget(event.target)) {
                     event.preventDefault();
                     dotnetRef.invokeMethodAsync("OnEnterPressed");
                 }

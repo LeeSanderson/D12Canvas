@@ -65,15 +65,21 @@ internal sealed class MoveSelectionGesture : PointerGesture
 
     protected override void OnRelease(PointerRelease release) => Context.CommitPreview();
 
-    // A double-click leaves the selection as the first click of the pair left it and asks the
-    // pressed instance to edit, which the canvas refuses for a grouped member.
+    // A double-click on a member of a group that is not entered, or on the selection box over one,
+    // steps one level inside that group and selects the member's ancestor at the new level. On an
+    // addressable instance it leaves the selection as the first click of the pair left it and asks
+    // the instance to edit.
     protected override void OnClick(PointerRelease release)
     {
         if (Press.PressCount > 1)
         {
             if (Press.EntityId is { } entityId)
             {
-                Context.BeginInlineEdit(entityId);
+                EnterOrEdit(entityId);
+            }
+            else if (ParticipantUnderPress() is { } participantId)
+            {
+                TryEnterContainingGroup(participantId);
             }
 
             return;
@@ -92,6 +98,38 @@ internal sealed class MoveSelectionGesture : PointerGesture
         {
             Context.ReplaceSelection([member], []);
         }
+    }
+
+    // The selection box covers the members of a selected group, so a double-press there means the
+    // topmost selected instance under the pointer.
+    private Guid? ParticipantUnderPress() =>
+        _participants
+            .Where(participant => participant.Bounds.Contains(_pressPoint.X, _pressPoint.Y))
+            .OrderByDescending(participant => participant.ZIndex)
+            .Select(participant => (Guid?)participant.Id)
+            .FirstOrDefault();
+
+    private void EnterOrEdit(Guid entityId)
+    {
+        if (!TryEnterContainingGroup(entityId))
+        {
+            Context.BeginInlineEdit(entityId);
+        }
+    }
+
+    // Enters the group that holds the entity one level below the current scope, then selects the
+    // entity's ancestor at the new level, which the scope change has just made addressable.
+    private bool TryEnterContainingGroup(Guid entityId)
+    {
+        var effectiveId = Context.EffectiveSelectionId(entityId);
+        if (effectiveId == entityId)
+        {
+            return false;
+        }
+
+        Context.EnterGroup(effectiveId);
+        Context.ReplaceSelection([Context.EffectiveSelectionId(entityId)], []);
+        return true;
     }
 
     private static IEnumerable<(EdgeEnd End, FloatingEndpoint Start)> FloatingEndsOf(Edge edge)

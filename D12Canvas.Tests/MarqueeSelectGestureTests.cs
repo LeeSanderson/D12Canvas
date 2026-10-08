@@ -62,6 +62,23 @@ public class MarqueeSelectGestureTests
     }
 
     [Fact]
+    public void TheBandSkipsEveryInstanceOutsideTheEnteredGroup()
+    {
+        var board = new Board();
+        var member = AddInstance(board, 20, 20);
+        var outsider = AddInstance(board, 120, 20);
+        var context = new FakeGestureContext(board) { InScope = id => id == member.Id };
+        var marquee = new MarqueeSelectGesture(
+            PointerEvents.Press(HitRole.Canvas, PointerPress.PrimaryButton, 0, 0),
+            context
+        );
+
+        marquee.Move(PointerEvents.Move(200, 100));
+
+        Assert.Equal([member.Id], context.SelectedInstanceIds);
+    }
+
+    [Fact]
     public void ShiftHeldAtPressUnionsTheBandIntoThePressTimeSelection()
     {
         var board = new Board();

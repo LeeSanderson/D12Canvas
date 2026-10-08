@@ -189,7 +189,7 @@ public sealed class Board
     // selection on the top-level group.
     public Group? FindContainingGroup(Guid memberId)
     {
-        var parent = _groups.Values.FirstOrDefault(g => g.MemberIds.Contains(memberId));
+        var parent = FindParentGroup(memberId);
         if (parent is null)
         {
             return null;
@@ -197,7 +197,7 @@ public sealed class Board
 
         while (true)
         {
-            var grandparent = _groups.Values.FirstOrDefault(g => g.MemberIds.Contains(parent.Id));
+            var grandparent = FindParentGroup(parent.Id);
             if (grandparent is null)
             {
                 return parent;
@@ -206,6 +206,10 @@ public sealed class Board
             parent = grandparent;
         }
     }
+
+    // The group that lists this id directly among its members, or null for a top-level entity.
+    public Group? FindParentGroup(Guid memberId) =>
+        _groups.Values.FirstOrDefault(group => group.MemberIds.Contains(memberId));
 
     public IReadOnlyCollection<ComponentInstance> GetVisible(Bounds viewport, double overscan = 0)
     {

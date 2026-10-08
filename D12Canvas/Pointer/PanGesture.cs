@@ -5,7 +5,8 @@ namespace D12Canvas.Pointer;
 // the pointer composes with it untouched. Any other viewport change re-anchors to the board point
 // now under the pointer, so the viewport's movement and the hand's add up. A secondary release that
 // never crossed the threshold is the context menu: it resolves the selection at that moment, so a
-// right-drag pan never wipes the selection as a side effect, and opens the menu at the press point.
+// right-drag pan never wipes the selection or leaves the entered group as a side effect, and opens
+// the menu at the press point.
 // A middle click does nothing. The viewport is never restored on cancel.
 internal sealed class PanGesture : PointerGesture
 {
@@ -35,6 +36,7 @@ internal sealed class PanGesture : PointerGesture
             return;
         }
 
+        Context.StepOutFor(Press);
         ResolveSelectionForMenu();
         Context.OpenContextMenuAt(Press.X, Press.Y);
     }

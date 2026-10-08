@@ -13,7 +13,24 @@ internal interface IGestureContext
     SelectionSnapshot SelectionSnapshot { get; }
 
     (double X, double Y) ToBoardPoint(double containerX, double containerY);
+
+    // The ancestor of the entity, or the entity itself, that is a direct member of the entered
+    // group, or the outermost one when no group is entered.
     Guid EffectiveSelectionId(Guid entityId);
+
+    // Whether the entity lies inside the entered group, which every entity does when none is.
+    bool IsInScope(Guid entityId);
+
+    // Steps inside a group that is a direct member of the entered group, or a top-level group
+    // when none is entered. The selection is left to the caller.
+    void EnterGroup(Guid groupId);
+
+    bool HasEnteredGroup { get; }
+
+    // Steps out of the entered group as a primary press there would: until a pressed entity is
+    // inside it, all the way for an edge, and until a press on empty canvas lies inside its bounds.
+    void StepOutFor(PointerPress press);
+
     bool IsSelected(Guid effectiveId);
     bool IsEdgeSelected(Guid edgeId);
 

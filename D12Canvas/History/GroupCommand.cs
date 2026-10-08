@@ -2,21 +2,31 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Named for readability in a history/log context, but a thin wrapper over AddEntity acting on the
-// Group entity itself - Group.MemberIds is a reference list held by the group, so grouping never
-// mutates the member entities.
+// Adds the Group entity; its members are referenced by id and never mutated. Grouping inside a
+// parent group also replaces the grouped ids in the parent's member list with the new group's id,
+// at the position of the first of them, in the same entry.
 public sealed class GroupCommand : ICommand
 {
     private readonly Board _board;
     private readonly Group _group;
+    private readonly ParentMembership _parent;
 
-    public GroupCommand(Board board, Group group)
+    public GroupCommand(Board board, Group group, Guid? parentId = null)
     {
         _board = board;
         _group = group;
+        _parent = new ParentMembership(board, parentId);
     }
 
-    public void Apply() => _board.AddGroup(_group);
+    public void Apply()
+    {
+        _board.AddGroup(_group);
+        _parent.Nest(_group);
+    }
 
-    public void Undo() => _board.RemoveGroup(_group.Id);
+    public void Undo()
+    {
+        _parent.Restore();
+        _board.RemoveGroup(_group.Id);
+    }
 }

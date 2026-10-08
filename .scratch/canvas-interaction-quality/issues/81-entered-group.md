@@ -4,15 +4,15 @@
 
 **Blocked by:** 66 (A group's members always resolve), 80 (Edges in the selection)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Double-pressing a member enters its group and selects that member; a second double-press on a nested member enters one level deeper
-- [ ] Inside a group, a plain press on a member selects only that member and a drag moves only it; a marquee inside the group's bounds selects members
-- [ ] Escape steps out one level and the group just left is selected; a press on canvas outside the group steps all the way out
-- [ ] A button inside a component that is in an unentered group does nothing until the group is entered
-- [ ] The dashed outline renders around the innermost entered group only
-- [ ] Enter on a group's tab stop enters it from the keyboard; no edge has a tab stop while a group is entered
-- [ ] Grouping two members inside an entered group produces a nested group whose parent membership is updated in the same entry, and undo restores it
-- [ ] bUnit covers entry, exit and the addressability rule; a probe proves the non-addressable marker stops the author control
-- [ ] A demo page shows an entered group for the visual suite; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Entered group` term describes what shipped
+- [x] Double-pressing a member enters its group and selects that member; a second double-press on a nested member enters one level deeper
+- [x] Inside a group, a plain press on a member selects only that member and a drag moves only it; a marquee inside the group's bounds selects members
+- [x] Escape steps out one level and the group just left is selected; a press on canvas outside the group steps all the way out
+- [x] A button inside a component that is in an unentered group does nothing until the group is entered
+- [x] The dashed outline renders around the innermost entered group only
+- [x] Enter on a group's tab stop enters it from the keyboard; no edge has a tab stop while a group is entered
+- [x] Grouping two members inside an entered group produces a nested group whose parent membership is updated in the same entry, and undo restores it
+- [x] bUnit covers entry, exit and the addressability rule; a probe proves the non-addressable marker stops the author control
+- [x] A demo page shows an entered group for the visual suite; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Entered group` term describes what shipped

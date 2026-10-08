@@ -30,6 +30,17 @@
     [SupplyParameterFromQuery(Name = "wheel")]
     public string? Wheel { get; set; }
 
+    [SupplyParameterFromQuery(Name = "group")]
+    public bool GroupTargetAndNote { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (GroupTargetAndNote)
+        {
+            _board.AddGroup(new Group([TargetId, NoteId]));
+        }
+    }
+
     private WheelDeviceProfile WheelProfile =>
         Enum.TryParse<WheelDeviceProfile>(Wheel, ignoreCase: true, out var profile)
             ? profile

@@ -152,8 +152,8 @@
                                                 Role="@registration.Role"
                                                 IsSelected="@IsSelected(instance.Id)"
                                                 IsMultiSelected="@IsMultiSelected(instance.Id)"
-                                                Focusable="@(!IsGrouped(instance.Id))"
-                                                Addressable="@(!IsGrouped(instance.Id))"
+                                                Focusable="@IsAddressable(instance.Id)"
+                                                Addressable="@IsAddressable(instance.Id)"
                                                 Props="boundProps"
                                                 OnFocus="@(() => FocusEntity(instance.Id))"
                                                 FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
@@ -179,7 +179,7 @@
                            own visible focus indicator - no separate chrome needed here. *@
                         <div @key="group.Id"
                              class="group-tab-stop"
-                             style="@GroupTabStopStyle(stop.Bounds)"
+                             style="@BoxStyle(stop.Bounds)"
                              tabindex="0"
                              role="group"
                              aria-label="@GroupAccessibleLabel(group)"
@@ -190,7 +190,12 @@
             }
             @ChildContent
             </div>
-            <div class="guide-layer"></div>
+            <div class="guide-layer">
+                @if (EnteredGroupOutlineStyle() is { } enteredGroupOutline)
+                {
+                    <div class="entered-group-outline" style="@enteredGroupOutline"></div>
+                }
+            </div>
             <div class="selection-chrome">
             <svg class="chrome-strokes">
                 @if (Board is not null)
@@ -346,6 +351,13 @@
         position: absolute;
         border: 1px solid #2f80ed;
         pointer-events: auto;
+    }
+
+    .entered-group-outline {
+        position: absolute;
+        box-sizing: border-box;
+        border: 1px dashed var(--d12-muted-text);
+        pointer-events: none;
     }
 
     .group-tab-stop {

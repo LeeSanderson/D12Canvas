@@ -87,8 +87,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     // SelectionChanged, wired via subscribe/unsubscribe the same way OnZoomPanChanged is below.
     public event EventHandler? Changed;
 
-    private void OnHistoryChanged(object? sender, EventArgs e) =>
+    private void OnHistoryChanged(object? sender, EventArgs e)
+    {
+        ReconcileEnteredGroups();
         Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     // Every component instance under the selection, a selected group contributing its members
     // recursively, so there is never a subset of the selection the panel would edit silently. A
@@ -133,6 +136,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     // tell apart, and an edge id must never reach group expansion.
     private readonly HashSet<Guid> _selectedInstanceIds = new();
     private readonly HashSet<Guid> _selectedEdgeIds = new();
+
+    // The entered group is the last id; each earlier id is the group the next one was entered
+    // from, kept so the scope can fall back to the nearest one that still exists.
+    private readonly List<Guid> _enteredGroupIds = new();
+
+    private Guid? EnteredGroupId => _enteredGroupIds.Count > 0 ? _enteredGroupIds[^1] : null;
 
     // The open selection context menu, if any - null means none is open. Its
     // anchor point is plain container-relative pixels (not board space), since the menu is canvas
@@ -217,11 +226,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     // OnAfterRenderAsync (guaranteed to run after that render lands) rather than firing inline.
     private bool _pendingGroupFocus;
 
-    // Set by ClickToAdd - same reasoning as _pendingGroupFocus, but keyed by id rather
-    // than a flag: the newly placed instance's own index among tab stops isn't known until the
-    // render that adds it to the Board actually commits (its on-screen position, and therefore its
-    // reading-order slot, can depend on what else is already on the board).
-    private Guid? _pendingPlacementFocusId;
+    // Set by ClickToAdd, by Enter on a group's tab stop and by Escape out of a group the keyboard
+    // was inside - same reasoning as _pendingGroupFocus, but keyed by id rather than a flag: the
+    // target's index among tab stops isn't known until the render that mounts its stop commits
+    // (its on-screen position, and therefore its reading-order slot, can depend on what else is
+    // already on the board).
+    private Guid? _pendingFocusId;
 
     // Whichever entity currently has real DOM focus - kept in sync by FocusEntity (every native
     // Tab/Shift+Tab landing), cleared when a press focuses the canvas, and advanced without
@@ -251,6 +261,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         {
             _previousBoard = Board;
             CancelActiveGesture(restoreSelection: false);
+            _enteredGroupIds.Clear();
         }
     }
 
@@ -320,9 +331,9 @@ public partial class DiagramCanvas : IAsyncDisposable
             await _jsModule!.InvokeVoidAsync("focusGroupTabStop", ContainerElement);
         }
 
-        if (_pendingPlacementFocusId is { } placedId)
+        if (_pendingFocusId is { } placedId)
         {
-            _pendingPlacementFocusId = null;
+            _pendingFocusId = null;
             var index = FocusableTabStopIds().IndexOf(placedId);
             if (index >= 0)
             {
@@ -348,6 +359,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (_activeGesture is not null || PressToKind.Resolve(press) is not { } kind)
         {
             return;
+        }
+
+        if (press.Button == PointerPress.PrimaryButton)
+        {
+            StepOutForPress(press);
         }
 
         var snapshot = new SelectionSnapshot(_selectedInstanceIds, _selectedEdgeIds);
@@ -586,7 +602,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         if (
             Board?.GetComponent(instanceId) is not { } instance
-            || IsGrouped(instanceId)
+            || !IsAddressable(instanceId)
             || IsPlaceholder(instance)
             || !Registry.Resolve(instance.ComponentTypeKey).IsInlineEditable
         )
@@ -651,6 +667,14 @@ public partial class DiagramCanvas : IAsyncDisposable
             canvas.ToBoardPoint((containerX, containerY), (0, 0));
 
         public Guid EffectiveSelectionId(Guid entityId) => canvas.EffectiveSelectionId(entityId);
+
+        public bool IsInScope(Guid entityId) => canvas.IsInScope(entityId);
+
+        public void EnterGroup(Guid groupId) => canvas.EnterGroup(groupId);
+
+        public bool HasEnteredGroup => canvas.EnteredGroupId is not null;
+
+        public void StepOutFor(PointerPress press) => canvas.StepOutForPress(press);
 
         public bool IsSelected(Guid effectiveId) =>
             canvas._selectedInstanceIds.Contains(effectiveId);
@@ -1015,7 +1039,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Escape's first rung is the pointer gesture that owns the press: cancel it and stop, so one
     // Escape never throws away more than it meant to and a second Escape mid-press does nothing,
     // because the cancelled gesture still owns the pointer until its button comes up. Below that
-    // rung it clears the selection, and cancels a half-built KEYBOARD connection in one press,
+    // rung, with a group entered, it steps out one level and selects the group just left, handing
+    // focus to that group's tab stop when the keyboard was on a stop inside it. Otherwise it clears
+    // the selection. Either way it cancels a half-built KEYBOARD connection in one press,
     // whether it's still mid-pick (_portFocusInstanceId) or already has an armed source waiting
     // for a target (_pendingConnectorSource).
     [JSInvokable]
@@ -1032,20 +1058,33 @@ public partial class DiagramCanvas : IAsyncDisposable
         _pendingConnectorSource = null;
 
         _contextMenu = null;
-        SetSelection([], []);
+        if (EnteredGroupId is { } left)
+        {
+            StepOutWhile(enteredId => enteredId == left);
+            SetSelection([left], []);
+            if (_focusedTabStopId is not null)
+            {
+                _pendingFocusId = left;
+            }
+        }
+        else
+        {
+            SetSelection([], []);
+        }
+
         StateHasChanged();
     }
 
-    // Enter enters/advances the keyboard connector-attachment gesture. Not currently picking
-    // a port: enters port-focus mode on whichever instance currently has keyboard focus, defaulting
-    // the pick to its Top port - a no-op for anything that isn't a real ComponentInstance (nothing
-    // focused yet, or focus is on a Group's own tab stop; groups have no ports). Already picking:
+    // Enter on a group's tab stop enters the group. Otherwise Enter enters/advances the keyboard
+    // connector-attachment gesture. Not currently picking a port: enters port-focus mode on
+    // whichever instance currently has keyboard focus, defaulting the pick to its Top port - a
+    // no-op when nothing is focused yet. Already picking:
     // the FIRST Enter arms the currently-highlighted port as this connection's source (mirroring
     // a connector drag's press) and exits port-focus mode so Tab/Shift+Tab can reach the target
     // instance; a SECOND Enter (reached once a source is already armed) instead completes the connection
     // exactly like a connector drag dropped on a port - including its same "landing back on
     // the exact port the drag started from creates no edge" rule. Only ever reached with the DOM
-    // focus actually on a `.component-container` (see the target-scoped guard in
+    // focus actually on a `.component-container` or `.group-tab-stop` (see the target-scoped guard in
     // DiagramCanvas.razor.js), so it never fires while a Palette button's own native
     // Enter-to-activate is what the user meant.
     [JSInvokable]
@@ -1058,6 +1097,12 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         if (_portFocusInstanceId is not { } focusedInstanceId)
         {
+            if (_focusedTabStopId is { } groupId && Board.GetGroup(groupId) is not null)
+            {
+                EnterGroupFromKeyboard(groupId);
+                return;
+            }
+
             if (_focusedTabStopId is not { } id || Board.GetComponent(id) is null)
             {
                 return;
@@ -1238,7 +1283,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // Ctrl+A selects every top-level entity, a grouped instance as its outermost group, and every
-    // edge on the board.
+    // edge on the board. With a group entered it selects that group's direct members instead.
     [JSInvokable]
     public void OnSelectAllPressed()
     {
@@ -1248,10 +1293,18 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _contextMenu = null;
-        SetSelection(
-            Board.Components.Select(instance => EffectiveSelectionId(instance.Id)),
-            Board.Edges.Select(edge => edge.Id)
-        );
+        if (EnteredGroupId is { } enteredId && Board.GetGroup(enteredId) is { } entered)
+        {
+            SetSelection(entered.MemberIds, []);
+        }
+        else
+        {
+            SetSelection(
+                Board.Components.Select(instance => EffectiveSelectionId(instance.Id)),
+                Board.Edges.Select(edge => edge.Id)
+            );
+        }
+
         StateHasChanged();
     }
 
@@ -1273,7 +1326,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         var group = new Group(_selectedInstanceIds.ToList());
-        _history.Do(new GroupCommand(Board, group));
+        _history.Do(new GroupCommand(Board, group, EnteredGroupId));
 
         _selectedInstanceIds.Clear();
         _selectedInstanceIds.Add(group.Id);
@@ -1300,7 +1353,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             .Cast<Group>()
             .ToList();
 
-        var commands = groups.Select(group => (ICommand)new UngroupCommand(Board, group)).ToList();
+        var commands = groups
+            .Select(group =>
+                (ICommand)new UngroupCommand(Board, group, Board.FindParentGroup(group.Id)?.Id)
+            )
+            .ToList();
         _history.Do(new CompositeCommand(commands));
 
         foreach (var group in groups)
@@ -1470,9 +1527,16 @@ public partial class DiagramCanvas : IAsyncDisposable
     private bool HasContextMenuEligibleSelection =>
         _selectedInstanceIds.Count > 0 || SelectedEdges.Count > 0;
 
-    // Same eligibility OnGroupPressed itself already guards on (2+ top-level entries) - kept as its
+    // Same eligibility OnGroupPressed itself already guards on (2+ sibling entries) - kept as its
     // own property so the menu's own "should Group show" question reads independently of invoking it.
-    private bool CanGroupSelection => _selectedInstanceIds.Count >= 2;
+    // Inside an entered group, grouping every direct member would only wrap the group in itself.
+    private bool CanGroupSelection =>
+        _selectedInstanceIds.Count >= 2
+        && !(
+            EnteredGroupId is { } enteredId
+            && Board?.GetGroup(enteredId) is { } entered
+            && _selectedInstanceIds.IsSupersetOf(entered.MemberIds)
+        );
 
     // Same eligibility OnUngroupPressed itself already computes - true whenever at least one
     // top-level entry resolves to a persisted Group.
@@ -1549,18 +1613,167 @@ public partial class DiagramCanvas : IAsyncDisposable
     // selected Group of 2+ members too, not only an ad-hoc multi-selection.
     private bool HasMultiMemberSelection => ExpandedSelection().Count > 1;
 
-    // An entity id's outermost containing group id, if it has one, else the id itself -
-    // shared by SelectComponent (a click) and the pointer gestures through their context, so
-    // whichever gesture picks an entity up, selection converges onto its group the same way.
-    private Guid EffectiveSelectionId(Guid id) => Board?.FindContainingGroup(id)?.Id ?? id;
+    // The ancestor of an entity, or the entity itself, that is a direct member of the entered
+    // group, or the outermost one when no group is entered or the entity lies outside it - shared
+    // by SelectComponent (a click) and the pointer gestures through their context, so whichever
+    // gesture picks an entity up, selection converges onto the same level the same way.
+    private Guid EffectiveSelectionId(Guid id)
+    {
+        if (Board is null)
+        {
+            return id;
+        }
+
+        var current = id;
+        while (Board.FindParentGroup(current) is { } parent && parent.Id != EnteredGroupId)
+        {
+            current = parent.Id;
+        }
+
+        return current;
+    }
+
+    private bool IsInScope(Guid id) =>
+        EnteredGroupId is not { } enteredId || IsInside(id, enteredId);
+
+    private bool IsInside(Guid id, Guid groupId)
+    {
+        for (
+            var parent = Board?.FindParentGroup(id);
+            parent is not null;
+            parent = Board!.FindParentGroup(parent.Id)
+        )
+        {
+            if (parent.Id == groupId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Top-level, or a direct member of the entered group. Content inside anything else answers a
+    // press as its instance, and only an addressable entity has a tab stop of its own.
+    private bool IsAddressable(Guid id) =>
+        Board?.FindParentGroup(id) is not { } parent || parent.Id == EnteredGroupId;
+
+    private void EnterGroup(Guid groupId)
+    {
+        if (Board?.GetGroup(groupId) is not null && IsAddressable(groupId))
+        {
+            _enteredGroupIds.Add(groupId);
+        }
+    }
+
+    // The group's single tab stop gives way to stops for its direct members, and focus moves to
+    // the first of them in reading order, which selects it.
+    private void EnterGroupFromKeyboard(Guid groupId)
+    {
+        EnterGroup(groupId);
+        if (EnteredGroupId != groupId)
+        {
+            return;
+        }
+
+        var members = Board!.GetGroup(groupId)!.MemberIds;
+        var first = FocusableTabStopIds()
+            .Where(members.Contains)
+            .Select(id => (Guid?)id)
+            .FirstOrDefault();
+        SetSelection(first is { } firstId ? [firstId] : [], []);
+        _focusedTabStopId = first;
+        _pendingFocusId = first;
+        StateHasChanged();
+    }
+
+    // Rule for a press: one on an entity outside the entered group steps out until the entity is
+    // inside it, one on empty canvas steps out until the press point lies inside the entered
+    // group's bounds, and one on an edge, which no group holds, steps all the way out.
+    private void StepOutForPress(PointerPress press)
+    {
+        if (EnteredGroupId is null || Board is null)
+        {
+            return;
+        }
+
+        if (press.Role == HitRole.Canvas)
+        {
+            var point = ToBoardPoint((press.X, press.Y), (0, 0));
+            StepOutWhile(enteredId =>
+                Board.GetGroup(enteredId) is not { } entered
+                || Live.GroupBounds(entered) is not { } bounds
+                || !bounds.Contains(point.X, point.Y)
+            );
+        }
+        else if (press.EntityId is { } entityId)
+        {
+            if (Board.GetEdge(entityId) is not null)
+            {
+                StepOutWhile(_ => true);
+            }
+            else
+            {
+                StepOutWhile(enteredId => !IsInside(entityId, enteredId));
+            }
+        }
+    }
+
+    // Steps out one level at a time while the condition holds for the entered group.
+    private void StepOutWhile(Func<Guid, bool> condition)
+    {
+        var depth = _enteredGroupIds.Count;
+        while (EnteredGroupId is { } enteredId && condition(enteredId))
+        {
+            _enteredGroupIds.RemoveAt(_enteredGroupIds.Count - 1);
+        }
+
+        if (_enteredGroupIds.Count < depth)
+        {
+            ResolveSelectionToScope();
+        }
+    }
+
+    // After the scope changes level, every selected id becomes its ancestor at the new level.
+    private void ResolveSelectionToScope() =>
+        SetSelection(
+            _selectedInstanceIds.Select(EffectiveSelectionId).Distinct(),
+            _selectedEdgeIds
+        );
+
+    // The scope cannot outlive its group: an undo, a delete or an ungroup that removes an entered
+    // group, or moves it out of the group it was entered from, falls back to the nearest one still
+    // in place.
+    private void ReconcileEnteredGroups()
+    {
+        if (Board is null)
+        {
+            return;
+        }
+
+        var intact = 0;
+        while (
+            intact < _enteredGroupIds.Count
+            && Board.GetGroup(_enteredGroupIds[intact]) is not null
+            && Board.FindParentGroup(_enteredGroupIds[intact])?.Id
+                == (intact == 0 ? null : _enteredGroupIds[intact - 1])
+        )
+        {
+            intact++;
+        }
+
+        StepOutWhile(_ => _enteredGroupIds.Count > intact);
+    }
 
     // A shift-click toggles the clicked instance's membership without disturbing the
     // rest of the selection; a plain click always collapses the selection down to just this one.
     // Clicking any member of a Group selects the whole group instead of just that one
-    // instance - selection and group membership converge. The toggle leaves the selected edges as
+    // instance - selection and group membership converge. An entity outside the entered group
+    // steps the scope out until it is inside first. The toggle leaves the selected edges as
     // they are; the collapse clears them.
     private void SelectComponent(Guid instanceId, bool addToSelection)
     {
+        StepOutWhile(enteredId => !IsInside(instanceId, enteredId));
         var effectiveId = EffectiveSelectionId(instanceId);
 
         if (addToSelection)
@@ -1794,8 +2007,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    private bool IsGrouped(Guid instanceId) => Board?.FindContainingGroup(instanceId) is not null;
-
     // An instance's on-screen size, taken as its larger dimension rather than area or the
     // smaller dimension - so a naturally thin-but-wide shape (e.g. a divider bar) isn't
     // perpetually placeholdered at a normal zoom just because one axis is small.
@@ -1812,13 +2023,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static string LodPlaceholderStyle(Bounds bounds, int zIndex) =>
         $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px; z-index: {zIndex};";
 
-    // One entry per keyboard tab stop: either a rendered ComponentInstance or a top-level Group's
-    // own single stop - never both for a grouped member, which has no tab stop of its own (see
-    // IsGrouped/ComponentContainer.Focusable). Ordered by current on-screen position (top-left to
-    // bottom-right, i.e. Y then X) rather than creation order or ZIndex, so native Tab/Shift+Tab
+    // One entry per keyboard tab stop: either a rendered ComponentInstance or an addressable
+    // Group's own single stop - an instance that is not addressable is listed so it still paints,
+    // but has no tab stop of its own (see IsAddressable/ComponentContainer.Focusable). Ordered by
+    // current on-screen position (top-left to bottom-right, i.e. Y then X) rather than creation order or ZIndex, so native Tab/Shift+Tab
     // traversal follows reading order for free once each stop's own tabindex="0" and DOM position
     // (this list's own order) are in place - no keyboard interception needed for Tab itself.
-    // Drawn from the same windowed-mounting viewport query as VisibleComponents/GetVisibleGroups,
+    // Drawn from the same windowed-mounting viewport plus overscan as VisibleComponents,
     // so an instance or group entirely outside the current viewport (+ overscan) has no tab stop
     // at all - reachability is bounded by what's currently mounted, not the whole Board.
     private readonly record struct TabStop(
@@ -1840,17 +2051,29 @@ public partial class DiagramCanvas : IAsyncDisposable
             stops.Add(new TabStop(instance, null, Live.BoundsOf(instance)));
         }
 
-        foreach (var group in Board.GetVisibleGroups(_zoomPanTracker.Viewport, Overscan))
+        var mountArea = _zoomPanTracker.Viewport.ExpandedBy(Overscan);
+        foreach (var group in Board.Groups.Where(HasGroupTabStop))
         {
-            stops.Add(new TabStop(null, group, Live.GroupBounds(group)!.Value));
+            if (
+                Board.GetBounds(group) is { } committed
+                && mountArea.Intersects(committed)
+                && Live.GroupBounds(group) is { } live
+            )
+            {
+                stops.Add(new TabStop(null, group, live));
+            }
         }
 
         return stops.OrderBy(s => s.Bounds.Y).ThenBy(s => s.Bounds.X).ToList();
     }
 
+    // An addressable group has one stop until it is entered, when its members' stops replace it.
+    private bool HasGroupTabStop(Group group) =>
+        IsAddressable(group.Id) && !_enteredGroupIds.Contains(group.Id);
+
     // The ids a keyboard user can actually land on, in the same order OrderedTabStops renders
     // them - a grouped member has an entry in that list too (so it still paints inside its group)
-    // but no tabindex of its own (see IsGrouped/ComponentContainer.Focusable), so Ctrl+Tab must
+    // but no tabindex of its own (see IsAddressable/ComponentContainer.Focusable), so Ctrl+Tab must
     // skip it exactly the way native Tab already does. An LOD-placeholdered instance (see
     // IsPlaceholder) is excluded the same way - it renders as a plain div with no tabindex of its
     // own either.
@@ -1858,7 +2081,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         OrderedTabStops()
             .Where(stop =>
                 stop.Instance is null
-                || (!IsGrouped(stop.Instance.Id) && !IsPlaceholder(stop.Instance))
+                || (IsAddressable(stop.Instance.Id) && !IsPlaceholder(stop.Instance))
             )
             .Select(stop => stop.Instance?.Id ?? stop.Group!.Id)
             .ToList();
@@ -1892,7 +2115,24 @@ public partial class DiagramCanvas : IAsyncDisposable
         SelectComponent(id, addToSelection: false);
     }
 
-    private static string GroupTabStopStyle(Bounds bounds) =>
+    private const double EnteredGroupOutlineGap = 4;
+
+    // Around the innermost entered group only, on its live bounds so it follows a member in flight.
+    private string? EnteredGroupOutlineStyle()
+    {
+        if (
+            EnteredGroupId is not { } enteredId
+            || Board?.GetGroup(enteredId) is not { } entered
+            || Live.GroupBounds(entered) is not { } bounds
+        )
+        {
+            return null;
+        }
+
+        return BoxStyle(bounds.ExpandedBy(EnteredGroupOutlineGap));
+    }
+
+    private static string BoxStyle(Bounds bounds) =>
         $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";
 
     private string GroupAccessibleLabel(Group group) =>
@@ -2197,7 +2437,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // native button semantics synthesize the same click event a pointer would, so there is no
     // separate keyboard code path to wire. What a keyboard user needs that a mouse click-to-add
     // doesn't: the newly placed instance is selected, and real DOM focus moves to it (once its tab
-    // stop exists post-render, see _pendingPlacementFocusId/OnAfterRenderAsync) - a keyboard user
+    // stop exists post-render, see _pendingFocusId/OnAfterRenderAsync) - a keyboard user
     // has no other way to reach what they just placed, since there's no cursor already sitting on
     // it the way a mouse click leaves one.
     public void ClickToAdd(string componentTypeKey)
@@ -2224,7 +2464,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (placed is not null)
         {
             SelectComponent(placed.Id, addToSelection: false);
-            _pendingPlacementFocusId = placed.Id;
+            _pendingFocusId = placed.Id;
         }
 
         StateHasChanged();

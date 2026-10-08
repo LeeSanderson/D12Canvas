@@ -38,16 +38,16 @@ public partial class ComponentContainer
     [Parameter]
     public bool IsSelected { get; set; }
 
-    // False while this instance is a member of a Group - a grouped member is
-    // reachable only through the group's own single tab stop, never individually, so it renders
+    // False while this instance is not addressable, inside a group that is not entered - such a
+    // member is reachable only through its group's tab stop, never individually, so it renders
     // with no tabindex at all rather than tabindex="-1" (which would still accept a direct
     // .focus() call, e.g. from stale JS).
     [Parameter]
     public bool Focusable { get; set; } = true;
 
-    // False while this instance is a member of a group, where a press on the author's own content
-    // must reach the instance rather than the control, so the canvas's pointer listener classifies
-    // it as the instance. Rendered as a marker the listener reads.
+    // False while this instance is inside a group that is not entered, where a press on the
+    // author's own content must reach the instance rather than the control, so the canvas's
+    // pointer listener classifies it as the instance. Rendered as a marker the listener reads.
     [Parameter]
     public bool Addressable { get; set; } = true;
 

@@ -35,6 +35,18 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public Guid EffectiveSelectionId(Guid entityId) => EffectiveId(entityId);
 
+    public Func<Guid, bool> InScope { get; set; } = _ => true;
+    public List<Guid> EnteredGroups { get; } = new();
+
+    public bool IsInScope(Guid entityId) => InScope(entityId);
+
+    public void EnterGroup(Guid groupId) => EnteredGroups.Add(groupId);
+
+    public bool HasEnteredGroup { get; set; }
+    public List<PointerPress> StepOutPresses { get; } = new();
+
+    public void StepOutFor(PointerPress press) => StepOutPresses.Add(press);
+
     public bool IsSelected(Guid effectiveId) => SelectedInstanceIds.Contains(effectiveId);
 
     public IReadOnlyList<ComponentInstance> SelectedInstances() =>
