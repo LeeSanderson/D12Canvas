@@ -44,7 +44,9 @@ public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
     public async Task ClickToAddSelectsTheNewlyPlacedInstance()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 
@@ -55,7 +57,9 @@ public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
     public async Task ClickToAddMovesRealDomFocusToTheNewlyPlacedInstance()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 
@@ -67,7 +71,9 @@ public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
     public async Task ConsecutiveClickToAddsSelectAndFocusOnlyTheMostRecentlyPlacedInstance()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
@@ -89,7 +95,9 @@ public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
     public async Task ArrowKeyNudgeMovesTheInstanceJustPlacedByClickToAdd()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
         var placed = Assert.Single(board.Components);
@@ -110,7 +118,9 @@ public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
             new Bounds(0, 0, 50, 50)
         );
         board.AddComponent(existing);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));

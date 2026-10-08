@@ -43,7 +43,9 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
 
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
 
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
@@ -60,7 +62,9 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
         RegisterTestComponent(defaultSize: null);
         var board = new Board();
 
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
 
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
@@ -75,7 +79,9 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
 
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         await canvas.Pan(from: (100, 100), to: (50, 40)); // pans by (-50, -60)
 
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
@@ -91,7 +97,9 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
 
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ZoomIn(); // zooms to scale 1.1
 
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
@@ -111,7 +119,9 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
 
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
 
         Assert.Empty(board.Components);
@@ -122,7 +132,9 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
     {
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
@@ -142,7 +154,9 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
             new ComponentInstance(ComponentTypeKey, new TestProps(), new Bounds(0, 0, 50, 50), 9)
         );
 
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
 
@@ -155,7 +169,9 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
     {
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         Assert.DoesNotContain("drag-over", canvas.Find(".diagram-canvas").GetAttribute("class"));
         Assert.Empty(canvas.FindAll(".drag-over-affordance"));

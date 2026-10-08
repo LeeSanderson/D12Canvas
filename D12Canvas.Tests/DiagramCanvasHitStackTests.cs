@@ -72,7 +72,9 @@ public class DiagramCanvasHitStackTests : ComponentTestBase
     }
 
     private IRenderedComponent<DiagramCanvas> RenderCanvas() =>
-        Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, _board));
+        Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, _board).Add(p => p.SnapToGrid, false)
+        );
 
     private static PointerHit InstanceHit(ComponentInstance instance) =>
         new(HitRole.Instance, instance.Id, null);

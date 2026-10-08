@@ -58,7 +58,9 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         Assert.Empty(canvas.FindAll(".port-strip"));
 
@@ -72,7 +74,9 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100, width: 100, height: 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         canvas.DoubleClickElement(canvas.Find(".port-strip-left"), at: (100, 125));
@@ -88,7 +92,9 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100, width: 100, height: 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         canvas.DoubleClickElement(canvas.Find(".port-strip-top"), at: (175, 100));
@@ -103,7 +109,9 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         canvas.DoubleClickElement(canvas.Find(".port-strip-left"), at: (100, 125));
@@ -123,7 +131,9 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100, width: 100, height: 100);
         var target = AddInstance(board, 300, 100); // left port at (300, 150)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         // Custom port at fraction (1, 0.25) of the 100x100 source - board point (200, 125).
@@ -147,7 +157,9 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100, width: 100, height: 100);
         AddInstance(board, 300, 100); // left port at (300, 150)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         canvas.DoubleClickElement(canvas.Find(".port-strip-right"), at: (200, 125));
 
@@ -173,7 +185,9 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100, width: 100, height: 100);
         AddInstance(board, 300, 100); // left port at (300, 150)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         canvas.DoubleClickElement(canvas.Find(".port-strip-right"), at: (200, 125));
 
@@ -201,7 +215,9 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100, width: 100, height: 100);
         AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         canvas.DoubleClickElement(canvas.Find(".port-strip-right"), at: (200, 125));
         var port = Assert.Single(source.CustomPorts);

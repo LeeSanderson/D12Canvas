@@ -62,11 +62,7 @@ internal interface IGestureContext
     void ToggleEdge(Guid edgeId);
     void ClearSelection();
 
-    // The point rounded to the dominant grid line on each axis, or the point itself with
-    // snap-to-grid off.
-    (double X, double Y) SnapToGrid(double x, double y);
-
-    // The spacing SnapToGrid rounds to, in board units, or null with snap-to-grid off.
+    // The dominant grid layer's spacing, in board units, or null with snap-to-grid off.
     double? GridSpacing { get; }
 
     void ShowMarquee(Bounds? boardBounds);

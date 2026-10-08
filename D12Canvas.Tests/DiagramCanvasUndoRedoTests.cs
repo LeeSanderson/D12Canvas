@@ -65,7 +65,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var changedCount = 0;
         canvas.Instance.Changed += (_, _) => changedCount++;
 
@@ -85,7 +87,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickOn(canvas.Find(".component-container"));
         var container = canvas.Find(".component-container");
@@ -102,7 +106,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickOn(canvas.Find(".component-container"));
         var container = canvas.Find(".component-container");
@@ -119,7 +125,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickOn(canvas.Find(".component-container"));
         canvas.DragHandle(canvas.Find(".resize-handle.bottom-right"), (300, 200), (340, 225));
@@ -135,7 +143,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickOn(canvas.Find(".component-container"));
         canvas.DragHandle(canvas.Find(".resize-handle.bottom-right"), (300, 200), (340, 225));
@@ -152,7 +162,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
@@ -174,7 +186,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
@@ -197,7 +211,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
@@ -221,7 +237,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
@@ -249,7 +267,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, zIndex: 2);
         var second = AddInstance(board, 300, 0, zIndex: 3);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
@@ -272,7 +292,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var first = AddInstance(board, 0, 0, zIndex: 1);
         var second = AddInstance(board, 300, 0, zIndex: 2);
         AddInstance(board, 600, 0, zIndex: 3); // untouched, outside the group
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
@@ -293,7 +315,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickOn(canvas.Find(".component-container"));
         var container = canvas.Find(".component-container");
@@ -315,7 +339,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -327,7 +353,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
 
@@ -340,7 +368,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task UndoAfterAClickToAddRemovesThePlacedInstance()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
         Assert.Single(board.Components);
@@ -354,7 +384,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task RedoAfterUndoingAClickToAddRestoresTheInstanceUnderTheSameId()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
         var placedId = Assert.Single(board.Components).Id;
@@ -369,7 +401,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task UndoAfterADragDropPlacementRemovesThePlacedInstance()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
         Assert.Single(board.Components);
@@ -383,7 +417,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task RedoAfterUndoingADragDropPlacementRestoresTheInstanceUnderTheSameId()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
         var placedId = Assert.Single(board.Components).Id;
@@ -402,7 +438,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
@@ -420,7 +458,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -436,7 +476,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0);
         var second = AddInstance(board, 100, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
         canvas.ClickOn(containers[1], shift: true);
@@ -457,7 +499,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 0, 0);
         AddInstance(board, 100, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
         canvas.ClickOn(containers[1], shift: true);
@@ -477,7 +521,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100); // right port at (150, 125)
         AddInstance(board, 250, 100); // left port at (250, 125)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
@@ -497,7 +543,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100); // right port at (150, 125)
         var target = AddInstance(board, 250, 100); // left port at (250, 125)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
@@ -523,7 +571,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100); // right port at (150, 125)
         var target = AddInstance(board, 250, 100); // left port at (250, 125)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var containers = canvas.FindAll(".component-container");
         canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
         var targetPort = containers[1].QuerySelector(".port-left")!;
@@ -548,7 +598,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     {
         var board = new Board();
         var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
         canvas.PressElement(sourcePort, (150, 125));
         canvas.MoveTo((190, 400));
@@ -573,7 +625,9 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100); // right port at (150, 125)
         AddInstance(board, 250, 100); // left port at (250, 125)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var containers = canvas.FindAll(".component-container");
         canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
         var targetPort = containers[1].QuerySelector(".port-left")!;

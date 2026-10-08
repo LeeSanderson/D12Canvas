@@ -62,7 +62,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed(code, false));
@@ -75,7 +77,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", true));
@@ -88,7 +92,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ZoomIn(); // zooms to scale 1.1
         canvas.ClickOn(canvas.Find(".component-container"));
 
@@ -105,7 +111,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ZoomOut(); // zooms to scale 0.9
         canvas.ClickOn(canvas.Find(".component-container"));
 
@@ -120,7 +128,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
 
@@ -139,7 +149,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
@@ -161,7 +173,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
@@ -182,7 +196,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
         canvas.ClickOn(containers[1], shift: true);
@@ -203,7 +219,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
         canvas.ClickOn(containers[1], shift: true);
@@ -224,7 +242,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
 
@@ -241,7 +261,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     )
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         for (var i = 0; i < zoomSteps; i++)
         {
             await canvas.InvokeAsync(
@@ -378,7 +400,9 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100); // right port at (150, 125)
         AddInstance(board, 250, 100); // left port at (250, 125)
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var containers = canvas.FindAll(".component-container");
         canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
         var targetPort = containers[1].QuerySelector(".port-left")!;

@@ -71,7 +71,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 0, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickOn(canvas.Find(".component-container"));
 
@@ -84,7 +86,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 0, 0);
         AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -101,7 +105,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -118,7 +124,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0);
         var second = AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -146,7 +154,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0);
         var second = AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -185,7 +195,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0);
         var second = AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ZoomIn(); // zooms to scale 1.1
         SelectBoth(canvas);
@@ -213,7 +225,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -230,7 +244,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -258,7 +274,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -283,7 +301,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ZoomIn(); // zooms to scale 1.1
         SelectBoth(canvas);
@@ -311,7 +331,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 50, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -336,7 +358,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 0, 0);
         AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 
@@ -358,7 +382,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0);
         var second = AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.DragOn(canvas.FindAll(".component-container")[1], (310, 10), (330, 10));
         SelectBoth(canvas);
 
@@ -380,7 +406,9 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 0, 0);
         AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         SelectBoth(canvas);
 

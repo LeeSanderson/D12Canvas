@@ -275,6 +275,95 @@ public class MoveSelectionGestureTests
     }
 
     [Fact]
+    public void ShiftLocksTheAxisThePressAnchoredDeltaMovesLeastAlong()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        var context = new FakeGestureContext(board);
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(70, 25, shift: true));
+        Assert.Equal(new Bounds(60, 0, 50, 50), context.Preview[shape.Id]);
+
+        move.Move(PointerEvents.Move(30, 90, shift: true));
+        Assert.Equal(new Bounds(0, 80, 50, 50), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void ShiftIsReadLiveSoReleasingItFreesTheMotionAndPressingItStraightensIt()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        var context = new FakeGestureContext(board);
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(70, 25));
+        Assert.Equal(new Bounds(60, 15, 50, 50), context.Preview[shape.Id]);
+
+        move.Move(PointerEvents.Move(70, 25, shift: true));
+        Assert.Equal(new Bounds(60, 0, 50, 50), context.Preview[shape.Id]);
+
+        move.Move(PointerEvents.Move(70, 25));
+        Assert.Equal(new Bounds(60, 15, 50, 50), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void TheLockedAxisIsNeverSnappedWhileTheFreeAxisIs()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(3, 7, 50, 50));
+        var context = new FakeGestureContext(board) { GridSpacing = 20 };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(45, 14, shift: true));
+
+        Assert.Equal(new Bounds(40, 7, 50, 50), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void CtrlSuppressesSnappingAndIsReadLive()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(3, 7, 50, 50));
+        var context = new FakeGestureContext(board) { GridSpacing = 20 };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(45, 24, ctrl: true));
+        Assert.Equal(new Bounds(38, 21, 50, 50), context.Preview[shape.Id]);
+
+        move.Move(PointerEvents.Move(45, 24));
+        Assert.Equal(new Bounds(40, 20, 50, 50), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void CtrlWithShiftLeavesTheFreeAxisUnsnappedOnTheLockedLine()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(3, 7, 50, 50));
+        var context = new FakeGestureContext(board) { GridSpacing = 20 };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(45, 14, shift: true, ctrl: true));
+
+        Assert.Equal(new Bounds(38, 7, 50, 50), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void AReleaseAfterAModifierChangeCommitsTheLastPublishedPosition()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        var context = new FakeGestureContext(board);
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(70, 25, shift: true));
+        move.Move(PointerEvents.Move(70, 25));
+        move.Release(ReleaseAt(70, 25, shift: true));
+
+        Assert.Equal(new Bounds(60, 15, 50, 50), Assert.Single(context.Commits)[shape.Id]);
+    }
+
+    [Fact]
     public void AnActiveReleaseCommitsWhatWasLastPublishedAndChangesNoSelection()
     {
         var board = new Board();

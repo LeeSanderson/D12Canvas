@@ -80,7 +80,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 new PortEndpoint(second.Id, PortId.Left)
             )
         );
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, seeded));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, seeded).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         board = seeded;
         return canvas;
@@ -359,7 +361,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     [InlineData(PointerPress.SecondaryButton, true, "pan")]
     public async Task APressOnEmptyCanvasResolvesByButton(int button, bool shift, string expected)
     {
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, new Board()));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, new Board()).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.Press(10, 10, button, shift);
         await canvas.Move(60, 40, shift);
@@ -379,7 +383,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     [Fact]
     public async Task AFastClickOnEmptyCanvasNeverLeavesTheCanvasPanning()
     {
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, new Board()));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, new Board()).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.ClickCanvas(10, 10);
         await canvas.Move(200, 200);
@@ -403,7 +409,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     [Fact]
     public async Task ThePanIsAnchoredAtThePressSoADroppedMoveCostsNothing()
     {
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, new Board()));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, new Board()).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.Press(100, 100, PointerPress.MiddleButton);
         await canvas.Move(120, 110);
@@ -434,7 +442,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100);
         AddInstance(board, 200, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[0]);
         canvas.ClickOn(containers[1], shift: true);
@@ -517,7 +527,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 400, 400);
         second.ZIndex = 1;
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.FindAll(".component-container")[0].Focus();
 
         await canvas.Press(0, 0, PointerPress.MiddleButton);
@@ -580,7 +592,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     [Fact]
     public void TheCanvasIsFocusableByScriptButNotByTab()
     {
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, new Board()));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, new Board()).Add(p => p.SnapToGrid, false)
+        );
 
         Assert.Equal("-1", canvas.Find(".diagram-canvas").GetAttribute("tabindex"));
     }
@@ -591,7 +605,9 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 0, 0);
         AddInstance(board, 100, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.FindAll(".component-container")[0].Focus();
 
         canvas.Find(".diagram-canvas").Focus();

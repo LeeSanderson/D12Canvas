@@ -102,7 +102,7 @@ internal static class ResizeMath
         )
         {
             left = Math.Min(
-                NearestLine(left, spacing),
+                GridSnap.NearestLine(left, spacing),
                 LineAtOrBelow(start.Right - minWidth, spacing)
             );
         }
@@ -115,7 +115,7 @@ internal static class ResizeMath
         )
         {
             right = Math.Max(
-                NearestLine(right, spacing),
+                GridSnap.NearestLine(right, spacing),
                 LineAtOrAbove(start.X + minWidth, spacing)
             );
         }
@@ -123,7 +123,7 @@ internal static class ResizeMath
         if (direction is ResizeDirection.Top or ResizeDirection.TopLeft or ResizeDirection.TopRight)
         {
             top = Math.Min(
-                NearestLine(top, spacing),
+                GridSnap.NearestLine(top, spacing),
                 LineAtOrBelow(start.Bottom - minHeight, spacing)
             );
         }
@@ -136,16 +136,13 @@ internal static class ResizeMath
         )
         {
             bottom = Math.Max(
-                NearestLine(bottom, spacing),
+                GridSnap.NearestLine(bottom, spacing),
                 LineAtOrAbove(start.Y + minHeight, spacing)
             );
         }
 
         return new Bounds(left, top, right - left, bottom - top);
     }
-
-    private static double NearestLine(double coordinate, double spacing) =>
-        Math.Round(coordinate / spacing) * spacing;
 
     private static double LineAtOrBelow(double coordinate, double spacing) =>
         Math.Floor(coordinate / spacing + GridLineTolerance) * spacing;

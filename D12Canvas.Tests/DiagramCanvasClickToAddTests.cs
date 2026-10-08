@@ -43,7 +43,9 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
     {
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         // Container is 800x600 (see ComponentTestBase.SetupDiagramCanvasJsModule) at scale 1 with
         // no pan, so the viewport center in board coordinates is (400, 300).
@@ -60,7 +62,9 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
     {
         RegisterTestComponent(defaultSize: null);
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 
@@ -73,7 +77,9 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
     {
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ZoomIn(); // zooms to scale 1.1
         await canvas.Pan(from: (100, 100), to: (50, 40)); // pans by (-50, -60)
@@ -95,7 +101,9 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
     {
         RegisterTestComponent(new ComponentSize(120, 80));
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
@@ -117,7 +125,9 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
         board.AddComponent(
             new ComponentInstance(ComponentTypeKey, new TestProps(), new Bounds(0, 0, 50, 50), 9)
         );
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 

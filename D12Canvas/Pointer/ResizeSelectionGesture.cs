@@ -6,8 +6,10 @@ namespace D12Canvas.Pointer;
 // shape and a multi-selection are one gesture: every tick resizes the selection's bounding box by
 // the board-space distance from the press, with the edge opposite the handle anchored, and scales
 // each member exactly inside it. Under snap the edges the handle moves round to grid lines, never
-// below the minimum size, which a multi-selection raises so no member shrinks past the floor. An
-// active release commits what was last published; a click changes nothing.
+// below the minimum size, which a multi-selection raises so no member shrinks past the floor, and
+// nothing snaps while Ctrl is held, read from every move. Shift does nothing here, kept free for
+// preserve-aspect-ratio. An active release commits what was last published; a click changes
+// nothing.
 internal sealed class ResizeSelectionGesture : PointerGesture
 {
     private readonly (double X, double Y) _pressPoint;
@@ -59,7 +61,7 @@ internal sealed class ResizeSelectionGesture : PointerGesture
             _minimum.Height
         );
 
-        if (Context.GridSpacing is { } spacing)
+        if (!move.CtrlKey && Context.GridSpacing is { } spacing)
         {
             resized = ResizeMath.SnapMovingEdges(
                 resized,

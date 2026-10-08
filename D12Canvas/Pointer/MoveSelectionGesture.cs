@@ -9,7 +9,8 @@ namespace D12Canvas.Pointer;
 // topmost entity beneath it, and an Alt click selects the next entity down the hit stack from the
 // one selected before the press. Every tick publishes the whole selection translated by
 // the board-space distance from the press point, snapped as one rigid body by the top-left of its
-// instances' bounding box, and an active release commits exactly what was last published. A
+// instances' bounding box, straightened to one axis while Shift is held and left unsnapped while
+// Ctrl is, and an active release commits exactly what was last published. A
 // selected edge's floating ends take the same delta; its attached ends follow their components
 // and have nothing of their own to publish.
 internal sealed class MoveSelectionGesture : PointerGesture
@@ -55,13 +56,24 @@ internal sealed class MoveSelectionGesture : PointerGesture
         PublishTranslatedBy(0, 0);
     }
 
+    // Shift holds the axis the press-anchored delta has moved least along. That axis is never
+    // snapped, since rounding it would move the selection along the axis just locked.
     protected override void OnMove(PointerMove move)
     {
         var current = Context.ToBoardPoint(move.X, move.Y);
-        var (x, y) = Context.SnapToGrid(
-            _origin.X + current.X - _pressPoint.X,
-            _origin.Y + current.Y - _pressPoint.Y
-        );
+        var deltaX = current.X - _pressPoint.X;
+        var deltaY = current.Y - _pressPoint.Y;
+        var xLocked = move.ShiftKey && Math.Abs(deltaY) > Math.Abs(deltaX);
+        var yLocked = move.ShiftKey && !xLocked;
+
+        var x = xLocked ? _origin.X : _origin.X + deltaX;
+        var y = yLocked ? _origin.Y : _origin.Y + deltaY;
+        if (!move.CtrlKey && Context.GridSpacing is { } spacing)
+        {
+            x = xLocked ? x : GridSnap.NearestLine(x, spacing);
+            y = yLocked ? y : GridSnap.NearestLine(y, spacing);
+        }
+
         PublishTranslatedBy(x - _origin.X, y - _origin.Y);
     }
 

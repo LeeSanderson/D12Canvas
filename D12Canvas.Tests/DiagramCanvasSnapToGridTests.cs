@@ -39,11 +39,11 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
     }
 
     [Fact]
-    public void SnapToGridDefaultsToOff()
+    public void SnapToGridDefaultsToOn()
     {
         var canvas = Render<DiagramCanvas>();
 
-        Assert.False(canvas.Instance.SnapToGrid);
+        Assert.True(canvas.Instance.SnapToGrid);
     }
 
     [Fact]
@@ -58,12 +58,12 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
         );
 
         await canvas.InvokeAsync(() => canvas.Instance.OnToggleSnapToGridPressed());
-        Assert.True(canvas.Instance.SnapToGrid);
-        Assert.True(notified);
-
-        await canvas.InvokeAsync(() => canvas.Instance.OnToggleSnapToGridPressed());
         Assert.False(canvas.Instance.SnapToGrid);
         Assert.False(notified);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnToggleSnapToGridPressed());
+        Assert.True(canvas.Instance.SnapToGrid);
+        Assert.True(notified);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSnapToGridChordPressed());
 
-        Assert.True(canvas.Instance.SnapToGrid);
+        Assert.False(canvas.Instance.SnapToGrid);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSnapToGridChordPressed());
 
-        Assert.False(canvas.Instance.SnapToGrid);
+        Assert.True(canvas.Instance.SnapToGrid);
     }
 
     [Fact]
@@ -97,14 +97,16 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
 
         await canvas.InvokeAsync(() => canvas.Instance.OnToggleSnapToGridPressed());
 
-        Assert.True(canvas.Instance.SnapToGrid);
+        Assert.False(canvas.Instance.SnapToGrid);
     }
 
     [Fact]
     public async Task WithSnapOffClickToAddLandsExactlyOnTheRawViewportCenter()
     {
         var board = new Board();
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 

@@ -163,6 +163,35 @@ public class ResizeSelectionGestureTests
     }
 
     [Fact]
+    public void CtrlSuppressesSnappingAndIsReadLive()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(3, 7, 95, 63));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        var resize = PressHandle(context, shape.Id, "right", 98, 40);
+
+        resize.Move(PointerEvents.Move(124, 40, ctrl: true));
+        Assert.Equal(new Bounds(3, 7, 121, 63), context.Preview[shape.Id]);
+
+        resize.Move(PointerEvents.Move(124, 40));
+        Assert.Equal(new Bounds(3, 7, 117, 63), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void ShiftDoesNothingDuringAResize()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 100, 60));
+        var context = SelectedOn(board, shape);
+        var resize = PressHandle(context, shape.Id, "bottom-right", 100, 60);
+
+        resize.Move(PointerEvents.Move(150, 70, shift: true));
+
+        Assert.Equal(new Bounds(0, 0, 150, 70), context.Preview[shape.Id]);
+    }
+
+    [Fact]
     public void ASelectionHandleScalesEveryMemberProportionallyInsideTheBox()
     {
         var board = new Board();

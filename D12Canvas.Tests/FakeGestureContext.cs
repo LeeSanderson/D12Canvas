@@ -117,11 +117,6 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public void ClearSelection() => ReplaceSelection([], []);
 
-    public (double X, double Y) SnapToGrid(double x, double y) =>
-        GridSpacing is { } spacing
-            ? (Math.Round(x / spacing) * spacing, Math.Round(y / spacing) * spacing)
-            : (x, y);
-
     public void ShowMarquee(Bounds? boardBounds) => Marquee = boardBounds;
 
     public void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides) =>

@@ -83,7 +83,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 250, 100);
         var edge = Connect(board, first, second);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, first));
         canvas.ClickOn(ContainerOf(canvas, second), shift: true);
 
@@ -107,7 +109,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 250, 100);
         var edge = Connect(board, first, second);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickElement(HitOf(canvas, edge));
 
         canvas.ClickOn(ContainerOf(canvas, first), shift: true);
@@ -126,7 +130,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var farLeft = AddInstance(board, 0, 200);
         var farRight = AddInstance(board, 400, 0);
         var passingBehind = Connect(board, farLeft, farRight);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.Marquee((90, 90), (310, 160));
 
@@ -162,7 +168,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
             new PortEndpoint(shape.Id, PortId.Right),
             new FloatingEndpoint(220, 120)
         );
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.Marquee((90, 90), (250, 250));
 
@@ -183,7 +191,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         board.AddGroup(new Group([swept.Id, unswept.Id]));
         var withinGroup = Connect(board, swept, unswept);
         var leavingGroup = Connect(board, unswept, outside);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.Marquee((90, 90), (160, 160));
 
@@ -203,7 +213,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
             new FloatingEndpoint(600, 600),
             new FloatingEndpoint(700, 600)
         );
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickElement(HitOf(canvas, elsewhere));
 
         await canvas.Marquee((90, 90), (310, 160), shift: true);
@@ -218,7 +230,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 250, 100);
         var edge = Connect(board, first, second);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickElement(HitOf(canvas, edge));
 
         await canvas.Press(600, 600);
@@ -240,7 +254,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         board.AddGroup(group);
         var connected = Connect(board, first, second);
         var floating = AddEdge(board, new FloatingEndpoint(0, 0), new FloatingEndpoint(40, 0));
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSelectAllPressed());
 
@@ -269,7 +285,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         await canvas.Press(600, 600, button: Pointer.PointerPress.MiddleButton);
         await canvas.InvokeAsync(() => canvas.Instance.OnSelectAllPressed());
@@ -287,7 +305,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
             new PortEndpoint(shape.Id, PortId.Right),
             new FloatingEndpoint(300, 300)
         );
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, shape));
         canvas.ClickElement(HitOf(canvas, halfFloating), shift: true);
 
@@ -324,7 +344,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
             new FloatingEndpoint(300, 300),
             new FloatingEndpoint(380, 300)
         );
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, shape));
         canvas.ClickElement(HitOf(canvas, connector), shift: true);
 
@@ -344,7 +366,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
             new FloatingEndpoint(300, 300),
             new FloatingEndpoint(380, 300)
         );
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, shape));
         canvas.ClickElement(HitOf(canvas, connector), shift: true);
 
@@ -364,7 +388,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 250, 100);
         var edge = Connect(board, first, second);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, first));
         canvas.ClickOn(ContainerOf(canvas, second), shift: true);
         canvas.ClickElement(HitOf(canvas, edge), shift: true);
@@ -384,7 +410,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 250, 100);
         var edge = Connect(board, first, second);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, first));
         canvas.ClickElement(HitOf(canvas, edge), shift: true);
 
@@ -404,7 +432,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
             new PortEndpoint(first.Id, PortId.Right),
             new FloatingEndpoint(600, 600)
         );
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, first));
         canvas.ClickElement(HitOf(canvas, edge), shift: true);
 
@@ -425,7 +455,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var above = AddInstance(board, 400, 100);
         above.ZIndex = 5;
         var edge = Connect(board, shape, above);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, shape));
         canvas.ClickElement(HitOf(canvas, edge), shift: true);
 
@@ -441,7 +473,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 250, 100);
         var edge = Connect(board, first, second);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, first));
         canvas.ClickElement(HitOf(canvas, edge), shift: true);
 
@@ -466,7 +500,9 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 250, 100);
         var edge = Connect(board, first, second);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         canvas.ClickOn(ContainerOf(canvas, first));
         var notifications = 0;
         canvas.Instance.SelectionChanged += (_, _) => notifications++;

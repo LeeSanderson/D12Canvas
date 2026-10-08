@@ -84,6 +84,9 @@ public abstract class InteractionProbe : IAsyncLifetime
     // Appended to the probe page's path, for a probe that needs the canvas configured otherwise.
     protected virtual string ProbePageQuery => "";
 
+    // Run before any page script, for a probe that needs the browser to report itself otherwise.
+    protected virtual string? BrowserInitScript => null;
+
     protected ConsoleErrorTrap ConsoleErrors { get; } = new();
 
     public async ValueTask InitializeAsync()
@@ -96,6 +99,11 @@ public abstract class InteractionProbe : IAsyncLifetime
             }
         );
         await _context.AddInitScriptAsync(InteropRecorderScript);
+        if (BrowserInitScript is { } browserInitScript)
+        {
+            await _context.AddInitScriptAsync(browserInitScript);
+        }
+
         Page = await _context.NewPageAsync();
         ConsoleErrors.Attach(Page);
         await Page.GotoAsync(ProbePagePath + ProbePageQuery);

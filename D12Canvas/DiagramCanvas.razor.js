@@ -192,8 +192,8 @@ function menuVerdict(target, hit) {
 
 // With Alt held, a primary press on author content reaches through to the instance unless the
 // browser has a reason to keep it: an editable target or a live text selection in the instance.
-function altPrimaryCell(event, hit) {
-    if (event.button !== PRIMARY_BUTTON || !event.altKey || hit.role !== "author-content") {
+function altPrimaryCell(event, button, hit) {
+    if (button !== PRIMARY_BUTTON || !event.altKey || hit.role !== "author-content") {
         return hit;
     }
 
@@ -214,8 +214,23 @@ function modifiersOf(event) {
     };
 }
 
+function sameModifiers(first, second) {
+    return (
+        first.shiftKey === second.shiftKey &&
+        first.ctrlKey === second.ctrlKey &&
+        first.altKey === second.altKey &&
+        first.metaKey === second.metaKey
+    );
+}
+
+function isApplePlatform() {
+    const platform = navigator.userAgentData?.platform ?? navigator.platform ?? "";
+    return /Mac|iPhone|iPad|iPod/.test(platform);
+}
+
 export async function addPointerListener(canvas, container, dotnetRef, options) {
     const classifyPresses = options?.classify !== false;
+    const applePlatform = isApplePlatform();
     let press = null;
     let lastPress = null;
     let storedMenuVerdict = null;
@@ -225,21 +240,28 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         return { x: event.clientX - rect.left, y: event.clientY - rect.top };
     };
 
+    // Ctrl+click is the system's secondary click on Apple platforms, so a Ctrl+primary press there
+    // is a secondary press, and Ctrl is never a press-time modifier anywhere.
+    const buttonOf = (event) =>
+        applePlatform && event.button === PRIMARY_BUTTON && event.ctrlKey
+            ? SECONDARY_BUTTON
+            : event.button;
+
     // Pointer events carry no click count of their own, so consecutive presses within the usual
     // multi-click window and radius are counted here.
-    const pressCountFor = (event) => {
+    const pressCountFor = (event, button) => {
         const now = performance.now();
         const count =
             lastPress !== null &&
             now - lastPress.time < MULTI_PRESS_WINDOW_MS &&
-            lastPress.button === event.button &&
+            lastPress.button === button &&
             Math.hypot(event.clientX - lastPress.clientX, event.clientY - lastPress.clientY) <
                 MULTI_PRESS_RADIUS_PX
                 ? lastPress.count + 1
                 : 1;
         lastPress = {
             time: now,
-            button: event.button,
+            button,
             clientX: event.clientX,
             clientY: event.clientY,
             count
@@ -247,27 +269,38 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         return count;
     };
 
-    const hitStackFor = (event, hit) =>
-        event.button === PRIMARY_BUTTON &&
+    const hitStackFor = (event, button, hit) =>
+        button === PRIMARY_BUTTON &&
         (hit.role === "selection-bounds" || (event.altKey && ALT_CYCLE_ROLES.has(hit.role)))
             ? hitStackAt(canvas, event.clientX, event.clientY)
             : null;
 
-    const pressFor = (event, hit) => {
+    const moveFor = (event) => {
         const point = containerPoint(event);
         return {
             pointerId: event.pointerId,
-            button: event.button,
+            x: point.x,
+            y: point.y,
+            buttons: event.buttons,
+            ...modifiersOf(event)
+        };
+    };
+
+    const pressFor = (event, button, hit) => {
+        const point = containerPoint(event);
+        return {
+            pointerId: event.pointerId,
+            button,
             buttons: event.buttons,
             pointerType: event.pointerType,
             role: hit.role,
             entityId: hit.entityId,
             part: hit.part,
-            pressCount: pressCountFor(event),
+            pressCount: pressCountFor(event, button),
             x: point.x,
             y: point.y,
             ...modifiersOf(event),
-            hits: hitStackFor(event, hit)
+            hits: hitStackFor(event, button, hit)
         };
     };
 
@@ -299,7 +332,8 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
     };
 
     const handlePointerDown = (event) => {
-        if (event.button !== SECONDARY_BUTTON) {
+        const button = buttonOf(event);
+        if (button !== SECONDARY_BUTTON) {
             storedMenuVerdict = null;
         }
 
@@ -309,16 +343,12 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             return;
         }
 
-        if (
-            event.button !== PRIMARY_BUTTON &&
-            event.button !== MIDDLE_BUTTON &&
-            event.button !== SECONDARY_BUTTON
-        ) {
+        if (button !== PRIMARY_BUTTON && button !== MIDDLE_BUTTON && button !== SECONDARY_BUTTON) {
             return;
         }
 
         const hit = classifyPresses
-            ? altPrimaryCell(event, classify(event.target, canvas))
+            ? altPrimaryCell(event, button, classify(event.target, canvas))
             : { role: "canvas", entityId: null, part: null, native: false };
 
         // A primary press on author content belongs to the browser: nothing is captured or
@@ -326,17 +356,17 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         // Where an author's marker rather than a control matched, the target cannot take focus,
         // so the browser would hand focus up to the instance's tab stop and select it outright;
         // that press is prevented and focuses the canvas instead.
-        if (event.button === PRIMARY_BUTTON && hit.role === "author-content") {
+        if (button === PRIMARY_BUTTON && hit.role === "author-content") {
             if (!hit.native) {
                 event.preventDefault();
                 canvas.focus({ preventScroll: true });
             }
 
-            dotnetRef.invokeMethodAsync("OnPointerPressed", pressFor(event, hit));
+            dotnetRef.invokeMethodAsync("OnPointerPressed", pressFor(event, button, hit));
             return;
         }
 
-        if (event.button === SECONDARY_BUTTON) {
+        if (button === SECONDARY_BUTTON) {
             const verdict = menuVerdict(event.target, hit);
             if (verdict === "browser") {
                 return;
@@ -349,18 +379,29 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         canvas.setPointerCapture(event.pointerId);
         canvas.focus({ preventScroll: true });
 
+        const pressed = pressFor(event, button, hit);
         press = {
             pointerId: event.pointerId,
-            button: event.button,
-            carriesEdgeEnd: event.button === PRIMARY_BUTTON && EDGE_END_ROLES.has(hit.role),
+            button,
+            physicalButton: event.button,
+            carriesEdgeEnd: button === PRIMARY_BUTTON && EDGE_END_ROLES.has(hit.role),
             startClientX: event.clientX,
             startClientY: event.clientY,
             active: false,
+            lastMove: moveFor(event),
             pendingMove: null,
             frame: 0
         };
 
-        dotnetRef.invokeMethodAsync("OnPointerPressed", pressFor(event, hit));
+        dotnetRef.invokeMethodAsync("OnPointerPressed", pressed);
+    };
+
+    const queueMove = (move) => {
+        press.lastMove = move;
+        press.pendingMove = move;
+        if (!press.frame) {
+            press.frame = requestAnimationFrame(flushMove);
+        }
     };
 
     const handlePointerMove = (event) => {
@@ -380,18 +421,25 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             press.active = true;
         }
 
-        const point = containerPoint(event);
-        press.pendingMove = {
-            pointerId: event.pointerId,
-            x: point.x,
-            y: point.y,
-            buttons: event.buttons,
-            ...modifiersOf(event)
-        };
+        queueMove(moveFor(event));
+    };
 
-        if (!press.frame) {
-            press.frame = requestAnimationFrame(flushMove);
+    // A modifier changed with the pointer still is a move from where the pointer last was, so a
+    // gesture that reads the modifier live reacts at once. Auto-repeat keydowns carry the same
+    // state and send nothing, and a press still under the drag threshold has nothing to re-run.
+    // Focus may be anywhere while the pointer is captured, so this listens on the window, ahead of
+    // every other handler, and prevents nothing.
+    const handleModifierKey = (event) => {
+        if (press === null || !press.active) {
+            return;
         }
+
+        const modifiers = modifiersOf(event);
+        if (sameModifiers(modifiers, press.lastMove)) {
+            return;
+        }
+
+        queueMove({ ...press.lastMove, ...modifiers });
     };
 
     // Only the claiming button's release ends the gesture. Any move still waiting for its frame
@@ -400,7 +448,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         if (
             press === null ||
             event.pointerId !== press.pointerId ||
-            event.button !== press.button
+            event.button !== press.physicalButton
         ) {
             return;
         }
@@ -410,7 +458,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         const ended = endPress();
         dotnetRef.invokeMethodAsync("OnPointerReleased", {
             pointerId: event.pointerId,
-            button: event.button,
+            button: ended.button,
             x: point.x,
             y: point.y,
             ...modifiersOf(event),
@@ -472,6 +520,8 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
     canvas.addEventListener("lostpointercapture", handleLostPointerCapture);
     canvas.addEventListener("contextmenu", handleContextMenu);
     window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("keydown", handleModifierKey, true);
+    window.addEventListener("keyup", handleModifierKey, true);
 
     return {
         // C# promotes a press still under the threshold when the viewport moves beneath it, and
@@ -490,6 +540,8 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             canvas.removeEventListener("lostpointercapture", handleLostPointerCapture);
             canvas.removeEventListener("contextmenu", handleContextMenu);
             window.removeEventListener("blur", handleWindowBlur);
+            window.removeEventListener("keydown", handleModifierKey, true);
+            window.removeEventListener("keyup", handleModifierKey, true);
         }
     };
 }

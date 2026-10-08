@@ -44,12 +44,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Parameter]
     public double LodSizeThreshold { get; set; } = DefaultLodSizeThreshold;
 
-    // Off by default - an editing preference, not a board or persisted setting (see
-    // CONTEXT.md's Snap-to-grid term). Component-owned like an <InputBase>'s own bindable value:
-    // OnToggleSnapToGridPressed below flips it directly and notifies SnapToGridChanged, so a host
-    // using @bind-SnapToGrid stays in sync with the built-in Ctrl+' shortcut too.
+    // An editing preference, not a board or persisted setting. Component-owned like an
+    // <InputBase>'s own bindable value: OnToggleSnapToGridPressed below flips it directly and
+    // notifies SnapToGridChanged, so a host using @bind-SnapToGrid stays in sync with the built-in
+    // Ctrl+' shortcut too.
     [Parameter]
-    public bool SnapToGrid { get; set; }
+    public bool SnapToGrid { get; set; } = true;
 
     [Parameter]
     public EventCallback<bool> SnapToGridChanged { get; set; }
@@ -722,8 +722,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         public void ToggleEdge(Guid edgeId) => canvas.ToggleEdge(edgeId);
 
         public void ClearSelection() => canvas.SetSelection([], []);
-
-        public (double X, double Y) SnapToGrid(double x, double y) => canvas.SnapPoint(x, y);
 
         public double? GridSpacing => canvas.SnapToGrid ? canvas.DominantGridSpacing() : null;
 
@@ -2458,7 +2456,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         var spacing = DominantGridSpacing();
-        return (Math.Round(x / spacing) * spacing, Math.Round(y / spacing) * spacing);
+        return (GridSnap.NearestLine(x, spacing), GridSnap.NearestLine(y, spacing));
     }
 
     private Bounds SnapBounds(Bounds bounds)

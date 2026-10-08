@@ -71,7 +71,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100);
         var target = AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         ConnectRightToLeft(canvas);
 
@@ -86,7 +88,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         ConnectRightToLeft(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -100,7 +104,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
         canvas.PressElement(sourcePort, (150, 125));
@@ -120,7 +126,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
 
         canvas.PressElement(sourcePort, (150, 125));
@@ -140,7 +148,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         ConnectRightToLeft(canvas);
 
@@ -160,7 +170,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
         canvas.DragConnector(sourcePort, (150, 125), (190, 400));
@@ -178,7 +190,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var containers = canvas.FindAll(".component-container");
         canvas.DragConnector(
@@ -196,7 +210,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
         canvas.PressElement(sourcePort, (150, 125));
@@ -212,7 +228,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickElement(canvas.Find(".component-container").QuerySelector(".port-right")!);
 
@@ -225,7 +243,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
@@ -240,7 +260,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
@@ -265,7 +287,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         ConnectRightToLeft(canvas);
         Assert.Single(board.Edges);
@@ -287,7 +311,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100);
         AddInstance(board, 250, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         ConnectRightToLeft(canvas);
         Assert.Single(board.Edges);
@@ -311,7 +337,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
 
         canvas.ZoomIn(); // zooms to scale 1.1
 

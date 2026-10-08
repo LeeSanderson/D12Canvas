@@ -70,7 +70,9 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 100, 100);
         var second = AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
@@ -87,7 +89,9 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0);
         var second = AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
@@ -109,7 +113,9 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
@@ -131,7 +137,9 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, 50, 50);
         var second = AddInstance(board, 100, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
@@ -157,7 +165,9 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var a = AddInstance(board, 0, 0);
         var b = AddInstance(board, 100, 0);
         var c = AddInstance(board, 300, 0);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         SelectBoth(canvas); // selects A and B
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}
 
@@ -186,7 +196,9 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var a = AddInstance(board, 0, 0, 50, 50);
         var b = AddInstance(board, 100, 0, 50, 50);
         var c = AddInstance(board, 300, 0, 100, 50);
-        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
         SelectBoth(canvas); // selects A and B
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}
         canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
