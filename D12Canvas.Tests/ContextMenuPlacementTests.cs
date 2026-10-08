@@ -73,4 +73,25 @@ public class ContextMenuPlacementTests
             height
         );
     }
+
+    [Fact]
+    public void AStripOfGlyphsIsOneRowTall()
+    {
+        var row = new ContextMenuRow(ContextMenuCommand.BringToFront, "Bring to Front", null, null);
+        var glyph = new ContextMenuRow(
+            ContextMenuCommand.AlignLeft,
+            "Align left",
+            null,
+            null,
+            true
+        );
+
+        var height = ContextMenuPlacement.HeightOf(
+            [
+                [glyph, glyph, glyph, row],
+            ]
+        );
+
+        Assert.Equal(ContextMenuPlacement.Frame + 2 * ContextMenuPlacement.RowHeight, height);
+    }
 }

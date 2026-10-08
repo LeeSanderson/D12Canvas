@@ -10,8 +10,30 @@
         {
             <div class="d12-context-menu-separator" role="separator"></div>
         }
-        @foreach (var row in Sections[sectionIndex])
+        var section = Sections[sectionIndex];
+        var stripDrawn = false;
+        @foreach (var row in section)
         {
+            if (row.Glyph)
+            {
+                if (!stripDrawn)
+                {
+                    stripDrawn = true;
+                    <div class="d12-context-menu-strip" role="group" aria-label="Align and distribute">
+                        @foreach (var glyph in section.Where(candidate => candidate.Glyph))
+                        {
+                            <button type="button" class="d12-context-menu-glyph" role="menuitem"
+                                    title="@glyph.Label" aria-label="@glyph.Label"
+                                    @onclick="() => OnInvoke.InvokeAsync(glyph.Command)">
+                                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">@GlyphMarkup(glyph.Command)</svg>
+                            </button>
+                        }
+                    </div>
+                }
+
+                continue;
+            }
+
             <button type="button" class="d12-context-menu-item"
                     role="@(row.Checked is null ? "menuitem" : "menuitemcheckbox")"
                     aria-checked="@CheckedAttribute(row)"
@@ -124,6 +146,37 @@
     }
 
     .d12-context-menu-item:hover {
+        background: color-mix(in srgb, var(--d12-border) 25%, var(--d12-surface));
+        border-color: var(--d12-border);
+    }
+
+    .d12-context-menu-strip {
+        display: flex;
+        align-items: center;
+        height: 28px;
+    }
+
+    .d12-context-menu-glyph {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 26px;
+        height: 28px;
+        box-sizing: border-box;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        color: inherit;
+    }
+
+    .d12-context-menu-glyph svg {
+        fill: currentColor;
+        stroke: currentColor;
+    }
+
+    .d12-context-menu-glyph:hover {
         background: color-mix(in srgb, var(--d12-border) 25%, var(--d12-surface));
         border-color: var(--d12-border);
     }

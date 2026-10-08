@@ -90,6 +90,30 @@ public partial class ContextMenu : IAsyncDisposable
     [JSInvokable]
     public Task RequestClose() => OnRequestClose.InvokeAsync();
 
+    private static MarkupString GlyphMarkup(ContextMenuCommand command) =>
+        new(
+            command switch
+            {
+                ContextMenuCommand.AlignLeft => Glyph("M2 1V15", (4, 3, 9, 3), (4, 10, 6, 3)),
+                ContextMenuCommand.AlignCentre => Glyph("M8 1V15", (3, 3, 10, 3), (5, 10, 6, 3)),
+                ContextMenuCommand.AlignRight => Glyph("M14 1V15", (3, 3, 9, 3), (6, 10, 6, 3)),
+                ContextMenuCommand.AlignTop => Glyph("M1 2H15", (3, 4, 3, 9), (10, 4, 3, 6)),
+                ContextMenuCommand.AlignMiddle => Glyph("M1 8H15", (3, 3, 3, 10), (10, 5, 3, 6)),
+                ContextMenuCommand.AlignBottom => Glyph("M1 14H15", (3, 3, 3, 9), (10, 6, 3, 6)),
+                ContextMenuCommand.DistributeHorizontally => Glyph("M1 2V14M15 2V14", (6, 4, 4, 8)),
+                ContextMenuCommand.DistributeVertically => Glyph("M2 1H14M2 15H14", (4, 6, 8, 4)),
+                _ => "",
+            }
+        );
+
+    private static string Glyph(string lines, params (int X, int Y, int W, int H)[] boxes) =>
+        $"<path d=\"{lines}\" fill=\"none\" stroke-width=\"1.5\"/>"
+        + string.Concat(
+            boxes.Select(box =>
+                $"<rect x=\"{box.X}\" y=\"{box.Y}\" width=\"{box.W}\" height=\"{box.H}\" stroke=\"none\"/>"
+            )
+        );
+
     private static string? CheckedAttribute(ContextMenuRow row) =>
         row.Checked switch
         {

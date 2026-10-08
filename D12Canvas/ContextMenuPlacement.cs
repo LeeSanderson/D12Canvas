@@ -12,7 +12,9 @@ internal static class ContextMenuPlacement
 
     public static double HeightOf(IReadOnlyList<IReadOnlyList<ContextMenuRow>> sections) =>
         Frame
-        + sections.Sum(section => section.Count) * RowHeight
+        + sections.Sum(section =>
+            section.Count(row => !row.Glyph) + (section.Any(row => row.Glyph) ? 1 : 0)
+        ) * RowHeight
         + Math.Max(0, sections.Count - 1) * SeparatorHeight;
 
     // Opens right and down from the anchor by default, and on each axis flips to the other side

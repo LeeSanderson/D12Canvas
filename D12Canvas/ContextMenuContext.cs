@@ -17,6 +17,14 @@ public enum ContextMenuCommand
     Delete,
     Group,
     Ungroup,
+    AlignLeft,
+    AlignCentre,
+    AlignRight,
+    AlignTop,
+    AlignMiddle,
+    AlignBottom,
+    DistributeHorizontally,
+    DistributeVertically,
     BringToFront,
     BringForward,
     SendBackward,
@@ -32,7 +40,8 @@ public enum ContextMenuCommand
 // whether it is eligible, how it reads and which hint it shows, so the menu itself reads nothing
 // from the board. AsyncClipboard is whether the browser offers the clipboard to a click, which it
 // does only in a secure context; without it the clipboard rows are left out and the keys still
-// work. CanChangePicture is whether every selected entity is an image.
+// work. CanChangePicture is whether every selected entity is an image. CanAlign and
+// CanDistribute count the selection's instances and groups, never its edges.
 public sealed record ContextMenuContext(
     ContextMenuSet Set,
     bool CanGroup = false,
@@ -46,5 +55,7 @@ public sealed record ContextMenuContext(
     bool CanCopy = false,
     bool CanCut = false,
     bool AsyncClipboard = false,
-    bool CanChangePicture = false
+    bool CanChangePicture = false,
+    bool CanAlign = false,
+    bool CanDistribute = false
 );

@@ -782,7 +782,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void ClearSelection() => canvas.SetSelection([], []);
 
-        public double? GridSpacing => canvas.SnapToGrid ? canvas.DominantGridSpacing() : null;
+        public double? GridSpacing => canvas.SnapSpacing;
 
         public bool ObjectSnapping => canvas.ObjectSnapping;
 
@@ -1614,8 +1614,10 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private bool HasSelection => _selectedInstanceIds.Count > 0 || SelectedEdges.Count > 0;
 
-    private ContextMenuContext ContextMenuContextFor(ContextMenuSet set) =>
-        new(
+    private ContextMenuContext ContextMenuContextFor(ContextMenuSet set)
+    {
+        var arrangeable = ArrangeableSelection().Count;
+        return new(
             set,
             CanGroup: CanGroupSelection,
             CanUngroup: CanUngroupSelection,
@@ -1628,8 +1630,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             CanCopy: CanCopySelection,
             CanCut: CanCopySelection,
             AsyncClipboard: _asyncClipboard,
-            CanChangePicture: CanChangePicture
+            CanChangePicture: CanChangePicture,
+            CanAlign: arrangeable >= AlignDistribute.AlignThreshold,
+            CanDistribute: arrangeable >= AlignDistribute.DistributeThreshold
         );
+    }
 
     // Same eligibility OnGroupPressed itself already guards on (2+ sibling entries) - kept as its
     // own property so the menu's own "should Group show" question reads independently of invoking it.
@@ -1750,6 +1755,14 @@ public partial class DiagramCanvas : IAsyncDisposable
             ContextMenuCommand.Delete => OnDeletePressed,
             ContextMenuCommand.Group => OnGroupPressed,
             ContextMenuCommand.Ungroup => OnUngroupPressed,
+            ContextMenuCommand.AlignLeft => OnAlignLeftPressed,
+            ContextMenuCommand.AlignCentre => OnAlignCentrePressed,
+            ContextMenuCommand.AlignRight => OnAlignRightPressed,
+            ContextMenuCommand.AlignTop => OnAlignTopPressed,
+            ContextMenuCommand.AlignMiddle => OnAlignMiddlePressed,
+            ContextMenuCommand.AlignBottom => OnAlignBottomPressed,
+            ContextMenuCommand.DistributeHorizontally => OnDistributeHorizontallyPressed,
+            ContextMenuCommand.DistributeVertically => OnDistributeVerticallyPressed,
             ContextMenuCommand.BringToFront => OnBringToFrontPressed,
             ContextMenuCommand.BringForward => OnBringForwardPressed,
             ContextMenuCommand.SendBackward => OnSendBackwardPressed,

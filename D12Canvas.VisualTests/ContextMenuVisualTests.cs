@@ -108,6 +108,36 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
+    [Fact]
+    public async Task RightClickOnAThreeInstanceSelectionShowsTheWholeAlignStrip_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+
+        var entries = _page.Locator(".d12-palette-entry-button");
+        for (var placed = 1; placed <= 3; placed++)
+        {
+            await entries.Nth(placed - 1).ClickAsync();
+            await Expect(_page.Locator(".component-container")).ToHaveCountAsync(placed);
+        }
+
+        await _page.Locator(".component-container[aria-selected='true']").ClickAsync();
+        await _page.Keyboard.PressAsync("Control+a");
+        await Expect(_page.Locator(".component-container[aria-selected='true']"))
+            .ToHaveCountAsync(3);
+
+        await _page
+            .Locator(".selection-bounding-box")
+            .ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
+
+        await Expect(
+                _page
+                    .GetByRole(AriaRole.Group, new() { Name = "Align and distribute" })
+                    .GetByRole(AriaRole.Menuitem)
+            )
+            .ToHaveCountAsync(8);
+        await ContentSnapshot.Verify(_page);
+    }
+
     // One instance is placed so the board has something to select, then the press lands on bare
     // canvas well away from it, so the canvas set opens with Select All and both snap toggles.
     private async Task OpenContextMenuOnEmptyCanvas()

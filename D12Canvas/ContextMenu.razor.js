@@ -47,6 +47,14 @@ export function registerMenu(menuElement, dotNetHelper, options) {
                 event.preventDefault();
                 focusAdjacentItem(menuElement, -1);
                 break;
+            case "ArrowRight":
+                event.preventDefault();
+                focusAdjacentGlyph(1);
+                break;
+            case "ArrowLeft":
+                event.preventDefault();
+                focusAdjacentGlyph(-1);
+                break;
         }
     };
 
@@ -115,19 +123,33 @@ function swallowWhatThePressFiresNext() {
     document.addEventListener("keydown", clear, true);
 }
 
-// Wraps at either end.
+// Wraps at either end. A strip of glyphs is one row, entered at its first glyph.
 function focusAdjacentItem(menuElement, direction) {
-    const items = Array.from(menuElement.querySelectorAll(".d12-context-menu-item"));
-    if (items.length === 0) {
+    const rows = Array.from(
+        menuElement.querySelectorAll(":scope > .d12-context-menu-item, :scope > .d12-context-menu-strip")
+    );
+    if (rows.length === 0) {
         return;
     }
 
-    const currentIndex = items.indexOf(document.activeElement);
+    const currentIndex = rows.findIndex((row) => row.contains(document.activeElement));
     const nextIndex =
         currentIndex === -1
             ? direction > 0
                 ? 0
-                : items.length - 1
-            : (currentIndex + direction + items.length) % items.length;
-    items[nextIndex].focus();
+                : rows.length - 1
+            : (currentIndex + direction + rows.length) % rows.length;
+    const next = rows[nextIndex];
+    (next.querySelector(".d12-context-menu-glyph") ?? next).focus();
+}
+
+function focusAdjacentGlyph(direction) {
+    const strip = document.activeElement?.closest(".d12-context-menu-strip");
+    if (!strip) {
+        return;
+    }
+
+    const glyphs = Array.from(strip.querySelectorAll(".d12-context-menu-glyph"));
+    const currentIndex = glyphs.indexOf(document.activeElement);
+    glyphs[(currentIndex + direction + glyphs.length) % glyphs.length].focus();
 }

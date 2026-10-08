@@ -1,11 +1,13 @@
 namespace D12Canvas;
 
-// Checked is null for a row that is not a toggle.
+// Checked is null for a row that is not a toggle. A glyph row is drawn as an icon in one strip with
+// its neighbouring glyph rows, its Label becoming the icon's accessible name.
 internal sealed record ContextMenuRow(
     ContextMenuCommand Command,
     string Label,
     string? Hint,
-    bool? Checked
+    bool? Checked,
+    bool Glyph = false
 );
 
 // Both content sets come from one list of sections in one fixed order, and each row decides for
@@ -18,7 +20,8 @@ internal static class ContextMenuComposition
         Func<ContextMenuContext, bool> IsEligible,
         string Label,
         Func<ContextMenuContext, Chord?> Chord,
-        Func<ContextMenuContext, bool?> Checked
+        Func<ContextMenuContext, bool?> Checked,
+        bool Glyph = false
     );
 
     private static readonly Chord DeleteChord = new("Delete", AppleKey: "⌫");
@@ -78,6 +81,18 @@ internal static class ContextMenuComposition
             ),
         ],
         [
+            Glyph(ContextMenuCommand.AlignLeft, "Align left", CanAlign),
+            Glyph(ContextMenuCommand.AlignCentre, "Align centre", CanAlign),
+            Glyph(ContextMenuCommand.AlignRight, "Align right", CanAlign),
+            Glyph(ContextMenuCommand.AlignTop, "Align top", CanAlign),
+            Glyph(ContextMenuCommand.AlignMiddle, "Align middle", CanAlign),
+            Glyph(ContextMenuCommand.AlignBottom, "Align bottom", CanAlign),
+            Glyph(
+                ContextMenuCommand.DistributeHorizontally,
+                "Distribute horizontally",
+                CanDistribute
+            ),
+            Glyph(ContextMenuCommand.DistributeVertically, "Distribute vertically", CanDistribute),
             Row(ContextMenuCommand.BringToFront, "Bring to Front", CanArrange, BringToFrontChord),
             Row(ContextMenuCommand.BringForward, "Bring Forward", CanArrange, BringForwardChord),
             Row(ContextMenuCommand.SendBackward, "Send Backward", CanArrange, SendBackwardChord),
@@ -126,7 +141,8 @@ internal static class ContextMenuComposition
             row.Chord(context) is { } chord
                 ? ShortcutHint.Render(chord, context.ApplePlatform)
                 : null,
-            row.Checked(context)
+            row.Checked(context),
+            row.Glyph
         );
 
     private static RowDefinition Row(
@@ -141,6 +157,18 @@ internal static class ContextMenuComposition
         string label,
         Func<ContextMenuContext, bool> isEligible
     ) => new(command, isEligible, label, _ => null, _ => null);
+
+    private static RowDefinition Glyph(
+        ContextMenuCommand command,
+        string label,
+        Func<ContextMenuContext, bool> isEligible
+    ) => new(command, isEligible, label, _ => null, _ => null, Glyph: true);
+
+    private static bool CanAlign(ContextMenuContext context) =>
+        OnObject(context) && context.CanAlign;
+
+    private static bool CanDistribute(ContextMenuContext context) =>
+        OnObject(context) && context.CanDistribute;
 
     private static bool CanChangePicture(ContextMenuContext context) =>
         OnObject(context) && context.CanChangePicture;

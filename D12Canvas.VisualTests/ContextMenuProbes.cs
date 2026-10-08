@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 using static Microsoft.Playwright.Assertions;
 
@@ -175,5 +176,47 @@ public sealed class ContextMenuProbes(PlaywrightFixture playwright, DemoAppFixtu
             Assert.NotNull(box);
             Assert.True(box!.Y + box.Height <= container.Y + container.Height);
         }
+    }
+
+    [Fact]
+    public async Task TheAlignStripIsOneRowToTheVerticalArrows_AndTheSideArrowsRoveAcrossIt()
+    {
+        await Instance(SourceId).ClickAsync();
+        await Instance(TargetId).ClickAsync(new() { Modifiers = [KeyboardModifier.Shift] });
+        await Expect(Page.Locator(".component-container[aria-selected='true']"))
+            .ToHaveCountAsync(2);
+        await Page.Keyboard.PressAsync("Shift+F10");
+        await Expect(Menu.Locator(".d12-context-menu-item").First).ToBeFocusedAsync();
+        await SettleAsync();
+        await ClearCallsAsync();
+        var focusedGlyph = Menu.Locator(".d12-context-menu-glyph:focus");
+
+        for (var presses = 0; presses < 20 && await focusedGlyph.CountAsync() == 0; presses++)
+        {
+            await Page.Keyboard.PressAsync("ArrowDown");
+        }
+
+        await Expect(focusedGlyph).ToHaveAttributeAsync("title", "Align left");
+        await Page.Keyboard.PressAsync("ArrowLeft");
+        await Expect(focusedGlyph).ToHaveAttributeAsync("title", "Align bottom");
+        await Page.Keyboard.PressAsync("ArrowRight");
+        await Expect(focusedGlyph).ToHaveAttributeAsync("title", "Align left");
+        await Page.Keyboard.PressAsync("ArrowDown");
+        await Expect(Menu.Locator(".d12-context-menu-item:focus .d12-context-menu-label"))
+            .ToHaveTextAsync("Bring to Front");
+        await Page.Keyboard.PressAsync("ArrowUp");
+        await Expect(focusedGlyph).ToHaveAttributeAsync("title", "Align left");
+
+        await Page.Keyboard.PressAsync("Enter");
+
+        await Expect(Menu).ToHaveCountAsync(0);
+        Assert.Equal(await LeftOfAsync(SourceId), await LeftOfAsync(TargetId));
+        Assert.Empty(await CallsToAsync("OnArrowKeyPressed"));
+    }
+
+    private async Task<string> LeftOfAsync(string id)
+    {
+        var style = await Instance(id).GetAttributeAsync("style");
+        return Regex.Match(style!, @"left: (-?[\d.]+)px").Groups[1].Value;
     }
 }

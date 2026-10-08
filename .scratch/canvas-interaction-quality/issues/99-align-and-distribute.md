@@ -4,13 +4,13 @@
 
 **Blocked by:** 89 (Composed context menu with shortcut hints)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Align left on three shapes moves two of them to the leftmost edge in one history entry; aligning already-aligned shapes adds no entry
-- [ ] Aligning a selection containing a group moves the group's members together
-- [ ] Distribute horizontally on mixed-size shapes equalises the gaps; under snap each gap is a whole grid step
-- [ ] The strip appears only with two or more top-level entities and the distribute glyphs only with three or more
-- [ ] Inside an entered group the strip acts on the members selected
-- [ ] The eight methods are public on the canvas so a host can wire its own buttons
-- [ ] Pure C# tests for the eight computations and the snap rounding; bUnit for the strip
-- [ ] A baseline shows the strip in the menu; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] Align left on three shapes moves two of them to the leftmost edge in one history entry; aligning already-aligned shapes adds no entry
+- [x] Aligning a selection containing a group moves the group's members together
+- [x] Distribute horizontally on mixed-size shapes equalises the gaps; under snap each gap is a whole grid step
+- [x] The strip appears only with two or more top-level entities and the distribute glyphs only with three or more
+- [x] Inside an entered group the strip acts on the members selected
+- [x] The eight methods are public on the canvas so a host can wire its own buttons
+- [x] Pure C# tests for the eight computations and the snap rounding; bUnit for the strip
+- [x] A baseline shows the strip in the menu; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
