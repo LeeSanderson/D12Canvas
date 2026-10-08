@@ -36,7 +36,8 @@ public sealed record PointerPress(
 
 // Velocity is how fast the pointer was travelling when it reached this point, in screen pixels per
 // millisecond. A move re-sent for a modifier change, or re-run for a viewport change, carries
-// zero, since the pointer itself is still.
+// zero, since the pointer itself is still. Hits is what lies under the point, topmost first, sent
+// only for a press that carries an edge end, whose drop target is the shape under the pointer.
 public sealed record PointerMove(
     int PointerId,
     double X,
@@ -46,7 +47,8 @@ public sealed record PointerMove(
     bool CtrlKey,
     bool AltKey,
     bool MetaKey,
-    double Velocity = 0
+    double Velocity = 0,
+    IReadOnlyList<PointerHit>? Hits = null
 );
 
 // Hits is what lies under the release point, topmost first, read only for a press that can drop

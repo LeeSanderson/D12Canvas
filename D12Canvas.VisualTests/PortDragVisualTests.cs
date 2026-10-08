@@ -37,46 +37,22 @@ public sealed class PortDragVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Nudged 1px inward from the box's exact mathematical edge - a real browser's hit-testing at
-    // that knife's-edge boundary can resolve to whatever's behind the element instead of the
-    // element itself (sub-pixel rendering; getBoundingClientRect's own reported edge isn't always
-    // hit-testable at that exact coordinate). 1px is trivially still inside the port's own 20px
-    // hit circle (ComponentContainer.razor), so this doesn't change which port is targeted.
-    private static async Task<(double X, double Y)> BottomPortOf(ILocator container)
+    private ILocator Rectangle => _page.Locator(".component-container[aria-label='Rectangle']");
+
+    private ILocator StickyNote => _page.Locator(".component-container[aria-label='Sticky Note']");
+
+    // The seeded board's Rectangle sits directly above its Sticky Note (a 40px board-space gap), so
+    // the Rectangle's bottom port, pressed once the Rectangle is selected, is a short drag from the
+    // note. Stops halfway to the note's top edge, so this is unambiguously the in-progress preview
+    // and not the completed edge.
+    private async Task DragHalfwayFromRectangleToStickyNote()
     {
-        var box = await container.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + box.Height - 1);
-    }
+        var from = await PortGestures.SelectAndAimAtPortAsync(Rectangle, "Bottom");
+        var note = await StickyNote.BoundingBoxAsync();
+        Assert.NotNull(note);
+        var to = (X: note!.X + note.Width / 2, Y: note.Y);
 
-    private static async Task<(double X, double Y)> TopPortOf(ILocator container)
-    {
-        var box = await container.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + 1);
-    }
-
-    // The seeded board's Rectangle sits directly above its Sticky Note (a 40px board-space gap) -
-    // Rectangle's bottom port to Sticky Note's top port gives a short, deterministic drag.
-    private async Task<(
-        (double X, double Y) From,
-        (double X, double Y) To
-    )> RectangleToStickyNotePorts()
-    {
-        var rectangle = _page.Locator(".component-container[aria-label='Rectangle']");
-        var stickyNote = _page.Locator(".component-container[aria-label='Sticky Note']");
-
-        return (await BottomPortOf(rectangle), await TopPortOf(stickyNote));
-    }
-
-    // A plain mouse drag (not native HTML5 drag-and-drop) - same reasoning as
-    // DragMoveVisualTests. Stops halfway rather than at the target port, so this is
-    // unambiguously the in-progress preview and not the completed edge.
-    private async Task DragHalfwayBetweenPorts()
-    {
-        var (from, to) = await RectangleToStickyNotePorts();
-
-        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
+        await _page.Mouse.MoveAsync(from.X, from.Y);
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)((from.X + to.X) / 2), (float)((from.Y + to.Y) / 2));
 
@@ -88,7 +64,7 @@ public sealed class PortDragVisualTests : IAsyncLifetime
     public async Task ConnectorDragInProgress_MatchesBaseline()
     {
         await NewPageAsync(ColorScheme.Light);
-        await DragHalfwayBetweenPorts();
+        await DragHalfwayFromRectangleToStickyNote();
 
         await ContentSnapshot.Verify(_page);
 
@@ -99,30 +75,27 @@ public sealed class PortDragVisualTests : IAsyncLifetime
     public async Task ConnectorDragInProgress_DarkColorScheme_MatchesBaseline()
     {
         await NewPageAsync(ColorScheme.Dark);
-        await DragHalfwayBetweenPorts();
+        await DragHalfwayFromRectangleToStickyNote();
 
         await ContentSnapshot.Verify(_page);
 
         await _page.Mouse.UpAsync();
     }
 
-    // Grabbing a port that already anchors an edge carries that end: the pending line, from the
-    // end that stays put to the pointer, is the only thing drawing the edge.
+    // Grabbing a port an end is pinned to carries that end: the pending line, from the end that
+    // stays put to the pointer, is the only thing drawing the edge.
     [Fact]
     public async Task CarryingAnAttachedEndMidGesture_MatchesBaseline()
     {
         await NewPageAsync(ColorScheme.Light);
-        var (from, to) = await RectangleToStickyNotePorts();
-        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
-        await _page.Mouse.DownAsync();
-        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
-        await _page.Mouse.UpAsync();
+        await PortGestures.ConnectAsync(_page, Rectangle, "Bottom", StickyNote, "Top");
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
 
+        var to = await PortGestures.SelectAndAimAtPortAsync(StickyNote, "Top");
         var carriedTo = (X: to.X + 120, Y: to.Y + 30);
-        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
+        await _page.Mouse.MoveAsync(to.X, to.Y);
         await _page.Mouse.DownAsync();
-        await _page.Mouse.MoveAsync((float)carriedTo.X, (float)carriedTo.Y, new() { Steps = 4 });
+        await _page.Mouse.MoveAsync(carriedTo.X, carriedTo.Y, new() { Steps = 4 });
 
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(0);
         // The line's box takes in its stroke, so its end sits a couple of pixels past the pointer.
@@ -141,15 +114,10 @@ public sealed class PortDragVisualTests : IAsyncLifetime
     public async Task ConnectedEdge_MatchesBaseline()
     {
         await NewPageAsync(ColorScheme.Light);
-        var (from, to) = await RectangleToStickyNotePorts();
 
-        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
-        await _page.Mouse.DownAsync();
-        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
-        await _page.Mouse.UpAsync();
+        await PortGestures.ConnectAsync(_page, Rectangle, "Bottom", StickyNote, "Top");
 
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
-        await Expect(_page.Locator(".connector-drag-preview")).ToHaveCountAsync(0);
 
         await ContentSnapshot.Verify(_page);
     }

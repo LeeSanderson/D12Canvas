@@ -34,55 +34,38 @@ public sealed class PortsVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
+    // Click-to-add selects what it places, and a selected shape shows its four ports and its
+    // corner handles; its sides draw no handle, since only the cursor tells resize from connect.
     [Fact]
-    public async Task PortsVisibleOnHover_MatchesBaseline()
+    public async Task SelectedShapeShowsItsPorts_MatchesBaseline()
     {
-        await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
-        var target = _page.Locator(".component-container");
+        await _page.Locator("button[aria-label='Rectangle']").ClickAsync();
+        var placed = _page.Locator(".component-container");
+        await Expect(placed).ToHaveAttributeAsync("aria-selected", "true");
 
-        // ClickToAdd now selects the instance it just placed - deselect it first (a click on
-        // an empty canvas corner) so hover alone, not selection, is what reveals the ports below.
-        await _page
-            .Locator(".diagram-canvas")
-            .ClickAsync(
-                new LocatorClickOptions
-                {
-                    Position = new Position { X = 10, Y = 10 },
-                }
-            );
-        await Expect(target).Not.ToHaveAttributeAsync("aria-selected", "true");
-
-        // Hover alone (no click/select) is enough to reveal ports - proves they're an
-        // independent affordance from the resize handles, which need selection.
-        await target.HoverAsync();
-
-        await Expect(_page.Locator(".port").First).ToHaveCSSAsync("opacity", "1");
-        await Expect(target).Not.ToHaveAttributeAsync("aria-selected", "true");
+        await Expect(placed.Locator(".port")).ToHaveCountAsync(4);
+        await Expect(placed.Locator(".resize-handle")).ToHaveCountAsync(4);
 
         await ContentSnapshot.Verify(_page);
     }
 
     // Not a screenshot baseline (no Verify call) - this is a geometric assertion, checked with
-    // real browser-measured positions rather than the CSS-percentage reasoning in
-    // ComponentContainer.razor's comments. Ports have layout/a bounding box regardless of their
-    // own opacity, so no hover is needed to measure them; that keeps this test from depending on
-    // which of two possibly-overlapping instances currently happens to sit on top.
+    // real browser-measured positions. Click-to-add selects each shape it places, which shows its
+    // ports, so each one is measured straight after it is placed.
     [Fact]
     public async Task PortsSitAtEachInstancesOwnBorderCenters()
     {
-        // Rectangle (160x100) and Image (240x180) have different DefaultSizes - placing both
-        // and checking each one's ports against its *own* measured box proves the positioning is
-        // a genuine fraction of that instance's Bounds, not a fixed offset that only happens to
-        // look right for one particular size.
-        await _page.Locator("button[aria-label='Rectangle']").ClickAsync();
-        await _page.Locator("button[aria-label='Image']").ClickAsync();
-
-        var containers = _page.Locator(".component-container");
-        await Expect(containers).ToHaveCountAsync(2);
-
-        for (var i = 0; i < 2; i++)
+        // Rectangle (160x100) and Image (240x180) have different DefaultSizes - checking each
+        // one's ports against its *own* measured box proves the positioning is a genuine fraction
+        // of that instance's Bounds, not a fixed offset that only happens to look right for one
+        // particular size.
+        foreach (var entry in new[] { "Rectangle", "Image" })
         {
-            var instance = containers.Nth(i);
+            await _page.Locator($"button[aria-label='{entry}']").ClickAsync();
+            var instance = _page.Locator(
+                $".component-container[aria-label='{entry}'][aria-selected='true']"
+            );
+            await Expect(instance).ToHaveCountAsync(1);
             var box = await instance.BoundingBoxAsync();
             Assert.NotNull(box);
 

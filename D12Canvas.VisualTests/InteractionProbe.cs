@@ -10,8 +10,6 @@ namespace D12Canvas.VisualTests;
 // test when it is disposed.
 public abstract class InteractionProbe : IAsyncLifetime
 {
-    private const string ProbePagePath = "/interaction-probe-demo";
-
     private static readonly string[] PointerEntryPoints =
     [
         "OnPointerPressed",
@@ -81,6 +79,11 @@ public abstract class InteractionProbe : IAsyncLifetime
 
     protected IPage Page { get; private set; } = null!;
 
+    // The page a probe drives, and how many instances it seeds, which the probe waits for.
+    protected virtual string ProbePagePath => "/interaction-probe-demo";
+
+    protected virtual int ProbePageInstanceCount => 4;
+
     // Appended to the probe page's path, for a probe that needs the canvas configured otherwise.
     protected virtual string ProbePageQuery => "";
 
@@ -107,7 +110,7 @@ public abstract class InteractionProbe : IAsyncLifetime
         Page = await _context.NewPageAsync();
         ConsoleErrors.Attach(Page);
         await Page.GotoAsync(ProbePagePath + ProbePageQuery);
-        await Expect(Page.Locator(".component-container")).ToHaveCountAsync(4);
+        await Expect(Page.Locator(".component-container")).ToHaveCountAsync(ProbePageInstanceCount);
         await SettleAsync();
         await ClearCallsAsync();
     }

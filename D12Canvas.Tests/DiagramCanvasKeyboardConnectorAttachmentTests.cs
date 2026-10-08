@@ -167,8 +167,13 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
 
         Assert.Equal(
-            ["Top", "Right", "Bottom", "Left"],
-            canvas.FindAll(".port-focused").Select(port => port.GetAttribute("data-d12-part"))
+            [
+                "port port-top port-focused",
+                "port port-right port-focused",
+                "port port-bottom port-focused",
+                "port port-left port-focused",
+            ],
+            canvas.FindAll(".port-focused").Select(port => port.ClassName)
         );
     }
 
@@ -332,8 +337,8 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnSpacePressed());
 
         Assert.Equal(
-            "Top",
-            Assert.Single(canvas.FindAll(".port-focused")).GetAttribute("data-d12-part")
+            "port port-top port-focused",
+            Assert.Single(canvas.FindAll(".port-focused")).ClassName
         );
     }
 

@@ -169,8 +169,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
 
         // Re-grab the source port (it already anchors an edge, so this carries that edge's end)
         // and move away from it without releasing yet.
-        var sourcePort = canvas.FindAll(".component-container")[0].QuerySelector(".port-right")!;
-        canvas.PressElement(sourcePort, (150, 125));
+        canvas.PressPort(source.Id, "Right", (150, 125));
         canvas.MoveTo((150, 400));
 
         // Midpoint of the fixed target port (250, 125) and the live drag point (150, 400).

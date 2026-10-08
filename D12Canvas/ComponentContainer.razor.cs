@@ -29,6 +29,11 @@ public partial class ComponentContainer
     [Parameter]
     public Guid? EntityId { get; set; }
 
+    // False for an instance that takes no part in pointer hits, which renders no hit marker so a
+    // press passes through it. The canvas decides, from the same predicate the marquee reads.
+    [Parameter]
+    public bool HasHitRegion { get; set; } = true;
+
     [Parameter]
     public string? AccessibleName { get; set; }
 
@@ -94,6 +99,18 @@ public partial class ComponentContainer
     [Parameter]
     public bool AutoPortFocused { get; set; }
 
+    // The canvas's zoom, which the border partition reads because its spans are measured in screen
+    // pixels.
+    [Parameter]
+    public double Scale { get; set; } = 1;
+
+    // True while a connector drag would attach to this instance if released now, which shows its
+    // ports as it would on a selected instance.
+    [Parameter]
+    public bool IsDropTarget { get; set; }
+
+    private IReadOnlyList<BorderSpan> _partition = [];
+
     private double _lastRenderedX;
     private double _lastRenderedY;
     private double _lastRenderedWidth;
@@ -114,6 +131,9 @@ public partial class ComponentContainer
     private PortId? _lastRenderedFocusedPortId;
     private Guid? _lastRenderedFocusedCustomPortId;
     private bool _lastRenderedAutoPortFocused;
+    private double _lastRenderedScale;
+    private bool _lastRenderedIsDropTarget;
+    private bool _lastRenderedHasHitRegion;
 
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
@@ -155,8 +175,15 @@ public partial class ComponentContainer
             // unrelated parameter also changed.
             || FocusedPortId != _lastRenderedFocusedPortId
             || FocusedCustomPortId != _lastRenderedFocusedCustomPortId
-            || AutoPortFocused != _lastRenderedAutoPortFocused;
+            || AutoPortFocused != _lastRenderedAutoPortFocused
+            || IsDropTarget != _lastRenderedIsDropTarget
+            || HasHitRegion != _lastRenderedHasHitRegion
+            // The partition is measured in screen pixels, so a zoom can add or drop a span.
+            || (ShowPorts && Scale != _lastRenderedScale);
     }
+
+    protected override void OnParametersSet() =>
+        _partition = ShowPorts ? BorderPartition.Of(Width, Height, Scale, CustomPorts) : [];
 
     protected override void OnAfterRender(bool firstRender)
     {
@@ -174,6 +201,9 @@ public partial class ComponentContainer
         _lastRenderedFocusedPortId = FocusedPortId;
         _lastRenderedFocusedCustomPortId = FocusedCustomPortId;
         _lastRenderedAutoPortFocused = AutoPortFocused;
+        _lastRenderedScale = Scale;
+        _lastRenderedIsDropTarget = IsDropTarget;
+        _lastRenderedHasHitRegion = HasHitRegion;
     }
 
     private Task HandleFocus() => OnFocus.InvokeAsync();
@@ -203,13 +233,59 @@ public partial class ComponentContainer
     private string CustomPortCssClass(Guid portId) =>
         FocusedCustomPortId == portId ? "port custom-port port-focused" : "port custom-port";
 
-    // The shared visibility gate for the border strips and the resize handles, suppressed for a
+    // The visibility gate for the resize spans and the corner handles, suppressed for a
     // multi-selected member, whose shared bounding-box overlay grows its own handles instead.
     private bool ShowSelectionOverlay => IsSelected && !IsMultiSelected;
 
-    private static string CustomPortStyle(PortDef port) =>
-        $"left: calc({FormatPercent(port.FractionX)}% - 10px); top: calc({FormatPercent(port.FractionY)}% - 10px);";
+    // Ports show on a single selection and on the drop target of a connector drag, never on hover.
+    private bool ShowPorts => ShowSelectionOverlay || IsDropTarget;
 
-    private static string FormatPercent(double fraction) =>
-        (fraction * 100).ToString(CultureInfo.InvariantCulture);
+    private bool ShowsStandardPort(PortId side) =>
+        AutoPortFocused
+        || FocusedPortId == side
+        || _partition.Any(span =>
+            span.Kind == BorderSpanKind.Port && span.CustomPortId is null && span.Side == side
+        );
+
+    private bool ShowsCustomPort(Guid portId) =>
+        FocusedCustomPortId == portId || _partition.Any(span => span.CustomPortId == portId);
+
+    private static string SideClass(PortId side) =>
+        side switch
+        {
+            PortId.Top => "top",
+            PortId.Right => "right",
+            PortId.Bottom => "bottom",
+            PortId.Left => "left",
+            _ => throw new ArgumentOutOfRangeException(nameof(side)),
+        };
+
+    private static string PortPart(BorderSpan span) =>
+        span.CustomPortId?.ToString() ?? span.Side.ToString();
+
+    // A span runs along its side from its start edge to its end edge, each a percentage of the
+    // side plus a number of port targets divided by scale, so it keeps its screen size between the
+    // renders a zoom triggers.
+    private static string SpanStyle(BorderSpan span)
+    {
+        var (offset, length) = span.Side is PortId.Top or PortId.Bottom
+            ? ("left", "width")
+            : ("top", "height");
+        var start = AlongSide(span.Start.Fraction, span.Start.PortTargets);
+        var extent = AlongSide(
+            span.End.Fraction - span.Start.Fraction,
+            span.End.PortTargets - span.Start.PortTargets
+        );
+        return $"{offset}: {start}; {length}: {extent};";
+    }
+
+    private static string AlongSide(double fraction, double portTargets) =>
+        $"calc({FormatPercent(fraction)}% + {Format(portTargets)} * var(--d12-port-target) / var(--d12-scale))";
+
+    private static string CustomPortStyle(PortDef port) =>
+        $"left: calc({FormatPercent(port.FractionX)}% - var(--d12-port-dot) / 2); top: calc({FormatPercent(port.FractionY)}% - var(--d12-port-dot) / 2);";
+
+    private static string FormatPercent(double fraction) => Format(fraction * 100);
+
+    private static string Format(double value) => value.ToString(CultureInfo.InvariantCulture);
 }

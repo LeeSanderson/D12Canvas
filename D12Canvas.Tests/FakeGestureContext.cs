@@ -52,6 +52,10 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public bool IsInScope(Guid entityId) => InScope(entityId);
 
+    public HashSet<Guid> WithoutHitRegion { get; } = new();
+
+    public bool HasHitRegion(Guid instanceId) => !WithoutHitRegion.Contains(instanceId);
+
     public void EnterGroup(Guid groupId) => EnteredGroups.Add(groupId);
 
     public bool HasEnteredGroup { get; set; }
@@ -147,7 +151,6 @@ internal sealed class FakeGestureContext : IGestureContext
     public List<(IEdgeEndpoint Source, IEdgeEndpoint Target)> AddedEdges { get; } = new();
     public List<(Guid EdgeId, bool IsSource, IEdgeEndpoint Endpoint)> EndpointChanges { get; } =
         new();
-    public List<(Guid InstanceId, PortDef Port)> AddedCustomPorts { get; } = new();
     public List<Guid> LabelsAdded { get; } = new();
     public List<Guid> LabelEditRequests { get; } = new();
 
@@ -158,9 +161,6 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint) =>
         EndpointChanges.Add((edgeId, isSource, endpoint));
-
-    public void AddCustomPort(Guid instanceId, PortDef port) =>
-        AddedCustomPorts.Add((instanceId, port));
 
     public void AddEdgeLabel(Guid edgeId) => LabelsAdded.Add(edgeId);
 

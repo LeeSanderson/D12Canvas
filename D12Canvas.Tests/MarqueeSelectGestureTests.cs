@@ -39,6 +39,24 @@ public class MarqueeSelectGestureTests
     }
 
     [Fact]
+    public void AnInstanceWithNoHitRegionIsNotSwept()
+    {
+        var board = new Board();
+        var swept = AddInstance(board, 20, 20);
+        var passedOver = AddInstance(board, 120, 20);
+        var context = new FakeGestureContext(board);
+        context.WithoutHitRegion.Add(passedOver.Id);
+        var marquee = new MarqueeSelectGesture(
+            PointerEvents.Press(HitRole.Canvas, PointerPress.PrimaryButton, 0, 0),
+            context
+        );
+
+        marquee.Move(PointerEvents.Move(200, 100));
+
+        Assert.Equal(new HashSet<Guid> { swept.Id }, context.SelectedInstanceIds);
+    }
+
+    [Fact]
     public void EveryTickReplacesTheSelectionWithWhatTheBandIntersects()
     {
         var board = new Board();

@@ -188,10 +188,10 @@ public class DiagramCanvasPaintLayerTests : ComponentTestBase
     public void TheConnectorDragPreviewPaintsInSelectionChrome()
     {
         var board = new Board();
-        AddInstance(board, 100, 100);
+        var source = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.PressElement(canvas.Find(".port-right"), (150, 125));
+        canvas.PressPort(source.Id, "Right", (150, 125));
         canvas.MoveTo((180, 130));
 
         Assert.Equal("selection-chrome", LayerOf(canvas.Find(".connector-drag-preview")));

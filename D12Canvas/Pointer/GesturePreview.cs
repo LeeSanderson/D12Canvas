@@ -51,10 +51,12 @@ internal readonly record struct EdgeEnd(Guid EdgeId, bool IsSource);
 
 // The line a connector drag draws, from the end that stays put to the pointer. EdgeId names the
 // edge whose IsSource end is being carried, which the line stands in for while it is drawn; it is
-// null while a new edge is being pulled from a port.
+// null while a new edge is being pulled from a port. DropTargetId is the shape under the pointer
+// that a release would attach to, which shows its ports; never the shape the anchor is on.
 internal sealed record PendingEdge(
     Guid? EdgeId,
     bool IsSource,
     IEdgeEndpoint Anchor,
-    (double X, double Y) Point
+    (double X, double Y) Point,
+    Guid? DropTargetId = null
 );

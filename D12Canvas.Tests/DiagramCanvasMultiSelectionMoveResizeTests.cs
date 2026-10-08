@@ -420,6 +420,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         Assert.Empty(canvas.FindAll(".selection-bounding-box"));
-        Assert.Equal(8, canvas.FindAll(".resize-handle").Count);
+        Assert.Equal(4, canvas.FindAll(".resize-handle").Count);
     }
 }

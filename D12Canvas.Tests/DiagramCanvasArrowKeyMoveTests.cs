@@ -398,16 +398,14 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
     public async Task WithOnlyAnEdgeSelectedArrowKeysPanTheCanvasInsteadOfNudging()
     {
         var board = new Board();
-        AddInstance(board, 100, 100); // right port at (150, 125)
-        AddInstance(board, 250, 100); // left port at (250, 125)
+        var source = AddInstance(board, 100, 100); // right port at (150, 125)
+        var target = AddInstance(board, 250, 100); // left port at (250, 125)
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
-        var containers = canvas.FindAll(".component-container");
-        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
-        var targetPort = containers[1].QuerySelector(".port-left")!;
+        canvas.PressPort(source.Id, "Right", (150, 125));
         canvas.MoveTo((250, 125));
-        canvas.ReleaseOver((250, 125), targetPort);
+        canvas.ReleaseOverPort((250, 125), target.Id, "Left");
         canvas.ClickElement(canvas.Find(".edge-hit"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));

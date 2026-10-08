@@ -27,7 +27,8 @@ public class ComponentContainerTests : ComponentTestBase
         Assert.Single(container.FindAll(".container-content .author-box"));
         Assert.Equal(["component-container"], containerElement.ClassList);
         Assert.Empty(container.FindAll(".resize-handle"));
-        Assert.Empty(container.FindAll(".port-strip"));
+        Assert.Empty(container.FindAll(".port-span"));
+        Assert.Empty(container.FindAll(".port"));
         Assert.Null(containerElement.GetAttribute("data-d12-entity"));
     }
 
@@ -75,40 +76,99 @@ public class ComponentContainerTests : ComponentTestBase
     }
 
     [Fact]
-    public void EveryInstanceRendersAllFourStandardPortsWithDirectionalClasses()
+    public void AnUnselectedInstanceRendersNoPorts()
     {
-        // bUnit has no real browser layout/pseudo-class engine, so "at their border centers" and
-        // "hidden otherwise" aren't checkable here - the class names below are what the
-        // stylesheet keys its percentage-of-box positioning and hover/selection opacity off of,
-        // and PortsVisualTests.cs proves the resulting on-screen behavior in a real browser.
         var container = Render<ComponentContainer>();
 
-        Assert.Equal(4, container.FindAll(".port").Count);
-        Assert.Single(container.FindAll(".port-top"));
-        Assert.Single(container.FindAll(".port-right"));
-        Assert.Single(container.FindAll(".port-bottom"));
-        Assert.Single(container.FindAll(".port-left"));
+        Assert.Empty(container.FindAll(".port"));
+        Assert.Empty(container.FindAll(".port-span"));
+    }
+
+    // bUnit has no layout engine, so where a dot or span lands is PortsVisualTests' to prove; the
+    // class names and the role marker on the span are what the stylesheet and the listener key off.
+    [Fact]
+    public void ASelectedInstanceDrawsADotAndASpanForEachStandardPort()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.IsSelected, true).Add(p => p.Width, 200).Add(p => p.Height, 150)
+        );
+
+        Assert.Equal(
+            ["port port-top", "port port-right", "port port-bottom", "port port-left"],
+            container.FindAll(".port").Select(dot => dot.ClassName)
+        );
+        Assert.All(
+            container.FindAll(".port"),
+            dot => Assert.Null(dot.GetAttribute("data-d12-role"))
+        );
+        Assert.Equal(
+            ["Top", "Right", "Bottom", "Left"],
+            container.FindAll(".port-span").Select(span => span.GetAttribute("data-d12-part"))
+        );
+        Assert.All(
+            container.FindAll(".port-span"),
+            span => Assert.Equal("port", span.GetAttribute("data-d12-role"))
+        );
     }
 
     [Fact]
-    public void PortsSurviveAResizeRerenderUnchanged()
+    public void ADropTargetShowsItsPortsAndNoResizeAffordances()
     {
-        // Ports are positioned via plain CSS percentages of the container's own box, not computed
-        // from Bounds in C#, so re-rendering the same instance at different Width/Height should
-        // touch nothing about them - this exercises that actual update path (including
-        // ComponentContainer's own ShouldRender override), rather than just asserting on two
-        // independent fresh renders.
         var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.Width, 200).Add(p => p.Height, 150)
+            parameters.Add(p => p.IsDropTarget, true).Add(p => p.Width, 200).Add(p => p.Height, 150)
         );
 
-        container.Render(parameters => parameters.Add(p => p.Width, 60).Add(p => p.Height, 400));
+        Assert.Equal(4, container.FindAll(".port-span").Count);
+        Assert.Empty(container.FindAll(".resize-span"));
+        Assert.Empty(container.FindAll(".resize-handle"));
+    }
 
-        Assert.Equal(4, container.FindAll(".port").Count);
-        Assert.Single(container.FindAll(".port-top"));
-        Assert.Single(container.FindAll(".port-right"));
-        Assert.Single(container.FindAll(".port-bottom"));
-        Assert.Single(container.FindAll(".port-left"));
+    // Each span is a percentage of its side plus a number of port targets over scale, so it stays
+    // the same size on screen whatever the zoom.
+    [Fact]
+    public void ASpanIsPlacedAlongItsSideInPortTargetsOverScale()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.IsSelected, true).Add(p => p.Width, 200).Add(p => p.Height, 150)
+        );
+
+        Assert.Equal(
+            "left: calc(50% + -0.5 * var(--d12-port-target) / var(--d12-scale)); "
+                + "width: calc(0% + 1 * var(--d12-port-target) / var(--d12-scale));",
+            container.Find(".port-span-top").GetAttribute("style")
+        );
+        Assert.Equal(
+            "top: calc(0% + 1 * var(--d12-port-target) / var(--d12-scale)); "
+                + "height: calc(50% + -1.5 * var(--d12-port-target) / var(--d12-scale));",
+            container.FindAll(".resize-span-left")[0].GetAttribute("style")
+        );
+    }
+
+    [Fact]
+    public void ZoomingOutFarEnoughDropsTheResizeSpansAndZoomingBackInRestoresThem()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.IsSelected, true).Add(p => p.Width, 200).Add(p => p.Height, 200)
+        );
+        Assert.Equal(8, container.FindAll(".resize-span").Count);
+
+        container.Render(parameters => parameters.Add(p => p.Scale, 0.45));
+        Assert.Empty(container.FindAll(".resize-span"));
+        Assert.Equal(4, container.FindAll(".port-span").Count);
+        Assert.Equal(4, container.FindAll(".resize-handle").Count);
+
+        container.Render(parameters => parameters.Add(p => p.Scale, 1));
+        Assert.Equal(8, container.FindAll(".resize-span").Count);
+    }
+
+    [Fact]
+    public void AnInstanceWithNoHitRegionCarriesNoHitMarker()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.HasHitRegion, false)
+        );
+
+        Assert.Null(container.Find(".component-container").GetAttribute("data-d12-role"));
     }
 
     [Fact]
@@ -125,14 +185,22 @@ public class ComponentContainerTests : ComponentTestBase
         Assert.Contains("z-index: 9", container.Find(".component-container").GetAttribute("style"));
     }
 
+    // Side resize has no drawn handle: the four corners keep one each, and each side's resize
+    // spans are invisible regions the cursor alone reveals.
     [Fact]
-    public void SelectedInstanceRendersResizeHandles()
+    public void SelectedInstanceRendersFourCornerHandles()
     {
         var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.IsSelected, true)
+            parameters.Add(p => p.IsSelected, true).Add(p => p.Width, 200).Add(p => p.Height, 150)
         );
 
-        Assert.Equal(8, container.FindAll(".resize-handle").Count);
+        Assert.Equal(
+            ["top-left", "top-right", "bottom-right", "bottom-left"],
+            container
+                .FindAll(".resize-handle")
+                .Select(handle => handle.GetAttribute("data-d12-part"))
+        );
+        Assert.Equal(8, container.FindAll(".resize-span").Count);
     }
 
     [Fact]

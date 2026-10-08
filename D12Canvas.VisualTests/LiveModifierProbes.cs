@@ -118,7 +118,7 @@ public sealed class LiveModifierProbes(PlaywrightFixture playwright, DemoAppFixt
         var rectangle = Page.Locator(".component-container[aria-label='Rectangle']").First;
         var centre = await CentreOfAsync(rectangle);
         await Page.Mouse.ClickAsync(centre.X, centre.Y);
-        var handle = rectangle.Locator(".resize-handle.right");
+        var handle = rectangle.Locator(".resize-span-right").First;
         await Expect(handle).ToBeVisibleAsync();
         var before = await BoxOfAsync(rectangle);
         var start = await CentreOfAsync(handle);

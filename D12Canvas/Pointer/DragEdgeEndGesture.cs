@@ -2,13 +2,14 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Pointer;
 
-// A primary press on a port, a port strip or a floating endpoint carries one end of an edge. A
-// bare port, or the side a strip runs along, pulls a new edge from that port; a port that already
-// anchors an edge, or a floating endpoint, carries that edge's end. Each tick publishes one
-// pending line from the end that stays put to the pointer. The release resolves what lies under
-// the pointer, topmost first: a port pins the end to it, a shape's body attaches it as an auto
-// endpoint, nothing at all leaves it floating at the release point, and chrome or another edge in
-// between is looked through. A drop on the shape the other end is attached to changes nothing.
+// A primary press on a port span or a floating endpoint carries one end of an edge. A port span
+// pulls a new edge from its port unless an edge end is pinned to that port, which it carries; a
+// floating endpoint carries its own end. Each tick publishes one pending line from the end that
+// stays put to the pointer, naming the shape under the pointer as the drop target so its ports
+// show. The release resolves what lies under the pointer, topmost first: a port pins the end to
+// it, a shape's body attaches it as an auto endpoint, nothing at all leaves it floating at the
+// release point, and chrome or another edge in between is looked through. A drop on the shape the
+// other end is attached to changes nothing.
 internal sealed class DragEdgeEndGesture : PointerGesture
 {
     private IEdgeEndpoint? _anchor;
@@ -67,7 +68,10 @@ internal sealed class DragEdgeEndGesture : PointerGesture
                 _carried?.EdgeId,
                 _carried?.IsSource ?? false,
                 _anchor,
-                Context.ToBoardPoint(move.X, move.Y)
+                Context.ToBoardPoint(move.X, move.Y),
+                DropTargetOf(move.Hits) is { } target && target != _anchor.ComponentId
+                    ? target
+                    : null
             )
         );
     }
@@ -103,34 +107,14 @@ internal sealed class DragEdgeEndGesture : PointerGesture
         }
     }
 
-    protected override void OnClick(PointerRelease release)
-    {
-        if (
-            Press.Role == HitRole.PortStrip
-            && Press.PressCount > 1
-            && Press.EntityId is { } entityId
-            && Context.Board?.GetComponent(entityId) is { } instance
-            && SideOf(Press.Part) is { } side
-        )
-        {
-            Context.AddCustomPort(
-                entityId,
-                PortAlong(instance.Bounds, side, Context.ToBoardPoint(Press.X, Press.Y))
-            );
-        }
-    }
+    protected override void OnClick(PointerRelease release) { }
 
     private static bool SameComponent(IEdgeEndpoint dropped, IEdgeEndpoint anchor) =>
         dropped.ComponentId is { } componentId && componentId == anchor.ComponentId;
 
     private IEdgeEndpoint DroppedEndpoint(PointerRelease release)
     {
-        var topmost = (release.Hits ?? []).FirstOrDefault(hit =>
-            (hit.Role is HitRole.Port or HitRole.Instance or HitRole.AuthorContent)
-            && hit.EntityId is { } entityId
-            && Context.Board?.GetComponent(entityId) is not null
-        );
-        if (topmost is { EntityId: { } componentId })
+        if (TopmostComponentHit(release.Hits) is { EntityId: { } componentId } topmost)
         {
             var pinned =
                 topmost.Role == HitRole.Port
@@ -143,13 +127,22 @@ internal sealed class DragEdgeEndGesture : PointerGesture
         return new FloatingEndpoint(x, y);
     }
 
-    // A port marker names a standard port by its PortId and a custom port by its id; a port strip
-    // names the side it runs along, which pulls from that side's standard port.
+    private Guid? DropTargetOf(IReadOnlyList<PointerHit>? hits) =>
+        TopmostComponentHit(hits)?.EntityId;
+
+    private PointerHit? TopmostComponentHit(IReadOnlyList<PointerHit>? hits) =>
+        (hits ?? []).FirstOrDefault(hit =>
+            (hit.Role is HitRole.Port or HitRole.Instance or HitRole.AuthorContent)
+            && hit.EntityId is { } entityId
+            && Context.Board?.GetComponent(entityId) is not null
+        );
+
+    // A port marker names a standard port by its PortId and a custom port by its id.
     private static IEdgeEndpoint? PortEndpoint(string role, Guid instanceId, string? part)
     {
-        if (role == HitRole.PortStrip)
+        if (role != HitRole.Port)
         {
-            return SideOf(part) is { } side ? new PortEndpoint(instanceId, side) : null;
+            return null;
         }
 
         if (Enum.TryParse<PortId>(part, out var standard))
@@ -160,21 +153,5 @@ internal sealed class DragEdgeEndGesture : PointerGesture
         return Guid.TryParse(part, out var custom)
             ? new CustomPortEndpoint(instanceId, custom)
             : null;
-    }
-
-    private static PortId? SideOf(string? part) =>
-        Enum.TryParse<PortId>(part, ignoreCase: true, out var side) ? side : null;
-
-    private static PortDef PortAlong(Bounds bounds, PortId side, (double X, double Y) point)
-    {
-        var alongX = Math.Clamp((point.X - bounds.X) / bounds.Width, 0, 1);
-        var alongY = Math.Clamp((point.Y - bounds.Y) / bounds.Height, 0, 1);
-        return side switch
-        {
-            PortId.Top => new PortDef(alongX, 0),
-            PortId.Right => new PortDef(1, alongY),
-            PortId.Bottom => new PortDef(alongX, 1),
-            _ => new PortDef(0, alongY),
-        };
     }
 }

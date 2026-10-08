@@ -34,52 +34,30 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Same 1px-inward nudge as PortDragVisualTests/FloatingEndpointVisualTests - a real browser's
-    // hit-testing at the box's exact mathematical edge can resolve to whatever's behind the
-    // element instead of the element itself.
-    private static async Task<(double X, double Y)> BottomPortOf(ILocator container)
-    {
-        var box = await container.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + box.Height - 1);
-    }
+    private ILocator StickyNote => _page.Locator(".component-container[aria-label='Sticky Note']");
 
-    private static async Task<(double X, double Y)> TopPortOf(ILocator container)
+    // The seeded board's Rectangle sits directly above its Sticky Note (a 40px board-space gap), so
+    // the Rectangle's bottom port to the note's top port is a short, deterministic drag. A straight
+    // line's box is centred on the line's own midpoint, which is where it is clicked.
+    private async Task<(float X, float Y)> ConnectRectangleToStickyNoteAsync()
     {
-        var box = await container.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + 1);
-    }
-
-    // The seeded board's Rectangle sits directly above its Sticky Note (a 40px board-space gap) -
-    // Rectangle's bottom port to Sticky Note's top port gives a short, deterministic drag, same
-    // pairing PortDragVisualTests uses to create an edge.
-    private async Task<(
-        (double X, double Y) From,
-        (double X, double Y) To
-    )> RectangleToStickyNotePorts()
-    {
-        var rectangle = _page.Locator(".component-container[aria-label='Rectangle']");
-        var stickyNote = _page.Locator(".component-container[aria-label='Sticky Note']");
-
-        return (await BottomPortOf(rectangle), await TopPortOf(stickyNote));
+        await PortGestures.ConnectAsync(
+            _page,
+            _page.Locator(".component-container[aria-label='Rectangle']"),
+            "Bottom",
+            StickyNote,
+            "Top"
+        );
+        await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
+        return await PortGestures.CentreOfAsync(_page.Locator(".edge-line"));
     }
 
     [Fact]
     public async Task SelectedEdge_MatchesBaseline()
     {
-        var (from, to) = await RectangleToStickyNotePorts();
+        var midpoint = await ConnectRectangleToStickyNoteAsync();
 
-        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
-        await _page.Mouse.DownAsync();
-        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
-        await _page.Mouse.UpAsync();
-        await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
-
-        // The line spans exactly from -> to (the same two port points used to draw it), so their
-        // midpoint always lands on the line itself, regardless of slope - the same reasoning
-        // PortDragVisualTests already relies on for its own mid-drag preview point.
-        await _page.Mouse.ClickAsync((float)((from.X + to.X) / 2), (float)((from.Y + to.Y) / 2));
+        await _page.Mouse.ClickAsync(midpoint.X, midpoint.Y);
 
         await Expect(_page.Locator(".edge-line")).ToHaveAttributeAsync("aria-selected", "true");
         await Expect(_page.Locator(".edge-line")).ToHaveClassAsync("edge-line selected");
@@ -90,26 +68,19 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
     [Fact]
     public async Task ShapeAndEdgeSelectedTogether_MatchesBaseline()
     {
-        var (from, to) = await RectangleToStickyNotePorts();
+        var midpoint = await ConnectRectangleToStickyNoteAsync();
 
-        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
-        await _page.Mouse.DownAsync();
-        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
-        await _page.Mouse.UpAsync();
-        await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
-
-        var stickyNote = _page.Locator(".component-container[aria-label='Sticky Note']");
-        var box = await stickyNote.BoundingBoxAsync();
+        var box = await StickyNote.BoundingBoxAsync();
         Assert.NotNull(box);
         await _page.Mouse.ClickAsync(box!.X + box.Width / 2, box.Y + box.Height / 2);
-        await Expect(stickyNote).ToHaveAttributeAsync("aria-selected", "true");
+        await Expect(StickyNote).ToHaveAttributeAsync("aria-selected", "true");
 
         await _page.Keyboard.DownAsync("Shift");
-        await _page.Mouse.ClickAsync((float)((from.X + to.X) / 2), (float)((from.Y + to.Y) / 2));
+        await _page.Mouse.ClickAsync(midpoint.X, midpoint.Y);
         await _page.Keyboard.UpAsync("Shift");
 
         await Expect(_page.Locator(".edge-line")).ToHaveAttributeAsync("aria-selected", "true");
-        await Expect(stickyNote).ToHaveAttributeAsync("aria-selected", "true");
+        await Expect(StickyNote).ToHaveAttributeAsync("aria-selected", "true");
 
         await ContentSnapshot.Verify(_page);
     }

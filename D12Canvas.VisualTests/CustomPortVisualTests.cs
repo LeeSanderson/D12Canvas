@@ -7,6 +7,10 @@ namespace D12Canvas.VisualTests;
 
 public sealed class CustomPortVisualTests : IAsyncLifetime
 {
+    private const string CrowdedId = "b0000000-0000-0000-0000-000000000002";
+    private const string LargeId = "b0000000-0000-0000-0000-000000000003";
+    private const string CustomPortAtFourFifths = "c0000000-0000-0000-0000-000000000006";
+
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
@@ -28,63 +32,38 @@ public sealed class CustomPortVisualTests : IAsyncLifetime
             }
         );
         _page = await _context.NewPageAsync();
-        await _page.GotoAsync("/board-demo");
-        await Expect(_page.Locator(".component-container")).ToHaveCountAsync(7);
+        await _page.GotoAsync("/border-partition-demo");
+        await Expect(_page.Locator(".component-container")).ToHaveCountAsync(3);
     }
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    private static async Task<(double X, double Y)> TopPortOf(ILocator container)
-    {
-        var box = await container.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + 1);
-    }
+    private ILocator Instance(string id) =>
+        _page.Locator($".component-container[data-d12-entity='{id}']");
 
-    private static async Task<(double X, double Y)> CenterOf(ILocator locator)
-    {
-        var box = await locator.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + box.Height / 2);
-    }
-
+    // The crowded rectangle's custom port at 0.8 along its top side, dragged to the large
+    // rectangle's left port: pulled and pinned exactly as a standard port is.
     [Fact]
     public async Task InstanceWithACustomPortAndAttachedEdge_MatchesBaseline()
     {
-        var rectangle = _page.Locator(".component-container[aria-label='Rectangle']");
-        await rectangle.ClickAsync();
-
-        // Double-click 75% of the way down the left border strip - away from the standard
-        // left port's own border-center spot - adds a custom port there (fraction (0, 0.75)).
-        var strip = rectangle.Locator(".port-strip-left");
-        await Expect(strip).ToHaveCountAsync(1);
-        var stripBox = await strip.BoundingBoxAsync();
-        Assert.NotNull(stripBox);
-        await strip.DblClickAsync(
-            new LocatorDblClickOptions
-            {
-                Position = new Position
-                {
-                    X = stripBox!.Width / 2,
-                    Y = (float)(stripBox.Height * 0.75),
-                },
-            }
+        var crowded = Instance(CrowdedId);
+        await crowded.ClickAsync();
+        var from = await PortGestures.CentreOfAsync(
+            PortGestures.PortSpan(crowded, CustomPortAtFourFifths)
         );
-        await Expect(_page.Locator(".custom-port")).ToHaveCountAsync(1);
 
-        // Drag from the new custom port to the Sticky Note's top port - the same port-to-port
-        // gesture PortDragVisualTests uses, just starting from a custom port instead of a
-        // standard one.
-        var (fromX, fromY) = await CenterOf(_page.Locator(".custom-port"));
-        var (toX, toY) = await TopPortOf(
-            _page.Locator(".component-container[aria-label='Sticky Note']")
-        );
-        await _page.Mouse.MoveAsync((float)fromX, (float)fromY);
+        await _page.Mouse.MoveAsync(from.X, from.Y);
         await _page.Mouse.DownAsync();
-        await _page.Mouse.MoveAsync((float)toX, (float)toY);
+        await PortGestures.ArriveAtPortAsync(_page, Instance(LargeId), "Left");
         await _page.Mouse.UpAsync();
+        await _page.Keyboard.PressAsync("Escape");
 
-        await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
+        var line = _page.Locator(".edge-line");
+        await Expect(line).ToHaveAttributeAsync("x1", "400");
+        await Expect(line).ToHaveAttributeAsync("y1", "40");
+        await Expect(line).ToHaveAttributeAsync("x2", "520");
+        await Expect(line).ToHaveAttributeAsync("y2", "190");
+        await Expect(crowded).Not.ToHaveAttributeAsync("aria-selected", "true");
 
         await ContentSnapshot.Verify(_page);
     }

@@ -810,37 +810,13 @@ public class BoardTests
     }
 
     [Fact]
-    public void FindEdgeAttachedToFindsAnAutoEndAtThePortItResolvesTo()
+    public void FindEdgeAttachedToNeverFindsAnAutoEnd()
     {
         var board = new Board();
         var shape = AddShape(board, 100, 100);
-        var edge = new Edge(new AutoPortEndpoint(shape.Id), new FloatingEndpoint(500, 125));
-        board.AddEdge(edge);
+        board.AddEdge(new Edge(new AutoPortEndpoint(shape.Id), new FloatingEndpoint(500, 125)));
 
-        Assert.Equal(
-            (edge.Id, true),
-            board.FindEdgeAttachedTo(new PortEndpoint(shape.Id, PortId.Right))
-        );
-        Assert.Null(board.FindEdgeAttachedTo(new PortEndpoint(shape.Id, PortId.Left)));
-    }
-
-    [Fact]
-    public void FindEdgeAttachedToPrefersAnEndPinnedToThePortOverAnAutoEndResolvingThere()
-    {
-        var board = new Board();
-        var shape = AddShape(board, 100, 100);
-        var auto = new Edge(new AutoPortEndpoint(shape.Id), new FloatingEndpoint(500, 125));
-        var pinned = new Edge(
-            new FloatingEndpoint(500, 0),
-            new PortEndpoint(shape.Id, PortId.Right)
-        );
-        board.AddEdge(auto);
-        board.AddEdge(pinned);
-
-        Assert.Equal(
-            (pinned.Id, false),
-            board.FindEdgeAttachedTo(new PortEndpoint(shape.Id, PortId.Right))
-        );
+        Assert.Null(board.FindEdgeAttachedTo(new PortEndpoint(shape.Id, PortId.Right)));
     }
 
     // FindEdgeAttachedTo distinguishes "start a new edge" from "reposition this edge's existing

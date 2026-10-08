@@ -51,9 +51,7 @@ public sealed class AutoEndpointVisualTests : IAsyncLifetime
 
     private async Task DropAConnectorOnTheTargetsBodyAsync()
     {
-        var source = await Instance(SourceId).BoundingBoxAsync();
-        Assert.NotNull(source);
-        var from = (X: source!.X + source.Width - 1, Y: source.Y + source.Height / 2);
+        var from = await PortGestures.SelectAndAimAtPortAsync(Instance(SourceId), "Right");
         var to = await CentreOfAsync(TargetId);
 
         await _page.Mouse.MoveAsync(from.X, from.Y);
@@ -63,6 +61,8 @@ public sealed class AutoEndpointVisualTests : IAsyncLifetime
 
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
         await Expect(_page.Locator(".floating-endpoint")).ToHaveCountAsync(0);
+        await _page.Keyboard.PressAsync("Escape");
+        await Expect(Instance(SourceId)).Not.ToHaveAttributeAsync("aria-selected", "true");
     }
 
     [Fact]

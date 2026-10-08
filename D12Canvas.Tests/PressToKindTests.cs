@@ -15,7 +15,6 @@ public class PressToKindTests
             HitRole.Instance,
             HitRole.ResizeHandle,
             HitRole.Port,
-            HitRole.PortStrip,
             HitRole.Edge,
             HitRole.EdgeEndpoint,
             HitRole.EdgeLabel,
@@ -75,7 +74,6 @@ public class PressToKindTests
     [InlineData(HitRole.ResizeHandle, "ResizeSelection")]
     [InlineData(HitRole.SelectionHandle, "ResizeSelection")]
     [InlineData(HitRole.Port, "DragEdgeEnd")]
-    [InlineData(HitRole.PortStrip, "DragEdgeEnd")]
     [InlineData(HitRole.EdgeEndpoint, "DragEdgeEnd")]
     [InlineData(HitRole.Edge, "SelectEdge")]
     [InlineData(HitRole.EdgeLabel, "SelectEdge")]

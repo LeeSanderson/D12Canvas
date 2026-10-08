@@ -6,8 +6,8 @@ namespace D12Canvas.VisualTests;
 
 // Connector drags and edge presses in a real browser. The canvas holds the pointer capture for the
 // whole drag, so the drop is resolved from what lies under the release point rather than from the
-// release's own target, and hover no longer reveals a target's ports; these check that a drop on
-// another shape's port still pins, that the drag ends wherever it is released, and that an edge
+// release's own target, and a target's ports show only once the drag is over it; these check that
+// a drop on another shape's port still pins, that the drag ends wherever it is released, and that an edge
 // stays hittable when its drawn line is far thinner than a pixel.
 public sealed class ConnectorDragProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
@@ -19,20 +19,11 @@ public sealed class ConnectorDragProbes(PlaywrightFixture playwright, DemoAppFix
     private ILocator Instance(string id) =>
         Page.Locator($".component-container[data-d12-entity='{id}']");
 
-    private ILocator Port(string id, string part) =>
-        Page.Locator(
-            $".component-container[data-d12-entity='{id}'] [data-d12-role='port'][data-d12-part='{part}']"
-        );
-
-    // An unselected shape shows its ports while the pointer is over it, so the pointer arrives on
-    // the loose-end rectangle's body before reaching the port. A selected shape would put its side
-    // resize handles over the port centres.
+    // Ports show on a selected shape, so the loose-end rectangle is selected before the pointer
+    // moves onto one of its ports.
     private async Task<(float X, float Y)> HoverLooseEndPortAsync(string part)
     {
-        var body = await CentreOfAsync(Instance(LooseEndId));
-        await Page.Mouse.MoveAsync(body.X, body.Y);
-        await Expect(Port(LooseEndId, part)).ToHaveCSSAsync("opacity", "1");
-        var port = await CentreOfAsync(Port(LooseEndId, part));
+        var port = await PortGestures.SelectAndAimAtPortAsync(Instance(LooseEndId), part);
         await Page.Mouse.MoveAsync(port.X, port.Y, new() { Steps = 4 });
         return port;
     }
@@ -73,8 +64,7 @@ public sealed class ConnectorDragProbes(PlaywrightFixture playwright, DemoAppFix
         await Page.Mouse.MoveAsync(from.X + 60, from.Y - 40, new() { Steps = 4 });
         await Expect(Page.Locator(".connector-drag-preview")).ToHaveCountAsync(1);
 
-        var to = await CentreOfAsync(Port(TargetId, "Bottom"));
-        await Page.Mouse.MoveAsync(to.X, to.Y, new() { Steps = 8 });
+        await PortGestures.ArriveAtPortAsync(Page, Instance(TargetId), "Bottom");
         await Page.Mouse.UpAsync();
         await SettleAsync();
 

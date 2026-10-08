@@ -85,9 +85,10 @@ const MULTI_PRESS_WINDOW_MS = 500;
 const MULTI_PRESS_RADIUS_PX = 5;
 const NATIVELY_INTERACTIVE = "input, textarea, button, select, a[href], [tabindex]";
 
-// A primary press on these roles carries an edge end, and its release reports what lies under
-// the pointer, since a captured pointerup is targeted at the canvas whatever it is over.
-const EDGE_END_ROLES = new Set(["port", "port-strip", "edge-endpoint"]);
+// A primary press on these roles carries an edge end, and each of its moves and its release report
+// what lies under the pointer, since captured pointer events are targeted at the canvas whatever
+// they are over.
+const EDGE_END_ROLES = new Set(["port", "edge-endpoint"]);
 
 // A primary press on these roles carries the hit stack at the press point when Alt is held, and on
 // the selection box always, since its click selects what lies beneath it.
@@ -547,7 +548,12 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             press.active = true;
         }
 
-        queueMove(moveFor(event, velocity));
+        const move = moveFor(event, velocity);
+        queueMove(
+            press.carriesEdgeEnd
+                ? { ...move, hits: hitStackAt(canvas, event.clientX, event.clientY) }
+                : move
+        );
     };
 
     // A modifier changed with the pointer still is a move from where the pointer last was, so a

@@ -78,6 +78,13 @@ public class DiagramCanvasResizeTests : ComponentTestBase
         string part
     ) => Container(canvas, id).QuerySelector($".resize-handle.{part}")!;
 
+    // A side has no drawn handle: the first of its resize spans, between its corner and its port.
+    private static IElement SideSpan(
+        IRenderedComponent<DiagramCanvas> canvas,
+        Guid id,
+        string side
+    ) => Container(canvas, id).QuerySelector($".resize-span-{side}")!;
+
     [Fact]
     public void ResizingASelectedInstanceViaTheBottomRightHandleGrowsItByThePointerDistance()
     {
@@ -155,53 +162,53 @@ public class DiagramCanvasResizeTests : ComponentTestBase
     public void UnderSnapOnlyTheMovingEdgeLandsOnAGridLineAndNothingJumpsAtRelease()
     {
         var board = new Board();
-        var instance = AddInstance(board, 105, 103, 50, 50);
+        var instance = AddInstance(board, 105, 103, 100, 100);
         var canvas = RenderSelected(board, instance, snapToGrid: true);
 
-        canvas.PressHandle(Handle(canvas, instance.Id, "right"), (155, 128));
-        canvas.MoveTo((193, 128));
+        canvas.PressHandle(SideSpan(canvas, instance.Id, "right"), (205, 130));
+        canvas.MoveTo((243, 130));
 
         Assert.Contains(
-            "left: 105px; top: 103px; width: 95px",
+            "left: 105px; top: 103px; width: 135px",
             ContainerStyle(canvas, instance.Id)
         );
 
-        canvas.ReleaseAt((193, 128));
+        canvas.ReleaseAt((243, 130));
 
-        Assert.Equal(new Bounds(105, 103, 95, 50), instance.Bounds);
+        Assert.Equal(new Bounds(105, 103, 135, 100), instance.Bounds);
     }
 
     [Fact]
     public void AReleaseOutsideTheCanvasCommitsTheResize()
     {
         var board = new Board();
-        var instance = AddInstance(board, 100, 100, 50, 50);
+        var instance = AddInstance(board, 100, 100, 100, 100);
         var canvas = RenderSelected(board, instance);
 
-        canvas.PressHandle(Handle(canvas, instance.Id, "left"), (100, 125));
-        canvas.MoveTo((60, 125));
-        canvas.ReleaseAt((-500, 125));
+        canvas.PressHandle(SideSpan(canvas, instance.Id, "left"), (100, 130));
+        canvas.MoveTo((60, 130));
+        canvas.ReleaseAt((-500, 130));
 
-        Assert.Equal(new Bounds(60, 100, 90, 50), instance.Bounds);
+        Assert.Equal(new Bounds(60, 100, 140, 100), instance.Bounds);
     }
 
     [Fact]
     public async Task AStationaryClickOnAHandleLeavesNoHistoryEntryAndKeepsTheSelection()
     {
         var board = new Board();
-        var instance = AddInstance(board, 100, 100, 50, 50);
+        var instance = AddInstance(board, 100, 100, 100, 100);
         var other = AddInstance(board, 300, 300, 50, 50);
         var canvas = RenderSelected(board, other);
         canvas.DragOn(Container(canvas, other.Id), (310, 310), (330, 310));
         canvas.ClickOn(Container(canvas, instance.Id));
 
-        canvas.PressHandle(Handle(canvas, instance.Id, "bottom"), (125, 150));
-        canvas.ReleaseAt((125, 150));
+        canvas.PressHandle(SideSpan(canvas, instance.Id, "bottom"), (130, 200));
+        canvas.ReleaseAt((130, 200));
 
         Assert.Equal("true", Container(canvas, instance.Id).GetAttribute("aria-selected"));
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
         Assert.Equal(new Bounds(300, 300, 50, 50), other.Bounds);
-        Assert.Equal(new Bounds(100, 100, 50, 50), instance.Bounds);
+        Assert.Equal(new Bounds(100, 100, 100, 100), instance.Bounds);
     }
 
     [Fact]

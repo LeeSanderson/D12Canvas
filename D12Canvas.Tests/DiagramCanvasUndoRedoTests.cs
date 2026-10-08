@@ -519,17 +519,20 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task UndoAfterCreatingAnEdgeRemovesIt()
     {
         var board = new Board();
-        AddInstance(board, 100, 100); // right port at (150, 125)
-        AddInstance(board, 250, 100); // left port at (250, 125)
+        AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
+        AddInstance(board, 300, 100, 100, 100); // left port at (300, 150)
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
 
         var containers = canvas.FindAll(".component-container");
-        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
-        var targetPort = containers[1].QuerySelector(".port-left")!;
-        canvas.MoveTo((250, 125));
-        canvas.ReleaseOver((250, 125), targetPort);
+        canvas.DragConnectorToPort(
+            canvas.SelectedPortSpan(EntityIdOf(containers[0]), "Right"),
+            (200, 150),
+            (300, 150),
+            EntityIdOf(containers[1]),
+            "Left"
+        );
         Assert.Single(board.Edges);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -541,17 +544,20 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task RedoAfterUndoingAnEdgeCreationRestoresItWithTheSameAttachments()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        var target = AddInstance(board, 250, 100); // left port at (250, 125)
+        var source = AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
+        var target = AddInstance(board, 300, 100, 100, 100); // left port at (300, 150)
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
 
         var containers = canvas.FindAll(".component-container");
-        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
-        var targetPort = containers[1].QuerySelector(".port-left")!;
-        canvas.MoveTo((250, 125));
-        canvas.ReleaseOver((250, 125), targetPort);
+        canvas.DragConnectorToPort(
+            canvas.SelectedPortSpan(EntityIdOf(containers[0]), "Right"),
+            (200, 150),
+            (300, 150),
+            EntityIdOf(containers[1]),
+            "Left"
+        );
         var createdId = Assert.Single(board.Edges).Id;
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -569,16 +575,19 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task UndoAfterDeletingASelectedEdgeRestoresItWithBothAttachedEndpointsIntact()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        var target = AddInstance(board, 250, 100); // left port at (250, 125)
+        var source = AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
+        var target = AddInstance(board, 300, 100, 100, 100); // left port at (300, 150)
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
         var containers = canvas.FindAll(".component-container");
-        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
-        var targetPort = containers[1].QuerySelector(".port-left")!;
-        canvas.MoveTo((250, 125));
-        canvas.ReleaseOver((250, 125), targetPort);
+        canvas.DragConnectorToPort(
+            canvas.SelectedPortSpan(EntityIdOf(containers[0]), "Right"),
+            (200, 150),
+            (300, 150),
+            EntityIdOf(containers[1]),
+            "Left"
+        );
         var edgeId = Assert.Single(board.Edges).Id;
 
         canvas.ClickElement(canvas.Find(".edge-hit"));
@@ -597,14 +606,11 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task UndoAfterDeletingASelectedEdgeRestoresAFloatingEndpointIntact()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
+        var source = AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
-        var sourcePort = canvas.Find(".component-container").QuerySelector(".port-right")!;
-        canvas.PressElement(sourcePort, (150, 125));
-        canvas.MoveTo((190, 400));
-        canvas.ReleaseOver((190, 400));
+        canvas.DragConnector(canvas.SelectedPortSpan(source.Id, "Right"), (200, 150), (190, 400));
         var edgeId = Assert.Single(board.Edges).Id;
 
         canvas.ClickElement(canvas.Find(".edge-hit"));
@@ -623,16 +629,19 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task RedoAfterUndoingAnEdgeDeleteRemovesItAgain()
     {
         var board = new Board();
-        AddInstance(board, 100, 100); // right port at (150, 125)
-        AddInstance(board, 250, 100); // left port at (250, 125)
+        AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
+        AddInstance(board, 300, 100, 100, 100); // left port at (300, 150)
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
         var containers = canvas.FindAll(".component-container");
-        canvas.PressElement(containers[0].QuerySelector(".port-right")!, (150, 125));
-        var targetPort = containers[1].QuerySelector(".port-left")!;
-        canvas.MoveTo((250, 125));
-        canvas.ReleaseOver((250, 125), targetPort);
+        canvas.DragConnectorToPort(
+            canvas.SelectedPortSpan(EntityIdOf(containers[0]), "Right"),
+            (200, 150),
+            (300, 150),
+            EntityIdOf(containers[1]),
+            "Left"
+        );
 
         canvas.ClickElement(canvas.Find(".edge-hit"));
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
@@ -642,4 +651,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
 
         Assert.Empty(board.Edges);
     }
+
+    private static Guid EntityIdOf(AngleSharp.Dom.IElement container) =>
+        Guid.Parse(container.GetAttribute("data-d12-entity")!);
 }

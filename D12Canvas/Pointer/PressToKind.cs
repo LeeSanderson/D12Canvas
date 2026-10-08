@@ -21,7 +21,6 @@ internal static class PressToKind
                 HitRole.ResizeHandle => GestureKind.ResizeSelection,
                 HitRole.SelectionHandle => GestureKind.ResizeSelection,
                 HitRole.Port => GestureKind.DragEdgeEnd,
-                HitRole.PortStrip => GestureKind.DragEdgeEnd,
                 HitRole.EdgeEndpoint => GestureKind.DragEdgeEnd,
                 HitRole.Edge => GestureKind.SelectEdge,
                 HitRole.EdgeLabel => GestureKind.SelectEdge,

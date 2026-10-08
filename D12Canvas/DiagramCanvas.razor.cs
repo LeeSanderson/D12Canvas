@@ -697,6 +697,8 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public bool IsInScope(Guid entityId) => canvas.IsInScope(entityId);
 
+        public bool HasHitRegion(Guid instanceId) => canvas.HasHitRegion(instanceId);
+
         public void EnterGroup(Guid groupId) => canvas.EnterGroup(groupId);
 
         public bool HasEnteredGroup => canvas.EnteredGroupId is not null;
@@ -775,9 +777,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint) =>
             canvas.ChangeEdgeEndpoint(edgeId, isSource, endpoint);
-
-        public void AddCustomPort(Guid instanceId, PortDef port) =>
-            canvas.AddCustomPort(instanceId, port);
 
         public void AddEdgeLabel(Guid edgeId) => canvas.AddEdgeLabel(edgeId);
 
@@ -1756,6 +1755,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         return current;
     }
 
+    // Every instance on the board is content, and content keeps its hit region at every zoom,
+    // a placeholder included. Pointer participation is decided here and nowhere else; keyboard
+    // reachability never reads it.
+    private bool HasHitRegion(Guid instanceId) => Board?.GetComponent(instanceId) is not null;
+
     private bool IsInScope(Guid id) =>
         EnteredGroupId is not { } enteredId || IsInside(id, enteredId);
 
@@ -2055,20 +2059,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _history.Do(new ChangeEdgeStyleCommand(edge, before, after));
-        StateHasChanged();
-    }
-
-    // The commit point for a double-press on a port strip adding a custom port - routed
-    // through AddCustomPortCommand so undo removes exactly the port that was added.
-    private void AddCustomPort(Guid instanceId, PortDef port)
-    {
-        var instance = Board?.GetComponent(instanceId);
-        if (instance is null)
-        {
-            return;
-        }
-
-        _history.Do(new AddCustomPortCommand(instance, port));
         StateHasChanged();
     }
 
@@ -2593,7 +2583,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void HandleDragLeave(DragEventArgs e) => _isDragOverBoard = false;
 
     private string ContentStyle =>
-        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale}); --d12-scale: {_zoomPanTracker.Scale}; --d12-edge-hit-band: {ScreenPixels.EdgeHitBand}px;{AmbientTransitionStyle}";
+        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale}); --d12-scale: {_zoomPanTracker.Scale}; --d12-edge-hit-band: {ScreenPixels.EdgeHitBand}px; --d12-port-target: {ScreenPixels.PortTarget}px;{AmbientTransitionStyle}";
 
     private string AmbientTransitionStyle =>
         _ambientTransition > TimeSpan.Zero

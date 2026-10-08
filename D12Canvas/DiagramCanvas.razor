@@ -128,7 +128,7 @@
                         {
                             <div @key="instance.Id"
                                  class="lod-placeholder"
-                                 data-d12-role="@HitRole.Instance" data-d12-entity="@instance.Id"
+                                 data-d12-role="@(HasHitRegion(instance.Id) ? HitRole.Instance : null)" data-d12-entity="@instance.Id"
                                  style="@LodPlaceholderStyle(stop.Bounds, instance.ZIndex)"
                                  aria-hidden="true">
                                 @if (!string.IsNullOrEmpty(registration.Icon))
@@ -143,6 +143,7 @@
                             var boundProps = BoundProps(instance, registration);
                             <ComponentContainer @key="instance.Id"
                                                 EntityId="instance.Id"
+                                                HasHitRegion="@HasHitRegion(instance.Id)"
                                                 X="stop.Bounds.X"
                                                 Y="stop.Bounds.Y"
                                                 Width="stop.Bounds.Width"
@@ -159,6 +160,8 @@
                                                 FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
                                                 FocusedCustomPortId="@FocusedCustomPortIdFor(instance.Id)"
                                                 AutoPortFocused="@(FocusedPortEndpointFor(instance.Id) is AutoPortEndpoint)"
+                                                Scale="_zoomPanTracker.Scale"
+                                                IsDropTarget="@(_preview.PendingEdge?.DropTargetId == instance.Id)"
                                                 CustomPorts="instance.CustomPorts">
                                 @* Lets a text-carrying built-in (Sticky Note, Text) identify
                                    itself back to ParentCanvas when committing its own inline WYSIWYG edit -

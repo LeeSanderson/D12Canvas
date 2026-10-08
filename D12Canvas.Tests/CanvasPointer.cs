@@ -281,8 +281,28 @@ internal static class CanvasPointer
         canvas.ClickElement(element, pressCount: 2, at: at);
     }
 
-    // A connector drag from a port, port strip or floating endpoint, dropped over an element or,
-    // with none, over empty canvas.
+    // A move that reports what lies under it, as the listener does while a press carries an edge
+    // end: the element the pointer is over and each marked ancestor, topmost first.
+    public static void MoveOver(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        (double X, double Y) to,
+        IElement? over
+    ) =>
+        canvas
+            .InvokeAsync(
+                () =>
+                    canvas.Instance.OnPointerMoved(
+                        PointerEvents.Move(to.X, to.Y) with
+                        {
+                            Hits = HitsUnder(over),
+                        }
+                    )
+            )
+            .GetAwaiter()
+            .GetResult();
+
+    // A connector drag from a port span or floating endpoint, moved and dropped over an element
+    // or, with none, over empty canvas.
     public static void DragConnector(
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement from,
@@ -292,8 +312,83 @@ internal static class CanvasPointer
     )
     {
         canvas.PressElement(from, start);
-        canvas.MoveTo(end);
+        canvas.MoveOver(end, over);
         canvas.ReleaseOver(end, over);
+    }
+
+    // A connector drag onto another shape's port: the pointer arrives over the shape's body, which
+    // makes it the drop target and shows its ports, and is released on the port span it then has.
+    public static void DragConnectorToPort(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        IElement from,
+        (double X, double Y) start,
+        (double X, double Y) end,
+        Guid targetId,
+        string part
+    )
+    {
+        canvas.PressElement(from, start);
+        canvas.MoveOver(end, canvas.ContainerOf(targetId));
+        canvas.ReleaseOver(end, canvas.PortSpanOf(targetId, part));
+    }
+
+    // A press and a release on a port as the listener reports them, for tests about what a
+    // connector drag does rather than about which ports are showing.
+    public static void PressPort(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        Guid instanceId,
+        string part,
+        (double X, double Y) at
+    ) =>
+        canvas
+            .Press(at.X, at.Y, role: HitRole.Port, entityId: instanceId, part: part)
+            .GetAwaiter()
+            .GetResult();
+
+    public static void ReleaseOverPort(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        (double X, double Y) at,
+        Guid instanceId,
+        string part
+    )
+    {
+        var release = PointerEvents.Release(PointerPress.PrimaryButton, at.X, at.Y) with
+        {
+            Hits =
+            [
+                new PointerHit(HitRole.Port, instanceId, part),
+                new PointerHit(HitRole.Instance, instanceId, null),
+            ],
+        };
+        canvas
+            .InvokeAsync(() => canvas.Instance.OnPointerReleased(release))
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    public static IElement ContainerOf(this IRenderedComponent<DiagramCanvas> canvas, Guid id) =>
+        canvas.Find($".component-container[data-d12-entity='{id}']");
+
+    // The hit region of one port on a shape whose ports are showing: a standard port by its
+    // PortId, a custom port by its id.
+    public static IElement PortSpanOf(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        Guid instanceId,
+        string part
+    ) =>
+        canvas.Find(
+            $".component-container[data-d12-entity='{instanceId}'] .port-span[data-d12-part='{part}']"
+        );
+
+    // Selects the shape, which shows its ports, and gives back the hit region of one of them.
+    public static IElement SelectedPortSpan(
+        this IRenderedComponent<DiagramCanvas> canvas,
+        Guid instanceId,
+        string part
+    )
+    {
+        canvas.ClickOn(canvas.ContainerOf(instanceId));
+        return canvas.PortSpanOf(instanceId, part);
     }
 
     private static IReadOnlyList<PointerHit> HitsUnder(IElement? element)

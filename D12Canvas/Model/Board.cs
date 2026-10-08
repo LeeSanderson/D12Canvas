@@ -177,11 +177,10 @@ public sealed class Board
         }
     }
 
-    // Does any edge already anchor to this exact port (standard or custom)? Used to tell "start a
-    // new edge" apart from "reposition this edge's existing endpoint" (see DragEdgeEndGesture).
-    // Multiple edges sharing the same port pick whichever is found first - an acceptable
-    // ambiguity that doesn't need resolving here. An auto end counts as attached to the standard
-    // port it currently resolves to, but an end pinned to that port is found first.
+    // Does any edge end sit pinned to this exact port (standard or custom)? Tells "start a new
+    // edge" apart from "carry this edge's existing endpoint" (see DragEdgeEndGesture). Multiple
+    // edges sharing the same port pick whichever is found first. An auto end is never found here:
+    // it names no port, and the one it resolves to changes as the other end moves.
     public (Guid EdgeId, bool IsSource)? FindEdgeAttachedTo(IEdgeEndpoint endpoint)
     {
         foreach (var edge in _edges.Values)
@@ -197,31 +196,8 @@ public sealed class Board
             }
         }
 
-        return endpoint is PortEndpoint port ? FindAutoEndResolvingTo(port) : null;
-    }
-
-    private (Guid EdgeId, bool IsSource)? FindAutoEndResolvingTo(PortEndpoint port)
-    {
-        foreach (var edge in _edges.Values)
-        {
-            if (ResolvesTo(edge.Source, edge.Target, port))
-            {
-                return (edge.Id, true);
-            }
-
-            if (ResolvesTo(edge.Target, edge.Source, port))
-            {
-                return (edge.Id, false);
-            }
-        }
-
         return null;
     }
-
-    private bool ResolvesTo(IEdgeEndpoint end, IEdgeEndpoint otherEnd, PortEndpoint port) =>
-        end is AutoPortEndpoint auto
-        && auto.ComponentId == port.ComponentId
-        && AutoPortSideOf(auto, otherEnd, CommittedBounds) == port.PortId;
 
     // Resolves an edge label's live ComponentInstance by its own id - used by
     // DiagramCanvas.CommitPropsChange to find the right object to mutate when a label's inline

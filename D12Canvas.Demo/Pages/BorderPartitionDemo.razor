@@ -1,0 +1,56 @@
+@page "/border-partition-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Border Partition Demo</PageTitle>
+
+<div class="border-partition-canvas">
+    <DiagramCanvas Board="_board" SnapToGrid="false" />
+</div>
+
+<style>
+    .border-partition-canvas {
+        width: 900px;
+        height: 560px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid SmallId = Guid.Parse("b0000000-0000-0000-0000-000000000001");
+    private static readonly Guid CrowdedId = Guid.Parse("b0000000-0000-0000-0000-000000000002");
+    private static readonly Guid LargeId = Guid.Parse("b0000000-0000-0000-0000-000000000003");
+
+    private static readonly double[] CrowdedTopFractions = [0.15, 0.25, 0.42, 0.47, 0.53, 0.8];
+
+    private readonly Board _board = SeedBoard();
+
+    private static ComponentInstance AddRectangle(Board board, Guid id, Bounds bounds)
+    {
+        var instance = new ComponentInstance(
+            "rectangle",
+            new RectangleProps("#cfe3ff", null, 2),
+            bounds,
+            id: id
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        AddRectangle(board, SmallId, new Bounds(20, 20, 100, 100));
+        var crowded = AddRectangle(board, CrowdedId, new Bounds(160, 40, 300, 140));
+        for (var i = 0; i < CrowdedTopFractions.Length; i++)
+        {
+            crowded.CustomPorts.Add(
+                new PortDef(Guid.Parse($"c0000000-0000-0000-0000-00000000000{i + 1}"), CrowdedTopFractions[i], 0)
+            );
+        }
+
+        AddRectangle(board, LargeId, new Bounds(520, 40, 340, 300));
+        return board;
+    }
+}

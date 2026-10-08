@@ -34,52 +34,22 @@ public sealed class EdgeLabelVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Same 1px-inward nudge as PortDragVisualTests/EdgeSelectionVisualTests - a real browser's
-    // hit-testing at the box's exact mathematical edge can resolve to whatever's behind the
-    // element instead of the element itself.
-    private static async Task<(double X, double Y)> BottomPortOf(ILocator container)
-    {
-        var box = await container.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + box.Height - 1);
-    }
-
-    private static async Task<(double X, double Y)> TopPortOf(ILocator container)
-    {
-        var box = await container.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + 1);
-    }
-
-    // The seeded board's Rectangle sits directly above its Sticky Note - same pairing
-    // PortDragVisualTests/EdgeSelectionVisualTests use to create an edge via a port-to-port drag.
-    private async Task<(
-        (double X, double Y) From,
-        (double X, double Y) To
-    )> RectangleToStickyNotePorts()
-    {
-        var rectangle = _page.Locator(".component-container[aria-label='Rectangle']");
-        var stickyNote = _page.Locator(".component-container[aria-label='Sticky Note']");
-
-        return (await BottomPortOf(rectangle), await TopPortOf(stickyNote));
-    }
-
     [Fact]
     public async Task LabelledEdge_MatchesBaseline()
     {
-        var (from, to) = await RectangleToStickyNotePorts();
-
-        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
-        await _page.Mouse.DownAsync();
-        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
-        await _page.Mouse.UpAsync();
+        await PortGestures.ConnectAsync(
+            _page,
+            _page.Locator(".component-container[aria-label='Rectangle']"),
+            "Bottom",
+            _page.Locator(".component-container[aria-label='Sticky Note']"),
+            "Top"
+        );
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
 
-        // The line spans exactly from -> to, so their midpoint always lands on the line itself,
-        // regardless of slope (same reasoning PortDragVisualTests relies on for its own preview
-        // point) - double-clicking there adds the default (empty) Text label.
-        var midpoint = ((from.X + to.X) / 2, (from.Y + to.Y) / 2);
-        await _page.Mouse.DblClickAsync((float)midpoint.Item1, (float)midpoint.Item2);
+        // A straight line's box is centred on the line's own midpoint, so a double-click there
+        // lands on the line whatever its slope and adds the default (empty) Text label.
+        var midpoint = await PortGestures.CentreOfAsync(_page.Locator(".edge-line"));
+        await _page.Mouse.DblClickAsync(midpoint.X, midpoint.Y);
         await Expect(_page.Locator(".edge-label")).ToHaveCountAsync(1);
 
         await _page.Locator(".edge-label p.d12-text").DblClickAsync();

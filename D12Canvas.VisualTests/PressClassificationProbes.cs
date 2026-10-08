@@ -74,10 +74,10 @@ public sealed class PressClassificationProbes(PlaywrightFixture playwright, Demo
                 "Right"
             },
             {
-                "a port strip",
+                "a side's resize span",
                 Selection.OneInstance,
-                $"[data-d12-entity='{LooseEndId}'] .port-strip-top",
-                "port-strip",
+                $"[data-d12-entity='{LooseEndId}'] .resize-span-top",
+                "resize-handle",
                 LooseEndId,
                 "top"
             },

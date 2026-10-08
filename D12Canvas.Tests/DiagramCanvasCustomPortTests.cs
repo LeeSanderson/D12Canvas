@@ -1,15 +1,13 @@
 using Bunit;
 using D12Canvas.Model;
 using D12Canvas.Registration;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Custom ports - instance-scoped runtime state an end user adds via a double-press on one of the
-// four border strips (ComponentContainer.razor), fractionally positioned so they survive
-// move/resize, attachable exactly like a standard port.
+// Custom ports - instance-scoped runtime state, fractionally positioned on a border so they
+// survive move/resize, shown and attachable exactly like a standard port.
 public class DiagramCanvasCustomPortTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -36,115 +34,86 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
         Services.AddSingleton<IComponentRegistry>(registry);
     }
 
-    private static ComponentInstance AddInstance(
-        Board board,
-        double x,
-        double y,
-        double width = 100,
-        double height = 100
-    )
+    private static ComponentInstance AddInstance(Board board, double x, double y)
     {
         var instance = new ComponentInstance(
             ComponentTypeKey,
             new TestProps(),
-            new Bounds(x, y, width, height)
+            new Bounds(x, y, 100, 100)
         );
         board.AddComponent(instance);
         return instance;
     }
 
-    [Fact]
-    public void ABorderStripIsOnlyRenderedForASelectedNotMultiSelectedInstance()
-    {
-        var board = new Board();
-        AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters =>
+    private IRenderedComponent<DiagramCanvas> RenderBoard(Board board) =>
+        Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
 
-        Assert.Empty(canvas.FindAll(".port-strip"));
-
-        canvas.ClickOn(canvas.Find(".component-container"));
-
-        Assert.NotEmpty(canvas.FindAll(".port-strip"));
-    }
-
-    [Fact]
-    public void DoublePressingTheLeftBorderStripAddsACustomPortAtTheClickedFraction()
-    {
-        var board = new Board();
-        var instance = AddInstance(board, 100, 100, width: 100, height: 100);
-        var canvas = Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+    // A custom port at fraction (1, 0.25) of the 100x100 source, board point (200, 125), dragged
+    // to the target's left port at (300, 150).
+    private static void ConnectFromCustomPort(
+        IRenderedComponent<DiagramCanvas> canvas,
+        ComponentInstance source,
+        PortDef port,
+        ComponentInstance target
+    ) =>
+        canvas.DragConnectorToPort(
+            canvas.SelectedPortSpan(source.Id, port.Id.ToString()),
+            (200, 125),
+            (300, 150),
+            target.Id,
+            "Left"
         );
-        canvas.ClickOn(canvas.Find(".component-container"));
 
-        canvas.DoubleClickElement(canvas.Find(".port-strip-left"), at: (100, 125));
-
-        var port = Assert.Single(instance.CustomPorts);
-        Assert.Equal(0, port.FractionX);
-        Assert.Equal(0.25, port.FractionY);
-        Assert.Single(canvas.FindAll(".custom-port"));
-    }
-
-    [Fact]
-    public void DoublePressingTheTopBorderStripAddsACustomPortAtTheClickedFraction()
+    private static PortDef AddRightPort(ComponentInstance instance)
     {
-        var board = new Board();
-        var instance = AddInstance(board, 100, 100, width: 100, height: 100);
-        var canvas = Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
-        );
-        canvas.ClickOn(canvas.Find(".component-container"));
-
-        canvas.DoubleClickElement(canvas.Find(".port-strip-top"), at: (175, 100));
-
-        var port = Assert.Single(instance.CustomPorts);
-        Assert.Equal(0.75, port.FractionX);
-        Assert.Equal(0, port.FractionY);
+        var port = new PortDef(1, 0.25);
+        instance.CustomPorts.Add(port);
+        return port;
     }
 
     [Fact]
-    public void AddingACustomPortIsAnUndoableGesture()
+    public void ACustomPortShowsItsDotAndSpanOnlyOnASelectedInstance()
     {
         var board = new Board();
         var instance = AddInstance(board, 100, 100);
-        var canvas = Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
-        );
-        canvas.ClickOn(canvas.Find(".component-container"));
+        var port = AddRightPort(instance);
+        var canvas = RenderBoard(board);
 
-        canvas.DoubleClickElement(canvas.Find(".port-strip-left"), at: (100, 125));
-        Assert.Single(instance.CustomPorts);
-
-        canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
-        Assert.Empty(instance.CustomPorts);
         Assert.Empty(canvas.FindAll(".custom-port"));
 
-        canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
-        Assert.Single(instance.CustomPorts);
+        canvas.ClickOn(canvas.ContainerOf(instance.Id));
+
+        Assert.Single(canvas.FindAll(".custom-port"));
+        Assert.Equal(
+            "port-span port-span-right",
+            canvas.PortSpanOf(instance.Id, port.Id.ToString()).ClassName
+        );
+    }
+
+    [Fact]
+    public void ADoublePressOnAPortSpanAddsNoPort()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 100, 100);
+        var canvas = RenderBoard(board);
+
+        canvas.DoubleClickElement(canvas.SelectedPortSpan(instance.Id, "Left"), at: (100, 150));
+
+        Assert.Empty(instance.CustomPorts);
     }
 
     [Fact]
     public void DraggingFromACustomPortToAnotherInstancesPortCreatesAnEdge()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100, width: 100, height: 100);
-        var target = AddInstance(board, 300, 100); // left port at (300, 150)
-        var canvas = Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
-        );
-        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 300, 100);
+        var port = AddRightPort(source);
+        var canvas = RenderBoard(board);
 
-        // Custom port at fraction (1, 0.25) of the 100x100 source - board point (200, 125).
-        canvas.DoubleClickElement(canvas.Find(".port-strip-right"), at: (200, 125));
-        var port = Assert.Single(source.CustomPorts);
-        var customPort = canvas.Find(".custom-port");
-
-        canvas.PressElement(customPort, (200, 125));
-        var targetPort = canvas.FindAll(".component-container")[1].QuerySelector(".port-left")!;
-        canvas.MoveTo((300, 150));
-        canvas.ReleaseOver((300, 150), targetPort);
+        ConnectFromCustomPort(canvas, source, port, target);
 
         var edge = Assert.Single(board.Edges);
         Assert.Equal(new CustomPortEndpoint(source.Id, port.Id), edge.Source);
@@ -155,23 +124,14 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
     public void ACustomPortAttachedEdgeTracksItsInstanceAfterItMoves()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100, width: 100, height: 100);
-        AddInstance(board, 300, 100); // left port at (300, 150)
-        var canvas = Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
-        );
-        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
-        canvas.DoubleClickElement(canvas.Find(".port-strip-right"), at: (200, 125));
-
-        canvas.PressElement(canvas.Find(".custom-port"), (200, 125));
-        var targetPort = canvas.FindAll(".component-container")[1].QuerySelector(".port-left")!;
-        canvas.MoveTo((300, 150));
-        canvas.ReleaseOver((300, 150), targetPort);
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 300, 100);
+        var port = AddRightPort(source);
+        var canvas = RenderBoard(board);
+        ConnectFromCustomPort(canvas, source, port, target);
         Assert.Single(board.Edges);
 
-        // Move the source instance (already selected) via a drag on its own body.
-        var sourceContainer = canvas.FindAll(".component-container")[0];
-        canvas.DragOn(sourceContainer, (120, 120), (220, 170));
+        canvas.DragOn(canvas.ContainerOf(source.Id), (120, 120), (220, 170));
 
         Assert.Equal(new Bounds(200, 150, 100, 100), source.Bounds);
         var line = canvas.Find(".edge-line");
@@ -183,22 +143,15 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
     public void ACustomPortAttachedEdgeTracksItsInstanceAfterItResizes()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100, width: 100, height: 100);
-        AddInstance(board, 300, 100); // left port at (300, 150)
-        var canvas = Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
-        );
-        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
-        canvas.DoubleClickElement(canvas.Find(".port-strip-right"), at: (200, 125));
-
-        canvas.PressElement(canvas.Find(".custom-port"), (200, 125));
-        var targetPort = canvas.FindAll(".component-container")[1].QuerySelector(".port-left")!;
-        canvas.MoveTo((300, 150));
-        canvas.ReleaseOver((300, 150), targetPort);
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 300, 100);
+        var port = AddRightPort(source);
+        var canvas = RenderBoard(board);
+        ConnectFromCustomPort(canvas, source, port, target);
         Assert.Single(board.Edges);
 
         canvas.DragHandle(
-            canvas.FindAll(".component-container")[0].QuerySelector(".resize-handle.bottom-right")!,
+            canvas.ContainerOf(source.Id).QuerySelector(".resize-handle.bottom-right")!,
             (200, 200),
             (240, 220)
         );
@@ -213,19 +166,11 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
     public void ACustomPortAttachedEdgeRoundTripsThroughJsonSerialization()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100, width: 100, height: 100);
-        AddInstance(board, 300, 100);
-        var canvas = Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
-        );
-        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
-        canvas.DoubleClickElement(canvas.Find(".port-strip-right"), at: (200, 125));
-        var port = Assert.Single(source.CustomPorts);
-
-        canvas.PressElement(canvas.Find(".custom-port"), (200, 125));
-        var targetPort = canvas.FindAll(".component-container")[1].QuerySelector(".port-left")!;
-        canvas.MoveTo((300, 150));
-        canvas.ReleaseOver((300, 150), targetPort);
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 300, 100);
+        var port = AddRightPort(source);
+        var canvas = RenderBoard(board);
+        ConnectFromCustomPort(canvas, source, port, target);
 
         var serializer = new D12Canvas.Persistence.BoardJsonSerializer(
             Services.GetRequiredService<IComponentRegistry>()

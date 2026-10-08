@@ -40,22 +40,13 @@ public sealed class LiveGeometryVisualTests : IAsyncLifetime
     // note's top port is a short, deterministic connector drag.
     private async Task ConnectRectangleToStickyNoteAsync()
     {
-        var rectangle = await _page
-            .Locator(".component-container[aria-label='Rectangle']")
-            .BoundingBoxAsync();
-        var stickyNote = await _page
-            .Locator(".component-container[aria-label='Sticky Note']")
-            .BoundingBoxAsync();
-        Assert.NotNull(rectangle);
-        Assert.NotNull(stickyNote);
-
-        await _page.Mouse.MoveAsync(
-            rectangle!.X + rectangle.Width / 2,
-            rectangle.Y + rectangle.Height - 1
+        await PortGestures.ConnectAsync(
+            _page,
+            _page.Locator(".component-container[aria-label='Rectangle']"),
+            "Bottom",
+            _page.Locator(".component-container[aria-label='Sticky Note']"),
+            "Top"
         );
-        await _page.Mouse.DownAsync();
-        await _page.Mouse.MoveAsync(stickyNote!.X + stickyNote.Width / 2, stickyNote.Y + 1);
-        await _page.Mouse.UpAsync();
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
     }
 
@@ -93,7 +84,7 @@ public sealed class LiveGeometryVisualTests : IAsyncLifetime
         await rectangle.ClickAsync();
         await Expect(rectangle).ToHaveAttributeAsync("aria-selected", "true");
         var box = await rectangle.BoundingBoxAsync();
-        var handle = await rectangle.Locator(".resize-handle.left").BoundingBoxAsync();
+        var handle = await rectangle.Locator(".resize-span-left").First.BoundingBoxAsync();
         Assert.NotNull(box);
         Assert.NotNull(handle);
         var startX = handle!.X + handle.Width / 2;

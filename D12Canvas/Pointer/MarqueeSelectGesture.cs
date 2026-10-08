@@ -29,7 +29,11 @@ internal sealed class MarqueeSelectGesture : PointerGesture
 
         var board = Context.Board;
         var swept = (board?.Components ?? [])
-            .Where(instance => instance.Bounds.Intersects(band) && Context.IsInScope(instance.Id))
+            .Where(instance =>
+                instance.Bounds.Intersects(band)
+                && Context.HasHitRegion(instance.Id)
+                && Context.IsInScope(instance.Id)
+            )
             .Select(instance => Context.EffectiveSelectionId(instance.Id))
             .ToHashSet();
         var closed = (Context.HasEnteredGroup ? [] : board?.Edges ?? [])

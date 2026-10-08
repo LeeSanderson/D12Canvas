@@ -21,6 +21,10 @@ internal interface IGestureContext
     // Whether the entity lies inside the entered group, which every entity does when none is.
     bool IsInScope(Guid entityId);
 
+    // Whether the instance takes part in pointer hits at all. The markup emits its hit marker only
+    // when it does, and the marquee sweeps only what does, so the two cannot disagree.
+    bool HasHitRegion(Guid instanceId);
+
     // Steps inside a group that is a direct member of the entered group, or a top-level group
     // when none is entered. The selection is left to the caller.
     void EnterGroup(Guid groupId);
@@ -94,7 +98,6 @@ internal interface IGestureContext
     // Each of these is one history entry.
     void AddEdge(IEdgeEndpoint source, IEdgeEndpoint target);
     void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint);
-    void AddCustomPort(Guid instanceId, PortDef port);
     void AddEdgeLabel(Guid edgeId);
 
     // Asks the edge's label to open its inline editor, as BeginInlineEdit does for an instance.

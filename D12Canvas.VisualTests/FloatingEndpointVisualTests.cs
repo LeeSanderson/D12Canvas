@@ -34,21 +34,11 @@ public sealed class FloatingEndpointVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Same 1px-inward nudge as PortDragVisualTests - a real browser's hit-testing at the box's
-    // exact mathematical edge can resolve to whatever's behind the element instead of the element
-    // itself.
-    private static async Task<(double X, double Y)> BottomPortOf(ILocator container)
-    {
-        var box = await container.BoundingBoxAsync();
-        Assert.NotNull(box);
-        return (box!.X + box.Width / 2, box.Y + box.Height - 1);
-    }
-
     [Fact]
     public async Task EdgeWithAFloatingEndpoint_MatchesBaseline()
     {
         var rectangle = _page.Locator(".component-container[aria-label='Rectangle']");
-        var from = await BottomPortOf(rectangle);
+        var from = await PortGestures.SelectAndAimAtPortAsync(rectangle, "Bottom");
 
         // The seeded board (BoardDemo.razor) has nothing at board-space x < 120 - every seeded
         // instance starts at x >= 120. At this page's untouched default pan (0,0) and scale (1),
@@ -60,7 +50,7 @@ public sealed class FloatingEndpointVisualTests : IAsyncLifetime
         Assert.NotNull(containerBox);
         var to = (X: containerBox!.X + 60, Y: containerBox.Y + 300);
 
-        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
+        await _page.Mouse.MoveAsync(from.X, from.Y);
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
         await _page.Mouse.UpAsync();

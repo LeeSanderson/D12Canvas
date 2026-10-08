@@ -268,7 +268,12 @@ public class ObjectSnapTests
     public void ScreenPixelDistancesKeepTheirOrder()
     {
         Assert.True(ScreenPixels.DragThreshold < ScreenPixels.ObjectSnapTolerance);
-        Assert.True(ScreenPixels.ObjectSnapTolerance < ScreenPixels.EdgeHitBand);
+        Assert.True(ScreenPixels.ObjectSnapTolerance < ScreenPixels.AffordanceFloor);
+        Assert.True(ScreenPixels.AffordanceFloor < ScreenPixels.EdgeHitBand);
+        Assert.True(ScreenPixels.EdgeHitBand < ScreenPixels.PortTarget);
+        Assert.Equal(ScreenPixels.PortTarget / 2, ScreenPixels.AffordanceFloor);
+        Assert.Equal(ScreenPixels.PortTarget, ScreenPixels.CornerReserve);
+        Assert.Equal(ScreenPixels.PortTarget, ScreenPixels.CornerTarget);
         Assert.True(ObjectSnap.StickyFactor > 1);
     }
 }

@@ -8,7 +8,7 @@
      aria-label="@AccessibleName"
      aria-selected="@(IsSelected ? "true" : null)"
      tabindex="@(Focusable ? "0" : null)"
-     data-d12-role="@HitRole.Instance"
+     data-d12-role="@(HasHitRegion ? HitRole.Instance : null)"
      data-d12-entity="@EntityId"
      data-d12-unaddressable="@(Addressable ? null : "true")"
      @onfocus="HandleFocus">
@@ -17,48 +17,45 @@
         @ChildContent
     </div>
 
-    @* The four border strips. A drag from one pulls an edge from that side's port, and a
-       double-press adds a custom port where it landed. Rendered before the ports below, and so
-       painted underneath them, so a port's own small circle always wins over the broader strip. *@
-    @if (ShowSelectionOverlay)
+    @* The border partition: each side's port spans and, on a selected shape, its resize spans.
+       The spans are the hit regions and draw nothing; the cursor is what tells them apart. *@
+    @foreach (var span in _partition)
     {
-        <div class="port-strip port-strip-top" data-d12-role="@HitRole.PortStrip" data-d12-part="top"></div>
-        <div class="port-strip port-strip-right" data-d12-role="@HitRole.PortStrip" data-d12-part="right"></div>
-        <div class="port-strip port-strip-bottom" data-d12-role="@HitRole.PortStrip" data-d12-part="bottom"></div>
-        <div class="port-strip port-strip-left" data-d12-role="@HitRole.PortStrip" data-d12-part="left"></div>
+        if (span.Kind == BorderSpanKind.Port)
+        {
+            <div class="port-span port-span-@SideClass(span.Side)" style="@SpanStyle(span)"
+                 data-d12-role="@HitRole.Port" data-d12-part="@PortPart(span)"></div>
+        }
+        else if (ShowSelectionOverlay)
+        {
+            <div class="resize-span resize-span-@SideClass(span.Side)" style="@SpanStyle(span)"
+                 data-d12-role="@HitRole.ResizeHandle" data-d12-part="@SideClass(span.Side)"></div>
+        }
     }
 
-    @* The four standard ports are automatic on every instance - no
-       registration opt-in, so they're rendered unconditionally here rather than sourced from
-       Props/registration. Fractional border-center placement (and staying there through move and
-       resize) comes for free from positioning each one in plain CSS percentages of this container's
-       own box - no per-instance computation needed. Visibility (hover/selection) is CSS-only too
-       (see .port rules below), so no C# state or extra render is involved. *@
-    <div class="@StandardPortCssClass(PortId.Top)" data-d12-role="@HitRole.Port" data-d12-part="Top"></div>
-    <div class="@StandardPortCssClass(PortId.Right)" data-d12-role="@HitRole.Port" data-d12-part="Right"></div>
-    <div class="@StandardPortCssClass(PortId.Bottom)" data-d12-role="@HitRole.Port" data-d12-part="Bottom"></div>
-    <div class="@StandardPortCssClass(PortId.Left)" data-d12-role="@HitRole.Port" data-d12-part="Left"></div>
+    @* Each port's dot, drawn where its span survives and wherever the keyboard pick highlights it. *@
+    @foreach (var side in StandardPorts.All)
+    {
+        if (ShowsStandardPort(side))
+        {
+            <div class="@StandardPortCssClass(side)"></div>
+        }
+    }
 
-    @* An instance's own runtime-added custom ports - the same affordance as a standard port,
-       just at a user-chosen fractional position instead of a fixed border-center one, so its own
-       inline style (not a CSS class) positions it. *@
     @foreach (var port in CustomPorts)
     {
-        <div class="@CustomPortCssClass(port.Id)" style="@CustomPortStyle(port)"
-             data-d12-role="@HitRole.Port" data-d12-part="@port.Id"
-             @key="port.Id"></div>
+        if (ShowsCustomPort(port.Id))
+        {
+            <div class="@CustomPortCssClass(port.Id)" style="@CustomPortStyle(port)" @key="port.Id"></div>
+        }
     }
 
     @if (ShowSelectionOverlay)
     {
         <div class="resize-handle top-left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top-left"></div>
-        <div class="resize-handle top" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top"></div>
         <div class="resize-handle top-right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top-right"></div>
-        <div class="resize-handle right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="right"></div>
         <div class="resize-handle bottom-right" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom-right"></div>
-        <div class="resize-handle bottom" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom"></div>
         <div class="resize-handle bottom-left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="bottom-left"></div>
-        <div class="resize-handle left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="left"></div>
     }
 </div>
 
@@ -70,6 +67,9 @@
         box-sizing: border-box;
         border: 1px solid transparent;
         cursor: move;
+        --d12-hit-target: calc(var(--d12-port-target) / var(--d12-scale));
+        --d12-port-dot: calc(20px * max(1, 0.25 / var(--d12-scale)));
+        --d12-corner-dot: calc(10px * max(1, 0.25 / var(--d12-scale)));
     }
 
     .container-content {
@@ -88,139 +88,135 @@
         outline-offset: 2px;
     }
 
-    .port {
+    .port-span,
+    .resize-span {
         position: absolute;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: #2ecc71;
-        border: 2px solid #ffffff;
-        opacity: 0;
-        pointer-events: none;
+    }
+
+    .port-span {
         cursor: crosshair;
     }
 
-    .component-container:hover .port,
-    .component-container.selected .port,
-    .diagram-canvas.connecting .port {
-        opacity: 1;
-        pointer-events: auto;
+    .resize-span-top,
+    .resize-span-bottom {
+        cursor: ns-resize;
+    }
+
+    .resize-span-left,
+    .resize-span-right {
+        cursor: ew-resize;
+    }
+
+    .port-span-top,
+    .resize-span-top,
+    .port-span-bottom,
+    .resize-span-bottom {
+        height: calc(var(--d12-hit-target) / 2 + min(var(--d12-hit-target) / 2, 50%));
+    }
+
+    .port-span-left,
+    .resize-span-left,
+    .port-span-right,
+    .resize-span-right {
+        width: calc(var(--d12-hit-target) / 2 + min(var(--d12-hit-target) / 2, 50%));
+    }
+
+    .port-span-top,
+    .resize-span-top {
+        top: calc(var(--d12-hit-target) / -2);
+    }
+
+    .port-span-bottom,
+    .resize-span-bottom {
+        bottom: calc(var(--d12-hit-target) / -2);
+    }
+
+    .port-span-left,
+    .resize-span-left {
+        left: calc(var(--d12-hit-target) / -2);
+    }
+
+    .port-span-right,
+    .resize-span-right {
+        right: calc(var(--d12-hit-target) / -2);
+    }
+
+    .port {
+        position: absolute;
+        width: var(--d12-port-dot);
+        height: var(--d12-port-dot);
+        border-radius: 50%;
+        background-color: #2ecc71;
+        border: 2px solid #ffffff;
+        pointer-events: none;
     }
 
     .port.port-focused {
-        opacity: 1;
         outline: 3px solid #f39c12;
         outline-offset: 2px;
     }
 
     .port-top {
-        top: -10px;
-        left: calc(50% - 10px);
+        top: calc(var(--d12-port-dot) / -2);
+        left: calc(50% - var(--d12-port-dot) / 2);
     }
 
     .port-right {
-        top: calc(50% - 10px);
-        right: -10px;
+        top: calc(50% - var(--d12-port-dot) / 2);
+        right: calc(var(--d12-port-dot) / -2);
     }
 
     .port-bottom {
-        bottom: -10px;
-        left: calc(50% - 10px);
+        bottom: calc(var(--d12-port-dot) / -2);
+        left: calc(50% - var(--d12-port-dot) / 2);
     }
 
     .port-left {
-        top: calc(50% - 10px);
-        left: -10px;
-    }
-
-    .port-strip {
-        position: absolute;
-        cursor: copy;
-    }
-
-    .port-strip-top,
-    .port-strip-bottom {
-        left: 0;
-        right: 0;
-        height: 14px;
-    }
-
-    .port-strip-top {
-        top: -7px;
-    }
-
-    .port-strip-bottom {
-        bottom: -7px;
-    }
-
-    .port-strip-left,
-    .port-strip-right {
-        top: 0;
-        bottom: 0;
-        width: 14px;
-    }
-
-    .port-strip-left {
-        left: -7px;
-    }
-
-    .port-strip-right {
-        right: -7px;
+        top: calc(50% - var(--d12-port-dot) / 2);
+        left: calc(var(--d12-port-dot) / -2);
     }
 
     .resize-handle {
         position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: #3498db;
+        width: min(var(--d12-hit-target), 50%);
+        height: min(var(--d12-hit-target), 50%);
+    }
+
+    .resize-handle::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: var(--d12-corner-dot);
+        height: var(--d12-corner-dot);
+        margin-left: calc(var(--d12-corner-dot) / -2);
+        margin-top: calc(var(--d12-corner-dot) / -2);
         border-radius: 50%;
+        background-color: #3498db;
+        pointer-events: none;
     }
 
-    .top-left {
-        top: -5px;
-        left: -5px;
+    .resize-handle.top-left {
+        top: calc(min(var(--d12-hit-target), 50%) / -2);
+        left: calc(min(var(--d12-hit-target), 50%) / -2);
         cursor: nwse-resize;
     }
 
-    .top {
-        top: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .top-right {
-        top: -5px;
-        right: -5px;
+    .resize-handle.top-right {
+        top: calc(min(var(--d12-hit-target), 50%) / -2);
+        right: calc(min(var(--d12-hit-target), 50%) / -2);
         cursor: nesw-resize;
     }
 
-    .right {
-        top: calc(50% - 5px);
-        right: -5px;
-        cursor: ew-resize;
-    }
-
-    .bottom-right {
-        bottom: -5px;
-        right: -5px;
+    .resize-handle.bottom-right {
+        bottom: calc(min(var(--d12-hit-target), 50%) / -2);
+        right: calc(min(var(--d12-hit-target), 50%) / -2);
         cursor: nwse-resize;
     }
 
-    .bottom {
-        bottom: -5px;
-        left: calc(50% - 5px);
-        cursor: ns-resize;
-    }
-
-    .bottom-left {
-        bottom: -5px;
-        left: -5px;
+    .resize-handle.bottom-left {
+        bottom: calc(min(var(--d12-hit-target), 50%) / -2);
+        left: calc(min(var(--d12-hit-target), 50%) / -2);
         cursor: nesw-resize;
-    }
-
-    .left {
-        top: calc(50% - 5px);
-        left: -5px;
-        cursor: ew-resize;
     }
 </style>
