@@ -256,7 +256,7 @@ public class DiagramCanvasEdgeTabStopTests : ComponentTestBase
         Connect(a, b);
         var canvas = RenderCanvas();
         Container(canvas, a.Id).Focus();
-        await canvas.InvokeAsync(() => canvas.Instance.OnCtrlTabPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnSpacePressed());
         EdgeStop(canvas, "Connector from A to B").Focus();
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSpacePressed());
@@ -271,48 +271,23 @@ public class DiagramCanvasEdgeTabStopTests : ComponentTestBase
     }
 
     [Fact]
-    public async Task CtrlTabCountsEdgeStopsAtTheirRenderedPositions()
+    public async Task AFocusHandoffCountsEdgeStopsAtTheirRenderedPositions()
     {
         var a = AddShape("A", 0, 0);
         var b = AddShape("B", 200, 100);
+        var c = AddShape("C", 300, 100);
+        _board.AddGroup(new Group([b.Id, c.Id]));
         Connect(a, b);
         var canvas = RenderCanvas();
-        Container(canvas, a.Id).Focus();
-
-        await canvas.InvokeAsync(() => canvas.Instance.OnCtrlTabPressed());
-        EdgeStop(canvas, "Connector from A to B").Focus();
-        await canvas.InvokeAsync(() => canvas.Instance.OnCtrlTabPressed());
-
-        var indices = JSInterop
-            .Invocations["focusTabStopAt"]
-            .Select(invocation => invocation.Arguments[1])
-            .ToList();
-        Assert.Equal([1, 2], indices);
-        Assert.Equal("Connector from A to B", Ring(canvas)[1]);
-        Assert.Equal("B", Ring(canvas)[2]);
-    }
-
-    [Fact]
-    public async Task CtrlTabFromAGroupStopReachesTheEdgeAfterIt()
-    {
-        var a = AddShape("A", 0, 0);
-        var b = AddShape("B", 100, 0);
-        var c = AddShape("C", 0, 300);
-        _board.AddGroup(new Group([a.Id, b.Id]));
-        Connect(b, c);
-        var canvas = RenderCanvas();
         canvas.Find(".group-tab-stop").Focus();
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
 
-        await canvas.InvokeAsync(() => canvas.Instance.OnCtrlTabPressed());
-        canvas.Find(".edge-tab-stop").Focus();
-        await canvas.InvokeAsync(() => canvas.Instance.OnCtrlTabPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
 
-        var indices = JSInterop
-            .Invocations["focusTabStopAt"]
-            .Select(invocation => invocation.Arguments[1])
-            .ToList();
-        Assert.Equal([1, 2], indices);
-        Assert.Equal(["Group (2 items)", "Connector from Group (2 items) to C", "C"], Ring(canvas));
+        var handoffsAfterEnteringTheGroup = JSInterop.Invocations["focusTabStopAt"].Skip(1);
+        var invocation = Assert.Single(handoffsAfterEnteringTheGroup);
+        Assert.Equal(2, invocation.Arguments[1]);
+        Assert.Equal(["A", "Connector from A to Group (2 items)", "Group (2 items)"], Ring(canvas));
     }
 
     [Fact]

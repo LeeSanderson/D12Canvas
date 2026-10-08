@@ -586,7 +586,7 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     }
 
     [Fact]
-    public async Task FocusLandingOnTheCanvasDropsTheKeyboardsAnchorSoCtrlTabStartsOver()
+    public async Task FocusLandingOnTheCanvasDropsTheKeyboardsAnchorSoSpaceHasNoTarget()
     {
         var board = new Board();
         AddInstance(board, 0, 0);
@@ -595,10 +595,11 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         canvas.FindAll(".component-container")[0].Focus();
 
         canvas.Find(".diagram-canvas").Focus();
-        await canvas.InvokeAsync(() => canvas.Instance.OnCtrlTabPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnSpacePressed());
+        canvas.FindAll(".component-container")[1].Focus();
 
-        var invocation = Assert.Single(JSInterop.Invocations["focusTabStopAt"]);
-        Assert.Equal(0, invocation.Arguments[1]);
+        Assert.Null(AriaSelected(canvas, 0));
+        Assert.Equal("true", AriaSelected(canvas, 1));
     }
 
     [Fact]

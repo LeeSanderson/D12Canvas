@@ -176,7 +176,8 @@
                            purely so Tab/Shift+Tab can reach the group as one stop instead of each
                            member individually. Selecting the group already renders the shared
                            .selection-bounding-box overlay (HasMultiMemberSelection) as this stop's
-                           own visible focus indicator - no separate chrome needed here. *@
+                           own visible focus indicator; focused but unselected, inside additive
+                           traversal, it draws the dashed focus ring instead. *@
                         <div @key="group.Id"
                              class="group-tab-stop"
                              style="@BoxStyle(stop.Bounds)"
@@ -190,7 +191,8 @@
                     {
                         @* The edge's line sits in the SVG ahead of every stop in the DOM, so an
                            invisible proxy here carries its place in the ring; the selected
-                           edge's halo is its focus indicator. *@
+                           edge's halo is its focus indicator, and the dashed focus ring
+                           outlines the proxy when it is focused but unselected. *@
                         <div @key="@($"{edge.Id}-stop")"
                              class="edge-tab-stop"
                              style="@BoxStyle(stop.Bounds)"
@@ -382,6 +384,13 @@
     .group-tab-stop:focus,
     .edge-tab-stop:focus {
         outline: none;
+    }
+
+    .component-container:focus-visible:not([aria-selected="true"]),
+    .group-tab-stop:focus-visible:not([aria-selected="true"]),
+    .edge-tab-stop:focus-visible:not([aria-selected="true"]) {
+        outline: 2px dashed var(--d12-accent);
+        outline-offset: 6px;
     }
 
     .group-resize-handle {

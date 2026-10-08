@@ -234,19 +234,23 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
     }
 
     [Fact]
-    public async Task CtrlTabSkipsPlaceholderedInstancesTheSameWayItSkipsGroupedMembers()
+    public async Task AFocusHandoffSkipsPlaceholderedInstancesTheSameWayItSkipsGroupedMembers()
     {
         RegisterTestComponent();
         var board = new Board();
         AddInstance(board, new Bounds(0, 0, 60, 60));
         AddInstance(board, new Bounds(50, 0, 10, 10)); // below threshold - excluded from tab stops
-        AddInstance(board, new Bounds(200, 0, 60, 60));
+        var first = AddInstance(board, new Bounds(200, 0, 60, 60));
+        var second = AddInstance(board, new Bounds(300, 0, 60, 60));
+        board.AddGroup(new Group([first.Id, second.Id]));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.FindAll(".component-container")[0].Focus();
+        canvas.Find(".group-tab-stop").Focus();
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
 
-        await canvas.InvokeAsync(() => canvas.Instance.OnCtrlTabPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
 
-        var invocation = Assert.Single(JSInterop.Invocations["focusTabStopAt"]);
+        var handoffsAfterEnteringTheGroup = JSInterop.Invocations["focusTabStopAt"].Skip(1);
+        var invocation = Assert.Single(handoffsAfterEnteringTheGroup);
         Assert.Equal(1, invocation.Arguments[1]);
     }
 

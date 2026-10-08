@@ -202,7 +202,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // persisting across the Tab/Shift+Tab navigation a keyboard user relies on to reach the target
     // instance - native Tab is never intercepted (see DiagramCanvas.razor.js), so there is no
     // keydown hook to clear stale picking state on an ordinary Tab press; FocusEntity does that
-    // instead, the one place every focus-changing navigation (Tab, click, Ctrl+Tab) already passes
+    // instead, the one place every focus-changing navigation (Tab, Shift+Tab, a command's focus handoff) already passes
     // through.
     private Guid? _portFocusInstanceId;
     private IEdgeEndpoint _portFocusEndpoint = new PortEndpoint(Guid.Empty, PortId.Top);
@@ -234,15 +234,14 @@ public partial class DiagramCanvas : IAsyncDisposable
     private Guid? _pendingFocusId;
 
     // Whichever entity currently has real DOM focus - kept in sync by FocusEntity (every native
-    // Tab/Shift+Tab landing), cleared when a press focuses the canvas, and advanced without
-    // selecting by OnCtrlTabPressed. Tracked separately from _selectedInstanceIds because Ctrl+Tab
-    // must move focus without touching selection at all.
+    // Tab/Shift+Tab landing) and cleared when a press focuses the canvas. Tracked separately from
+    // the selection because inside additive traversal focus moves without selecting.
     private Guid? _focusedTabStopId;
 
-    // Set immediately before OnCtrlTabPressed's own JS focus() call - consumed by the very next
-    // FocusEntity invocation that call triggers (the native onfocus round-trip a real .focus() call
-    // fires), so that one focus move skips the hard-select every other focus arrival performs.
-    private bool _suppressFocusSelect;
+    // Additive traversal: started by Space on a focused stop, and while it is on a focus landing
+    // moves focus only. Every press, Escape, Enter on a group stop, focus leaving the container
+    // and a command handing focus to a target of its choosing ends it.
+    private bool _additiveTraversal;
 
     protected override void OnInitialized()
     {
@@ -328,12 +327,14 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (_pendingGroupFocus)
         {
             _pendingGroupFocus = false;
+            _additiveTraversal = false;
             await _jsModule!.InvokeVoidAsync("focusGroupTabStop", ContainerElement);
         }
 
         if (_pendingFocusId is { } placedId)
         {
             _pendingFocusId = null;
+            _additiveTraversal = false;
             var index = FocusableTabStopIds().IndexOf(placedId);
             if (index >= 0)
             {
@@ -361,6 +362,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
+        _additiveTraversal = false;
         if (press.Button == PointerPress.PrimaryButton)
         {
             StepOutForPress(press);
@@ -653,6 +655,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         _focusedTabStopId = null;
         _portFocusInstanceId = null;
+        _additiveTraversal = false;
+    }
+
+    [JSInvokable]
+    public void OnFocusLeftContainer()
+    {
+        _additiveTraversal = false;
     }
 
     // What a gesture may reach, bound to this canvas for the duration of one press.
@@ -1037,14 +1046,13 @@ public partial class DiagramCanvas : IAsyncDisposable
                 .Cast<ComponentInstance>()
                 .ToList();
 
-    // Escape's first rung is the pointer gesture that owns the press: cancel it and stop, so one
-    // Escape never throws away more than it meant to and a second Escape mid-press does nothing,
-    // because the cancelled gesture still owns the pointer until its button comes up. Below that
-    // rung, with a group entered, it steps out one level and selects the group just left, handing
-    // focus to that group's tab stop when the keyboard was on a stop inside it. Otherwise it clears
-    // the selection. Either way it cancels a half-built KEYBOARD connection in one press,
-    // whether it's still mid-pick (_portFocusInstanceId) or already has an armed source waiting
-    // for a target (_pendingConnectorSource).
+    // Escape takes one stage per press, newest first, so one Escape never throws away more than
+    // it meant to: cancel the pointer gesture that owns the press (a second Escape mid-press does
+    // nothing, because the cancelled gesture still owns the pointer until its button comes up),
+    // then end a half-built keyboard connection, whether still mid-pick or with an armed source
+    // waiting for a target, then end additive traversal, keeping the selection, then step out of
+    // the entered group, selecting the group just left and handing focus to its stop when the
+    // keyboard was inside it, and last clear the selection.
     [JSInvokable]
     public void OnEscapePressed()
     {
@@ -1055,11 +1063,17 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        _portFocusInstanceId = null;
-        _pendingConnectorSource = null;
-
         _contextMenu = null;
-        if (EnteredGroupId is { } left)
+        if (_portFocusInstanceId is not null || _pendingConnectorSource is not null)
+        {
+            _portFocusInstanceId = null;
+            _pendingConnectorSource = null;
+        }
+        else if (_additiveTraversal)
+        {
+            _additiveTraversal = false;
+        }
+        else if (EnteredGroupId is { } left)
         {
             StepOutWhile(enteredId => enteredId == left);
             SetSelection([left], []);
@@ -1100,6 +1114,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         {
             if (_focusedTabStopId is { } groupId && Board.GetGroup(groupId) is not null)
             {
+                _additiveTraversal = false;
                 EnterGroupFromKeyboard(groupId);
                 return;
             }
@@ -1169,44 +1184,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     private Guid? FocusedCustomPortIdFor(Guid instanceId) =>
         FocusedPortEndpointFor(instanceId) is CustomPortEndpoint custom ? custom.PortId : null;
 
-    // Ctrl+Tab moves DOM focus to the next entity in reading order without selecting it - a
-    // one-off suspension of focus-follows-selection for this chord only, so Space (see
-    // OnSpacePressed below) has a target to toggle that's independent of the current selection.
-    // Starts over from the first tab stop whenever _focusedTabStopId is null or no longer among
-    // the current stops (nothing focused yet, or the previously-focused entity was deleted or
-    // scrolled out of the windowed-mounting viewport) - IndexOf's -1 plus one wraps to 0 for free.
-    // A no-op when the only stop available is the one already focused (nowhere else to move to) -
-    // calling .focus() on an already-focused element fires no new onfocus in a real browser, which
-    // would otherwise leave _suppressFocusSelect set and silently swallow the hard-select an
-    // unrelated, later focus arrival should have performed.
-    [JSInvokable]
-    public async Task OnCtrlTabPressed()
-    {
-        var stops = FocusableTabStopIds();
-        if (stops.Count == 0)
-        {
-            return;
-        }
-
-        var currentIndex = _focusedTabStopId is { } focused ? stops.IndexOf(focused) : -1;
-        var nextIndex = (currentIndex + 1) % stops.Count;
-        var nextId = stops[nextIndex];
-
-        if (nextId == _focusedTabStopId)
-        {
-            return;
-        }
-
-        _focusedTabStopId = nextId;
-        _suppressFocusSelect = true;
-        await _jsModule!.InvokeVoidAsync("focusTabStopAt", ContainerElement, nextIndex);
-    }
-
-    // Space toggles the currently-focused entity's membership in the ad-hoc selection - the
-    // keyboard equivalent of a shift-click, reusing SelectComponent's own toggle branch so the
-    // resulting multi-selection is indistinguishable from a pointer-built one. A no-op once nothing
-    // is focused, or the focused id's own tab stop is gone (deleted, or newly grouped into a member
-    // with no tab stop of its own).
+    // Space on a focused stop adds it to the selection, never removing it, and starts additive
+    // traversal; inside the mode it toggles the focused stop, through the same toggle a Shift
+    // press uses, so a keyboard-built multi-selection is indistinguishable from a pointer-built
+    // one. A no-op once nothing is focused, or the focused id's own tab stop is gone (deleted, or
+    // newly grouped into a member with no tab stop of its own).
     // While picking a port (see OnEnterPressed), Space means something else entirely - it
     // steps to the next port in Board.AllPorts's own order instead, the only way to reach a custom
     // port (arrow keys only ever jump to one of the four standard ones).
@@ -1229,16 +1211,30 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        if (Board?.GetEdge(id) is not null)
+        if (_additiveTraversal || !IsStopSelected(id))
         {
-            ToggleEdge(id);
+            ToggleStop(id);
+        }
+
+        _additiveTraversal = true;
+        StateHasChanged();
+    }
+
+    private bool IsStopSelected(Guid stopId) =>
+        Board?.GetEdge(stopId) is not null
+            ? IsEdgeSelected(stopId)
+            : _selectedInstanceIds.Contains(EffectiveSelectionId(stopId));
+
+    private void ToggleStop(Guid stopId)
+    {
+        if (Board?.GetEdge(stopId) is not null)
+        {
+            ToggleEdge(stopId);
         }
         else
         {
-            SelectComponent(id, addToSelection: true);
+            SelectComponent(stopId, addToSelection: true);
         }
-
-        StateHasChanged();
     }
 
     // Advances _portFocusEndpoint to the next port in Board.AllPorts's own order (every standard
@@ -2241,8 +2237,9 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // The ids a keyboard user can actually land on, in the same order OrderedTabStops renders
     // them - a grouped member has an entry in that list too (so it still paints inside its group)
-    // but no tabindex of its own (see IsAddressable/ComponentContainer.Focusable), so Ctrl+Tab must
-    // skip it exactly the way native Tab already does. An LOD-placeholdered instance (see
+    // but no tabindex of its own (see IsAddressable/ComponentContainer.Focusable), so it is
+    // skipped here exactly the way native Tab already skips it, keeping focusTabStopAt's index
+    // in step with the rendered stops. An LOD-placeholdered instance (see
     // IsPlaceholder) is excluded the same way - it renders as a plain div with no tabindex of its
     // own either.
     private List<Guid> FocusableTabStopIds() =>
@@ -2256,27 +2253,25 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // The sole entry point for the "focusing selects" half of focus-follows-selection - reached
     // only via a tab stop's own @onfocus (native Tab/Shift+Tab navigation, or a command handing
-    // focus to a new instance or group), never wired to any keyboard shortcut directly. Always a hard
+    // focus to a new instance or group), never wired to any keyboard shortcut directly. A hard
     // single-select, matching "landing focus on an entity selects it outright - there is no
     // separate commit step"; a grouped member is never the id passed here (it has no tab stop of
     // its own), and a top-level Group's own id needs no EffectiveSelectionId resolution
-    // (SelectComponent already handles that uniformly for both cases). Ctrl+Tab's own focus move
-    // (OnCtrlTabPressed) is the one exception - it sets _suppressFocusSelect first so its resulting
-    // onfocus round-trip only updates _focusedTabStopId here, without the hard-select.
+    // (SelectComponent already handles that uniformly for both cases). Inside additive traversal
+    // the landing moves focus only and the selection stays as it is.
     private void FocusEntity(Guid id)
     {
         _focusedTabStopId = id;
 
-        // Any genuine focus-changing navigation (Tab, Shift+Tab, Ctrl+Tab) invalidates an
-        // in-progress port pick (see OnEnterPressed) - it only
-        // makes sense for whichever instance real DOM focus is currently on. Enter/arrow-key port
-        // picking never itself moves DOM focus, so this is never cleared out from under a pick still
-        // in progress on the same instance.
+        // Any genuine focus-changing navigation (Tab, Shift+Tab) invalidates an in-progress port
+        // pick (see OnEnterPressed) - it only makes sense for whichever instance real DOM focus is
+        // currently on. Enter/arrow-key port picking never itself moves DOM focus, so this is never
+        // cleared out from under a pick still in progress on the same instance.
         _portFocusInstanceId = null;
 
-        if (_suppressFocusSelect)
+        if (_additiveTraversal)
         {
-            _suppressFocusSelect = false;
+            StepOutWhile(enteredId => !IsInside(id, enteredId));
             return;
         }
 

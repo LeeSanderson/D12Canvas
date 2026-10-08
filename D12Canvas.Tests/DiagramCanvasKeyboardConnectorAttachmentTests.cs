@@ -14,7 +14,7 @@ namespace D12Canvas.Tests;
 // reached once a source port is already armed - completes the connection exactly like a mouse
 // port-to-port drag would. These tests establish "currently focused" via .Focus() (a real
 // AngleSharp focus event, routing through ComponentContainer.HandleFocus/DiagramCanvas.FocusEntity)
-// rather than .Click(), matching DiagramCanvasCtrlTabSpaceMultiSelectTests's own convention -
+// rather than .Click(), matching DiagramCanvasAdditiveTraversalTests's own convention -
 // native Tab/Shift+Tab itself is never intercepted, so simulating "the user tabbed to the next
 // instance" is just a second real .Focus() call.
 public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase

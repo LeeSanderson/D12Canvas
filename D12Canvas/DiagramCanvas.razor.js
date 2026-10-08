@@ -53,7 +53,7 @@ export function focusGroupTabStop(container) {
     }
 }
 
-// Ctrl+Tab's own DOM-focus move - targets the Nth currently-focusable tab stop by position, in
+// A command's focus handoff - targets the Nth currently-focusable tab stop by position, in
 // the same document order DiagramCanvas.FocusableTabStopIds computes its own index against
 // (every rendered tab stop carries tabindex="0" and lives in the instance layer; a grouped
 // member's container carries none, so it's naturally excluded here the same way it's excluded
@@ -686,21 +686,6 @@ export async function addKeyboardListener(element, dotnetRef) {
                     }
                 }
                 break;
-            case "Tab":
-                // Plain Tab is never intercepted (native browser traversal, per OrderedTabStops'
-                // own reading-order/tabindex setup) - only the exact Ctrl+Tab chord reaches here,
-                // moving focus without selecting (see OnCtrlTabPressed). Ctrl+Shift+Tab is left
-                // alone rather than treated the same as plain Ctrl+Tab - there's no reverse
-                // traversal implemented for it, unlike every other modifier-branching chord below.
-                if (
-                    (event.ctrlKey || event.metaKey) &&
-                    !event.shiftKey &&
-                    !isEditableTarget(event.target)
-                ) {
-                    event.preventDefault();
-                    dotnetRef.invokeMethodAsync("OnCtrlTabPressed");
-                }
-                break;
             case "Space":
                 // Doubles as the browser's own default "scroll the page" action on a focused
                 // non-form-control element, and as a literal space character while typing during
@@ -808,14 +793,36 @@ export async function addKeyboardListener(element, dotnetRef) {
         }
     };
 
+    // Focus has left the container only once it has landed somewhere else on the page. A window
+    // losing focus, or a focused stop removed from the DOM, leaves focus nowhere new, so neither
+    // counts.
+    const handleFocusOut = (event) => {
+        if (element.contains(event.relatedTarget)) {
+            return;
+        }
+
+        const leaving = event.target;
+        setTimeout(() => {
+            if (
+                document.hasFocus() &&
+                leaving.isConnected &&
+                !element.contains(document.activeElement)
+            ) {
+                dotnetRef.invokeMethodAsync("OnFocusLeftContainer");
+            }
+        }, 0);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    element.addEventListener('focusout', handleFocusOut);
 
     // See addResizeListener above - a disposable handle object, not a bare function.
     return {
         dispose: () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
+            element.removeEventListener('focusout', handleFocusOut);
         }
     };
 }
