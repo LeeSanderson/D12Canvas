@@ -4,11 +4,13 @@
 
 **Blocked by:** 81 (Entered group)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Tab from a shape lands on each edge leaving it, in order, before the next shape in reading order
-- [ ] The stop's accessible name reads "Connector from A to B" using each end's accessible name, or the edge's position for a floating end
-- [ ] Landing on an edge stop selects the edge and nothing else; the edge shows as selected
-- [ ] Entering a group removes every edge stop from the ring; leaving restores them
-- [ ] bUnit covers stop order, the label and `aria-selected`; a markup test asserts the proxy has no role
-- [ ] `CONTEXT.md`'s `Edge` term already describes this; no vocabulary change
+- [x] Tab from a shape lands on each edge leaving it, in order, before the next shape in reading order
+- [x] The stop's accessible name reads "Connector from A to B" using each end's accessible name (a group's label for a grouped end), or "unattached end" for a floating end, as ADR 0054 says
+- [x] Landing on an edge stop selects the edge and nothing else; the edge shows as selected
+- [x] Entering a group removes every edge stop from the ring; leaving restores them
+- [x] bUnit covers stop order, the label and `aria-selected`; a markup test asserts the proxy has no role
+- [x] `CONTEXT.md`'s `Edge` term already describes this; no vocabulary change
+
+Still open: ADR 0054's change to ADR 0051, where `Escape` out of an edge label's edit returns focus to the edge's stop, belongs to ticket 101, which owns that edit path. `Space` on an edge stop toggles it through the same toggle a Shift press on an edge uses, as it toggles an instance stop today; ticket 84 decides how the toggle fits additive traversal.

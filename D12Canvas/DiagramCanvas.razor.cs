@@ -709,13 +709,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void SelectEdge(Guid edgeId) => canvas.SetSelection([], [edgeId]);
 
-        public void ToggleEdge(Guid edgeId) =>
-            canvas.SetSelection(
-                canvas._selectedInstanceIds,
-                canvas._selectedEdgeIds.Contains(edgeId)
-                    ? canvas._selectedEdgeIds.Where(id => id != edgeId)
-                    : canvas._selectedEdgeIds.Append(edgeId)
-            );
+        public void ToggleEdge(Guid edgeId) => canvas.ToggleEdge(edgeId);
 
         public void ClearSelection() => canvas.SetSelection([], []);
 
@@ -1235,7 +1229,15 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        SelectComponent(id, addToSelection: true);
+        if (Board?.GetEdge(id) is not null)
+        {
+            ToggleEdge(id);
+        }
+        else
+        {
+            SelectComponent(id, addToSelection: true);
+        }
+
         StateHasChanged();
     }
 
@@ -2109,11 +2111,21 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Drawn from the same windowed-mounting viewport plus overscan as VisibleComponents,
     // so an instance or group entirely outside the current viewport (+ overscan) has no tab stop
     // at all - reachability is bounded by what's currently mounted, not the whole Board.
+    //
+    // An edge's stop comes directly after the stop its source resolves to, edges sharing that
+    // anchor in their targets' reading order; a floating source sorts as a stop of its own at its
+    // point. No edge has a stop while a group is entered, since an edge is never a member.
     private readonly record struct TabStop(
         ComponentInstance? Instance,
         Group? Group,
+        Edge? Edge,
         Bounds Bounds
-    );
+    )
+    {
+        public Guid Id => Instance?.Id ?? Group?.Id ?? Edge!.Id;
+    }
+
+    private readonly record struct SortedStop(TabStop Stop, double X, double Y);
 
     private IReadOnlyList<TabStop> OrderedTabStops()
     {
@@ -2122,10 +2134,13 @@ public partial class DiagramCanvas : IAsyncDisposable
             return Array.Empty<TabStop>();
         }
 
-        var stops = new List<TabStop>();
+        var stops = new List<SortedStop>();
         foreach (var instance in VisibleComponents)
         {
-            stops.Add(new TabStop(instance, null, Live.BoundsOf(instance)));
+            var bounds = Live.BoundsOf(instance);
+            stops.Add(
+                new SortedStop(new TabStop(instance, null, null, bounds), bounds.X, bounds.Y)
+            );
         }
 
         var mountArea = _zoomPanTracker.Viewport.ExpandedBy(Overscan);
@@ -2137,11 +2152,87 @@ public partial class DiagramCanvas : IAsyncDisposable
                 && Live.GroupBounds(group) is { } live
             )
             {
-                stops.Add(new TabStop(null, group, live));
+                stops.Add(new SortedStop(new TabStop(null, group, null, live), live.X, live.Y));
             }
         }
 
-        return stops.OrderBy(s => s.Bounds.Y).ThenBy(s => s.Bounds.X).ToList();
+        var anchored = new Dictionary<Guid, List<SortedStop>>();
+        if (EnteredGroupId is null)
+        {
+            var anchors = stops.Select(stop => stop.Stop.Id).ToHashSet();
+            foreach (var edge in Board.Edges)
+            {
+                if (
+                    Live.ResolveEnd(edge, isSource: true) is not { } from
+                    || Live.ResolveEnd(edge, isSource: false) is not { } to
+                )
+                {
+                    continue;
+                }
+
+                var stop = new TabStop(null, null, edge, EdgeStopBounds(from, to));
+                if (EndEntityId(edge, isSource: true) is { } anchorId)
+                {
+                    if (anchors.Contains(anchorId))
+                    {
+                        if (!anchored.TryGetValue(anchorId, out var following))
+                        {
+                            anchored[anchorId] = following = [];
+                        }
+                        following.Add(new SortedStop(stop, to.X, to.Y));
+                    }
+                }
+                else if (mountArea.Contains(from.X, from.Y))
+                {
+                    stops.Add(new SortedStop(stop, from.X, from.Y));
+                }
+            }
+        }
+
+        var ordered = new List<TabStop>();
+        foreach (var sorted in InReadingOrder(stops))
+        {
+            ordered.Add(sorted.Stop);
+            if (sorted.Stop.Edge is null && anchored.TryGetValue(sorted.Stop.Id, out var following))
+            {
+                ordered.AddRange(InReadingOrder(following).Select(edgeStop => edgeStop.Stop));
+            }
+        }
+
+        return ordered;
+    }
+
+    private static IEnumerable<SortedStop> InReadingOrder(IEnumerable<SortedStop> stops) =>
+        stops.OrderBy(stop => stop.Y).ThenBy(stop => stop.X);
+
+    private static Bounds EdgeStopBounds((double X, double Y) from, (double X, double Y) to) =>
+        new(
+            Math.Min(from.X, to.X),
+            Math.Min(from.Y, to.Y),
+            Math.Abs(to.X - from.X),
+            Math.Abs(to.Y - from.Y)
+        );
+
+    private string EdgeAccessibleLabel(Edge edge) =>
+        $"Connector from {EndAccessibleName(edge, isSource: true)} to {EndAccessibleName(edge, isSource: false)}";
+
+    // The stop an attached end resolves to, as a press on its component would select it.
+    private Guid? EndEntityId(Edge edge, bool isSource) =>
+        EndpointAttachment.ComponentIdOf(Live.EndpointOf(edge, isSource)) is { } componentId
+            ? EffectiveSelectionId(componentId)
+            : null;
+
+    private string EndAccessibleName(Edge edge, bool isSource)
+    {
+        var id = EndEntityId(edge, isSource);
+        if (id is { } groupId && Board!.GetGroup(groupId) is { } group)
+        {
+            return GroupAccessibleLabel(group);
+        }
+
+        return id is { } instanceId && Board!.GetComponent(instanceId) is { } instance
+            ? Registry.Resolve(instance.ComponentTypeKey).AccessibleName
+            : "unattached end";
     }
 
     // An addressable group has one stop until it is entered, when its members' stops replace it.
@@ -2160,7 +2251,7 @@ public partial class DiagramCanvas : IAsyncDisposable
                 stop.Instance is null
                 || (IsAddressable(stop.Instance.Id) && !IsPlaceholder(stop.Instance))
             )
-            .Select(stop => stop.Instance?.Id ?? stop.Group!.Id)
+            .Select(stop => stop.Id)
             .ToList();
 
     // The sole entry point for the "focusing selects" half of focus-follows-selection - reached
@@ -2186,6 +2277,12 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (_suppressFocusSelect)
         {
             _suppressFocusSelect = false;
+            return;
+        }
+
+        if (Board?.GetEdge(id) is not null)
+        {
+            SetSelection([], [id]);
             return;
         }
 
@@ -2383,6 +2480,14 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     private bool IsEdgeSelected(Guid edgeId) => _selectedEdgeIds.Contains(edgeId);
+
+    private void ToggleEdge(Guid edgeId) =>
+        SetSelection(
+            _selectedInstanceIds,
+            _selectedEdgeIds.Contains(edgeId)
+                ? _selectedEdgeIds.Where(id => id != edgeId)
+                : _selectedEdgeIds.Append(edgeId)
+        );
 
     private string EdgeLineCssClass(Guid edgeId) =>
         IsEdgeSelected(edgeId) ? "edge-line selected" : "edge-line";

@@ -186,6 +186,19 @@
                              aria-selected="@(IsGroupSelected(group.Id) ? "true" : null)"
                              @onfocus="@(() => FocusEntity(group.Id))"></div>
                     }
+                    else if (stop.Edge is { } edge)
+                    {
+                        @* The edge's line sits in the SVG ahead of every stop in the DOM, so an
+                           invisible proxy here carries its place in the ring; the selected
+                           edge's halo is its focus indicator. *@
+                        <div @key="@($"{edge.Id}-stop")"
+                             class="edge-tab-stop"
+                             style="@BoxStyle(stop.Bounds)"
+                             tabindex="0"
+                             aria-label="@EdgeAccessibleLabel(edge)"
+                             aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)"
+                             @onfocus="@(() => FocusEntity(edge.Id))"></div>
+                    }
                 }
             }
             @ChildContent
@@ -360,12 +373,14 @@
         pointer-events: none;
     }
 
-    .group-tab-stop {
+    .group-tab-stop,
+    .edge-tab-stop {
         position: absolute;
         pointer-events: none;
     }
 
-    .group-tab-stop:focus {
+    .group-tab-stop:focus,
+    .edge-tab-stop:focus {
         outline: none;
     }
 
