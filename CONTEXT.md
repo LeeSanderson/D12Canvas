@@ -61,7 +61,7 @@ The keyboard's way to build a multi-selection. `Space` on a focused tab stop add
 _Avoid_: add mode, multi-select mode, focus mode.
 
 **Directional focus**:
-Moving focus to the nearest instance or group stop in an arrow's direction, by `Ctrl+Shift+Arrow`. A stop in the same row or column wins over a nearer one off it, and nothing in that direction means nothing happens. It measures from the focused stop, or from the selection when nothing is focused, or from the viewport centre when nothing is selected either. It reaches only the stops in the tab ring, so it never pans, and never an edge, which stays one `Tab` after its source. A focus move like `Tab`: it selects its target, except inside `Additive traversal`, where it moves focus only (ADR 0060).
+Moving focus to the nearest instance or group stop in an arrow's direction, by `Ctrl+Shift+Arrow`. A stop in the same row or column wins over a nearer one off it, and nothing in that direction means nothing happens. It measures from the focused stop, a focused edge from the stop its source resolves to, or from the selection's box when nothing is focused, or from the viewport centre when nothing is selected either. It reaches only the stops in the tab ring, so it never pans, never an edge, which stays one `Tab` after its source, and while a group is entered only that group's members. It does nothing while a press owns the board or a port is being picked. A focus move like `Tab`: it selects its target, except inside `Additive traversal`, where it moves focus only (ADR 0060).
 _Avoid_: spatial navigation (the W3C CSS draft for browser-driven arrow navigation, with different rules), arrow navigation (plain arrows nudge), jump (implies panning).
 
 **Edge**:

@@ -677,9 +677,13 @@ export async function addKeyboardListener(element, dotnetRef) {
                 if (!isEditableTarget(event.target)) {
                     // preventDefault unconditionally, even for Alt+Arrow combos the C# side ends up
                     // treating as a no-op (nothing/multiple selected) - Alt+Left/Right is the
-                    // browser's own back/forward navigation shortcut, which must never fire here.
+                    // browser's own back/forward navigation shortcut, which must never fire here,
+                    // and for a Ctrl+Shift+Arrow that finds no stop, which Firefox would otherwise
+                    // turn into a text selection and a page scroll.
                     event.preventDefault();
-                    if (event.altKey) {
+                    if ((event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey) {
+                        dotnetRef.invokeMethodAsync("OnDirectionalFocusPressed", event.code);
+                    } else if (event.altKey) {
                         dotnetRef.invokeMethodAsync("OnAltArrowKeyPressed", event.code, event.shiftKey);
                     } else {
                         dotnetRef.invokeMethodAsync("OnArrowKeyPressed", event.code, event.shiftKey);

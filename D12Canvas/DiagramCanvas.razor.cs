@@ -661,6 +661,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnFocusLeftContainer()
     {
+        _focusedTabStopId = null;
         _additiveTraversal = false;
     }
 
@@ -2243,13 +2244,84 @@ public partial class DiagramCanvas : IAsyncDisposable
     // IsPlaceholder) is excluded the same way - it renders as a plain div with no tabindex of its
     // own either.
     private List<Guid> FocusableTabStopIds() =>
+        FocusableTabStops().Select(stop => stop.Id).ToList();
+
+    private List<TabStop> FocusableTabStops() =>
         OrderedTabStops()
             .Where(stop =>
                 stop.Instance is null
                 || (IsAddressable(stop.Instance.Id) && !IsPlaceholder(stop.Instance))
             )
-            .Select(stop => stop.Id)
             .ToList();
+
+    // A focus move like Tab: it lands through focusTabStopAt so the stop's own @onfocus decides
+    // whether it selects. An edge is never a target, because its stop's box can sit far from both
+    // of its ends.
+    [JSInvokable]
+    public async Task OnDirectionalFocusPressed(string code)
+    {
+        if (
+            Board is null
+            || _jsModule is null
+            || PressOwnsBoard
+            || _portFocusInstanceId is not null
+            || DirectionalFocus.DirectionFor(code) is not { } direction
+        )
+        {
+            return;
+        }
+
+        var ring = FocusableTabStops();
+        var target = DirectionalFocus.Nearest(
+            DirectionalFocusOrigin(ring),
+            direction,
+            ring.Where(stop => stop.Edge is null && IsInScope(stop.Id))
+                .Select(stop => new FocusCandidate(stop.Id, stop.Bounds))
+        );
+        if (target is { } targetId)
+        {
+            var index = ring.FindIndex(stop => stop.Id == targetId);
+            await _jsModule.InvokeVoidAsync("focusTabStopAt", ContainerElement, index);
+        }
+    }
+
+    private Bounds DirectionalFocusOrigin(List<TabStop> ring)
+    {
+        var focused = ring.FindIndex(stop => stop.Id == _focusedTabStopId);
+        if (focused >= 0)
+        {
+            var stop = ring[focused];
+            return stop.Edge is { } edge ? EdgeSourceBox(edge) ?? stop.Bounds : stop.Bounds;
+        }
+
+        var selection = Bounds.Union(
+            new[] { SelectedInstancesBounds() }
+                .Concat(SelectedEdges.Select(EdgeSourceBox))
+                .Where(box => box is not null)
+                .Select(box => box!.Value)
+        );
+        if (selection is { } selectionBox)
+        {
+            return selectionBox;
+        }
+
+        var viewport = _zoomPanTracker.Viewport;
+        return new Bounds(viewport.X + viewport.Width / 2, viewport.Y + viewport.Height / 2, 0, 0);
+    }
+
+    private Bounds? EdgeSourceBox(Edge edge)
+    {
+        if (EndEntityId(edge, isSource: true) is { } anchorId)
+        {
+            return Board!.GetGroup(anchorId) is { } group ? Live.GroupBounds(group)
+                : Board.GetComponent(anchorId) is { } instance ? Live.BoundsOf(instance)
+                : null;
+        }
+
+        return Live.ResolveEnd(edge, isSource: true) is { } point
+            ? new Bounds(point.X, point.Y, 0, 0)
+            : null;
+    }
 
     // The sole entry point for the "focusing selects" half of focus-follows-selection - reached
     // only via a tab stop's own @onfocus (native Tab/Shift+Tab navigation, or a command handing
