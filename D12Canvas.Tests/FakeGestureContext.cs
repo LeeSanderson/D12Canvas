@@ -22,7 +22,7 @@ internal sealed class FakeGestureContext : IGestureContext
     public HashSet<Guid> SelectedInstanceIds { get; } = new();
     public HashSet<Guid> SelectedEdgeIds { get; } = new();
     public Bounds? Marquee { get; private set; }
-    public List<(double X, double Y)> ContextMenuOpenings { get; } = new();
+    public List<(double X, double Y, bool PressHitEntity)> ContextMenuOpenings { get; } = new();
     public Func<Guid, Guid> EffectiveId { get; set; } = id => id;
     public double? GridSpacing { get; set; }
     public bool ObjectSnapping { get; set; }
@@ -168,6 +168,6 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public void BeginInlineEdit(Guid instanceId) => InlineEditRequests.Add(instanceId);
 
-    public void OpenContextMenuAt(double containerX, double containerY) =>
-        ContextMenuOpenings.Add((containerX, containerY));
+    public void OpenContextMenuAt(double containerX, double containerY, bool pressHitEntity) =>
+        ContextMenuOpenings.Add((containerX, containerY, pressHitEntity));
 }

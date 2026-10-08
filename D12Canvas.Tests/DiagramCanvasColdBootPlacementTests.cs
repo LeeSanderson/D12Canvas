@@ -35,7 +35,7 @@ public class DiagramCanvasColdBootPlacementTests : ComponentTestBase
         var module = JSInterop.SetupModule("./_content/D12Canvas/DiagramCanvas.razor.js");
         // Deliberately left unresolved (no SetResult) - simulates ClickToAdd firing before the
         // container-size JS round trip has come back, the same as a cold Blazor WASM boot.
-        module.Setup<Dictionary<string, double>>("getContainerDimensions", _ => true);
+        module.Setup<InitialFacts>("initialFacts", _ => true);
 
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));

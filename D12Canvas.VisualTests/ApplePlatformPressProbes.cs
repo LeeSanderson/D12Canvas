@@ -31,6 +31,16 @@ public sealed class ApplePlatformPressProbes(PlaywrightFixture playwright, DemoA
     }
 
     [Fact]
+    public async Task TheMenusShortcutHints_AreDrawnInAppleSymbols()
+    {
+        await Page.Locator(".component-container[aria-label='Rectangle']")
+            .First.ClickAsync(new() { Button = Microsoft.Playwright.MouseButton.Right });
+
+        await Expect(Page.Locator(".d12-context-menu-hint"))
+            .ToHaveTextAsync(["⌫", "⇧⌘]", "⌘]", "⌘[", "⇧⌘["]);
+    }
+
+    [Fact]
     public async Task ACtrlPrimaryDragOnEmptyCanvas_Pans()
     {
         var viewport = Page.Locator(".canvas-content");

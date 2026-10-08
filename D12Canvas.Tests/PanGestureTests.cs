@@ -59,7 +59,7 @@ public class PanGestureTests
     }
 
     [Fact]
-    public void ASecondaryClickOnEmptyCanvasClearsTheSelectionAndOpensTheMenuAtThePressPoint()
+    public void ASecondaryClickOnEmptyCanvasClearsTheSelectionAndOpensTheCanvasMenuAtThePressPoint()
     {
         var board = new Board();
         var instance = AddInstance(board, 0);
@@ -73,7 +73,7 @@ public class PanGestureTests
         pan.Release(PointerEvents.Release(PointerPress.SecondaryButton, 302, 241));
 
         Assert.Empty(context.SelectedInstanceIds);
-        Assert.Equal((300, 240), Assert.Single(context.ContextMenuOpenings));
+        Assert.Equal((300, 240, false), Assert.Single(context.ContextMenuOpenings));
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class PanGestureTests
         pan.Release(PointerEvents.Release(PointerPress.SecondaryButton, 10, 10));
 
         Assert.Equal([pressed.Id], context.SelectedInstanceIds);
-        Assert.Single(context.ContextMenuOpenings);
+        Assert.True(Assert.Single(context.ContextMenuOpenings).PressHitEntity);
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public class PanGestureTests
         pan.Release(PointerEvents.Release(PointerPress.SecondaryButton, 10, 10));
 
         Assert.Equal([edgeId], context.SelectedEdgeIds);
-        Assert.Single(context.ContextMenuOpenings);
+        Assert.True(Assert.Single(context.ContextMenuOpenings).PressHitEntity);
     }
 
     [Fact]

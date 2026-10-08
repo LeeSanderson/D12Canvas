@@ -8,6 +8,11 @@ export async function getContainerDimensions(element) {
     };
 }
 
+export async function initialFacts(element) {
+    const rect = element.getBoundingClientRect();
+    return { width: rect.width, height: rect.height, applePlatform: isApplePlatform() };
+}
+
 // Returns a disposable handle object rather than a bare function - a JS function isn't
 // JSON-serializable, so InvokeAsync<IJSObjectReference> would marshal it back as null. A plain
 // object with a named "dispose" method is a real, invokable object reference instead.
@@ -222,9 +227,18 @@ function sameModifiers(first, second) {
     );
 }
 
+// There is no one clean API for this: userAgentData is Chromium-only and navigator.platform is
+// deprecated, so the first falls back to the second. Read once and kept, so the pointer path and
+// the shortcut hints C# draws always agree.
+let applePlatform = null;
+
 function isApplePlatform() {
-    const platform = navigator.userAgentData?.platform ?? navigator.platform ?? "";
-    return /Mac|iPhone|iPad|iPod/.test(platform);
+    if (applePlatform === null) {
+        const platform = navigator.userAgentData?.platform ?? navigator.platform ?? "";
+        applePlatform = /Mac|iPhone|iPad|iPod/.test(platform);
+    }
+
+    return applePlatform;
 }
 
 export async function addPointerListener(canvas, container, dotnetRef, options) {

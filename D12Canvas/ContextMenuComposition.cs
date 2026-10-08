@@ -1,0 +1,117 @@
+namespace D12Canvas;
+
+// Checked is null for a row that is not a toggle.
+internal sealed record ContextMenuRow(
+    ContextMenuCommand Command,
+    string Label,
+    string? Hint,
+    bool? Checked
+);
+
+// Both content sets come from one list of sections in one fixed order, and each row decides for
+// itself whether it is eligible. A section with no eligible row is left out entirely, so the
+// separators that sit between rendered sections never lead, trail or double up.
+internal static class ContextMenuComposition
+{
+    private sealed record RowDefinition(
+        ContextMenuCommand Command,
+        Func<ContextMenuContext, bool> IsEligible,
+        string Label,
+        Func<ContextMenuContext, Chord?> Chord,
+        Func<ContextMenuContext, bool?> Checked
+    );
+
+    private static readonly Chord DeleteChord = new("Delete", AppleKey: "⌫");
+    private static readonly Chord GroupChord = new("G", Primary: true);
+    private static readonly Chord UngroupChord = new("G", Primary: true, Shift: true);
+    private static readonly Chord BringToFrontChord = new("]", Primary: true, Shift: true);
+    private static readonly Chord BringForwardChord = new("]", Primary: true);
+    private static readonly Chord SendBackwardChord = new("[", Primary: true);
+    private static readonly Chord SendToBackChord = new("[", Primary: true, Shift: true);
+    private static readonly Chord SelectAllChord = new("A", Primary: true);
+    private static readonly Chord SnapToGridChord = new("'", Primary: true);
+
+    private static readonly IReadOnlyList<IReadOnlyList<RowDefinition>> Sections =
+    [
+        [Row(ContextMenuCommand.Delete, "Delete", OnObject, DeleteChord)],
+        [
+            Row(
+                ContextMenuCommand.SelectAll,
+                "Select All",
+                c => OnCanvas(c) && c.CanSelectAll,
+                SelectAllChord
+            ),
+        ],
+        [
+            Row(ContextMenuCommand.Group, "Group", c => OnObject(c) && c.CanGroup, GroupChord),
+            Row(
+                ContextMenuCommand.Ungroup,
+                "Ungroup",
+                c => OnObject(c) && c.CanUngroup,
+                UngroupChord
+            ),
+        ],
+        [
+            Row(ContextMenuCommand.BringToFront, "Bring to Front", CanArrange, BringToFrontChord),
+            Row(ContextMenuCommand.BringForward, "Bring Forward", CanArrange, BringForwardChord),
+            Row(ContextMenuCommand.SendBackward, "Send Backward", CanArrange, SendBackwardChord),
+            Row(ContextMenuCommand.SendToBack, "Send to Back", CanArrange, SendToBackChord),
+        ],
+        [
+            new RowDefinition(
+                ContextMenuCommand.ToggleSnapToGrid,
+                OnCanvas,
+                "Snap to Grid",
+                c => c.SnapToGridChordLive ? SnapToGridChord : null,
+                c => c.SnapToGrid
+            ),
+            new RowDefinition(
+                ContextMenuCommand.ToggleObjectSnapping,
+                OnCanvas,
+                "Object Snapping",
+                _ => null,
+                c => c.ObjectSnapping
+            ),
+        ],
+    ];
+
+    public static IReadOnlyList<IReadOnlyList<ContextMenuRow>> Compose(
+        ContextMenuContext context
+    ) =>
+        Sections
+            .Select(section =>
+                (IReadOnlyList<ContextMenuRow>)
+                    section
+                        .Where(row => row.IsEligible(context))
+                        .Select(row => Render(row, context))
+                        .ToList()
+            )
+            .Where(section => section.Count > 0)
+            .ToList();
+
+    private static ContextMenuRow Render(RowDefinition row, ContextMenuContext context) =>
+        new(
+            row.Command,
+            row.Label,
+            row.Chord(context) is { } chord
+                ? ShortcutHint.Render(chord, context.ApplePlatform)
+                : null,
+            row.Checked(context)
+        );
+
+    private static RowDefinition Row(
+        ContextMenuCommand command,
+        string label,
+        Func<ContextMenuContext, bool> isEligible,
+        Chord chord
+    ) => new(command, isEligible, label, _ => chord, _ => null);
+
+    private static bool OnObject(ContextMenuContext context) =>
+        context.Set == ContextMenuSet.Object;
+
+    private static bool OnCanvas(ContextMenuContext context) =>
+        context.Set == ContextMenuSet.Canvas;
+
+    private static bool CanArrange(ContextMenuContext context) =>
+        OnObject(context) && context.CanArrange;
+}

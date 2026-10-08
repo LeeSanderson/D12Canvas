@@ -4,15 +4,19 @@
 
 **Blocked by:** 73 (One shortcut table behind one focus guard), 80 (Edges in the selection)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Right-clicking a shape shows the object set; right-clicking empty canvas shows the canvas set; no row is ever greyed out
-- [ ] Ungroup is absent when nothing selected is a group and its section's separator is absent with it
-- [ ] A menu opened near the bottom-right corner opens up and left with no row clipped
-- [ ] A press on a host button outside the container activates the button and closes the menu; a press inside the container only closes the menu
-- [ ] Every row with a live chord shows it in the platform's convention; the align strip, Unlock All and object snapping show none
-- [ ] Select All, Snap to Grid and object snapping rows work from the canvas set
-- [ ] A keyboard user can arrow through the rows as today
-- [ ] bUnit covers eligibility, ordering, flipping and hints; the old menu tests are rewritten against the composed component
-- [ ] Baselines for both sets in light and dark; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Context menu` and `Shortcut hint` terms describe what shipped
+- [x] Right-clicking a shape shows the object set; right-clicking empty canvas shows the canvas set; no row is ever greyed out
+- [x] Ungroup is absent when nothing selected is a group and its section's separator is absent with it
+- [x] A menu opened near the bottom-right corner opens up and left with no row clipped
+- [x] A press on a host button outside the container activates the button and closes the menu; a press inside the container only closes the menu
+- [x] Every row with a live chord shows it in the platform's convention; the align strip, Unlock All and object snapping show none
+- [x] Select All, Snap to Grid and object snapping rows work from the canvas set
+- [x] A keyboard user can arrow through the rows as today
+- [x] bUnit covers eligibility, ordering, flipping and hints; the old menu tests are rewritten against the composed component
+- [x] Baselines for both sets in light and dark; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Context menu` and `Shortcut hint` terms describe what shipped
+
+Shipped with a few choices the ADRs left open. The component is `ContextMenu`, handed a `ContextMenuContext` (the set plus every eligibility fact and the platform) and reporting a `ContextMenuCommand`; the canvas runs the same method the chord runs. One fixed list of sections serves both sets: Delete; Select All; Group, Ungroup; the four z-order rows; Snap to Grid and Object Snapping as `menuitemcheckbox` rows. Select All is hidden on an empty board. The context is rebuilt on each render rather than snapshotted at open, so a chord pressed while the menu is open shows in it. The menu's width (224px), row height and separator are fixed in its stylesheet so the canvas places it on the opening render without measuring; a test ties the stylesheet to `ContextMenuPlacement`. It opens right and down, flips per axis, and clamps when it fits on neither side, which on the placement demo's narrow canvas puts it over the anchor. The menu root takes focus on opening, so no row looks chosen after a pointer open, and the first arrow lands on the first or last row. Every key pressed inside the menu stops at the menu, which fixes the Escape that also ran the next stage and the arrows that also nudged the selection; an Escape that reaches the canvas with a menu open now only closes it. The dismissing press inside the container also swallows the click or contextmenu it fires next, cleared by the next press, key or cancel. On Apple platforms `Ctrl` is drawn as `⌘` and Delete as `⌫`; `⌃` never appears because every chord accepts Ctrl or Cmd. The platform boolean arrives in a new `initialFacts` call that replaces the init-time container measurement.
+
+Still open: hints name keys from the US layout while bindings match `event.code`, so on another layout a bracket hint can name a key the user does not see.

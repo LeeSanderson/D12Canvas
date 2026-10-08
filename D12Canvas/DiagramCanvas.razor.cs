@@ -153,10 +153,13 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private Guid? EnteredGroupId => _enteredGroupIds.Count > 0 ? _enteredGroupIds[^1] : null;
 
-    // The open selection context menu, if any - null means none is open. Its
-    // anchor point is plain container-relative pixels (not board space), since the menu is canvas
-    // chrome (CONTEXT.md) that must not pan/zoom with the board content.
-    private sealed record ContextMenuState(double X, double Y);
+    // The open context menu, if any - null means none is open. Its anchor point is plain
+    // container-relative pixels (not board space), since the menu is canvas chrome (CONTEXT.md)
+    // that must not pan/zoom with the board content.
+    private sealed record ContextMenuState(double X, double Y, ContextMenuSet Set);
+
+    // Read once when the listeners start, for the pointer path's Ctrl+click and for shortcut hints.
+    private bool _applePlatform;
 
     private ContextMenuState? _contextMenu;
 
@@ -283,12 +286,10 @@ public partial class DiagramCanvas : IAsyncDisposable
                 "./_content/D12Canvas/DiagramCanvas.razor.js"
             );
 
-            var dimensions = await _jsModule.InvokeAsync<Dictionary<string, double>>(
-                "getContainerDimensions",
-                ContainerElement
-            );
+            var facts = await _jsModule.InvokeAsync<InitialFacts>("initialFacts", ContainerElement);
 
-            _zoomPanTracker.SetContainerSize((int)dimensions["width"], (int)dimensions["height"]);
+            _zoomPanTracker.SetContainerSize((int)facts.Width, (int)facts.Height);
+            _applePlatform = facts.ApplePlatform;
 
             var resizeCleanup = await _jsModule.InvokeAsync<IJSObjectReference>(
                 "addResizeListener",
@@ -776,12 +777,13 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void BeginLabelEdit(Guid edgeId) => canvas.BeginLabelEdit(edgeId);
 
-        public void OpenContextMenuAt(double containerX, double containerY)
+        public void OpenContextMenuAt(double containerX, double containerY, bool pressHitEntity)
         {
-            if (canvas.HasContextMenuEligibleSelection)
-            {
-                canvas._contextMenu = new ContextMenuState(containerX, containerY);
-            }
+            var set =
+                pressHitEntity && canvas.HasSelection
+                    ? ContextMenuSet.Object
+                    : ContextMenuSet.Canvas;
+            canvas._contextMenu = new ContextMenuState(containerX, containerY, set);
         }
     }
 
@@ -1070,10 +1072,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Escape takes one stage per press, newest first, so one Escape never throws away more than
     // it meant to: cancel the pointer gesture that owns the press (a second Escape mid-press does
     // nothing, because the cancelled gesture still owns the pointer until its button comes up),
-    // then end a half-built keyboard connection, whether still mid-pick or with an armed source
-    // waiting for a target, then end additive traversal, keeping the selection, then step out of
-    // the entered group, selecting the group just left and handing focus to its stop when the
-    // keyboard was inside it, and last clear the selection.
+    // then close the context menu, then end a half-built keyboard connection, whether still
+    // mid-pick or with an armed source waiting for a target, then end additive traversal, keeping
+    // the selection, then step out of the entered group, selecting the group just left and
+    // handing focus to its stop when the keyboard was inside it, and last clear the selection.
     [JSInvokable]
     public void OnEscapePressed()
     {
@@ -1084,8 +1086,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        _contextMenu = null;
-        if (_portFocusInstanceId is not null || _pendingConnectorSource is not null)
+        if (_contextMenu is not null)
+        {
+            _contextMenu = null;
+        }
+        else if (_portFocusInstanceId is not null || _pendingConnectorSource is not null)
         {
             _portFocusInstanceId = null;
             _pendingConnectorSource = null;
@@ -1556,11 +1561,20 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Right-click on a selection opens the menu; right-click on empty canvas
-    // (nothing selected) is a no-op here, leaving the @oncontextmenu:preventDefault binding false
-    // for that render so the browser's own default menu shows instead.
-    private bool HasContextMenuEligibleSelection =>
-        _selectedInstanceIds.Count > 0 || SelectedEdges.Count > 0;
+    private bool HasSelection => _selectedInstanceIds.Count > 0 || SelectedEdges.Count > 0;
+
+    private ContextMenuContext ContextMenuContextFor(ContextMenuSet set) =>
+        new(
+            set,
+            CanGroup: CanGroupSelection,
+            CanUngroup: CanUngroupSelection,
+            CanArrange: CanArrangeSelection,
+            CanSelectAll: Board is not null && (Board.Components.Any() || Board.Edges.Any()),
+            SnapToGrid: SnapToGrid,
+            SnapToGridChordLive: EnableSnapToGridShortcut,
+            ObjectSnapping: ObjectSnapping,
+            ApplePlatform: _applePlatform
+        );
 
     // Same eligibility OnGroupPressed itself already guards on (2+ sibling entries) - kept as its
     // own property so the menu's own "should Group show" question reads independently of invoking it.
@@ -1586,12 +1600,25 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Shared by every menu item's own click callback (see the markup) - closes the menu first so a
-    // command that itself calls StateHasChanged (every OnXPressed does) never re-renders with a
-    // stale menu still open.
-    private void InvokeFromContextMenu(Action action)
+    // Closes the menu first so a command that itself calls StateHasChanged (every OnXPressed
+    // does) never re-renders with a stale menu still open.
+    private void InvokeFromContextMenu(ContextMenuCommand command)
     {
         _contextMenu = null;
+        Action action = command switch
+        {
+            ContextMenuCommand.Delete => OnDeletePressed,
+            ContextMenuCommand.Group => OnGroupPressed,
+            ContextMenuCommand.Ungroup => OnUngroupPressed,
+            ContextMenuCommand.BringToFront => OnBringToFrontPressed,
+            ContextMenuCommand.BringForward => OnBringForwardPressed,
+            ContextMenuCommand.SendBackward => OnSendBackwardPressed,
+            ContextMenuCommand.SendToBack => OnSendToBackPressed,
+            ContextMenuCommand.SelectAll => OnSelectAllPressed,
+            ContextMenuCommand.ToggleSnapToGrid => OnToggleSnapToGridPressed,
+            ContextMenuCommand.ToggleObjectSnapping => OnToggleObjectSnappingPressed,
+            _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
+        };
         action();
     }
 

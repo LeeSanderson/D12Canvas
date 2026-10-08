@@ -3,17 +3,15 @@ using Bunit;
 using D12Canvas.Model;
 using D12Canvas.Pointer;
 using D12Canvas.Registration;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A secondary release from pointing opens a menu offering the same action set as the baseline
-// shortcut table (Delete; Group/Ungroup as applicable; the four layering commands), each wired to
-// invoke the exact same OnXPressed method its shortcut does. The release first resolves the
-// selection: a press inside it preserves it, a press on something else selects that, and a press
-// on empty canvas clears it and so opens no menu.
+// A secondary release from pointing opens the menu, each row wired to the exact same OnXPressed
+// method its chord runs. The release first resolves the selection: a press inside it preserves it,
+// a press on something else selects that, and a press on empty canvas clears it and opens the
+// canvas menu instead of the object menu.
 public class DiagramCanvasContextMenuTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -21,11 +19,6 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     public DiagramCanvasContextMenuTests()
     {
         SetupDiagramCanvasJsModule();
-        var contextMenuModule = JSInterop.SetupModule(
-            "./_content/D12Canvas/SelectionContextMenu.razor.js"
-        );
-        contextMenuModule.SetupVoid("registerClickOutside", _ => true).SetVoidResult();
-        contextMenuModule.SetupVoid("unregisterClickOutside").SetVoidResult();
 
         var registry = new ComponentRegistry();
         registry.Register(
@@ -56,6 +49,14 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         board.AddComponent(instance);
         return instance;
     }
+
+    private static string[] Labels(IRenderedComponent<DiagramCanvas> canvas) =>
+        canvas.FindAll(".d12-context-menu-label").Select(label => label.TextContent).ToArray();
+
+    private static IElement Row(IRenderedComponent<DiagramCanvas> canvas, string label) =>
+        canvas
+            .FindAll(".d12-context-menu-item")
+            .Single(item => item.QuerySelector(".d12-context-menu-label")!.TextContent == label);
 
     private static void SelectBoth(IRenderedComponent<DiagramCanvas> canvas)
     {
@@ -145,7 +146,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     }
 
     [Fact]
-    public async Task RightClickOnEmptyCanvasClearsTheSelectionAndOpensNoMenu()
+    public async Task RightClickOnEmptyCanvasClearsTheSelectionAndOpensTheCanvasMenu()
     {
         var board = new Board();
         AddInstance(board, 0);
@@ -155,7 +156,8 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
 
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
-        Assert.Empty(canvas.FindAll(".d12-context-menu"));
+        Assert.Equal(["Select All", "Snap to Grid", "Object Snapping"], Labels(canvas));
+        Assert.Equal("Canvas actions", canvas.Find(".d12-context-menu").GetAttribute("aria-label"));
     }
 
     [Fact]
@@ -194,10 +196,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
 
         await RightClick(canvas, instance);
 
-        var labels = canvas
-            .FindAll(".d12-context-menu-item")
-            .Select(item => item.TextContent)
-            .ToArray();
+        var labels = Labels(canvas);
         Assert.Contains("Delete", labels);
         Assert.Contains("Bring to Front", labels);
         Assert.DoesNotContain("Group", labels);
@@ -215,10 +214,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
 
         await RightClick(canvas, first);
 
-        Assert.Contains(
-            "Group",
-            canvas.FindAll(".d12-context-menu-item").Select(item => item.TextContent)
-        );
+        Assert.Contains("Group", Labels(canvas));
     }
 
     [Fact]
@@ -233,10 +229,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
 
         await RightClick(canvas, first);
 
-        var labels = canvas
-            .FindAll(".d12-context-menu-item")
-            .Select(item => item.TextContent)
-            .ToArray();
+        var labels = Labels(canvas);
         Assert.Contains("Ungroup", labels);
         Assert.DoesNotContain("Group", labels);
     }
@@ -250,7 +243,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         canvas.ClickOn(canvas.Find(".component-container"));
         await RightClick(canvas, instance);
 
-        canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Delete").Click();
+        Row(canvas, "Delete").Click();
 
         Assert.Null(board.GetComponent(instance.Id));
         Assert.Empty(canvas.FindAll(".d12-context-menu"));
@@ -264,7 +257,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.ClickOn(canvas.Find(".component-container"));
         await RightClick(canvas, instance);
-        canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Delete").Click();
+        Row(canvas, "Delete").Click();
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -281,7 +274,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         SelectBoth(canvas);
         await RightClick(canvas, first);
 
-        canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Group").Click();
+        Row(canvas, "Group").Click();
 
         Assert.Single(board.Groups);
         Assert.Empty(canvas.FindAll(".d12-context-menu"));
@@ -298,7 +291,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         await RightClick(canvas, first);
 
-        canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Ungroup").Click();
+        Row(canvas, "Ungroup").Click();
 
         Assert.Empty(board.Groups);
         Assert.Empty(canvas.FindAll(".d12-context-menu"));
@@ -322,7 +315,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         canvas.ClickOn(canvas.Find(".component-container"));
         await RightClick(canvas, target);
 
-        canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == label).Click();
+        Row(canvas, label).Click();
 
         Assert.NotEqual(5, target.ZIndex);
         Assert.Empty(canvas.FindAll(".d12-context-menu"));
@@ -337,10 +330,141 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         canvas.ClickOn(canvas.Find(".component-container"));
         await RightClick(canvas, instance);
 
-        canvas.Find(".d12-context-menu").KeyDown(new KeyboardEventArgs { Key = "Escape" });
+        var menu = canvas.FindComponent<ContextMenu>();
+        await menu.InvokeAsync(() => menu.Instance.RequestClose());
 
         Assert.Empty(canvas.FindAll(".d12-context-menu"));
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
+    }
+
+    [Fact]
+    public async Task EscapeReachingTheCanvasWithTheMenuOpenOnlyClosesTheMenu()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ClickOn(canvas.Find(".component-container"));
+        await RightClick(canvas, instance);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
+
+        Assert.Empty(canvas.FindAll(".d12-context-menu"));
+        Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
+
+        Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
+    }
+
+    [Fact]
+    public async Task SelectAllFromTheCanvasMenuSelectsEveryEntity()
+    {
+        var board = new Board();
+        AddInstance(board, 0);
+        AddInstance(board, 100);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
+
+        Row(canvas, "Select All").Click();
+
+        Assert.All(
+            canvas.FindAll(".component-container"),
+            container => Assert.Equal("true", container.GetAttribute("aria-selected"))
+        );
+        Assert.Empty(canvas.FindAll(".d12-context-menu"));
+    }
+
+    [Fact]
+    public async Task OnAnEmptyBoardTheCanvasMenuLeavesSelectAllOut()
+    {
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, new Board()));
+
+        await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
+
+        Assert.Equal(["Snap to Grid", "Object Snapping"], Labels(canvas));
+    }
+
+    [Fact]
+    public async Task SnapToGridFromTheCanvasMenuTogglesItAndNotifiesTheHost()
+    {
+        var notified = new List<bool>();
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters
+                .Add(p => p.Board, new Board())
+                .Add(p => p.SnapToGridChanged, value => notified.Add(value))
+        );
+        await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
+        Assert.Equal("true", Row(canvas, "Snap to Grid").GetAttribute("aria-checked"));
+
+        Row(canvas, "Snap to Grid").Click();
+
+        Assert.False(canvas.Instance.SnapToGrid);
+        Assert.Equal([false], notified);
+        Assert.Empty(canvas.FindAll(".d12-context-menu"));
+
+        await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
+        Assert.Equal("false", Row(canvas, "Snap to Grid").GetAttribute("aria-checked"));
+    }
+
+    [Fact]
+    public async Task ObjectSnappingFromTheCanvasMenuTogglesItAndNotifiesTheHost()
+    {
+        var notified = new List<bool>();
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters
+                .Add(p => p.Board, new Board())
+                .Add(p => p.ObjectSnappingChanged, value => notified.Add(value))
+        );
+        await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
+        Assert.Equal("false", Row(canvas, "Object Snapping").GetAttribute("aria-checked"));
+
+        Row(canvas, "Object Snapping").Click();
+
+        Assert.True(canvas.Instance.ObjectSnapping);
+        Assert.Equal([true], notified);
+    }
+
+    [Fact]
+    public async Task TheSnapRowWorksButShowsNoHintWhileTheHostHasDisabledItsChord()
+    {
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, new Board()).Add(p => p.EnableSnapToGridShortcut, false)
+        );
+        await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
+
+        Assert.Null(Row(canvas, "Snap to Grid").QuerySelector(".d12-context-menu-hint"));
+        Row(canvas, "Snap to Grid").Click();
+
+        Assert.False(canvas.Instance.SnapToGrid);
+    }
+
+    [Fact]
+    public async Task HintsFollowThePlatformTheBrowserReportedAtInit()
+    {
+        ReportPlatform(applePlatform: true);
+        var board = new Board();
+        var instance = AddInstance(board, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ClickOn(canvas.Find(".component-container"));
+
+        await RightClick(canvas, instance);
+
+        Assert.Equal(
+            "⇧⌘]",
+            Row(canvas, "Bring to Front").QuerySelector(".d12-context-menu-hint")!.TextContent
+        );
+    }
+
+    [Fact]
+    public async Task AMenuOpenedNearTheBottomRightCornerOpensUpAndLeftInsideTheContainer()
+    {
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, new Board()));
+
+        await canvas.ClickCanvas(790, 590, PointerPress.SecondaryButton);
+
+        var style = canvas.Find(".d12-context-menu").GetAttribute("style")!;
+        Assert.Contains($"left: {790 - ContextMenuPlacement.Width}px", style);
+        Assert.DoesNotContain("top: 590px", style);
     }
 
     [Fact]
@@ -359,7 +483,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         await RightClickEdge(canvas, edge);
         Assert.Equal("true", canvas.Find(".edge-line").GetAttribute("aria-selected"));
 
-        canvas.FindAll(".d12-context-menu-item").Single(i => i.TextContent == "Delete").Click();
+        Row(canvas, "Delete").Click();
 
         Assert.Null(board.GetEdge(edge.Id));
     }
@@ -379,10 +503,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
 
         await RightClickEdge(canvas, edge);
 
-        Assert.Equal(
-            ["Delete"],
-            canvas.FindAll(".d12-context-menu-item").Select(item => item.TextContent)
-        );
+        Assert.Equal(["Delete"], Labels(canvas));
         Assert.Empty(canvas.FindAll(".d12-context-menu-separator"));
     }
 

@@ -3,20 +3,35 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-public class SelectionContextMenuThemeTokensTests : ComponentTestBase
+public class ContextMenuThemeTokensTests : ComponentTestBase
 {
-    public SelectionContextMenuThemeTokensTests()
+    public ContextMenuThemeTokensTests()
     {
-        var module = JSInterop.SetupModule("./_content/D12Canvas/SelectionContextMenu.razor.js");
-        module.SetupVoid("registerClickOutside", _ => true).SetVoidResult();
-        module.SetupVoid("unregisterClickOutside").SetVoidResult();
-        module.SetupVoid("focusAdjacentItem", _ => true).SetVoidResult();
+        JSInterop
+            .SetupModule("./_content/D12Canvas/ContextMenu.razor.js")
+            .SetupModule("registerMenu", _ => true)
+            .SetupVoid("dispose", _ => true)
+            .SetVoidResult();
+    }
+
+    private IRenderedComponent<ContextMenu> RenderMenu() =>
+        Render<ContextMenu>(parameters =>
+            parameters.Add(p => p.Context, new ContextMenuContext(ContextMenuSet.Object))
+        );
+
+    [Fact]
+    public void HintReadsTheMutedTextToken()
+    {
+        var css = StyleBlockText(RenderMenu());
+
+        var hint = ExtractBlock(css, ".d12-context-menu-hint {");
+        Assert.Contains("color: var(--d12-muted-text)", hint);
     }
 
     [Fact]
     public void TokenDefaultsAreDeclaredOnTheMenuOwnRootNotGlobalRoot()
     {
-        var menu = Render<SelectionContextMenu>();
+        var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
         var rootRule = ExtractBlock(css, ".d12-context-menu {");
@@ -31,7 +46,7 @@ public class SelectionContextMenuThemeTokensTests : ComponentTestBase
     [Fact]
     public void DarkColorSchemeMediaQueryRedeclaresEveryToken()
     {
-        var menu = Render<SelectionContextMenu>();
+        var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
         var darkMediaBlock = ExtractBlock(css, "@media (prefers-color-scheme: dark)");
@@ -46,7 +61,7 @@ public class SelectionContextMenuThemeTokensTests : ComponentTestBase
     [InlineData("dark")]
     public void DataThemeOverrideAppliesToTheMenuItselfAndAnyAncestor(string theme)
     {
-        var menu = Render<SelectionContextMenu>();
+        var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
         var overrideBlock = ExtractBlock(css, $"[data-d12-theme=\"{theme}\"] .d12-context-menu {{");
@@ -60,7 +75,7 @@ public class SelectionContextMenuThemeTokensTests : ComponentTestBase
     [Fact]
     public void MenuItemHoverReadsTokensExclusively()
     {
-        var menu = Render<SelectionContextMenu>();
+        var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
         var hover = ExtractBlock(css, ".d12-context-menu-item:hover {");
@@ -73,7 +88,7 @@ public class SelectionContextMenuThemeTokensTests : ComponentTestBase
     [Fact]
     public void SeparatorReadsTokensExclusively()
     {
-        var menu = Render<SelectionContextMenu>();
+        var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
         var separator = ExtractBlock(css, ".d12-context-menu-separator {");
@@ -89,7 +104,7 @@ public class SelectionContextMenuThemeTokensTests : ComponentTestBase
     [Fact]
     public void RootDeclaresATokenDrivenTextColorMenuItemsInherit()
     {
-        var menu = Render<SelectionContextMenu>();
+        var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
         var rootRule = ExtractBlock(css, ".d12-context-menu {");
@@ -99,7 +114,7 @@ public class SelectionContextMenuThemeTokensTests : ComponentTestBase
     [Fact]
     public void DropShadowReadsItsOwnEscapeHatchTokenExclusively()
     {
-        var menu = Render<SelectionContextMenu>();
+        var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
         var rootRule = ExtractBlock(css, ".d12-context-menu {");

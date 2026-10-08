@@ -62,6 +62,7 @@ public abstract class ComponentTestBase : BunitContext
     protected void SetupDiagramCanvasJsModule()
     {
         var module = JSInterop.SetupModule("./_content/D12Canvas/DiagramCanvas.razor.js");
+        _canvasModule = module;
         module
             .Setup<Dictionary<string, double>>("getContainerDimensions", _ => true)
             .SetResult(
@@ -73,6 +74,7 @@ public abstract class ComponentTestBase : BunitContext
                     ["top"] = 0,
                 }
             );
+        ReportPlatform(applePlatform: false);
         SetupDisposableCleanupHandle(module, "addResizeListener");
         SetupDisposableCleanupHandle(module, "addKeyboardListener");
         SetupDisposableCleanupHandle(module, "addWheelListener");
@@ -81,7 +83,19 @@ public abstract class ComponentTestBase : BunitContext
 
         module.SetupVoid("focusGroupTabStop", _ => true).SetVoidResult();
         module.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();
+
+        var menuModule = JSInterop.SetupModule("./_content/D12Canvas/ContextMenu.razor.js");
+        SetupDisposableCleanupHandle(menuModule, "registerMenu");
     }
+
+    // What the browser reports at init. The latest setup wins, so a test calls this again before
+    // rendering to stand on an Apple platform.
+    protected void ReportPlatform(bool applePlatform) =>
+        _canvasModule
+            .Setup<InitialFacts>("initialFacts", _ => true)
+            .SetResult(new InitialFacts(800, 600, applePlatform));
+
+    private BunitJSModuleInterop _canvasModule = null!;
 
     // The handle the pointer listener returns, for asserting what the canvas tells the listener.
     protected BunitJSModuleInterop PointerListener { get; private set; } = null!;

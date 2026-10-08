@@ -5,7 +5,7 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
+public sealed class ContextMenuVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
@@ -13,7 +13,7 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
 
     // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
     // class depends on the Demo app assembly fixture having finished starting up.
-    public SelectionContextMenuVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
+    public ContextMenuVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
     }
@@ -108,10 +108,12 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    [Fact]
-    public async Task RightClickOnEmptyCanvasOpensNoMenu()
+    // One instance is placed so the board has something to select, then the press lands on bare
+    // canvas well away from it, so the canvas set opens with Select All and both snap toggles.
+    private async Task OpenContextMenuOnEmptyCanvas()
     {
-        await NewPageAsync(ColorScheme.Light);
+        await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
+        await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
 
         await _page
             .Locator(".diagram-canvas")
@@ -119,10 +121,29 @@ public sealed class SelectionContextMenuVisualTests : IAsyncLifetime
                 new LocatorClickOptions
                 {
                     Button = MouseButton.Right,
-                    Position = new Position { X = 10, Y = 10 },
+                    Position = new Position { X = 40, Y = 40 },
                 }
             );
 
-        await Expect(_page.Locator(".d12-context-menu")).ToHaveCountAsync(0);
+        await Expect(_page.GetByRole(AriaRole.Menu, new() { Name = "Canvas actions" }))
+            .ToBeVisibleAsync();
+    }
+
+    [Fact]
+    public async Task RightClickOnEmptyCanvasOpensTheCanvasMenu_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Light);
+        await OpenContextMenuOnEmptyCanvas();
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task RightClickOnEmptyCanvasOpensTheCanvasMenu_DarkColorScheme_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+        await OpenContextMenuOnEmptyCanvas();
+
+        await ContentSnapshot.Verify(_page);
     }
 }

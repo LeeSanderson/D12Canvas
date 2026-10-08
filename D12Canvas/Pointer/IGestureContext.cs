@@ -104,5 +104,7 @@ internal interface IGestureContext
     // addressable, not mounted as its full component, or of a type that declines editing.
     void BeginInlineEdit(Guid instanceId);
 
-    void OpenContextMenuAt(double containerX, double containerY);
+    // The object menu when the press hit an entity and something is selected, the canvas menu
+    // otherwise.
+    void OpenContextMenuAt(double containerX, double containerY, bool pressHitEntity);
 }

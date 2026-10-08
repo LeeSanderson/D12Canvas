@@ -1,33 +1,32 @@
 @namespace D12Canvas
 
-<div class="d12-context-menu" role="menu" aria-label="Selection actions"
+<div class="d12-context-menu" role="menu" aria-label="@AriaLabel" tabindex="-1"
      style="@MenuStyle"
      @ref="_menuRef"
-     @onkeydown="HandleKeyDown" @onkeydown:stopPropagation
      @oncontextmenu:preventDefault>
-    <button type="button" class="d12-context-menu-item" role="menuitem" autofocus
-            @onclick="InvokeDelete">Delete</button>
-    @if (CanGroup)
+    @for (var sectionIndex = 0; sectionIndex < Sections.Count; sectionIndex++)
     {
-        <button type="button" class="d12-context-menu-item" role="menuitem"
-                @onclick="InvokeGroup">Group</button>
-    }
-    @if (CanUngroup)
-    {
-        <button type="button" class="d12-context-menu-item" role="menuitem"
-                @onclick="InvokeUngroup">Ungroup</button>
-    }
-    @if (CanArrange)
-    {
-        <div class="d12-context-menu-separator" role="separator"></div>
-        <button type="button" class="d12-context-menu-item" role="menuitem"
-                @onclick="InvokeBringToFront">Bring to Front</button>
-        <button type="button" class="d12-context-menu-item" role="menuitem"
-                @onclick="InvokeBringForward">Bring Forward</button>
-        <button type="button" class="d12-context-menu-item" role="menuitem"
-                @onclick="InvokeSendBackward">Send Backward</button>
-        <button type="button" class="d12-context-menu-item" role="menuitem"
-                @onclick="InvokeSendToBack">Send to Back</button>
+        @if (sectionIndex > 0)
+        {
+            <div class="d12-context-menu-separator" role="separator"></div>
+        }
+        @foreach (var row in Sections[sectionIndex])
+        {
+            <button type="button" class="d12-context-menu-item"
+                    role="@(row.Checked is null ? "menuitem" : "menuitemcheckbox")"
+                    aria-checked="@CheckedAttribute(row)"
+                    @onclick="() => OnInvoke.InvokeAsync(row.Command)">
+                @if (HasToggles)
+                {
+                    <span class="d12-context-menu-check" aria-hidden="true">@(row.Checked == true ? "✓" : "")</span>
+                }
+                <span class="d12-context-menu-label">@row.Label</span>
+                @if (row.Hint is not null)
+                {
+                    <span class="d12-context-menu-hint" aria-hidden="true">@row.Hint</span>
+                }
+            </button>
+        }
     }
 </div>
 
@@ -43,7 +42,7 @@
         z-index: 1000;
         display: flex;
         flex-direction: column;
-        min-width: 160px;
+        width: 224px;
         font-family:
             -apple-system,
             BlinkMacSystemFont,
@@ -86,10 +85,18 @@
         --d12-text: #e8e8e8;
     }
 
+    .d12-context-menu:focus {
+        outline: none;
+    }
+
     .d12-context-menu-item {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 6px;
         width: 100%;
-        padding: 6px 10px;
+        height: 28px;
+        box-sizing: border-box;
+        padding: 0 10px;
         border: 1px solid transparent;
         border-radius: 4px;
         background: transparent;
@@ -100,12 +107,29 @@
         color: inherit;
     }
 
+    .d12-context-menu-check {
+        flex: 0 0 12px;
+    }
+
+    .d12-context-menu-label {
+        flex: 1 1 auto;
+        white-space: nowrap;
+    }
+
+    .d12-context-menu-hint {
+        flex: 0 0 auto;
+        margin-left: 16px;
+        white-space: nowrap;
+        color: var(--d12-muted-text);
+    }
+
     .d12-context-menu-item:hover {
         background: color-mix(in srgb, var(--d12-border) 25%, var(--d12-surface));
         border-color: var(--d12-border);
     }
 
     .d12-context-menu-separator {
+        flex: 0 0 1px;
         height: 1px;
         margin: 4px 6px;
         background: var(--d12-border);
