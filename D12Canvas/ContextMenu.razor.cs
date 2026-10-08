@@ -27,6 +27,11 @@ public partial class ContextMenu : IAsyncDisposable
     [Parameter]
     public double ContainerHeight { get; set; }
 
+    // A keyboard-opened menu focuses its first row, and on closing hands focus back to whatever held
+    // it when the menu opened. A pointer-opened menu focuses itself and hands nothing back.
+    [Parameter]
+    public bool OpenedFromKeyboard { get; set; }
+
     [Parameter]
     public EventCallback<ContextMenuCommand> OnInvoke { get; set; }
 
@@ -76,7 +81,8 @@ public partial class ContextMenu : IAsyncDisposable
             _registration = await _jsModule.InvokeAsync<IJSObjectReference>(
                 "registerMenu",
                 _menuRef,
-                _dotNetRef
+                _dotNetRef,
+                new { openedFromKeyboard = OpenedFromKeyboard }
             );
         }
     }

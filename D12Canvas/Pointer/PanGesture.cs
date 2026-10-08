@@ -1,8 +1,9 @@
 namespace D12Canvas.Pointer;
 
-// The secondary and middle buttons pan whatever they land on. The pan holds the board point that
-// was under the press under the pointer, so a dropped frame costs nothing and a wheel zoom about
-// the pointer composes with it untouched. Any other viewport change re-anchors to the board point
+// The secondary and middle buttons pan whatever they land on, bar a secondary press whose Menu
+// verdict went to the browser. The pan holds the board point that was under the press under the
+// pointer, so a dropped frame costs nothing and a wheel zoom about the pointer composes with it
+// untouched. Any other viewport change re-anchors to the board point
 // now under the pointer, so the viewport's movement and the hand's add up. A secondary release that
 // never crossed the threshold is the context menu: it resolves the selection at that moment, so a
 // right-drag pan never wipes the selection or leaves the entered group as a side effect, and opens

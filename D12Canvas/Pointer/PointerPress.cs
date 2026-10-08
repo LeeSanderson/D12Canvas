@@ -5,7 +5,8 @@ namespace D12Canvas.Pointer;
 // converted once by the listener so no interop round trip stands between a press and its owner.
 // Public only because Blazor requires the interop entry points and their parameters to be. Hits is
 // what lies under the press point, topmost first, read only for a press on the selection box or
-// a primary press with Alt held, whose click selects from it.
+// a primary press with Alt held, whose click selects from it. MenuVerdict is the Menu verdict the
+// listener took for a secondary press, browser or canvas, and null for any other button.
 public sealed record PointerPress(
     int PointerId,
     int Button,
@@ -21,9 +22,13 @@ public sealed record PointerPress(
     bool CtrlKey,
     bool AltKey,
     bool MetaKey,
-    IReadOnlyList<PointerHit>? Hits = null
+    IReadOnlyList<PointerHit>? Hits = null,
+    string? MenuVerdict = null
 )
 {
+    public const string BrowserMenuVerdict = "browser";
+    public const string CanvasMenuVerdict = "canvas";
+
     public const int PrimaryButton = 0;
     public const int MiddleButton = 1;
     public const int SecondaryButton = 2;

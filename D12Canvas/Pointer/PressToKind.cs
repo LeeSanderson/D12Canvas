@@ -1,14 +1,18 @@
 namespace D12Canvas.Pointer;
 
-// The press-to-kind table. The secondary and middle buttons ignore the role, so a later role can
-// never change what the pan buttons do; the primary button is the only one that reads it.
+// The press-to-kind table. The middle button ignores the role, so a later role can never change
+// what it does. The secondary button ignores it too and reads only the Menu verdict, which the
+// listener took from the role and the content under the press: a press the browser kept for its
+// own menu is the browser's, as a primary press on author content is, and any other pans.
 internal static class PressToKind
 {
     public static GestureKind? Resolve(PointerPress press) =>
         press.Button switch
         {
             PointerPress.MiddleButton => GestureKind.Pan,
-            PointerPress.SecondaryButton => GestureKind.Pan,
+            PointerPress.SecondaryButton => press.MenuVerdict == PointerPress.BrowserMenuVerdict
+                ? GestureKind.Native
+                : GestureKind.Pan,
             PointerPress.PrimaryButton => press.Role switch
             {
                 HitRole.Canvas => GestureKind.MarqueeSelect,

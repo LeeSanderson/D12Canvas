@@ -156,7 +156,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     // The open context menu, if any - null means none is open. Its anchor point is plain
     // container-relative pixels (not board space), since the menu is canvas chrome (CONTEXT.md)
     // that must not pan/zoom with the board content.
-    private sealed record ContextMenuState(double X, double Y, ContextMenuSet Set);
+    private sealed record ContextMenuState(
+        double X,
+        double Y,
+        ContextMenuSet Set,
+        bool OpenedFromKeyboard = false
+    );
 
     // Read once when the listeners start, for the pointer path's Ctrl+click and for shortcut hints.
     private bool _applePlatform;
@@ -1593,6 +1598,60 @@ public partial class DiagramCanvas : IAsyncDisposable
         _selectedInstanceIds.Any(id => Board?.GetGroup(id) is not null);
 
     private bool CanArrangeSelection => _selectedInstanceIds.Count > 0;
+
+    // Shift+F10 or the ContextMenu key, once the listener's Menu verdict gave the request to the
+    // canvas. The keyboard has no press target, so the selection decides the set, and the menu
+    // draws at the bottom-left of the selection's on-screen box, or at the viewport centre for the
+    // canvas set.
+    [JSInvokable]
+    public void OnContextMenuKeyPressed()
+    {
+        if (Board is null || PressOwnsBoard || _portFocusInstanceId is not null)
+        {
+            return;
+        }
+
+        var (x, y) = KeyboardMenuAnchor();
+        _contextMenu = new ContextMenuState(
+            x,
+            y,
+            HasSelection ? ContextMenuSet.Object : ContextMenuSet.Canvas,
+            OpenedFromKeyboard: true
+        );
+        StateHasChanged();
+    }
+
+    private (double X, double Y) KeyboardMenuAnchor()
+    {
+        var width = _zoomPanTracker.ContainerWidth;
+        var height = _zoomPanTracker.ContainerHeight;
+        var selection = Bounds.Union(
+            new[] { SelectedInstancesBounds() }
+                .Concat(SelectedEdges.Select(EdgeBox))
+                .Where(box => box is not null)
+                .Select(box => box!.Value)
+        );
+        if (selection is not { } box)
+        {
+            return (width / 2, height / 2);
+        }
+
+        var scale = _zoomPanTracker.Scale;
+        return (
+            Math.Clamp(box.X * scale + _zoomPanTracker.PanX, 0, width),
+            Math.Clamp((box.Y + box.Height) * scale + _zoomPanTracker.PanY, 0, height)
+        );
+    }
+
+    private Bounds? EdgeBox(Edge edge) =>
+        EdgeLine(edge) is { } line
+            ? new Bounds(
+                Math.Min(line.From.X, line.To.X),
+                Math.Min(line.From.Y, line.To.Y),
+                Math.Abs(line.To.X - line.From.X),
+                Math.Abs(line.To.Y - line.From.Y)
+            )
+            : null;
 
     private void CloseContextMenu()
     {

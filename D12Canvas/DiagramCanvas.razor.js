@@ -175,23 +175,97 @@ function hasLiveTextSelectionInside(element) {
     );
 }
 
-// Who owns a secondary press on author content: the browser keeps its own menu over an editable
-// target, a live text selection, a link or a media element; everything else is the canvas's.
+const MENU_VERDICTS = new Set(["browser", "canvas"]);
+
+// The entity whose own content the target sits in, when that entity can be addressed: author
+// content, or anything inside an addressable instance's content box. A press that only reaches an
+// instance for the primary button, such as an img an author marked for the browser's menu, is
+// still content for the secondary one. Null for the canvas's own parts and for a member of a group
+// that is not entered.
+function contentEntityOf(target, hit) {
+    const entity = target.closest("[data-d12-role]");
+    if (entity === null || entity === target) {
+        return null;
+    }
+
+    if (hit.role === "author-content") {
+        return entity;
+    }
+
+    const content = target.closest(".container-content");
+    return hit.role === "instance" &&
+        !entity.hasAttribute("data-d12-unaddressable") &&
+        content !== null &&
+        entity.contains(content)
+        ? entity
+        : null;
+}
+
+// Who owns a menu request on an entity's content, the browser or the canvas. The first rule that
+// matches wins. Content the press cannot address is the canvas's. An editable target or a live
+// text selection is the browser's, whatever any author says. Then the nearest author marker inside
+// the entity decides. Then links and media are the browser's, since their menus hold items found
+// nowhere else. Everything else, including a bare img, is the canvas's.
 function menuVerdict(target, hit) {
-    if (hit.role !== "author-content") {
+    const entity = contentEntityOf(target, hit);
+    if (entity === null) {
         return "canvas";
     }
 
-    const instance = target.closest('[data-d12-role="instance"]') ?? target;
-    if (isEditableTarget(target) || hasLiveTextSelectionInside(instance)) {
+    if (isEditableTarget(target) || hasLiveTextSelectionInside(entity)) {
         return "browser";
     }
 
-    if (target.closest("a[href], video, audio")) {
+    for (let element = target; element && element !== entity; element = element.parentElement) {
+        const marker = element.getAttribute("data-d12-context-menu");
+        if (MENU_VERDICTS.has(marker)) {
+            return marker;
+        }
+    }
+
+    const inferred = target.closest("a[href], video, audio");
+    if (inferred !== null && entity.contains(inferred)) {
         return "browser";
     }
 
     return "canvas";
+}
+
+// A menu key classifies whatever holds focus. Inside an entity's content that is the five rules;
+// on anything else in the container, a tab stop, a menu row or the canvas itself, only an editable
+// target or a live text selection keeps the browser's menu.
+function keyboardMenuVerdict(target, container) {
+    if (!(target instanceof Element)) {
+        return "canvas";
+    }
+
+    const hit = classify(target, container);
+    if (contentEntityOf(target, hit) !== null) {
+        return menuVerdict(target, hit);
+    }
+
+    return isEditableTarget(target) || hasLiveTextSelectionInside(container) ? "browser" : "canvas";
+}
+
+// One stored Menu verdict per canvas, shared by the pointer and keyboard paths: a secondary press
+// or a menu keydown writes it, and the first contextmenu after it uses it up.
+const menuVerdictSlots = new WeakMap();
+
+function menuVerdictSlotOf(container) {
+    let slot = menuVerdictSlots.get(container);
+    if (slot === undefined) {
+        slot = { verdict: null };
+        menuVerdictSlots.set(container, slot);
+    }
+
+    return slot;
+}
+
+function isMenuKey(event) {
+    return (
+        event.code === "ContextMenu" ||
+        (event.code === "F10" && event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey)
+    );
 }
 
 // With Alt held, a primary press on author content reaches through to the instance unless the
@@ -247,7 +321,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
     const applePlatform = isApplePlatform();
     let press = null;
     let lastPress = null;
-    let storedMenuVerdict = null;
+    const menuVerdictSlot = menuVerdictSlotOf(container);
 
     const containerPoint = (event) => {
         const rect = container.getBoundingClientRect();
@@ -320,9 +394,10 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         return velocity;
     };
 
-    const pressFor = (event, button, hit) => {
+    const pressFor = (event, button, hit, menuVerdict = null) => {
         const point = containerPoint(event);
         return {
+            menuVerdict,
             pointerId: event.pointerId,
             button,
             buttons: event.buttons,
@@ -365,11 +440,16 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         return ended;
     };
 
+    // Every press anywhere on the page clears the stored verdict before anything else sees it,
+    // including one the open menu consumes and one on the host's own markup, so a verdict nothing
+    // used up cannot decide a later contextmenu. A secondary press on the canvas writes its own
+    // straight after.
+    const clearMenuVerdict = () => {
+        menuVerdictSlot.verdict = null;
+    };
+
     const handlePointerDown = (event) => {
         const button = buttonOf(event);
-        if (button !== SECONDARY_BUTTON) {
-            storedMenuVerdict = null;
-        }
 
         // A second button or another pointer while a press is live is dropped, and the live
         // gesture keeps running.
@@ -400,20 +480,25 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             return;
         }
 
+        // A secondary press is the browser's or the canvas's by its Menu verdict, taken here and
+        // kept for the contextmenu this press fires, since on Windows that fires after pointerup
+        // at whatever sits under the release point. The browser's press is handled as a primary
+        // press on author content is: no capture, nothing prevented, and C# hears only the press.
+        let verdict = null;
         if (button === SECONDARY_BUTTON) {
-            const verdict = menuVerdict(event.target, hit);
+            verdict = menuVerdict(event.target, hit);
+            menuVerdictSlot.verdict = verdict;
             if (verdict === "browser") {
+                dotnetRef.invokeMethodAsync("OnPointerPressed", pressFor(event, button, hit, verdict));
                 return;
             }
-
-            storedMenuVerdict = { pointerId: event.pointerId, verdict };
         }
 
         event.preventDefault();
         canvas.setPointerCapture(event.pointerId);
         canvas.focus({ preventScroll: true });
 
-        const pressed = pressFor(event, button, hit);
+        const pressed = pressFor(event, button, hit, verdict);
         press = {
             pointerId: event.pointerId,
             button,
@@ -544,12 +629,20 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         }
     };
 
-    // The verdict was taken at the press, because on Windows contextmenu fires after pointerup at
-    // whatever sits under the release point. The first contextmenu after the press uses it up.
+    // The first contextmenu after a secondary press or a menu keydown uses up the verdict that
+    // request stored and classifies nothing itself: after a menu key its target may already be a
+    // row of the menu the key opened, or the page body when nothing held focus. It listens on the
+    // window for that reason. One with nothing in front of it only answers for the container, and
+    // classifies its own target as a menu key would.
     const handleContextMenu = (event) => {
-        const verdict = storedMenuVerdict;
-        storedMenuVerdict = null;
-        if (verdict !== null && verdict.verdict === "canvas") {
+        const stored = menuVerdictSlot.verdict;
+        menuVerdictSlot.verdict = null;
+        const verdict =
+            stored ??
+            (container.contains(event.target)
+                ? keyboardMenuVerdict(event.target, container)
+                : "browser");
+        if (verdict === "canvas") {
             event.preventDefault();
         }
     };
@@ -559,7 +652,8 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
     canvas.addEventListener("pointerup", handlePointerUp);
     canvas.addEventListener("pointercancel", handlePointerCancel);
     canvas.addEventListener("lostpointercapture", handleLostPointerCapture);
-    canvas.addEventListener("contextmenu", handleContextMenu);
+    window.addEventListener("pointerdown", clearMenuVerdict, true);
+    window.addEventListener("contextmenu", handleContextMenu, true);
     window.addEventListener("blur", handleWindowBlur);
     window.addEventListener("keydown", handleModifierKey, true);
     window.addEventListener("keyup", handleModifierKey, true);
@@ -579,7 +673,8 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             canvas.removeEventListener("pointerup", handlePointerUp);
             canvas.removeEventListener("pointercancel", handlePointerCancel);
             canvas.removeEventListener("lostpointercapture", handleLostPointerCapture);
-            canvas.removeEventListener("contextmenu", handleContextMenu);
+            window.removeEventListener("pointerdown", clearMenuVerdict, true);
+            window.removeEventListener("contextmenu", handleContextMenu, true);
             window.removeEventListener("blur", handleWindowBlur);
             window.removeEventListener("keydown", handleModifierKey, true);
             window.removeEventListener("keyup", handleModifierKey, true);
@@ -738,8 +833,41 @@ function keyReachesCanvas(container) {
 }
 
 export async function addKeyboardListener(element, dotnetRef) {
+    const menuVerdictSlot = menuVerdictSlotOf(element);
+
+    // Runs in the capture phase on window, ahead of any author's or built-in's stopPropagation, so
+    // a menu key pressed in an editor that swallows its keys still records the browser's verdict.
+    // Every other key clears the slot, so a verdict nothing used up cannot strand a later request.
+    // A repeat does neither, so a held key keeps the verdict its keyup contextmenu will use.
+    const recordMenuVerdict = (event) => {
+        if (event.repeat) {
+            return;
+        }
+
+        menuVerdictSlot.verdict =
+            isMenuKey(event) && keyReachesCanvas(element)
+                ? keyboardMenuVerdict(event.target, element)
+                : null;
+    };
+
     const handleKeyDown = (event) => {
         if (!keyReachesCanvas(element)) {
+            return;
+        }
+
+        // The menu keys act on keydown, the ContextMenu key included, and only on the canvas's
+        // verdict; the browser's verdict leaves the key alone so its own menu follows. The verdict
+        // does the typing guard's job for this row. A held key opens one menu, and its repeats
+        // are prevented wherever the canvas would own them, so none of them shows the browser's.
+        if (isMenuKey(event)) {
+            if (event.repeat) {
+                if (keyboardMenuVerdict(event.target, element) === "canvas") {
+                    event.preventDefault();
+                }
+            } else if (menuVerdictSlot.verdict === "canvas") {
+                event.preventDefault();
+                dotnetRef.invokeMethodAsync("OnContextMenuKeyPressed");
+            }
             return;
         }
 
@@ -747,6 +875,7 @@ export async function addKeyboardListener(element, dotnetRef) {
         // dotnetRef method - never unconditionally after the switch. Tab (native browser focus
         // navigation) and every other unhandled key must reach the browser's own default
         // handling.
+
         switch (event.code) {
             case "PageUp":
                 if (!isEditableTarget(event.target)) {
@@ -910,6 +1039,7 @@ export async function addKeyboardListener(element, dotnetRef) {
         }, 0);
     };
 
+    window.addEventListener('keydown', recordMenuVerdict, true);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     element.addEventListener('focusout', handleFocusOut);
@@ -917,6 +1047,7 @@ export async function addKeyboardListener(element, dotnetRef) {
     // See addResizeListener above - a disposable handle object, not a bare function.
     return {
         dispose: () => {
+            window.removeEventListener('keydown', recordMenuVerdict, true);
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
             element.removeEventListener('focusout', handleFocusOut);

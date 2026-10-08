@@ -18,12 +18,22 @@ internal static class CanvasPointer
         bool shift = false,
         string role = HitRole.Canvas,
         Guid? entityId = null,
-        string? part = null
+        string? part = null,
+        string? menuVerdict = null
     ) =>
         canvas.InvokeAsync(
             () =>
                 canvas.Instance.OnPointerPressed(
-                    PointerEvents.Press(role, button, x, y, entityId, shift, part: part)
+                    PointerEvents.Press(
+                        role,
+                        button,
+                        x,
+                        y,
+                        entityId,
+                        shift,
+                        part: part,
+                        menuVerdict: menuVerdict
+                    )
                 )
         );
 

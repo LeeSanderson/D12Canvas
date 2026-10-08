@@ -16,7 +16,8 @@ internal static class PointerEvents
         Guid? entityId = null,
         bool shift = false,
         int pressCount = 1,
-        string? part = null
+        string? part = null,
+        string? menuVerdict = null
     ) =>
         new(
             PointerId,
@@ -32,7 +33,8 @@ internal static class PointerEvents
             shift,
             CtrlKey: false,
             AltKey: false,
-            MetaKey: false
+            MetaKey: false,
+            MenuVerdict: menuVerdict
         );
 
     public static PointerMove Move(

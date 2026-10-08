@@ -2,13 +2,17 @@
 // that press does nothing else: it is stopped in the capture phase on document, before the canvas
 // listener sees it, and the click or contextmenu it would go on to fire is swallowed too. A press
 // on the host's own markup outside the container is left alone, so the host's button still acts.
-export function registerMenu(menuElement, dotNetHelper) {
+// A menu opened from the keyboard starts on its first row and, once it closes, hands focus back to
+// the element that held it at the keydown.
+export function registerMenu(menuElement, dotNetHelper, options) {
     // The menu can close before its first render's registration runs, leaving no element.
     if (!menuElement?.isConnected) {
         return { dispose: () => {} };
     }
 
     const container = menuElement.closest(".diagram-container");
+    const openedFromKeyboard = options?.openedFromKeyboard === true;
+    const focusedAtOpen = document.activeElement;
 
     const handlePointerDown = (event) => {
         if (menuElement.contains(event.target)) {
@@ -48,16 +52,43 @@ export function registerMenu(menuElement, dotNetHelper) {
 
     document.addEventListener("pointerdown", handlePointerDown, true);
     menuElement.addEventListener("keydown", handleKeyDown);
-    // The menu itself takes focus, so no row looks chosen before a key is pressed; the first arrow
-    // lands on the first or last row.
-    menuElement.focus({ preventScroll: true });
+    // From a pointer the menu itself takes focus, so no row looks chosen before a key is pressed;
+    // the first arrow lands on the first or last row.
+    const firstItem = menuElement.querySelector(".d12-context-menu-item");
+    if (openedFromKeyboard && firstItem !== null) {
+        firstItem.focus({ preventScroll: true });
+    } else {
+        menuElement.focus({ preventScroll: true });
+    }
 
     return {
         dispose: () => {
             document.removeEventListener("pointerdown", handlePointerDown, true);
             menuElement.removeEventListener("keydown", handleKeyDown);
+            if (openedFromKeyboard) {
+                returnFocus(menuElement, container, focusedAtOpen);
+            }
         }
     };
+}
+
+// Only focus the menu took with it goes back: a press that moved focus elsewhere keeps it there. A
+// row whose command removed the element that held focus, such as Delete, leaves it on the canvas.
+function returnFocus(menuElement, container, focusedAtOpen) {
+    const active = document.activeElement;
+    const focusWasLost =
+        active === null ||
+        active === document.body ||
+        active === document.documentElement ||
+        menuElement.contains(active);
+    if (!focusWasLost || focusedAtOpen === null || focusedAtOpen === document.body) {
+        return;
+    }
+
+    const target = focusedAtOpen.isConnected
+        ? focusedAtOpen
+        : container?.querySelector(".diagram-canvas");
+    target?.focus({ preventScroll: true });
 }
 
 // A consumed press still fires its click, or on the secondary button its contextmenu, once it is

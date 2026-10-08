@@ -4,14 +4,14 @@
 
 **Blocked by:** 89 (Composed context menu with shortcut hints)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Right-click on a sticky note's text at rest opens the object menu; right-click inside its open editor opens the browser menu
-- [ ] Right-click on a link inside a component opens the browser menu; a component with the marker set to canvas gets the object menu over its whole body
-- [ ] Shift+F10 with a shape selected opens one menu at its box; the ContextMenu key does the same; closing returns focus to the shape's stop
-- [ ] Shift+F10 with nothing selected opens the canvas set at the viewport centre
-- [ ] Any non-menu key clears a stored verdict so a later request inside an editor that stops propagation is not stranded
-- [ ] A secondary press on `author-content` with a browser verdict is `Native`; with a canvas verdict it is `Pan`
-- [ ] Probes prove one menu per keypress for both keys in Chromium and that the verdict survives to the trailing `contextmenu`
-- [ ] bUnit covers the five rules as a table and the keyboard content split
-- [ ] `CONTEXT.md`'s `Menu verdict` term describes what shipped
+- [x] Right-click on a sticky note's text at rest opens the object menu; right-click inside its open editor opens the browser menu
+- [x] Right-click on a link inside a component opens the browser menu; a component with the marker set to canvas gets the object menu over its whole body
+- [x] Shift+F10 with a shape selected opens one menu at its box; the ContextMenu key does the same; closing returns focus to the shape's stop
+- [x] Shift+F10 with nothing selected opens the canvas set at the viewport centre
+- [x] Any non-menu key clears a stored verdict so a later request inside an editor that stops propagation is not stranded
+- [x] A secondary press on `author-content` with a browser verdict is `Native`; with a canvas verdict it is `Pan`
+- [x] Probes prove one menu per keypress for both keys in Chromium and that the verdict survives to the trailing `contextmenu`
+- [x] bUnit covers the five rules as a table and the keyboard content split
+- [x] `CONTEXT.md`'s `Menu verdict` term describes what shipped

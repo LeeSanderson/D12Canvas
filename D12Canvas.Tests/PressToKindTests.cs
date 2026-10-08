@@ -3,8 +3,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The secondary and middle buttons pan whatever they land on; only the primary button reads the
-// role, and every role resolves to exactly one gesture.
+// The middle button pans whatever it lands on, and so does the secondary button unless the Menu
+// verdict gave the press to the browser; the primary button reads the role, and every role
+// resolves to exactly one gesture.
 public class PressToKindTests
 {
     public static IEnumerable<object[]> EveryRole() =>
@@ -34,6 +35,26 @@ public class PressToKindTests
         Assert.Equal(
             GestureKind.Pan,
             PressToKind.Resolve(PointerEvents.Press(role, PointerPress.MiddleButton, 0, 0))
+        );
+    }
+
+    [Theory]
+    [InlineData(HitRole.AuthorContent, PointerPress.BrowserMenuVerdict, "Native")]
+    [InlineData(HitRole.AuthorContent, PointerPress.CanvasMenuVerdict, "Pan")]
+    [InlineData(HitRole.AuthorContent, null, "Pan")]
+    [InlineData(HitRole.Instance, PointerPress.BrowserMenuVerdict, "Native")]
+    [InlineData(HitRole.Instance, PointerPress.CanvasMenuVerdict, "Pan")]
+    public void TheSecondaryButtonFollowsTheMenuVerdict(
+        string role,
+        string? verdict,
+        string expected
+    )
+    {
+        Assert.Equal(
+            Enum.Parse<GestureKind>(expected),
+            PressToKind.Resolve(
+                PointerEvents.Press(role, PointerPress.SecondaryButton, 0, 0, menuVerdict: verdict)
+            )
         );
     }
 
