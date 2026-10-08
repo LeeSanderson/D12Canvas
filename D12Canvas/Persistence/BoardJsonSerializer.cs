@@ -193,17 +193,9 @@ public sealed class BoardJsonSerializer : IBoardSerializer
     {
         foreach (var endpoint in new[] { edge.Source, edge.Target })
         {
-            if (endpoint is PortEndpoint port && board.GetComponent(port.ComponentId) is null)
+            if (endpoint.ComponentId is { } componentId && board.GetComponent(componentId) is null)
             {
-                yield return port.ComponentId;
-            }
-
-            if (
-                endpoint is CustomPortEndpoint custom
-                && board.GetComponent(custom.ComponentId) is null
-            )
-            {
-                yield return custom.ComponentId;
+                yield return componentId;
             }
         }
     }
@@ -382,6 +374,7 @@ public sealed class BoardJsonSerializer : IBoardSerializer
                 floating.X,
                 floating.Y
             ),
+            AutoPortEndpoint auto => new EdgeEndpointEnvelope(auto.ComponentId, null, null, null),
             _ => throw new NotSupportedException(
                 $"Unsupported edge endpoint type '{endpoint.GetType()}'."
             ),
@@ -408,9 +401,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             { ComponentId: { } componentId, CustomPortId: { } customPortId } =>
                 new CustomPortEndpoint(componentId, customPortId),
             { X: { } x, Y: { } y } => new FloatingEndpoint(x, y),
-            _ => throw new JsonException(
-                "The edge endpoint is neither port-attached nor floating."
-            ),
+            { ComponentId: { } componentId } => new AutoPortEndpoint(componentId),
+            _ => throw new JsonException("The edge endpoint is neither attached nor floating."),
         };
 
     private static ComponentInstanceEnvelope ToComponentEnvelope(ComponentInstance instance) =>

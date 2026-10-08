@@ -709,7 +709,7 @@ public class BoardJsonSerializerTests
         restoredFirst.Bounds = new Bounds(100, 100, 10, 10);
 
         var restoredEdge = Assert.Single(restored.Edges);
-        var sourcePoint = restored.ResolveEndpoint(restoredEdge.Source);
+        var sourcePoint = restored.ResolveEnd(restoredEdge, isSource: true);
         Assert.Equal(restoredFirst.Bounds.PointAtFraction(1, 0.5), sourcePoint);
     }
 
@@ -741,8 +741,174 @@ public class BoardJsonSerializerTests
         restoredFirst.Bounds = new Bounds(100, 100, 20, 20);
         Assert.Equal(
             restoredFirst.Bounds.PointAtFraction(0.25, 0),
-            restored.ResolveEndpoint(restoredEdge.Source)
+            restored.ResolveEnd(restoredEdge, isSource: true)
         );
+    }
+
+    [Fact]
+    public void AnAutoEndpointIsWrittenAsAComponentWithNoPortAndNoPoint()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var instance = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        board.AddComponent(instance);
+        board.AddEdge(new Edge(new AutoPortEndpoint(instance.Id), new FloatingEndpoint(100, 5)));
+
+        using var document = JsonDocument.Parse(serializer.Serialize(board));
+
+        var source = document.RootElement.GetProperty("Edges")[0].GetProperty("Source");
+        Assert.Equal(instance.Id, source.GetProperty("ComponentId").GetGuid());
+        Assert.Equal(JsonValueKind.Null, source.GetProperty("PortId").ValueKind);
+        Assert.Equal(JsonValueKind.Null, source.GetProperty("CustomPortId").ValueKind);
+        Assert.Equal(JsonValueKind.Null, source.GetProperty("X").ValueKind);
+        Assert.Equal(JsonValueKind.Null, source.GetProperty("Y").ValueKind);
+    }
+
+    [Fact]
+    public void AnAutoEndpointRoundTripsThroughBothLoadPathsAndKeepsChoosingItsSide()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        var second = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(100, 0, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddComponent(second);
+        var edge = new Edge(new AutoPortEndpoint(first.Id), new AutoPortEndpoint(second.Id));
+        board.AddEdge(edge);
+        var json = serializer.Serialize(board);
+
+        var strict = serializer.Deserialize(json);
+        var partial = serializer.DeserializePartial(json);
+
+        Assert.Empty(partial.Warnings);
+        foreach (var restored in new[] { strict, partial.Board })
+        {
+            var restoredEdge = restored.GetEdge(edge.Id)!;
+            Assert.Equal(new AutoPortEndpoint(first.Id), restoredEdge.Source);
+            Assert.Equal(new AutoPortEndpoint(second.Id), restoredEdge.Target);
+
+            restored.GetComponent(second.Id)!.Bounds = new Bounds(0, 100, 10, 10);
+            Assert.Equal((5.0, 10.0), restored.ResolveEnd(restoredEdge, isSource: true));
+        }
+    }
+
+    [Fact]
+    public void APartialLoadWarnsAboutAnAutoEndpointOnAMissingInstanceButKeepsTheEdge()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [],
+              "Edges": [
+                {
+                  "Id": "77777777-7777-7777-7777-777777777777",
+                  "Source": {
+                    "ComponentId": "66666666-6666-6666-6666-666666666666",
+                    "PortId": null,
+                    "X": null,
+                    "Y": null,
+                    "CustomPortId": null
+                  },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 10, "Y": 20 }
+                }
+              ]
+            }
+            """;
+
+        var result = serializer.DeserializePartial(json);
+
+        var restoredEdge = Assert.Single(result.Board.Edges);
+        Assert.Equal(
+            new AutoPortEndpoint(Guid.Parse("66666666-6666-6666-6666-666666666666")),
+            restoredEdge.Source
+        );
+        var warning = Assert.Single(result.Warnings);
+        Assert.Contains("66666666-6666-6666-6666-666666666666", warning.Reason);
+    }
+
+    // A board saved before auto endpoints existed has floating ends that happen to sit inside a
+    // shape. They stay floating on load: the shape is not adopted as an auto attachment.
+    [Fact]
+    public void ABoardSavedUnderTheCurrentSchemaLoadsUnchangedThroughBothPaths()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [
+                {
+                  "Id": "11111111-1111-1111-1111-111111111111",
+                  "ComponentTypeKey": "test-props",
+                  "Props": { "Text": "a" },
+                  "Bounds": { "X": 0, "Y": 0, "Width": 100, "Height": 50 },
+                  "ZIndex": 0
+                },
+                {
+                  "Id": "22222222-2222-2222-2222-222222222222",
+                  "ComponentTypeKey": "test-props",
+                  "Props": { "Text": "b" },
+                  "Bounds": { "X": 300, "Y": 0, "Width": 100, "Height": 50 },
+                  "ZIndex": 1
+                }
+              ],
+              "Edges": [
+                {
+                  "Id": "33333333-3333-3333-3333-333333333333",
+                  "Source": {
+                    "ComponentId": "11111111-1111-1111-1111-111111111111",
+                    "PortId": 1,
+                    "X": null,
+                    "Y": null,
+                    "CustomPortId": null
+                  },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 350, "Y": 25, "CustomPortId": null }
+                },
+                {
+                  "Id": "44444444-4444-4444-4444-444444444444",
+                  "Source": { "ComponentId": null, "PortId": null, "X": 50, "Y": 25 },
+                  "Target": {
+                    "ComponentId": "22222222-2222-2222-2222-222222222222",
+                    "PortId": 3,
+                    "X": null,
+                    "Y": null
+                  }
+                }
+              ]
+            }
+            """;
+
+        var strict = serializer.Deserialize(json);
+        var partial = serializer.DeserializePartial(json);
+
+        Assert.Empty(partial.Warnings);
+        foreach (var restored in new[] { strict, partial.Board })
+        {
+            var first = restored.GetEdge(Guid.Parse("33333333-3333-3333-3333-333333333333"))!;
+            var second = restored.GetEdge(Guid.Parse("44444444-4444-4444-4444-444444444444"))!;
+            Assert.Equal(
+                new PortEndpoint(Guid.Parse("11111111-1111-1111-1111-111111111111"), PortId.Right),
+                first.Source
+            );
+            Assert.Equal(new FloatingEndpoint(350, 25), first.Target);
+            Assert.Equal(new FloatingEndpoint(50, 25), second.Source);
+            Assert.Equal(
+                new PortEndpoint(Guid.Parse("22222222-2222-2222-2222-222222222222"), PortId.Left),
+                second.Target
+            );
+        }
     }
 
     // Strict deserialize does no referential-integrity checking for Edges - unlike Groups, a

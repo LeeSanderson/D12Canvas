@@ -89,6 +89,11 @@ public partial class ComponentContainer
     [Parameter]
     public Guid? FocusedCustomPortId { get; set; }
 
+    // The keyboard pick is an auto endpoint on this instance, which highlights all four standard
+    // ports: the canvas chooses among them, and never a custom port.
+    [Parameter]
+    public bool AutoPortFocused { get; set; }
+
     private double _lastRenderedX;
     private double _lastRenderedY;
     private double _lastRenderedWidth;
@@ -108,6 +113,7 @@ public partial class ComponentContainer
 
     private PortId? _lastRenderedFocusedPortId;
     private Guid? _lastRenderedFocusedCustomPortId;
+    private bool _lastRenderedAutoPortFocused;
 
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
@@ -148,7 +154,8 @@ public partial class ComponentContainer
             // Bounds/selection - without this check the highlight wouldn't move until some
             // unrelated parameter also changed.
             || FocusedPortId != _lastRenderedFocusedPortId
-            || FocusedCustomPortId != _lastRenderedFocusedCustomPortId;
+            || FocusedCustomPortId != _lastRenderedFocusedCustomPortId
+            || AutoPortFocused != _lastRenderedAutoPortFocused;
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -166,6 +173,7 @@ public partial class ComponentContainer
         _lastRenderedZIndex = ZIndex;
         _lastRenderedFocusedPortId = FocusedPortId;
         _lastRenderedFocusedCustomPortId = FocusedCustomPortId;
+        _lastRenderedAutoPortFocused = AutoPortFocused;
     }
 
     private Task HandleFocus() => OnFocus.InvokeAsync();
@@ -175,7 +183,7 @@ public partial class ComponentContainer
     // from portId itself rather than taken as a separate parameter, so a call site can't hand in a
     // mismatched pair.
     private string StandardPortCssClass(PortId portId) =>
-        FocusedPortId == portId
+        AutoPortFocused || FocusedPortId == portId
             ? $"port {StandardPortSideClass(portId)} port-focused"
             : $"port {StandardPortSideClass(portId)}";
 

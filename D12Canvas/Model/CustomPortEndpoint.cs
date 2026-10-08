@@ -4,4 +4,7 @@ namespace D12Canvas.Model;
 // the port's own Id (ComponentInstance.CustomPorts) rather than a PortId enum value. Added as its
 // own IEdgeEndpoint shape - the same way FloatingEndpoint was - rather than widening
 // PortEndpoint's own PortId field to a type that could hold either.
-public readonly record struct CustomPortEndpoint(Guid ComponentId, Guid PortId) : IEdgeEndpoint;
+public readonly record struct CustomPortEndpoint(Guid ComponentId, Guid PortId) : IEdgeEndpoint
+{
+    Guid? IEdgeEndpoint.ComponentId => ComponentId;
+}

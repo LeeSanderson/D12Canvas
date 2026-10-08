@@ -6,8 +6,9 @@ namespace D12Canvas.Pointer;
 // bare port, or the side a strip runs along, pulls a new edge from that port; a port that already
 // anchors an edge, or a floating endpoint, carries that edge's end. Each tick publishes one
 // pending line from the end that stays put to the pointer. The release resolves what lies under
-// the pointer, topmost first: a port pins the end to it, a shape's body or nothing at all leaves
-// it floating at the release point, and chrome or another edge in between is looked through.
+// the pointer, topmost first: a port pins the end to it, a shape's body attaches it as an auto
+// endpoint, nothing at all leaves it floating at the release point, and chrome or another edge in
+// between is looked through. A drop on the shape the other end is attached to changes nothing.
 internal sealed class DragEdgeEndGesture : PointerGesture
 {
     private IEdgeEndpoint? _anchor;
@@ -79,7 +80,7 @@ internal sealed class DragEdgeEndGesture : PointerGesture
         }
 
         var dropped = DroppedEndpoint(release);
-        if (dropped.Equals(_anchor))
+        if (dropped.Equals(_anchor) || SameComponent(dropped, _anchor))
         {
             return;
         }
@@ -119,17 +120,23 @@ internal sealed class DragEdgeEndGesture : PointerGesture
         }
     }
 
+    private static bool SameComponent(IEdgeEndpoint dropped, IEdgeEndpoint anchor) =>
+        dropped.ComponentId is { } componentId && componentId == anchor.ComponentId;
+
     private IEdgeEndpoint DroppedEndpoint(PointerRelease release)
     {
         var topmost = (release.Hits ?? []).FirstOrDefault(hit =>
-            hit.Role is HitRole.Port or HitRole.Instance or HitRole.AuthorContent
+            (hit.Role is HitRole.Port or HitRole.Instance or HitRole.AuthorContent)
+            && hit.EntityId is { } entityId
+            && Context.Board?.GetComponent(entityId) is not null
         );
-        if (
-            topmost is { Role: HitRole.Port, EntityId: { } entityId }
-            && PortEndpoint(topmost.Role, entityId, topmost.Part) is { } port
-        )
+        if (topmost is { EntityId: { } componentId })
         {
-            return port;
+            var pinned =
+                topmost.Role == HitRole.Port
+                    ? PortEndpoint(topmost.Role, componentId, topmost.Part)
+                    : null;
+            return pinned ?? new AutoPortEndpoint(componentId);
         }
 
         var (x, y) = Context.ToBoardPoint(release.X, release.Y);

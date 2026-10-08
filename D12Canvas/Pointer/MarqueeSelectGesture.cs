@@ -58,7 +58,7 @@ internal sealed class MarqueeSelectGesture : PointerGesture
         endpoint switch
         {
             FloatingEndpoint floating => band.Contains(floating.X, floating.Y),
-            _ => EndpointAttachment.ComponentIdOf(endpoint) is { } componentId
+            _ => endpoint.ComponentId is { } componentId
                 && board.GetComponent(componentId) is not null
                 && sweptIds.Contains(Context.EffectiveSelectionId(componentId)),
         };

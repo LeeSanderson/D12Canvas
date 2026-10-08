@@ -5,6 +5,8 @@ namespace D12Canvas.Tests;
 
 public class BoardTests
 {
+    private static readonly IEdgeEndpoint AnyOtherEnd = new FloatingEndpoint(0, 0);
+
     [Fact]
     public void AddedComponentIsRetrievableByItsId()
     {
@@ -517,7 +519,7 @@ public class BoardTests
         );
         board.AddComponent(instance);
 
-        var point = board.ResolveEndpoint(new PortEndpoint(instance.Id, PortId.Right));
+        var point = board.ResolveEndpoint(new PortEndpoint(instance.Id, PortId.Right), AnyOtherEnd);
 
         Assert.Equal((140.0, 110.0), point);
     }
@@ -533,10 +535,10 @@ public class BoardTests
         );
         board.AddComponent(instance);
         var endpoint = new PortEndpoint(instance.Id, PortId.Right);
-        var before = board.ResolveEndpoint(endpoint);
+        var before = board.ResolveEndpoint(endpoint, AnyOtherEnd);
 
         instance.Bounds = new Bounds(200, 300, 40, 20);
-        var after = board.ResolveEndpoint(endpoint);
+        var after = board.ResolveEndpoint(endpoint, AnyOtherEnd);
 
         Assert.Equal((140.0, 110.0), before);
         Assert.Equal((240.0, 310.0), after);
@@ -555,7 +557,7 @@ public class BoardTests
         var endpoint = new PortEndpoint(instance.Id, PortId.Bottom);
 
         instance.Bounds = new Bounds(0, 0, 80, 100);
-        var point = board.ResolveEndpoint(endpoint);
+        var point = board.ResolveEndpoint(endpoint, AnyOtherEnd);
 
         Assert.Equal((40.0, 100.0), point);
     }
@@ -565,7 +567,10 @@ public class BoardTests
     {
         var board = new Board();
 
-        var point = board.ResolveEndpoint(new PortEndpoint(Guid.NewGuid(), PortId.Top));
+        var point = board.ResolveEndpoint(
+            new PortEndpoint(Guid.NewGuid(), PortId.Top),
+            AnyOtherEnd
+        );
 
         Assert.Null(point);
     }
@@ -577,7 +582,7 @@ public class BoardTests
     {
         var board = new Board();
 
-        var point = board.ResolveEndpoint(new FloatingEndpoint(42, 99));
+        var point = board.ResolveEndpoint(new FloatingEndpoint(42, 99), AnyOtherEnd);
 
         Assert.Equal((42.0, 99.0), point);
     }
@@ -590,7 +595,7 @@ public class BoardTests
             new ComponentInstance("sticky-note", new TestProps(), new Bounds(0, 0, 40, 20))
         );
 
-        var point = board.ResolveEndpoint(new FloatingEndpoint(500, 500));
+        var point = board.ResolveEndpoint(new FloatingEndpoint(500, 500), AnyOtherEnd);
 
         Assert.Equal((500.0, 500.0), point);
     }
@@ -611,7 +616,10 @@ public class BoardTests
         instance.CustomPorts.Add(port);
         board.AddComponent(instance);
 
-        var point = board.ResolveEndpoint(new CustomPortEndpoint(instance.Id, port.Id));
+        var point = board.ResolveEndpoint(
+            new CustomPortEndpoint(instance.Id, port.Id),
+            AnyOtherEnd
+        );
 
         Assert.Equal((110.0, 100.0), point);
     }
@@ -630,7 +638,10 @@ public class BoardTests
         board.AddComponent(instance);
 
         instance.Bounds = new Bounds(0, 0, 80, 100);
-        var point = board.ResolveEndpoint(new CustomPortEndpoint(instance.Id, port.Id));
+        var point = board.ResolveEndpoint(
+            new CustomPortEndpoint(instance.Id, port.Id),
+            AnyOtherEnd
+        );
 
         Assert.Equal((20.0, 0.0), point);
     }
@@ -640,7 +651,10 @@ public class BoardTests
     {
         var board = new Board();
 
-        var point = board.ResolveEndpoint(new CustomPortEndpoint(Guid.NewGuid(), Guid.NewGuid()));
+        var point = board.ResolveEndpoint(
+            new CustomPortEndpoint(Guid.NewGuid(), Guid.NewGuid()),
+            AnyOtherEnd
+        );
 
         Assert.Null(point);
     }
@@ -656,9 +670,177 @@ public class BoardTests
         );
         board.AddComponent(instance);
 
-        var point = board.ResolveEndpoint(new CustomPortEndpoint(instance.Id, Guid.NewGuid()));
+        var point = board.ResolveEndpoint(
+            new CustomPortEndpoint(instance.Id, Guid.NewGuid()),
+            AnyOtherEnd
+        );
 
         Assert.Null(point);
+    }
+
+    private static ComponentInstance AddShape(Board board, double x, double y)
+    {
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(x, y, 100, 50)
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+
+    private static IEnumerable<(double X, double Y)> StandardPortPoints(Bounds bounds) =>
+        StandardPorts.All.Select(side =>
+        {
+            var (fractionX, fractionY) = StandardPorts.FractionOf(side);
+            return bounds.PointAtFraction(fractionX, fractionY);
+        });
+
+    [Theory]
+    [InlineData(150, -200, 150, 100)]
+    [InlineData(500, 125, 200, 125)]
+    [InlineData(150, 500, 150, 150)]
+    [InlineData(-200, 125, 100, 125)]
+    public void AnAutoEndpointAttachesAtTheStandardPortFacingTheOtherEnd(
+        double otherX,
+        double otherY,
+        double expectedX,
+        double expectedY
+    )
+    {
+        var board = new Board();
+        var shape = AddShape(board, 100, 100);
+
+        var point = board.ResolveEndpoint(
+            new AutoPortEndpoint(shape.Id),
+            new FloatingEndpoint(otherX, otherY)
+        );
+
+        Assert.Equal((expectedX, expectedY), point);
+        Assert.Contains(point!.Value, StandardPortPoints(shape.Bounds));
+    }
+
+    [Fact]
+    public void MovingTheOtherShapeToTheOppositeSideChangesTheChosenPort()
+    {
+        var board = new Board();
+        var shape = AddShape(board, 100, 100);
+        var other = AddShape(board, 400, 100);
+        var edge = new Edge(new AutoPortEndpoint(shape.Id), new AutoPortEndpoint(other.Id));
+        board.AddEdge(edge);
+
+        var before = board.ResolveEnd(edge, isSource: true);
+        other.Bounds = other.Bounds with { X = -300 };
+        var after = board.ResolveEnd(edge, isSource: true);
+
+        Assert.Equal((200.0, 125.0), before);
+        Assert.Equal((100.0, 125.0), after);
+    }
+
+    [Fact]
+    public void TwoAutoEndsAimAtEachOthersCentresAndResolveInOnePass()
+    {
+        var board = new Board();
+        var upper = AddShape(board, 100, 100);
+        var lower = AddShape(board, 100, 400);
+        var edge = new Edge(new AutoPortEndpoint(upper.Id), new AutoPortEndpoint(lower.Id));
+        board.AddEdge(edge);
+
+        Assert.Equal((150.0, 150.0), board.ResolveEnd(edge, isSource: true));
+        Assert.Equal((150.0, 400.0), board.ResolveEnd(edge, isSource: false));
+    }
+
+    [Fact]
+    public void AnAutoEndpointAimsAtAPinnedOtherEndsPortPoint()
+    {
+        var board = new Board();
+        var shape = AddShape(board, 100, 100);
+        var other = AddShape(board, 300, 300);
+
+        var point = board.ResolveEndpoint(
+            new AutoPortEndpoint(shape.Id),
+            new PortEndpoint(other.Id, PortId.Top)
+        );
+
+        Assert.Equal((150.0, 150.0), point);
+    }
+
+    [Fact]
+    public void AnAutoEndpointWhoseOtherEndIsInsideItsShapeTakesTheNearestSide()
+    {
+        var board = new Board();
+        var shape = AddShape(board, 100, 100);
+
+        var point = board.ResolveEndpoint(
+            new AutoPortEndpoint(shape.Id),
+            new FloatingEndpoint(190, 120)
+        );
+
+        Assert.Equal((200.0, 125.0), point);
+    }
+
+    [Fact]
+    public void AnAutoEndpointNeverResolvesToACustomPort()
+    {
+        var board = new Board();
+        var shape = AddShape(board, 100, 100);
+        shape.CustomPorts.Add(new PortDef(1, 0.1));
+
+        var point = board.ResolveEndpoint(
+            new AutoPortEndpoint(shape.Id),
+            new FloatingEndpoint(500, 105)
+        );
+
+        Assert.Equal((200.0, 125.0), point);
+    }
+
+    [Fact]
+    public void AnAutoEndpointOnAMissingComponentOrFacingAMissingOneResolvesToNothing()
+    {
+        var board = new Board();
+        var shape = AddShape(board, 100, 100);
+
+        Assert.Null(board.ResolveEndpoint(new AutoPortEndpoint(Guid.NewGuid()), AnyOtherEnd));
+        Assert.Null(
+            board.ResolveEndpoint(
+                new AutoPortEndpoint(shape.Id),
+                new PortEndpoint(Guid.NewGuid(), PortId.Top)
+            )
+        );
+    }
+
+    [Fact]
+    public void FindEdgeAttachedToFindsAnAutoEndAtThePortItResolvesTo()
+    {
+        var board = new Board();
+        var shape = AddShape(board, 100, 100);
+        var edge = new Edge(new AutoPortEndpoint(shape.Id), new FloatingEndpoint(500, 125));
+        board.AddEdge(edge);
+
+        Assert.Equal(
+            (edge.Id, true),
+            board.FindEdgeAttachedTo(new PortEndpoint(shape.Id, PortId.Right))
+        );
+        Assert.Null(board.FindEdgeAttachedTo(new PortEndpoint(shape.Id, PortId.Left)));
+    }
+
+    [Fact]
+    public void FindEdgeAttachedToPrefersAnEndPinnedToThePortOverAnAutoEndResolvingThere()
+    {
+        var board = new Board();
+        var shape = AddShape(board, 100, 100);
+        var auto = new Edge(new AutoPortEndpoint(shape.Id), new FloatingEndpoint(500, 125));
+        var pinned = new Edge(
+            new FloatingEndpoint(500, 0),
+            new PortEndpoint(shape.Id, PortId.Right)
+        );
+        board.AddEdge(auto);
+        board.AddEdge(pinned);
+
+        Assert.Equal(
+            (pinned.Id, false),
+            board.FindEdgeAttachedTo(new PortEndpoint(shape.Id, PortId.Right))
+        );
     }
 
     // FindEdgeAttachedTo distinguishes "start a new edge" from "reposition this edge's existing

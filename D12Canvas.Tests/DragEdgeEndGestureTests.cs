@@ -7,7 +7,8 @@ namespace D12Canvas.Tests;
 // A press on a port, a port strip or a floating endpoint carries one end of an edge: a new edge
 // pulled from a bare port, or the end of an existing edge. Each tick publishes one pending line
 // from the end that stays put to the pointer, and the release resolves what is under the pointer:
-// a port pins the end to it, anything else leaves it floating at the release point.
+// a port pins the end to it, a shape's body attaches it as an auto endpoint, and nothing at all
+// leaves it floating at the release point.
 public class DragEdgeEndGestureTests
 {
     private const string ComponentTypeKey = "test-props";
@@ -131,24 +132,83 @@ public class DragEdgeEndGestureTests
         );
     }
 
-    [Fact]
-    public void ReleasingOverAShapesBodyOrEmptyCanvasLeavesTheEndFloatingAtTheReleasePoint()
+    public static TheoryData<string, string?, string> DropZones =>
+        new()
+        {
+            { HitRole.Port, "Left", "pinned" },
+            { HitRole.Instance, null, "auto" },
+            { HitRole.AuthorContent, null, "auto" },
+            { "none", null, "floating" },
+        };
+
+    [Theory]
+    [MemberData(nameof(DropZones))]
+    public void WhatLiesUnderTheReleaseDecidesHowTheEndAttaches(
+        string role,
+        string? part,
+        string expected
+    )
     {
         var board = new Board();
         var source = AddInstance(board, 100, 100);
         var target = AddInstance(board, 250, 100);
         var context = new FakeGestureContext(board);
+        PointerHit[] hits = role == "none" ? [] : [new PointerHit(role, target.Id, part)];
 
-        var overBody = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
-        overBody.Move(PointerEvents.Move(270, 120));
-        overBody.Release(ReleaseAt(270, 120, BodyHit(target)));
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.Move(PointerEvents.Move(270, 120));
+        gesture.Release(ReleaseAt(270, 120, hits));
 
-        var overNothing = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
-        overNothing.Move(PointerEvents.Move(190, 400));
-        overNothing.Release(ReleaseAt(190, 400));
+        IEdgeEndpoint expectedEnd = expected switch
+        {
+            "pinned" => new PortEndpoint(target.Id, PortId.Left),
+            "auto" => new AutoPortEndpoint(target.Id),
+            _ => new FloatingEndpoint(270, 120),
+        };
+        Assert.Equal(expectedEnd, Assert.Single(context.AddedEdges).Target);
+    }
 
-        Assert.Equal(new FloatingEndpoint(270, 120), context.AddedEdges[0].Target);
-        Assert.Equal(new FloatingEndpoint(190, 400), context.AddedEdges[1].Target);
+    [Fact]
+    public void ReleasingOnTheStartingShapesBodyOrAnotherOfItsPortsCreatesNothing()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var context = new FakeGestureContext(board);
+
+        var onBody = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        onBody.Move(PointerEvents.Move(120, 120));
+        onBody.Release(ReleaseAt(120, 120, BodyHit(source)));
+
+        var onOtherPort = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        onOtherPort.Move(PointerEvents.Move(100, 125));
+        onOtherPort.Release(ReleaseAt(100, 125, PortHit(source, "Left"), BodyHit(source)));
+
+        Assert.Empty(context.AddedEdges);
+    }
+
+    [Fact]
+    public void AnEdgeLabelOverAShapeIsLookedThroughToTheShape()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var labelled = new Edge(new FloatingEndpoint(0, 0), new FloatingEndpoint(500, 500));
+        board.AddEdge(labelled);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.Move(PointerEvents.Move(270, 120));
+        gesture.Release(
+            ReleaseAt(
+                270,
+                120,
+                new PointerHit(HitRole.AuthorContent, labelled.Id, null),
+                new PointerHit(HitRole.EdgeLabel, labelled.Id, null),
+                BodyHit(target)
+            )
+        );
+
+        Assert.Equal(new AutoPortEndpoint(target.Id), Assert.Single(context.AddedEdges).Target);
     }
 
     // A port beneath the body that is on top is not what the user sees, and a resize handle or the
@@ -180,7 +240,7 @@ public class DragEdgeEndGestureTests
         buried.Release(ReleaseAt(250, 125, BodyHit(above), PortHit(below, "Left")));
 
         Assert.Equal(new PortEndpoint(above.Id, PortId.Left), context.AddedEdges[0].Target);
-        Assert.Equal(new FloatingEndpoint(250, 125), context.AddedEdges[1].Target);
+        Assert.Equal(new AutoPortEndpoint(above.Id), context.AddedEdges[1].Target);
     }
 
     [Fact]
@@ -342,5 +402,70 @@ public class DragEdgeEndGestureTests
         backAgain.Release(ReleaseAt(250, 125, PortHit(target, "Left")));
 
         Assert.Empty(context.EndpointChanges);
+    }
+
+    [Fact]
+    public void DroppingACarriedEndOnAShapesBodyMakesItAnAutoEndpoint()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new PortEndpoint(target.Id, PortId.Left)
+        );
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, target.Id, "Left", 250, 125);
+        gesture.Move(PointerEvents.Move(280, 140));
+        gesture.Release(ReleaseAt(280, 140, BodyHit(target)));
+
+        Assert.Equal(
+            (edge.Id, false, (IEdgeEndpoint)new AutoPortEndpoint(target.Id)),
+            Assert.Single(context.EndpointChanges)
+        );
+    }
+
+    [Fact]
+    public void DroppingACarriedEndOnTheOtherEndsShapeChangesNothing()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var edge = new Edge(new AutoPortEndpoint(source.Id), new FloatingEndpoint(400, 125));
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.EdgeEndpoint, edge.Id, "target", 400, 125);
+        gesture.Move(PointerEvents.Move(120, 120));
+        gesture.Release(ReleaseAt(120, 120, BodyHit(source)));
+
+        Assert.Empty(context.EndpointChanges);
+        Assert.Empty(context.AddedEdges);
+    }
+
+    [Fact]
+    public void ADragFromThePortAnAutoEndResolvesToCarriesThatEnd()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new AutoPortEndpoint(target.Id)
+        );
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, target.Id, "Left", 250, 125);
+        gesture.Move(PointerEvents.Move(300, 300));
+        gesture.Release(ReleaseAt(300, 300));
+
+        Assert.Empty(context.AddedEdges);
+        Assert.Equal(
+            (edge.Id, false, (IEdgeEndpoint)new FloatingEndpoint(300, 300)),
+            Assert.Single(context.EndpointChanges)
+        );
     }
 }

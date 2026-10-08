@@ -1,0 +1,38 @@
+@page "/auto-endpoint-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Auto Endpoint Demo</PageTitle>
+
+<div class="auto-endpoint-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .auto-endpoint-canvas {
+        width: 700px;
+        height: 500px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid SourceId = Guid.Parse("d0000000-0000-0000-0000-000000000001");
+    private static readonly Guid TargetId = Guid.Parse("d0000000-0000-0000-0000-000000000002");
+
+    private readonly Board _board = SeedBoard();
+
+    private static void AddRectangle(Board board, Guid id, Bounds bounds) =>
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#cfe3ff", null, 2), bounds, id: id)
+        );
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        AddRectangle(board, SourceId, new Bounds(120, 120, 160, 100));
+        AddRectangle(board, TargetId, new Bounds(420, 300, 160, 100));
+        return board;
+    }
+}

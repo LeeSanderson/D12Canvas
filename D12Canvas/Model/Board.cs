@@ -56,13 +56,30 @@ public sealed class Board
     // An endpoint's committed board-space point. A PortEndpoint/CustomPortEndpoint resolves from
     // its referenced instance's Bounds rather than stored - what lets an attached edge track
     // move/resize for free; a FloatingEndpoint resolves to its own fixed point, tracking nothing.
-    // Null when a referenced instance or custom port no longer exists.
-    public (double X, double Y)? ResolveEndpoint(IEdgeEndpoint endpoint) =>
-        ResolveEndpoint(endpoint, CommittedBounds);
+    // An AutoPortEndpoint needs the edge's other end to choose its side, so every endpoint is
+    // resolved as one of a pair. Null when a referenced instance or custom port no longer exists.
+    public (double X, double Y)? ResolveEndpoint(IEdgeEndpoint endpoint, IEdgeEndpoint otherEnd) =>
+        ResolveEndpoint(endpoint, otherEnd, CommittedBounds);
+
+    public (double X, double Y)? ResolveEnd(Edge edge, bool isSource) =>
+        isSource
+            ? ResolveEndpoint(edge.Source, edge.Target)
+            : ResolveEndpoint(edge.Target, edge.Source);
 
     // The one implementation behind both the committed entry point above and live geometry's,
     // which differ only in where an instance's bounds come from.
     internal (double X, double Y)? ResolveEndpoint(
+        IEdgeEndpoint endpoint,
+        IEdgeEndpoint otherEnd,
+        Func<ComponentInstance, Bounds> boundsOf
+    ) =>
+        endpoint switch
+        {
+            AutoPortEndpoint auto => ResolveAutoPort(auto, otherEnd, boundsOf),
+            _ => ReferencePoint(endpoint, boundsOf),
+        };
+
+    private (double X, double Y)? ReferencePoint(
         IEdgeEndpoint endpoint,
         Func<ComponentInstance, Bounds> boundsOf
     ) =>
@@ -71,8 +88,32 @@ public sealed class Board
             PortEndpoint port => ResolvePort(port, boundsOf),
             CustomPortEndpoint custom => ResolveCustomPort(custom, boundsOf),
             FloatingEndpoint floating => (floating.X, floating.Y),
+            AutoPortEndpoint auto => GetComponent(auto.ComponentId) is { } instance
+                ? boundsOf(instance).PointAtFraction(0.5, 0.5)
+                : null,
             _ => null,
         };
+
+    private (double X, double Y)? ResolveAutoPort(
+        AutoPortEndpoint auto,
+        IEdgeEndpoint otherEnd,
+        Func<ComponentInstance, Bounds> boundsOf
+    ) =>
+        AutoPortSideOf(auto, otherEnd, boundsOf) is { } side
+            ? ResolvePort(new PortEndpoint(auto.ComponentId, side), boundsOf)
+            : null;
+
+    // The standard port an auto endpoint currently resolves to, or null when either end has
+    // nothing to resolve against.
+    internal PortId? AutoPortSideOf(
+        AutoPortEndpoint auto,
+        IEdgeEndpoint otherEnd,
+        Func<ComponentInstance, Bounds> boundsOf
+    ) =>
+        GetComponent(auto.ComponentId) is { } instance
+        && ReferencePoint(otherEnd, boundsOf) is { } aimedAt
+            ? AutoPortSide.Facing(boundsOf(instance), aimedAt)
+            : null;
 
     private static Bounds CommittedBounds(ComponentInstance instance) => instance.Bounds;
 
@@ -139,7 +180,8 @@ public sealed class Board
     // Does any edge already anchor to this exact port (standard or custom)? Used to tell "start a
     // new edge" apart from "reposition this edge's existing endpoint" (see DragEdgeEndGesture).
     // Multiple edges sharing the same port pick whichever is found first - an acceptable
-    // ambiguity that doesn't need resolving here.
+    // ambiguity that doesn't need resolving here. An auto end counts as attached to the standard
+    // port it currently resolves to, but an end pinned to that port is found first.
     public (Guid EdgeId, bool IsSource)? FindEdgeAttachedTo(IEdgeEndpoint endpoint)
     {
         foreach (var edge in _edges.Values)
@@ -155,8 +197,31 @@ public sealed class Board
             }
         }
 
+        return endpoint is PortEndpoint port ? FindAutoEndResolvingTo(port) : null;
+    }
+
+    private (Guid EdgeId, bool IsSource)? FindAutoEndResolvingTo(PortEndpoint port)
+    {
+        foreach (var edge in _edges.Values)
+        {
+            if (ResolvesTo(edge.Source, edge.Target, port))
+            {
+                return (edge.Id, true);
+            }
+
+            if (ResolvesTo(edge.Target, edge.Source, port))
+            {
+                return (edge.Id, false);
+            }
+        }
+
         return null;
     }
+
+    private bool ResolvesTo(IEdgeEndpoint end, IEdgeEndpoint otherEnd, PortEndpoint port) =>
+        end is AutoPortEndpoint auto
+        && auto.ComponentId == port.ComponentId
+        && AutoPortSideOf(auto, otherEnd, CommittedBounds) == port.PortId;
 
     // Resolves an edge label's live ComponentInstance by its own id - used by
     // DiagramCanvas.CommitPropsChange to find the right object to mutate when a label's inline

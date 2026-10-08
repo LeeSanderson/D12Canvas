@@ -9,8 +9,9 @@ using Xunit;
 namespace D12Canvas.Tests;
 
 // Keyboard connector attachment: Enter enters/advances a port-focus pick on
-// whichever instance currently has real DOM focus, arrow keys choose among its four standard
-// ports (Top/Right/Bottom/Left mapping directly onto Up/Right/Down/Left), and a second Enter -
+// whichever instance currently has real DOM focus, starting on an auto endpoint, arrow keys choose
+// among its four standard ports (Top/Right/Bottom/Left mapping directly onto Up/Right/Down/Left),
+// Space steps from auto through every port, and a second Enter -
 // reached once a source port is already armed - completes the connection exactly like a mouse
 // port-to-port drag would. These tests establish "currently focused" via .Focus() (a real
 // AngleSharp focus event, routing through ComponentContainer.HandleFocus/DiagramCanvas.FocusEntity)
@@ -73,12 +74,12 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.FindAll(".component-container")[0].Focus();
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // enter port-focus (Top)
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // enter port-focus (auto)
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // arm Right as source
 
         canvas.FindAll(".component-container")[1].Focus(); // the Tab a keyboard user would press
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // enter port-focus (Top)
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // enter port-focus (auto)
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowLeft", false));
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // confirm target
 
@@ -97,11 +98,11 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
 
         canvas.FindAll(".component-container")[0].Focus();
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // arm Top as source
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // arm auto as source
 
         canvas.FindAll(".component-container")[1].Focus();
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // confirm Top as target
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // confirm auto as target
         Assert.Single(board.Edges);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
@@ -109,8 +110,8 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
 
         await canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
         var edge = Assert.Single(board.Edges);
-        Assert.Equal(new PortEndpoint(source.Id, PortId.Top), edge.Source);
-        Assert.Equal(new PortEndpoint(target.Id, PortId.Top), edge.Target);
+        Assert.Equal(new AutoPortEndpoint(source.Id), edge.Source);
+        Assert.Equal(new AutoPortEndpoint(target.Id), edge.Target);
     }
 
     // Mirrors DiagramCanvasPortDragTests.DroppingBackOnTheSameStartingPortCreatesNoEdge - the
@@ -123,12 +124,52 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.Find(".component-container").Focus();
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // enter port-focus (Top)
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // arm Top as source
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // re-enter (still Top)
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // confirm Top as target
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // enter port-focus (auto)
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // arm auto as source
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // re-enter (still auto)
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // confirm auto as target
 
         Assert.Empty(board.Edges);
+    }
+
+    [Fact]
+    public async Task ConfirmingAnotherPortOnTheSourceInstanceCreatesNoEdge()
+    {
+        var board = new Board();
+        AddInstance(board, "First", 0, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.Find(".component-container").Focus();
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // arm Right as source
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowLeft", false));
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // confirm Left
+
+        Assert.Empty(board.Edges);
+    }
+
+    [Fact]
+    public async Task EnterPicksAutoFirstAndHighlightsEveryStandardPortButNoCustomOne()
+    {
+        var board = new Board();
+        var instance = new ComponentInstance(
+            ComponentTypeKey,
+            new TestProps("First"),
+            new Bounds(0, 0, 50, 50),
+            customPorts: new[] { new PortDef(0.25, 0) }
+        );
+        board.AddComponent(instance);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.Find(".component-container").Focus();
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
+
+        Assert.Equal(
+            ["Top", "Right", "Bottom", "Left"],
+            canvas.FindAll(".port-focused").Select(port => port.GetAttribute("data-d12-part"))
+        );
     }
 
     [Fact]
@@ -176,12 +217,13 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
 
         Assert.Empty(canvas.FindAll(".component-container")[0].QuerySelectorAll(".port-focused"));
 
-        // Enter on the new instance starts a fresh pick (defaulting to Top) rather than
+        // Enter on the new instance starts a fresh pick (defaulting to auto) rather than
         // resuming/completing anything left over from the abandoned pick on the old one.
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
 
-        Assert.NotNull(
-            canvas.FindAll(".component-container")[1].QuerySelector(".port-top.port-focused")
+        Assert.Equal(
+            4,
+            canvas.FindAll(".component-container")[1].QuerySelectorAll(".port-focused").Length
         );
         Assert.Empty(board.Edges);
     }
@@ -196,6 +238,7 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
 
         canvas.FindAll(".component-container")[0].Focus();
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowUp", false));
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // arms Top as source
 
         canvas.FindAll(".component-container")[1].Focus();
@@ -243,8 +286,8 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
     }
 
     // Arrow keys only ever jump to one of an instance's four standard ports - Space is the only
-    // way to reach a custom port, cycling through Board.AllPorts's own order (every standard port,
-    // then every custom one).
+    // way to reach a custom port, cycling from auto through Board.AllPorts's own order (every
+    // standard port, then every custom one).
     [Fact]
     public async Task SpaceCyclesToACustomPortSoAKeyboardConnectionCanUseOne()
     {
@@ -261,8 +304,8 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.FindAll(".component-container")[0].Focus();
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // enter port-focus (Top)
-        for (var i = 0; i < 4; i++) // Top -> Right -> Bottom -> Left -> the custom port
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // enter port-focus (auto)
+        for (var i = 0; i < 5; i++) // auto -> Top -> Right -> Bottom -> Left -> the custom port
         {
             await canvas.InvokeAsync(() => canvas.Instance.OnSpacePressed());
         }
@@ -270,15 +313,32 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
 
         canvas.FindAll(".component-container")[1].Focus();
         await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // confirm Top as target
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // confirm auto as target
 
         var edge = Assert.Single(board.Edges);
         Assert.Equal(new CustomPortEndpoint(source.Id, customPort.Id), edge.Source);
-        Assert.Equal(new PortEndpoint(target.Id, PortId.Top), edge.Target);
+        Assert.Equal(new AutoPortEndpoint(target.Id), edge.Target);
     }
 
     [Fact]
-    public async Task SpaceWrapsFromTheLastPortBackToTheFirst()
+    public async Task SpaceStepsFromAutoToTopAlone()
+    {
+        var board = new Board();
+        AddInstance(board, "First", 0, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.Find(".component-container").Focus();
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnSpacePressed());
+
+        Assert.Equal(
+            "Top",
+            Assert.Single(canvas.FindAll(".port-focused")).GetAttribute("data-d12-part")
+        );
+    }
+
+    [Fact]
+    public async Task SpaceWrapsFromTheLastPortBackToAuto()
     {
         var board = new Board();
         var customPort = new PortDef(0.5, 0);
@@ -292,12 +352,13 @@ public class DiagramCanvasKeyboardConnectorAttachmentTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         canvas.Find(".component-container").Focus();
-        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // Top
-        for (var i = 0; i < 5; i++) // Top -> Right -> Bottom -> Left -> custom -> Top (wraps)
+        await canvas.InvokeAsync(() => canvas.Instance.OnEnterPressed()); // auto
+        for (var i = 0; i < 6; i++) // auto -> Top -> Right -> Bottom -> Left -> custom -> auto
         {
             await canvas.InvokeAsync(() => canvas.Instance.OnSpacePressed());
         }
 
-        Assert.NotNull(canvas.Find(".component-container").QuerySelector(".port-top.port-focused"));
+        Assert.Equal(4, canvas.FindAll(".port-focused").Count);
+        Assert.Empty(canvas.FindAll(".custom-port.port-focused"));
     }
 }

@@ -210,12 +210,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     // entirely from Enter/arrow-key/Space focus
     // navigation rather than a continuous pointer gesture. _portFocusInstanceId/_portFocusEndpoint
     // is the port currently being picked on whichever instance Enter was most recently pressed on
-    // (entered/exited by Enter alone - see OnEnterPressed - defaulting each entry to that instance's
-    // Top port; an arrow key jumps directly to one of the four standard ports, Space instead steps
-    // to the next port in Board.AllPorts's own order so a custom port is reachable too - see
-    // OnSpacePressed). Represented as a real PortEndpoint/CustomPortEndpoint (never a
-    // FloatingEndpoint) rather than a bare PortId, so both port kinds share one representation and
-    // OnEnterPressed can hand it straight to a new Edge with no reconstruction step.
+    // (entered/exited by Enter alone - see OnEnterPressed - defaulting each entry to an auto
+    // endpoint on that instance; an arrow key jumps directly to one of the four standard ports,
+    // Space instead steps from auto through Board.AllPorts's own order so a custom port is
+    // reachable too - see OnSpacePressed). Represented as a real AutoPortEndpoint, PortEndpoint or
+    // CustomPortEndpoint (never a FloatingEndpoint) rather than a bare PortId, so every pick shares
+    // one representation and OnEnterPressed can hand it straight to a new Edge with no
+    // reconstruction step.
     // _pendingConnectorSource is the already-armed source, set by the FIRST Enter while picking and
     // persisting across the Tab/Shift+Tab navigation a keyboard user relies on to reach the target
     // instance - native Tab is never intercepted (see DiagramCanvas.razor.js), so there is no
@@ -1123,13 +1124,13 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // Enter on a group's tab stop enters the group. Otherwise Enter enters/advances the keyboard
     // connector-attachment gesture. Not currently picking a port: enters port-focus mode on
-    // whichever instance currently has keyboard focus, defaulting the pick to its Top port - a
+    // whichever instance currently has keyboard focus, defaulting the pick to an auto endpoint - a
     // no-op when nothing is focused yet. Already picking:
     // the FIRST Enter arms the currently-highlighted port as this connection's source (mirroring
     // a connector drag's press) and exits port-focus mode so Tab/Shift+Tab can reach the target
     // instance; a SECOND Enter (reached once a source is already armed) instead completes the connection
     // exactly like a connector drag dropped on a port - including its same "landing back on
-    // the exact port the drag started from creates no edge" rule. Only ever reached with the DOM
+    // the instance the drag started from creates no edge" rule. Only ever reached with the DOM
     // focus actually on a `.component-container` or `.group-tab-stop` (see the target-scoped guard in
     // DiagramCanvas.razor.js), so it never fires while a Palette button's own native
     // Enter-to-activate is what the user meant.
@@ -1156,7 +1157,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             }
 
             _portFocusInstanceId = id;
-            _portFocusEndpoint = new PortEndpoint(id, PortId.Top);
+            _portFocusEndpoint = new AutoPortEndpoint(id);
             StateHasChanged();
             return;
         }
@@ -1175,9 +1176,9 @@ public partial class DiagramCanvas : IAsyncDisposable
         // arming it and confirming a target - a keyboard gesture, unlike a continuous mouse drag,
         // spans multiple discrete key presses with other commands possible in between.
         if (
-            EndpointAttachment.ComponentIdOf(sourceEndpoint) is { } sourceComponentId
+            sourceEndpoint.ComponentId is { } sourceComponentId
             && Board.GetComponent(sourceComponentId) is not null
-            && !chosenEndpoint.Equals(sourceEndpoint)
+            && chosenEndpoint.ComponentId != sourceComponentId
         )
         {
             _history.Do(new AddEdgeCommand(Board, new Edge(sourceEndpoint, chosenEndpoint)));
@@ -1199,9 +1200,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return _portFocusEndpoint;
         }
 
-        return
-            _pendingConnectorSource is { } source
-            && EndpointAttachment.ComponentIdOf(source) == instanceId
+        return _pendingConnectorSource is { } source && source.ComponentId == instanceId
             ? source
             : null;
     }
@@ -1268,11 +1267,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // Advances _portFocusEndpoint to the next port in Board.AllPorts's own order (every standard
-    // port, then every custom one), wrapping back to the first - a no-op if the instance has
-    // meanwhile been deleted. IndexOf relies on PortEndpoint/CustomPortEndpoint's record structural
-    // equality (via IEdgeEndpoint, same as Board.FindEdgeAttachedTo's own edge.Source.Equals(...)
-    // check) to find the currently-picked port's position in that list.
+    // Advances _portFocusEndpoint through auto and then Board.AllPorts's own order (every standard
+    // port, then every custom one), wrapping back to auto - a no-op if the instance has meanwhile
+    // been deleted. IndexOf relies on the endpoints' record structural equality to find the
+    // currently-picked entry's position in that list.
     private void CyclePortFocus(Guid instanceId)
     {
         if (Board?.GetComponent(instanceId) is not { } instance)
@@ -1280,7 +1278,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var ports = Board.AllPorts(instance).Select(p => p.Endpoint).ToList();
+        var ports = Board
+            .AllPorts(instance)
+            .Select(p => p.Endpoint)
+            .Prepend(new AutoPortEndpoint(instanceId))
+            .ToList();
         var currentIndex = ports.IndexOf(_portFocusEndpoint);
         _portFocusEndpoint = ports[(currentIndex + 1) % ports.Count];
         StateHasChanged();
@@ -2330,7 +2332,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // The stop an attached end resolves to, as a press on its component would select it.
     private Guid? EndEntityId(Edge edge, bool isSource) =>
-        EndpointAttachment.ComponentIdOf(Live.EndpointOf(edge, isSource)) is { } componentId
+        Live.EndpointOf(edge, isSource).ComponentId is { } componentId
             ? EffectiveSelectionId(componentId)
             : null;
 
@@ -2734,7 +2736,10 @@ public partial class DiagramCanvas : IAsyncDisposable
             return null;
         }
 
-        var from = Live.ResolveEndpoint(pending.Anchor);
+        var from = Live.ResolveEndpoint(
+            pending.Anchor,
+            new FloatingEndpoint(pending.Point.X, pending.Point.Y)
+        );
         return from is null ? null : (from.Value, pending.Point);
     }
 

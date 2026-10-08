@@ -183,13 +183,12 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
         Assert.Empty(canvas.FindAll(".connector-drag-preview"));
     }
 
-    // Only a port pins; a drop on a shape's body leaves the end floating.
     [Fact]
-    public void DroppingOnAnotherShapesBodyLeavesTheEndFloating()
+    public void DroppingOnAnotherShapesBodyAttachesAtTheSideFacingTheSourceAndKeepsChoosing()
     {
         var board = new Board();
         AddInstance(board, 100, 100);
-        AddInstance(board, 250, 100);
+        var target = AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
@@ -202,7 +201,35 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
             over: containers[1]
         );
 
-        Assert.Equal(new FloatingEndpoint(270, 120), Assert.Single(board.Edges).Target);
+        Assert.Equal(new AutoPortEndpoint(target.Id), Assert.Single(board.Edges).Target);
+        var line = canvas.Find(".edge-line");
+        Assert.Equal(("250", "125"), (line.GetAttribute("x2"), line.GetAttribute("y2")));
+
+        target.Bounds = new Bounds(100, 300, 50, 50);
+        canvas.Render();
+
+        line = canvas.Find(".edge-line");
+        Assert.Equal(("125", "300"), (line.GetAttribute("x2"), line.GetAttribute("y2")));
+    }
+
+    [Fact]
+    public void DroppingOnTheSourceShapesOwnBodyCreatesNoEdge()
+    {
+        var board = new Board();
+        AddInstance(board, 100, 100);
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
+
+        var container = canvas.Find(".component-container");
+        canvas.DragConnector(
+            container.QuerySelector(".port-right")!,
+            (150, 125),
+            (120, 120),
+            over: container
+        );
+
+        Assert.Empty(board.Edges);
     }
 
     [Fact]

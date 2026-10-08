@@ -60,7 +60,8 @@ internal sealed record EdgeEnvelope(
 
 // CustomPortId defaults to null (last positional, same "field didn't exist yet" tolerance the
 // rest of this envelope already relies on) so a board saved before this field existed still
-// deserializes every PortEndpoint/FloatingEndpoint it has unaffected.
+// deserializes every PortEndpoint/FloatingEndpoint it has unaffected. A ComponentId with no
+// PortId, CustomPortId or point is an AutoPortEndpoint, so that shape needed no field of its own.
 internal sealed record EdgeEndpointEnvelope(
     Guid? ComponentId,
     PortId? PortId,

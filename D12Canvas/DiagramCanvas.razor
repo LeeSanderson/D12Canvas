@@ -158,6 +158,7 @@
                                                 OnFocus="@(() => FocusEntity(instance.Id))"
                                                 FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
                                                 FocusedCustomPortId="@FocusedCustomPortIdFor(instance.Id)"
+                                                AutoPortFocused="@(FocusedPortEndpointFor(instance.Id) is AutoPortEndpoint)"
                                                 CustomPorts="instance.CustomPorts">
                                 @* Lets a text-carrying built-in (Sticky Note, Text) identify
                                    itself back to ParentCanvas when committing its own inline WYSIWYG edit -

@@ -304,11 +304,11 @@ public class DiagramCanvasAdditiveTraversalTests : ComponentTestBase
         var canvas = await RenderInTheModeWithFirstSelected();
         Focus(canvas, _second);
         await PressEnter(canvas);
-        var focusedPortBefore = canvas.Find(".port-focused").ClassName;
+        var focusedPortsBefore = canvas.FindAll(".port-focused").Count;
 
         await PressSpace(canvas);
 
-        Assert.NotEqual(focusedPortBefore, canvas.Find(".port-focused").ClassName);
+        Assert.NotEqual(focusedPortsBefore, canvas.FindAll(".port-focused").Count);
         Assert.Equal([_first.Id], Selected(canvas));
     }
 

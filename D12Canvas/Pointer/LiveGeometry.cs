@@ -16,11 +16,11 @@ internal sealed class LiveGeometry(Board board, GesturePreview preview)
         : isSource ? edge.Source
         : edge.Target;
 
-    public (double X, double Y)? ResolveEndpoint(IEdgeEndpoint endpoint) =>
-        board.ResolveEndpoint(endpoint, BoundsOf);
+    public (double X, double Y)? ResolveEndpoint(IEdgeEndpoint endpoint, IEdgeEndpoint otherEnd) =>
+        board.ResolveEndpoint(endpoint, otherEnd, BoundsOf);
 
     public (double X, double Y)? ResolveEnd(Edge edge, bool isSource) =>
-        ResolveEndpoint(EndpointOf(edge, isSource));
+        ResolveEndpoint(EndpointOf(edge, isSource), EndpointOf(edge, !isSource));
 
     public Bounds? GroupBounds(Group group) => board.GetBounds(group, BoundsOf);
 }
