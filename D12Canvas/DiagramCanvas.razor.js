@@ -1148,6 +1148,8 @@ export async function addKeyboardListener(element, dotnetRef) {
                     event.preventDefault();
                     if ((event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey) {
                         dotnetRef.invokeMethodAsync("OnDirectionalFocusPressed", event.code);
+                    } else if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
+                        dotnetRef.invokeMethodAsync("OnQuickCreatePressed", event.code);
                     } else if (event.altKey) {
                         dotnetRef.invokeMethodAsync("OnAltArrowKeyPressed", event.code, event.shiftKey);
                     } else {

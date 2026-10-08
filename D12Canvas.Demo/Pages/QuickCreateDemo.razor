@@ -1,0 +1,37 @@
+@page "/quick-create-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Quick Create Demo</PageTitle>
+
+<div class="quick-create-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .quick-create-canvas {
+        width: 700px;
+        height: 500px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid RectangleId = Guid.Parse("9c000000-0000-0000-0000-000000000001");
+    private static readonly Guid TextId = Guid.Parse("9c000000-0000-0000-0000-000000000002");
+
+    private readonly Board _board = SeedBoard();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#cfe3ff", null, 2), new Bounds(60, 80, 120, 80), id: RectangleId)
+        );
+        board.AddComponent(
+            new ComponentInstance("text", new TextProps("Login", null, 18, "normal", "left"), new Bounds(60, 320, 160, 40), id: TextId)
+        );
+        return board;
+    }
+}

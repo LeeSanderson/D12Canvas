@@ -99,7 +99,11 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
         var instance = AddInstance(board, 100, 100);
         var canvas = RenderBoard(board);
 
-        canvas.DoubleClickElement(canvas.SelectedPortSpan(instance.Id, "Left"), at: (100, 150));
+        canvas.ClickElement(
+            canvas.SelectedPortSpan(instance.Id, "Left"),
+            pressCount: 2,
+            at: (100, 150)
+        );
 
         Assert.Empty(instance.CustomPorts);
     }

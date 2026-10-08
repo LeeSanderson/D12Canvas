@@ -17,3 +17,5 @@
 Shipped with three choices the ADR did not spell out. Registration refuses an `IsEmpty` predicate on a component type that does not implement `IInlineEditable`, since no edit ever ends on it. The canvas holds the creation it may retract only until history next changes, not only while it is on top by reference: placing a text, typing, committing and undoing put the creation back on top with the text change on redo, and retracting it there would have left that redo entry pointing at an instance no longer on the board. An instance already empty when its edit opens, a loaded empty `Text` opened with `F2` and closed unchanged, is removed too, as the ADR says.
 
 Still open: focus after an abandoned `Quick create` going to its source waits for ticket 103. A blur commit that arrives after a press has locked history is dropped, as a non-empty commit already was; the real-browser probe for a click on empty canvas shows the blur arriving first.
+
+`Quick create` shipped with ticket 103: an abandoned one is retracted with its edge, and after `Escape` focus and selection return to its source.

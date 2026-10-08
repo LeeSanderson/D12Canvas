@@ -19,7 +19,13 @@ public partial class DiagramCanvas
 
     // Held from a creation until anything else changes history, so a retraction never leaves an
     // undone entry for the retracted instance on redo.
-    private (Guid Id, ICommand Command)? _retractableCreation;
+    private RetractableCreation? _retractableCreation;
+
+    private readonly record struct RetractableCreation(
+        Guid Id,
+        ICommand Command,
+        Guid? QuickCreateSourceId
+    );
 
     [JSInvokable]
     public void OnBeginEditPressed()
@@ -43,10 +49,11 @@ public partial class DiagramCanvas
         var labelledEdge = EdgeLabelled(instanceId);
         var entity = ResolvePropsEntity(instanceId);
         var removed = entity is not null && EndsEmpty(entity, before, after);
+        RetractableCreation? retracted = null;
 
         if (removed)
         {
-            RemoveEmptied(entity!, labelledEdge, before, after);
+            retracted = RetractOrRemoveEmptied(entity!, labelledEdge, before, after);
         }
         else if (!Equals(before, after))
         {
@@ -55,7 +62,7 @@ public partial class DiagramCanvas
 
         if (returnFocus)
         {
-            ReturnFocusAfterEdit(instanceId, labelledEdge, removed);
+            ReturnFocusAfterEdit(instanceId, labelledEdge, removed, retracted?.QuickCreateSourceId);
         }
 
         StateHasChanged();
@@ -66,7 +73,9 @@ public partial class DiagramCanvas
             .Resolve(instance.ComponentTypeKey)
             .CountsAsEmpty(UnresolvedForCommit(instance, before, after).After);
 
-    private void RemoveEmptied(
+    // Retracts the instance's creation while it is still retractable, and otherwise removes the
+    // instance as its own entry. Returns the creation it retracted.
+    private RetractableCreation? RetractOrRemoveEmptied(
         ComponentInstance instance,
         Edge? labelledEdge,
         object before,
@@ -78,7 +87,7 @@ public partial class DiagramCanvas
             _retractableCreation = null;
             if (_history.Retract(creation.Command))
             {
-                return;
+                return creation;
             }
         }
 
@@ -99,16 +108,28 @@ public partial class DiagramCanvas
         }
 
         _history.Do(new CompositeCommand(commands));
+        return null;
     }
 
-    // A removed instance has no stop left, so focus goes to the stop of the edge it labelled, or
-    // to the canvas with nothing selected.
-    private void ReturnFocusAfterEdit(Guid instanceId, Edge? labelledEdge, bool removed)
+    // A removed instance has no stop left, so focus goes to the quick create's source it came
+    // from, the stop of the edge it labelled, or the canvas with nothing selected.
+    private void ReturnFocusAfterEdit(
+        Guid instanceId,
+        Edge? labelledEdge,
+        bool removed,
+        Guid? quickCreateSourceId
+    )
     {
         _returningFocusAfterEdit = true;
         if (labelledEdge is not null)
         {
             _editFocusStopId = labelledEdge.Id;
+        }
+        else if (quickCreateSourceId is { } sourceId && Board?.GetComponent(sourceId) is not null)
+        {
+            var sourceStopId = EffectiveSelectionId(sourceId);
+            _editFocusStopId = sourceStopId;
+            SetSelection([sourceStopId], []);
         }
         else if (removed)
         {
@@ -121,10 +142,10 @@ public partial class DiagramCanvas
         }
     }
 
-    private void RecordCreation(Guid id, ICommand command)
+    private void RecordCreation(Guid id, ICommand command, Guid? quickCreateSourceId = null)
     {
         _history.Do(command);
-        _retractableCreation = (id, command);
+        _retractableCreation = new RetractableCreation(id, command, quickCreateSourceId);
     }
 
     private Edge? EdgeLabelled(Guid labelId) =>

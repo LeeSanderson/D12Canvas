@@ -213,6 +213,10 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public void AddEdgeLabel(Guid edgeId) => LabelsAdded.Add(edgeId);
 
+    public List<IEdgeEndpoint> QuickCreates { get; } = new();
+
+    public void QuickCreate(IEdgeEndpoint sourcePort) => QuickCreates.Add(sourcePort);
+
     public void BeginLabelEdit(Guid edgeId) => LabelEditRequests.Add(edgeId);
 
     public void BeginInlineEdit(Guid instanceId) => InlineEditRequests.Add(instanceId);

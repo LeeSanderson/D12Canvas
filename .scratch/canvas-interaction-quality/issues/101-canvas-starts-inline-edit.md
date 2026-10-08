@@ -20,3 +20,5 @@
 Shipped with three choices the ADR did not spell out. A new edge label pans into view and is dropped below the LOD cutoff, as an instance is, since a long edge can put its midpoint off screen. `focusTabStopAt` now focuses with `preventScroll` for every command handoff, not only the return from an edit, because the container is `overflow: hidden` and any scroll there moves the board behind `ZoomPanTracker`'s back. The keyboard listener's `Escape` row now skips every editable target inside the container, which is what keeps the first `Escape` out of the canvas's own row; an author's own input inside board content gets the same treatment.
 
 Still open: the pan into view is a plain pan write with no transition, because no framing transition exists until ticket 106. `Quick create` (103) does not exist yet, so its edit-on-create waits for it. What an edit that ends empty does is ticket 102.
+
+`Quick create` shipped with ticket 103 and opens an editable copy through `RequestInlineEdit`.

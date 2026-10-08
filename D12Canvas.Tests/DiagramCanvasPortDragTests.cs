@@ -281,18 +281,6 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
     }
 
     [Fact]
-    public void AClickOnAPortCreatesNothing()
-    {
-        var board = new Board();
-        var source = AddInstance(board, 100, 100);
-        var canvas = RenderBoard(board);
-
-        canvas.ClickElement(canvas.SelectedPortSpan(source.Id, "Right"));
-
-        Assert.Empty(board.Edges);
-    }
-
-    [Fact]
     public void StartingADragOnASelectedInstancesPortNeverInitiatesAMove()
     {
         var board = new Board();

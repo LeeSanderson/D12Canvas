@@ -112,6 +112,10 @@ internal interface IGestureContext
     void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint);
     void AddEdgeLabel(Guid edgeId);
 
+    // A copy of the port's instance beside it on the port's side, connected from that port, then
+    // selected, focused and opened for editing when its type allows. One history entry.
+    void QuickCreate(IEdgeEndpoint sourcePort);
+
     // Asks the edge's label to open its inline editor, as BeginInlineEdit does for an instance.
     void BeginLabelEdit(Guid edgeId);
 

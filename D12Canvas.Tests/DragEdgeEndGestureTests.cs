@@ -250,19 +250,111 @@ public class DragEdgeEndGestureTests
         Assert.Empty(context.AddedEdges);
     }
 
+    [Theory]
+    [InlineData(PortId.Top)]
+    [InlineData(PortId.Right)]
+    [InlineData(PortId.Bottom)]
+    [InlineData(PortId.Left)]
+    public void AClickOnAStandardPortQuickCreatesFromThatPort(PortId side)
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, side.ToString(), 150, 125);
+        gesture.Release(ReleaseAt(150, 125, PortHit(source, side.ToString())));
+
+        Assert.Equal(new PortEndpoint(source.Id, side), Assert.Single(context.QuickCreates));
+        Assert.Empty(context.AddedEdges);
+        Assert.Empty(context.EndpointChanges);
+        Assert.Null(context.PendingEdge);
+    }
+
     [Fact]
-    public void AClickOnAPortChangesNothing()
+    public void AClickOnACustomPortQuickCreatesFromThatPort()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var custom = new PortDef(1.0, 0.8);
+        source.CustomPorts.Add(custom);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, custom.Id.ToString(), 150, 140);
+        gesture.Release(ReleaseAt(150, 140));
+
+        Assert.Equal(
+            new CustomPortEndpoint(source.Id, custom.Id),
+            Assert.Single(context.QuickCreates)
+        );
+    }
+
+    [Fact]
+    public void AClickOnAPortThatAnchorsAnEdgeStillQuickCreatesAndLeavesTheEdgeAlone()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(source.Id, PortId.Right),
+                new PortEndpoint(target.Id, PortId.Left)
+            )
+        );
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.Release(ReleaseAt(150, 125));
+
+        Assert.Equal(
+            new PortEndpoint(source.Id, PortId.Right),
+            Assert.Single(context.QuickCreates)
+        );
+        Assert.Empty(context.EndpointChanges);
+    }
+
+    [Fact]
+    public void AClickOnAFloatingEndpointCreatesNothing()
+    {
+        var board = new Board();
+        var edge = new Edge(new FloatingEndpoint(0, 0), new FloatingEndpoint(100, 0));
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.EdgeEndpoint, edge.Id, "source", 0, 0);
+        gesture.Release(ReleaseAt(0, 0));
+
+        Assert.Empty(context.QuickCreates);
+        Assert.Empty(context.EndpointChanges);
+    }
+
+    [Fact]
+    public void APortPressThatCrossesTheThresholdIsAConnectorDragAndQuickCreatesNothing()
     {
         var board = new Board();
         var source = AddInstance(board, 100, 100);
         var context = new FakeGestureContext(board);
 
         var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.Move(PointerEvents.Move(300, 300));
+        gesture.Release(ReleaseAt(300, 300));
+
+        Assert.Empty(context.QuickCreates);
+        Assert.Single(context.AddedEdges);
+    }
+
+    [Fact]
+    public void APortPressCancelledBeforeReleaseQuickCreatesNothing()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var context = new FakeGestureContext(board);
+
+        var gesture = Press(context, HitRole.Port, source.Id, "Right", 150, 125);
+        gesture.MarkCancelled();
         gesture.Release(ReleaseAt(150, 125, PortHit(source, "Right")));
 
+        Assert.Empty(context.QuickCreates);
         Assert.Empty(context.AddedEdges);
-        Assert.Empty(context.EndpointChanges);
-        Assert.Null(context.PendingEdge);
     }
 
     [Fact]

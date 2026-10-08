@@ -825,6 +825,8 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void AddEdgeLabel(Guid edgeId) => canvas.AddEdgeLabel(edgeId);
 
+        public void QuickCreate(IEdgeEndpoint sourcePort) => canvas.QuickCreate(sourcePort);
+
         public void BeginLabelEdit(Guid edgeId) => canvas.BeginLabelEdit(edgeId);
 
         public void OpenContextMenuAt(double containerX, double containerY, bool pressHitEntity)

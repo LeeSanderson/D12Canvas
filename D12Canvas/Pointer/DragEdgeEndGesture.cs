@@ -10,7 +10,8 @@ namespace D12Canvas.Pointer;
 // it, a shape's body attaches it as an auto endpoint, nothing at all leaves it floating at the
 // release point, and chrome, another edge or a locked shape in between is looked through. A locked
 // edge is never carried, so a port span with one pinned to it pulls a new edge. A drop on the
-// shape the other end is attached to changes nothing.
+// shape the other end is attached to changes nothing. A port span released before the drag
+// threshold is a quick create from that port.
 internal sealed class DragEdgeEndGesture : PointerGesture
 {
     private IEdgeEndpoint? _anchor;
@@ -108,7 +109,16 @@ internal sealed class DragEdgeEndGesture : PointerGesture
         }
     }
 
-    protected override void OnClick(PointerRelease release) { }
+    protected override void OnClick(PointerRelease release)
+    {
+        if (
+            Press.EntityId is { } entityId
+            && PortEndpoint(Press.Role, entityId, Press.Part) is { } port
+        )
+        {
+            Context.QuickCreate(port);
+        }
+    }
 
     private static bool SameComponent(IEdgeEndpoint dropped, IEdgeEndpoint anchor) =>
         dropped.ComponentId is { } componentId && componentId == anchor.ComponentId;
