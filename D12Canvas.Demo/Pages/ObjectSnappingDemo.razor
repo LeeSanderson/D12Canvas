@@ -1,0 +1,41 @@
+@page "/object-snapping-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Object Snapping Demo</PageTitle>
+
+<div class="object-snapping-canvas">
+    <DiagramCanvas Board="_board" @bind-ObjectSnapping="_objectSnapping" />
+</div>
+
+<style>
+    .object-snapping-canvas {
+        width: 700px;
+        height: 500px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid FirstId = Guid.Parse("c0000000-0000-0000-0000-000000000001");
+    private static readonly Guid SecondId = Guid.Parse("c0000000-0000-0000-0000-000000000002");
+    private static readonly Guid MoverId = Guid.Parse("c0000000-0000-0000-0000-000000000003");
+
+    private readonly Board _board = SeedBoard();
+    private bool _objectSnapping = true;
+
+    private static void AddRectangle(Board board, Guid id, Bounds bounds, string fill) =>
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps(fill, null, 2), bounds, id: id)
+        );
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        AddRectangle(board, FirstId, new Bounds(60, 200, 120, 80), "#cfe3ff");
+        AddRectangle(board, SecondId, new Bounds(240, 200, 120, 80), "#cfe3ff");
+        AddRectangle(board, MoverId, new Bounds(420, 380, 120, 60), "#ffe0b2");
+        return board;
+    }
+}

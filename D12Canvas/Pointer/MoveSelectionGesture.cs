@@ -8,11 +8,12 @@ namespace D12Canvas.Pointer;
 // member or, under Shift, toggles it out. A click on the selection box does the same with the
 // topmost entity beneath it, and an Alt click selects the next entity down the hit stack from the
 // one selected before the press. Every tick publishes the whole selection translated by
-// the board-space distance from the press point, snapped as one rigid body by the top-left of its
-// instances' bounding box, straightened to one axis while Shift is held and left unsnapped while
-// Ctrl is, and an active release commits exactly what was last published. A
-// selected edge's floating ends take the same delta; its attached ends follow their components
-// and have nothing of their own to publish.
+// the board-space distance from the press point, snapped as one rigid body: object snapping aligns
+// its instances' bounding box with the shapes around it where it matches, the grid rounds the
+// box's top-left on any axis it did not, the motion is straightened to one axis while Shift is
+// held and left unsnapped while Ctrl is, and an active release commits exactly what was last
+// published. A selected edge's floating ends take the same delta; its attached ends follow their
+// components and have nothing of their own to publish.
 internal sealed class MoveSelectionGesture : PointerGesture
 {
     private readonly (double X, double Y) _pressPoint;
@@ -20,6 +21,10 @@ internal sealed class MoveSelectionGesture : PointerGesture
     private IReadOnlyList<ComponentInstance> _participants = [];
     private IReadOnlyList<(EdgeEnd End, FloatingEndpoint Start)> _floatingEnds = [];
     private (double X, double Y) _origin;
+    private Bounds _box;
+    private HashSet<Guid> _participantIds = [];
+    private AxisSnap? _heldX;
+    private AxisSnap? _heldY;
 
     public MoveSelectionGesture(PointerPress press, IGestureContext context)
         : base(press, context)
@@ -47,17 +52,21 @@ internal sealed class MoveSelectionGesture : PointerGesture
         }
 
         _participants = Context.SelectedInstances();
+        _participantIds = _participants.Select(participant => participant.Id).ToHashSet();
         _floatingEnds = Context.SelectedEdges().SelectMany(FloatingEndsOf).ToList();
         if (Bounds.Union(_participants.Select(participant => participant.Bounds)) is { } box)
         {
             _origin = (box.X, box.Y);
+            _box = box;
         }
 
         PublishTranslatedBy(0, 0);
     }
 
     // Shift holds the axis the press-anchored delta has moved least along. That axis is never
-    // snapped, since rounding it would move the selection along the axis just locked.
+    // snapped, since rounding it would move the selection along the axis just locked. On each free
+    // axis object snapping takes the axis where it matches and the grid fills it where it does not;
+    // Ctrl suppresses both, and a fast pointer stands object snapping down and drops what it held.
     protected override void OnMove(PointerMove move)
     {
         var current = Context.ToBoardPoint(move.X, move.Y);
@@ -68,13 +77,88 @@ internal sealed class MoveSelectionGesture : PointerGesture
 
         var x = xLocked ? _origin.X : _origin.X + deltaX;
         var y = yLocked ? _origin.Y : _origin.Y + deltaY;
-        if (!move.CtrlKey && Context.GridSpacing is { } spacing)
+        var guides = new List<SnapGuide>();
+        if (!move.CtrlKey)
         {
-            x = xLocked ? x : GridSnap.NearestLine(x, spacing);
-            y = yLocked ? y : GridSnap.NearestLine(y, spacing);
+            var candidates = ObjectSnapCandidates(move, _participantIds);
+            var raw = _box with { X = x, Y = y };
+            var tolerance = ObjectSnapTolerance;
+            _heldX = xLocked
+                ? null
+                : ObjectSnap.ForMove(raw, candidates, SnapAxis.X, tolerance, _heldX);
+            _heldY = yLocked
+                ? null
+                : ObjectSnap.ForMove(raw, candidates, SnapAxis.Y, tolerance, _heldY);
+
+            var snappedX = SnapAxisCoordinate(x, xLocked, _heldX, raw, SnapAxis.X);
+            var snappedY = SnapAxisCoordinate(y, yLocked, _heldY, raw, SnapAxis.Y);
+            var guidesX = GuidesAlong(SnapAxis.X, _heldX, snappedX, snappedY, candidates);
+            var guidesY = GuidesAlong(SnapAxis.Y, _heldY, snappedX, snappedY, candidates);
+
+            if (_heldX is not null && guidesX.Count == 0)
+            {
+                _heldX = null;
+                snappedX = SnapAxisCoordinate(x, xLocked, null, raw, SnapAxis.X);
+                guidesY = GuidesAlong(SnapAxis.Y, _heldY, snappedX, snappedY, candidates);
+            }
+
+            if (_heldY is not null && guidesY.Count == 0)
+            {
+                _heldY = null;
+                snappedY = SnapAxisCoordinate(y, yLocked, null, raw, SnapAxis.Y);
+                guidesX = GuidesAlong(SnapAxis.X, _heldX, snappedX, snappedY, candidates);
+            }
+
+            (x, y) = (snappedX, snappedY);
+            guides.AddRange(guidesX);
+            guides.AddRange(guidesY);
+        }
+        else
+        {
+            _heldX = null;
+            _heldY = null;
         }
 
         PublishTranslatedBy(x - _origin.X, y - _origin.Y);
+        Context.PublishGuides(guides);
+    }
+
+    // The second pass, from where the selection now stands. An axis whose match leaves nothing to
+    // draw there, which happens when the other axis's snap carried the selection out of the row an
+    // equal-spacing match was found in, gives the axis back to the grid rather than correcting it
+    // silently.
+    private IReadOnlyList<SnapGuide> GuidesAlong(
+        SnapAxis axis,
+        AxisSnap? held,
+        double x,
+        double y,
+        IReadOnlyList<Bounds> candidates
+    ) =>
+        held is null
+            ? []
+            : ObjectSnap.GuidesForMove(_box with { X = x, Y = y }, candidates, axis).ToList();
+
+    private double SnapAxisCoordinate(
+        double coordinate,
+        bool locked,
+        AxisSnap? held,
+        Bounds raw,
+        SnapAxis axis
+    )
+    {
+        if (locked)
+        {
+            return coordinate;
+        }
+
+        if (held is { } snap)
+        {
+            return coordinate + ObjectSnap.Offset(raw, axis, snap);
+        }
+
+        return Context.GridSpacing is { } spacing
+            ? GridSnap.NearestLine(coordinate, spacing)
+            : coordinate;
     }
 
     protected override void OnRelease(PointerRelease release) => Context.CommitPreview();

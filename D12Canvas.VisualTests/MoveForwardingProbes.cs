@@ -86,4 +86,29 @@ public sealed class MoveForwardingProbes(PlaywrightFixture playwright, DemoAppFi
 
         await Page.Mouse.UpAsync();
     }
+
+    // The cut-off object snapping stands down above is 3 screen pixels per millisecond: a 300 pixel
+    // jump is far above it however slowly the host dispatches, and a 1 pixel step after a pause far
+    // below.
+    [Fact]
+    public async Task ALongJumpReportsAFastPointerAndASmallStepAfterAPauseASlowOne()
+    {
+        var start = await EmptyCanvasPointAsync();
+        await Page.Mouse.MoveAsync(start.X, start.Y);
+        await Page.Mouse.DownAsync();
+        await Page.Mouse.MoveAsync(start.X - 20, start.Y - 20);
+        await Page.Mouse.MoveAsync(start.X - 320, start.Y - 20);
+        await SettleAsync();
+        var fast = (await CallsToAsync("OnPointerMoved"))[^1][0];
+        await ClearCallsAsync();
+
+        await Task.Delay(300, TestContext.Current.CancellationToken);
+        await Page.Mouse.MoveAsync(start.X - 321, start.Y - 20);
+        await SettleAsync();
+        var slow = Assert.Single(await CallsToAsync("OnPointerMoved"))[0];
+
+        Assert.True(fast.GetProperty("velocity").GetDouble() > 3);
+        Assert.True(slow.GetProperty("velocity").GetDouble() < 3);
+        await Page.Mouse.UpAsync();
+    }
 }

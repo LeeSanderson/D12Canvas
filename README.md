@@ -21,6 +21,7 @@ with plain CSS; no host-side registration or parameter is required.
 | `--d12-board-text` | A `Text` instance's colour when its `Color` prop is null (no author opinion) |
 | `--d12-board-fill` | A `Rectangle` instance's fill when its `FillColor` prop is null |
 | `--d12-board-stroke` | A `Rectangle` instance's stroke when its `StrokeColor` prop is null |
+| `--d12-alignment-guide` | Alignment and equal-spacing guides drawn while object snapping matches, at half intensity; deliberately not the accent |
 
 A colour an author or user has set on a component instance is never themed through this layer:
 it stays an ordinary `TProps` value and is painted literally in both themes. The three

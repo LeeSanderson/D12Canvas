@@ -149,4 +149,47 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         Assert.DoesNotContain("#", preview);
         Assert.DoesNotContain("rgba(", preview);
     }
+
+    [Theory]
+    [InlineData(".diagram-container {")]
+    [InlineData("@media (prefers-color-scheme: dark)")]
+    [InlineData("[data-d12-theme=\"light\"] .diagram-container {")]
+    [InlineData("[data-d12-theme=\"dark\"] .diagram-container {")]
+    public void EveryBlockDeclaresTheAlignmentGuideToken(string marker)
+    {
+        var canvas = Render<DiagramCanvas>();
+        var block = ExtractBlock(StyleBlockText(canvas), marker);
+
+        Assert.Contains("--d12-alignment-guide:", block);
+    }
+
+    [Fact]
+    public void GuidesReadTheirOwnTokenAtHalfIntensityAndNeverTheAccent()
+    {
+        var canvas = Render<DiagramCanvas>();
+        var css = StyleBlockText(canvas);
+        var guide = ExtractBlock(css, ".spacing-guide {");
+
+        Assert.Contains("stroke: var(--d12-alignment-guide)", guide);
+        Assert.Contains("stroke-opacity: 0.5", guide);
+        Assert.DoesNotContain("--d12-accent", guide);
+        Assert.DoesNotContain("#", guide);
+
+        var light = ExtractBlock(css, "[data-d12-theme=\"light\"] .diagram-container {");
+        var dark = ExtractBlock(css, "[data-d12-theme=\"dark\"] .diagram-container {");
+        Assert.NotEqual(
+            TokenValue(light, "--d12-alignment-guide"),
+            TokenValue(light, "--d12-accent")
+        );
+        Assert.NotEqual(
+            TokenValue(dark, "--d12-alignment-guide"),
+            TokenValue(dark, "--d12-accent")
+        );
+    }
+
+    private static string TokenValue(string block, string token)
+    {
+        var start = block.IndexOf(token + ":", StringComparison.Ordinal) + token.Length + 1;
+        return block[start..block.IndexOf(';', start)].Trim();
+    }
 }

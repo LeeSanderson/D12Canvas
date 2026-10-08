@@ -29,6 +29,9 @@ public sealed record PointerPress(
     public const int SecondaryButton = 2;
 }
 
+// Velocity is how fast the pointer was travelling when it reached this point, in screen pixels per
+// millisecond. A move re-sent for a modifier change, or re-run for a viewport change, carries
+// zero, since the pointer itself is still.
 public sealed record PointerMove(
     int PointerId,
     double X,
@@ -37,7 +40,8 @@ public sealed record PointerMove(
     bool ShiftKey,
     bool CtrlKey,
     bool AltKey,
-    bool MetaKey
+    bool MetaKey,
+    double Velocity = 0
 );
 
 // Hits is what lies under the release point, topmost first, read only for a press that can drop

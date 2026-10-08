@@ -54,6 +54,16 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Parameter]
     public EventCallback<bool> SnapToGridChanged { get; set; }
 
+    // Aligns what a move or resize carries with the edges and centres of the shapes on screen,
+    // drawing a guide along each match. Independent of SnapToGrid: where both are on, object
+    // snapping takes any axis it matches and the grid fills the other. Bound like SnapToGrid,
+    // with no chord of its own.
+    [Parameter]
+    public bool ObjectSnapping { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ObjectSnappingChanged { get; set; }
+
     // Lets a host disable the built-in Ctrl+' chord independently of the bindable SnapToGrid
     // parameter itself, in case it conflicts with the host's own keybindings.
     [Parameter]
@@ -297,7 +307,7 @@ public partial class DiagramCanvas : IAsyncDisposable
                 CanvasElement,
                 ContainerElement,
                 _dotNetObjectRef,
-                new { classify = true }
+                new { classify = true, dragThreshold = ScreenPixels.DragThreshold }
             );
 
             var wheelCleanup = await _jsModule.InvokeAsync<IJSObjectReference>(
@@ -449,7 +459,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (
             _activeGesture is { } gesture
             && _lastPointer is { } pointer
-            && gesture.ViewportMoved(pointer)
+            && gesture.ViewportMoved(pointer with { Velocity = 0 })
             && _pointerListener is not null
         )
         {
@@ -724,6 +734,18 @@ public partial class DiagramCanvas : IAsyncDisposable
         public void ClearSelection() => canvas.SetSelection([], []);
 
         public double? GridSpacing => canvas.SnapToGrid ? canvas.DominantGridSpacing() : null;
+
+        public bool ObjectSnapping => canvas.ObjectSnapping;
+
+        public IReadOnlyList<Bounds> SnapCandidates(IReadOnlyCollection<Guid> excluded) =>
+            canvas
+                .Board!.GetVisible(canvas._zoomPanTracker.Viewport)
+                .Where(instance => !excluded.Contains(instance.Id))
+                .Select(instance => instance.Bounds)
+                .ToList();
+
+        public void PublishGuides(IReadOnlyList<SnapGuide> guides) =>
+            canvas._preview.PublishGuides(guides);
 
         public void ShowMarquee(Bounds? boardBounds) => canvas._marqueeBounds = boardBounds;
 
@@ -1439,6 +1461,15 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         SnapToGrid = !SnapToGrid;
         SnapToGridChanged.InvokeAsync(SnapToGrid);
+        StateHasChanged();
+    }
+
+    // No chord reaches this: object snapping is a set-and-forget preference, and Ctrl already
+    // frees a single drag from it.
+    public void OnToggleObjectSnappingPressed()
+    {
+        ObjectSnapping = !ObjectSnapping;
+        ObjectSnappingChanged.InvokeAsync(ObjectSnapping);
         StateHasChanged();
     }
 
@@ -2371,6 +2402,83 @@ public partial class DiagramCanvas : IAsyncDisposable
         return BoxStyle(bounds.ExpandedBy(EnteredGroupOutlineGap));
     }
 
+    private const double SpacingGuideCapHalfLength = 4;
+
+    // An alignment guide spans the whole viewport; a spacing guide runs across its gap with a cap
+    // at each end, the caps sized in screen pixels since a stroke's non-scaling width does nothing
+    // for a segment's length.
+    private IEnumerable<(string Kind, double X1, double Y1, double X2, double Y2)> GuideSegments()
+    {
+        var viewport = _zoomPanTracker.Viewport;
+        var (top, bottom) = (viewport.Y + 0.0, viewport.Bottom + 0.0);
+        var (left, right) = (viewport.X + 0.0, viewport.Right + 0.0);
+        var cap = SpacingGuideCapHalfLength / _zoomPanTracker.Scale;
+        foreach (var guide in _preview.Guides)
+        {
+            switch (guide)
+            {
+                case AlignmentGuide { Axis: SnapAxis.X } vertical:
+                    yield return (
+                        "alignment-guide",
+                        vertical.Coordinate,
+                        top,
+                        vertical.Coordinate,
+                        bottom
+                    );
+                    break;
+                case AlignmentGuide horizontal:
+                    yield return (
+                        "alignment-guide",
+                        left,
+                        horizontal.Coordinate,
+                        right,
+                        horizontal.Coordinate
+                    );
+                    break;
+                case SpacingGuide { Axis: SnapAxis.X } across:
+                    yield return (
+                        "spacing-guide",
+                        across.From,
+                        across.Cross,
+                        across.To,
+                        across.Cross
+                    );
+                    yield return (
+                        "spacing-guide",
+                        across.From,
+                        across.Cross - cap,
+                        across.From,
+                        across.Cross + cap
+                    );
+                    yield return (
+                        "spacing-guide",
+                        across.To,
+                        across.Cross - cap,
+                        across.To,
+                        across.Cross + cap
+                    );
+                    break;
+                case SpacingGuide down:
+                    yield return ("spacing-guide", down.Cross, down.From, down.Cross, down.To);
+                    yield return (
+                        "spacing-guide",
+                        down.Cross - cap,
+                        down.From,
+                        down.Cross + cap,
+                        down.From
+                    );
+                    yield return (
+                        "spacing-guide",
+                        down.Cross - cap,
+                        down.To,
+                        down.Cross + cap,
+                        down.To
+                    );
+                    break;
+            }
+        }
+    }
+
     private static string BoxStyle(Bounds bounds) =>
         $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px;";
 
@@ -2397,7 +2505,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void HandleDragLeave(DragEventArgs e) => _isDragOverBoard = false;
 
     private string ContentStyle =>
-        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale}); --d12-scale: {_zoomPanTracker.Scale};{AmbientTransitionStyle}";
+        $"transform: translate({_zoomPanTracker.PanX}px, {_zoomPanTracker.PanY}px) scale({_zoomPanTracker.Scale}); --d12-scale: {_zoomPanTracker.Scale}; --d12-edge-hit-band: {ScreenPixels.EdgeHitBand}px;{AmbientTransitionStyle}";
 
     private string AmbientTransitionStyle =>
         _ambientTransition > TimeSpan.Zero

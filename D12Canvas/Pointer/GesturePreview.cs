@@ -3,9 +3,10 @@ using D12Canvas.Model;
 namespace D12Canvas.Pointer;
 
 // What the active pointer gesture publishes while it runs: the bounds of its participants, keyed
-// by instance id, the floating edge ends it carries, keyed by edge end, and at most one pending
-// edge line. Written only by that gesture, read only through live geometry, discarded on cancel
-// and written back verbatim on commit. Board is never touched while it holds anything.
+// by instance id, the floating edge ends it carries, keyed by edge end, at most one pending edge
+// line, and the guides drawn along what object snapping matched. Written only by that gesture,
+// read only through live geometry, discarded on cancel and written back verbatim on commit. Board
+// is never touched while it holds anything.
 internal sealed class GesturePreview
 {
     private Dictionary<Guid, Bounds> _boundsOverrides = new();
@@ -16,6 +17,8 @@ internal sealed class GesturePreview
     public IReadOnlyDictionary<EdgeEnd, FloatingEndpoint> MovedEndpoints => _movedEndpoints;
 
     public PendingEdge? PendingEdge { get; private set; }
+
+    public IReadOnlyList<SnapGuide> Guides { get; private set; } = [];
 
     public bool TryGetBounds(Guid instanceId, out Bounds bounds) =>
         _boundsOverrides.TryGetValue(instanceId, out bounds);
@@ -32,11 +35,14 @@ internal sealed class GesturePreview
 
     public void PublishPendingEdge(PendingEdge pendingEdge) => PendingEdge = pendingEdge;
 
+    public void PublishGuides(IReadOnlyList<SnapGuide> guides) => Guides = guides;
+
     public void Clear()
     {
         _boundsOverrides = new();
         _movedEndpoints = new();
         PendingEdge = null;
+        Guides = [];
     }
 }
 

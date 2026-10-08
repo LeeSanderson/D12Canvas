@@ -70,10 +70,9 @@ export function focusTabStopAt(container, index) {
 // button comes up. The decisions that cannot wait for an interop hop are taken synchronously in
 // this listener: preventDefault, pointer capture on the canvas element, the single focus write,
 // the drag threshold (C# is never called below it) and whether the browser's own context menu is
-// suppressed. Moves are coalesced to one call per animation frame. Coordinates cross to C# as
-// container-relative screen pixels, converted here so no round trip stands between a press and
-// its owner.
-const DRAG_THRESHOLD_PX = 4;
+// suppressed. Moves are coalesced to one call per animation frame, each carrying how fast the
+// pointer was travelling when it got there. Coordinates cross to C# as container-relative screen
+// pixels, converted here so no round trip stands between a press and its owner.
 const PRIMARY_BUTTON = 0;
 const SECONDARY_BUTTON = 2;
 const MIDDLE_BUTTON = 1;
@@ -230,6 +229,7 @@ function isApplePlatform() {
 
 export async function addPointerListener(canvas, container, dotnetRef, options) {
     const classifyPresses = options?.classify !== false;
+    const dragThreshold = options.dragThreshold;
     const applePlatform = isApplePlatform();
     let press = null;
     let lastPress = null;
@@ -275,15 +275,35 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             ? hitStackAt(canvas, event.clientX, event.clientY)
             : null;
 
-    const moveFor = (event) => {
+    const moveFor = (event, velocity = 0) => {
         const point = containerPoint(event);
         return {
             pointerId: event.pointerId,
             x: point.x,
             y: point.y,
             buttons: event.buttons,
-            ...modifiersOf(event)
+            ...modifiersOf(event),
+            velocity
         };
+    };
+
+    // Screen pixels per millisecond since the pointer's previous event. Two events stamped in the
+    // same millisecond keep the last speed rather than dividing by nothing.
+    const velocityAt = (event) => {
+        const previous = press.lastSample;
+        const elapsed = event.timeStamp - previous.time;
+        const velocity =
+            elapsed > 0
+                ? Math.hypot(event.clientX - previous.clientX, event.clientY - previous.clientY) /
+                  elapsed
+                : previous.velocity;
+        press.lastSample = {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            time: event.timeStamp,
+            velocity
+        };
+        return velocity;
     };
 
     const pressFor = (event, button, hit) => {
@@ -389,6 +409,12 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             startClientY: event.clientY,
             active: false,
             lastMove: moveFor(event),
+            lastSample: {
+                clientX: event.clientX,
+                clientY: event.clientY,
+                time: event.timeStamp,
+                velocity: 0
+            },
             pendingMove: null,
             frame: 0
         };
@@ -409,19 +435,20 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             return;
         }
 
+        const velocity = velocityAt(event);
         if (!press.active) {
             const distance = Math.hypot(
                 event.clientX - press.startClientX,
                 event.clientY - press.startClientY
             );
-            if (distance < DRAG_THRESHOLD_PX) {
+            if (distance < dragThreshold) {
                 return;
             }
 
             press.active = true;
         }
 
-        queueMove(moveFor(event));
+        queueMove(moveFor(event, velocity));
     };
 
     // A modifier changed with the pointer still is a move from where the pointer last was, so a
@@ -439,7 +466,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             return;
         }
 
-        queueMove({ ...press.lastMove, ...modifiers });
+        queueMove({ ...press.lastMove, ...modifiers, velocity: 0 });
     };
 
     // Only the claiming button's release ends the gesture. Any move still waiting for its frame

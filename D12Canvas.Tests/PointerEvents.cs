@@ -35,8 +35,13 @@ internal static class PointerEvents
             MetaKey: false
         );
 
-    public static PointerMove Move(double x, double y, bool shift = false, bool ctrl = false) =>
-        new(PointerId, x, y, Buttons: 1, shift, ctrl, AltKey: false, MetaKey: false);
+    public static PointerMove Move(
+        double x,
+        double y,
+        bool shift = false,
+        bool ctrl = false,
+        double velocity = 0
+    ) => new(PointerId, x, y, Buttons: 1, shift, ctrl, AltKey: false, MetaKey: false, velocity);
 
     public static PointerRelease Release(int button, double x, double y) =>
         new(

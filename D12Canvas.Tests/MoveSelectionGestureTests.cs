@@ -470,4 +470,167 @@ public class MoveSelectionGestureTests
 
         Assert.Empty(context.SelectedEdgeIds);
     }
+
+    [Fact]
+    public void ObjectSnappingTakesTheAxisItMatchesAndTheGridFillsTheOther()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        AddInstance(board, new Bounds(203, 300, 80, 50));
+        var context = new FakeGestureContext(board) { GridSpacing = 20, ObjectSnapping = true };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(210, 43));
+
+        Assert.Equal(new Bounds(203, 40, 50, 50), context.Preview[shape.Id]);
+        Assert.Equal([new AlignmentGuide(SnapAxis.X, 203)], context.Guides);
+    }
+
+    [Fact]
+    public void WithObjectSnappingOffOnlyTheGridSnaps()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        AddInstance(board, new Bounds(203, 300, 80, 50));
+        var context = new FakeGestureContext(board) { GridSpacing = 20 };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(210, 43));
+
+        Assert.Equal(new Bounds(200, 40, 50, 50), context.Preview[shape.Id]);
+        Assert.Empty(context.Guides);
+    }
+
+    [Fact]
+    public void CtrlFreesBothSnapsAndIsReadLive()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        AddInstance(board, new Bounds(203, 300, 80, 50));
+        var context = new FakeGestureContext(board) { GridSpacing = 20, ObjectSnapping = true };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(210, 43, ctrl: true));
+        Assert.Equal(new Bounds(200, 33, 50, 50), context.Preview[shape.Id]);
+        Assert.Empty(context.Guides);
+
+        move.Move(PointerEvents.Move(210, 43));
+        Assert.Equal(new Bounds(203, 40, 50, 50), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void AFastPointerSeesNoObjectSnappingAndSlowingDownBringsItBack()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        AddInstance(board, new Bounds(203, 300, 80, 50));
+        var context = new FakeGestureContext(board) { ObjectSnapping = true };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(210, 43, velocity: ObjectSnap.FastPointerSpeed * 2));
+        Assert.Equal(new Bounds(200, 33, 50, 50), context.Preview[shape.Id]);
+        Assert.Empty(context.Guides);
+
+        move.Move(PointerEvents.Move(210, 43, velocity: ObjectSnap.FastPointerSpeed / 2));
+        Assert.Equal(new Bounds(203, 33, 50, 50), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void ASnapHoldsUntilThePointerPullsPastTheStickyDistance()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        AddInstance(board, new Bounds(200, 300, 0, 50));
+        var context = new FakeGestureContext(board) { ObjectSnapping = true };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(214, 10));
+        Assert.Equal(200, context.Preview[shape.Id].X);
+
+        move.Move(PointerEvents.Move(222, 10));
+        Assert.Equal(200, context.Preview[shape.Id].X);
+
+        move.Move(PointerEvents.Move(226, 10));
+        Assert.Equal(216, context.Preview[shape.Id].X);
+    }
+
+    [Fact]
+    public void ToleranceIsInScreenPixelsSoItShrinksOnTheBoardAsTheViewZoomsIn()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        AddInstance(board, new Bounds(106, 200, 2, 50));
+        var zoomPan = new ZoomPanTracker();
+        var context = new FakeGestureContext(board, zoomPan) { ObjectSnapping = true };
+        zoomPan.ZoomAbout(0, 0, 2);
+        var move = PressInstance(context, shape.Id, 20, 20);
+
+        move.Move(PointerEvents.Move(220, 20));
+
+        Assert.Equal(100, context.Preview[shape.Id].X);
+    }
+
+    [Fact]
+    public void TheLockedAxisIsNeverObjectSnapped()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, 0, 0);
+        AddInstance(board, new Bounds(400, 4, 50, 50));
+        var context = new FakeGestureContext(board) { ObjectSnapping = true };
+        var move = PressInstance(context, shape.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(110, 12, shift: true));
+
+        Assert.Equal(new Bounds(100, 0, 50, 50), context.Preview[shape.Id]);
+        Assert.Empty(context.Guides);
+    }
+
+    [Fact]
+    public void AShapeDroppedBesideTwoEquallySpacedOnesLandsAtTheSameGap()
+    {
+        var board = new Board();
+        AddInstance(board, new Bounds(0, 200, 50, 50));
+        AddInstance(board, new Bounds(90, 200, 50, 50));
+        var third = AddInstance(board, new Bounds(300, 0, 50, 50));
+        var context = new FakeGestureContext(board) { ObjectSnapping = true };
+        var move = PressInstance(context, third.Id, 310, 10);
+
+        move.Move(PointerEvents.Move(193, 213));
+        move.Release(ReleaseAt(193, 213));
+
+        Assert.Equal(new Bounds(180, 200, 50, 50), Assert.Single(context.Commits)[third.Id]);
+        Assert.Contains(new SpacingGuide(SnapAxis.X, 140, 180, 225), context.Guides);
+        Assert.Contains(new SpacingGuide(SnapAxis.X, 50, 90, 225), context.Guides);
+    }
+
+    [Fact]
+    public void TheSelectionsOwnMembersAreNeverCandidates()
+    {
+        var board = new Board();
+        var pressed = AddInstance(board, 0, 0);
+        var other = AddInstance(board, 100, 3);
+        var context = new FakeGestureContext(board) { ObjectSnapping = true };
+        context.SelectedInstanceIds.UnionWith([pressed.Id, other.Id]);
+        var move = PressInstance(context, pressed.Id, 10, 10);
+
+        move.Move(PointerEvents.Move(12, 12));
+
+        Assert.Equal(new Bounds(2, 2, 50, 50), context.Preview[pressed.Id]);
+    }
+
+    [Fact]
+    public void AnAxisWhoseMatchLeavesNothingToDrawIsGivenBackToTheGrid()
+    {
+        var board = new Board();
+        AddInstance(board, new Bounds(0, 200, 50, 50));
+        AddInstance(board, new Bounds(90, 200, 50, 50));
+        var third = AddInstance(board, new Bounds(300, 0, 50, 50));
+        var context = new FakeGestureContext(board) { ObjectSnapping = true };
+        var move = PressInstance(context, third.Id, 310, 10);
+
+        move.Move(PointerEvents.Move(193, 256));
+
+        Assert.Equal(new Bounds(183, 250, 50, 50), context.Preview[third.Id]);
+        Assert.All(context.Guides, guide => Assert.Equal(SnapAxis.Y, ((AlignmentGuide)guide).Axis));
+    }
 }

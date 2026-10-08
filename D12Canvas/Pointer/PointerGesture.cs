@@ -1,3 +1,5 @@
+using D12Canvas.Model;
+
 namespace D12Canvas.Pointer;
 
 // One owner per press. Identity never changes once chosen; only the phase does: pointing until the
@@ -99,6 +101,19 @@ internal abstract class PointerGesture
         Context.SelectHitStackEntry(next);
         return true;
     }
+
+    // Object snapping offers nothing to a gesture carrying no instances, with the toggle off, or
+    // while the pointer moves fast, since snapping is help for a careful hand.
+    protected IReadOnlyList<Bounds> ObjectSnapCandidates(
+        PointerMove move,
+        IReadOnlyCollection<Guid> carried
+    ) =>
+        carried.Count > 0 && Context.ObjectSnapping && move.Velocity <= ObjectSnap.FastPointerSpeed
+            ? Context.SnapCandidates(carried)
+            : [];
+
+    protected double ObjectSnapTolerance =>
+        ScreenPixels.ObjectSnapTolerance / Context.ZoomPan.Scale;
 
     protected virtual void OnPress() { }
 

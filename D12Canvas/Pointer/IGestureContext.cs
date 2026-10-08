@@ -65,6 +65,16 @@ internal interface IGestureContext
     // The dominant grid layer's spacing, in board units, or null with snap-to-grid off.
     double? GridSpacing { get; }
 
+    bool ObjectSnapping { get; }
+
+    // The bounds of every instance on screen that object snapping may match, leaving out the
+    // excluded ones, which are what the gesture itself carries. Groups and edges are never
+    // candidates.
+    IReadOnlyList<Bounds> SnapCandidates(IReadOnlyCollection<Guid> excluded);
+
+    // Replaces the gesture preview's guides. Board is not touched.
+    void PublishGuides(IReadOnlyList<SnapGuide> guides);
+
     void ShowMarquee(Bounds? boardBounds);
 
     // Replaces the gesture preview's bounds overrides. Board is not touched.

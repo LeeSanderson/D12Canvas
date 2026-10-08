@@ -25,6 +25,18 @@ internal sealed class FakeGestureContext : IGestureContext
     public List<(double X, double Y)> ContextMenuOpenings { get; } = new();
     public Func<Guid, Guid> EffectiveId { get; set; } = id => id;
     public double? GridSpacing { get; set; }
+    public bool ObjectSnapping { get; set; }
+    public IReadOnlyList<SnapGuide> Guides { get; private set; } = [];
+
+    public IReadOnlyList<Bounds> SnapCandidates(IReadOnlyCollection<Guid> excluded) =>
+        Board!
+            .GetVisible(ZoomPan.Viewport)
+            .Where(instance => !excluded.Contains(instance.Id))
+            .Select(instance => instance.Bounds)
+            .ToList();
+
+    public void PublishGuides(IReadOnlyList<SnapGuide> guides) => Guides = guides;
+
     public IReadOnlyDictionary<Guid, Bounds> Preview { get; private set; } =
         new Dictionary<Guid, Bounds>();
     public List<IReadOnlyDictionary<Guid, Bounds>> Commits { get; } = new();

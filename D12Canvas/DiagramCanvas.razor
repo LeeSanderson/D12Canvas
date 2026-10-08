@@ -210,6 +210,15 @@
                 {
                     <div class="entered-group-outline" style="@enteredGroupOutline"></div>
                 }
+                @if (_preview.Guides.Count > 0)
+                {
+                    <svg class="guide-strokes">
+                        @foreach (var segment in GuideSegments())
+                        {
+                            <line x1="@segment.X1" y1="@segment.Y1" x2="@segment.X2" y2="@segment.Y2" class="@segment.Kind" vector-effect="non-scaling-stroke" />
+                        }
+                    </svg>
+                }
             </div>
             <div class="selection-chrome">
             <svg class="chrome-strokes">
@@ -284,6 +293,7 @@
         --d12-muted-text: #6b6b6b;
         --d12-text: #212529;
         --d12-connector-preview: #2ecc71;
+        --d12-alignment-guide: #e5246b;
         --d12-board-text: #000000;
         --d12-board-fill: #FFFFFF;
         --d12-board-stroke: #333333;
@@ -306,6 +316,7 @@
             --d12-board-text: #e8e8e8;
             --d12-board-fill: #2e2e2e;
             --d12-board-stroke: #8a8a8a;
+            --d12-alignment-guide: #ff5c97;
         }
     }
 
@@ -319,6 +330,7 @@
         --d12-board-text: #000000;
         --d12-board-fill: #FFFFFF;
         --d12-board-stroke: #333333;
+        --d12-alignment-guide: #e5246b;
     }
 
     .diagram-container[data-d12-theme="dark"],
@@ -331,6 +343,7 @@
         --d12-board-text: #e8e8e8;
         --d12-board-fill: #2e2e2e;
         --d12-board-stroke: #8a8a8a;
+        --d12-alignment-guide: #ff5c97;
     }
 
     .diagram-canvas {
@@ -461,6 +474,7 @@
     }
 
     .edges-layer,
+    .guide-strokes,
     .chrome-strokes {
         position: absolute;
         top: 0;
@@ -480,7 +494,7 @@
     .edge-hit {
         fill: none;
         stroke: transparent;
-        stroke-width: calc(20px / var(--d12-scale));
+        stroke-width: calc(var(--d12-edge-hit-band) / var(--d12-scale));
         pointer-events: stroke;
         cursor: pointer;
     }
@@ -501,6 +515,13 @@
     .edge-label {
         position: absolute;
         cursor: default;
+    }
+
+    .alignment-guide,
+    .spacing-guide {
+        stroke: var(--d12-alignment-guide);
+        stroke-opacity: 0.5;
+        stroke-width: 1;
     }
 
     .connector-drag-preview {

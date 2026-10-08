@@ -312,4 +312,85 @@ public class ResizeSelectionGestureTests
         Assert.Equal(new HashSet<Guid> { pressed.Id }, context.SelectedInstanceIds);
         Assert.Equal(new Bounds(0, 0, 150, 100), Assert.Single(context.Preview).Value);
     }
+
+    [Fact]
+    public void ObjectSnappingTakesTheMovingEdgeToANeighbourInPlaceOfTheGrid()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 100, 100));
+        AddInstance(board, new Bounds(203, 300, 80, 50));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "right", 100, 50);
+
+        resize.Move(PointerEvents.Move(198, 50));
+
+        Assert.Equal(new Bounds(0, 0, 203, 100), context.Preview[shape.Id]);
+        Assert.Equal([new AlignmentGuide(SnapAxis.X, 203)], context.Guides);
+    }
+
+    [Fact]
+    public void ACornerResolvesEachAxisOnItsOwnWithTheGridFillingTheAxisObjectSnappingMissed()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 100, 100));
+        AddInstance(board, new Bounds(203, 300, 80, 50));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "bottom-right", 100, 100);
+
+        resize.Move(PointerEvents.Move(198, 133));
+
+        Assert.Equal(new Bounds(0, 0, 203, 140), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void CtrlFreesTheResizeFromBothSnaps()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 100, 100));
+        AddInstance(board, new Bounds(203, 300, 80, 50));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "bottom-right", 100, 100);
+
+        resize.Move(PointerEvents.Move(198, 133, ctrl: true));
+
+        Assert.Equal(new Bounds(0, 0, 198, 133), context.Preview[shape.Id]);
+        Assert.Empty(context.Guides);
+    }
+
+    [Fact]
+    public void AnEdgeMatchBelowTheMinimumSizeIsNotTaken()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 100, 100));
+        AddInstance(board, new Bounds(52, 300, 0, 50));
+        var context = SelectedOn(board, shape);
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "left", 0, 50);
+
+        resize.Move(PointerEvents.Move(50, 50));
+
+        Assert.Equal(new Bounds(50, 0, 50, 100), context.Preview[shape.Id]);
+        Assert.Empty(context.Guides);
+    }
+
+    [Fact]
+    public void AFastPointerResizesWithoutObjectSnapping()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 100, 100));
+        AddInstance(board, new Bounds(203, 300, 80, 50));
+        var context = SelectedOn(board, shape);
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "right", 100, 50);
+
+        resize.Move(PointerEvents.Move(198, 50, velocity: ObjectSnap.FastPointerSpeed * 2));
+
+        Assert.Equal(new Bounds(0, 0, 198, 100), context.Preview[shape.Id]);
+    }
 }

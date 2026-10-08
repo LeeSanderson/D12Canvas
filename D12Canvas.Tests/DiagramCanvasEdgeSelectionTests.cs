@@ -91,7 +91,13 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         var region = canvas.Find(".edge-hit");
         Assert.Equal("edge", region.GetAttribute("data-d12-role"));
         Assert.Equal(edge.Id.ToString(), region.GetAttribute("data-d12-entity"));
-        Assert.Contains("--d12-scale: 1;", canvas.Find(".canvas-content").GetAttribute("style"));
+        var contentStyle = canvas.Find(".canvas-content").GetAttribute("style");
+        Assert.Contains("--d12-scale: 1;", contentStyle);
+        Assert.Contains($"--d12-edge-hit-band: {ScreenPixels.EdgeHitBand}px;", contentStyle);
+        Assert.Contains(
+            "stroke-width: calc(var(--d12-edge-hit-band) / var(--d12-scale))",
+            ExtractBlock(StyleBlockText(Render<DiagramCanvas>()), ".edge-hit {")
+        );
     }
 
     [Fact]

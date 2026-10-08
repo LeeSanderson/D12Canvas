@@ -94,4 +94,19 @@ public sealed class LiveModifierProbes(PlaywrightFixture playwright, DemoAppFixt
         Assert.Empty(await CallsToAsync("OnPointerMoved"));
         await Page.Mouse.UpAsync();
     }
+
+    [Fact]
+    public async Task AMoveResentForAModifierCarriesZeroVelocity()
+    {
+        await StartDraggingTheRectangleAsync();
+
+        await Page.Keyboard.DownAsync("Control");
+        await SettleAsync();
+
+        var resent = Assert.Single(await CallsToAsync("OnPointerMoved"))[0];
+        Assert.Equal(0, resent.GetProperty("velocity").GetDouble());
+
+        await Page.Keyboard.UpAsync("Control");
+        await Page.Mouse.UpAsync();
+    }
 }
