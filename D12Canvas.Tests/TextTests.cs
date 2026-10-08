@@ -10,6 +10,30 @@ namespace D12Canvas.Tests;
 // is covered end-to-end in DiagramCanvasInlineTextEditingTests.
 public class TextTests : ComponentTestBase
 {
+    private readonly BunitJSModuleInterop _inlineEditorModule;
+
+    public TextTests()
+    {
+        _inlineEditorModule = SetupInlineEditorJsModule();
+    }
+
+    [Fact]
+    public void BeginEditFocusesTheEditorAndSelectsAllOfItsText()
+    {
+        var component = Render<Text>(parameters =>
+            parameters.Add(p => p.Props, new TextProps("Original", "#000000", 16, "normal", "left"))
+        );
+
+        component.InvokeAsync(component.Instance.BeginEdit);
+
+        var invocation = Assert.Single(_inlineEditorModule.Invocations["focusAndSelectAll"]);
+        var editor = component.Find("textarea.d12-text-editor");
+        Assert.Equal(
+            editor.GetAttribute("blazor:elementReference"),
+            ((Microsoft.AspNetCore.Components.ElementReference)invocation.Arguments[0]!).Id
+        );
+    }
+
     [Fact]
     public void RendersContentAndFontStylingFromProps()
     {

@@ -1,0 +1,68 @@
+@page "/inline-edit-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Inline Edit Demo</PageTitle>
+
+<div class="inline-edit-layout" data-d12-theme="dark">
+    <div class="inline-edit-palette">
+        <Palette Canvas="_canvas" />
+    </div>
+    <div class="inline-edit-canvas">
+        <DiagramCanvas @ref="_canvas" Board="_board" />
+    </div>
+</div>
+
+<style>
+    .inline-edit-layout {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .inline-edit-palette {
+        width: 220px;
+    }
+
+    .inline-edit-canvas {
+        width: 620px;
+        height: 480px;
+    }
+</style>
+
+@code {
+    private static readonly Guid NoteId = Guid.Parse("1d170000-0000-0000-0000-000000000001");
+    private static readonly Guid TextId = Guid.Parse("1d170000-0000-0000-0000-000000000002");
+    private static readonly Guid RectangleId = Guid.Parse("1d170000-0000-0000-0000-000000000003");
+    private static readonly Guid EdgeNoteId = Guid.Parse("1d170000-0000-0000-0000-000000000004");
+
+    private readonly Board _board = SeedBoard();
+    private DiagramCanvas? _canvas;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new StickyNoteProps("Plan the launch", "#FFEB3B", "#000000", 16), new Bounds(40, 40, 200, 200), id: NoteId)
+        );
+        board.AddComponent(
+            new ComponentInstance("text", new TextProps("Release notes", null, 18, "normal", "left"), new Bounds(280, 60, 200, 40), id: TextId)
+        );
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps(null, null, 2), new Bounds(280, 160, 160, 100), id: RectangleId)
+        );
+        board.AddComponent(
+            new ComponentInstance("sticky-note", new StickyNoteProps("Half off screen", "#AED581", "#000000", 16), new Bounds(500, 240, 200, 200), id: EdgeNoteId)
+        );
+        return board;
+    }
+}

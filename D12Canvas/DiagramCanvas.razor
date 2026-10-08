@@ -146,9 +146,8 @@
                                                 Scale="_zoomPanTracker.Scale"
                                                 IsDropTarget="@(_preview.PendingEdge?.DropTargetId == instance.Id)"
                                                 CustomPorts="instance.CustomPorts">
-                                @* Lets a text-carrying built-in (Sticky Note, Text) identify
-                                   itself back to ParentCanvas when committing its own inline WYSIWYG edit -
-                                   see CommitPropsChange. Harmless for any built-in that doesn't consume it. *@
+                                @* Lets an inline-editable component name itself to ParentCanvas
+                                   when its edit ends - see CommitInlineEdit. *@
                                 <CascadingValue Value="instance.Id" Name="InstanceId">
                                     <DynamicComponent @ref="_mountedComponents[instance.Id]" Type="registration.ComponentType" Parameters="ComponentParameters(boundProps)" />
                                 </CascadingValue>

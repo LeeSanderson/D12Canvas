@@ -82,7 +82,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
     }
 
     [Fact]
-    public void DoubleClickingAnEdgeWithNoLabelAddsADefaultTextLabel()
+    public void DoubleClickingAnEdgeWithNoLabelAddsADefaultTextLabelOpenForTyping()
     {
         var board = new Board();
         var edge = AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
@@ -93,7 +93,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         Assert.NotNull(edge.Label);
         Assert.Equal("text", edge.Label!.ComponentTypeKey);
         Assert.Single(canvas.FindAll(".edge-label"));
-        Assert.Single(canvas.FindAll("p.d12-text"));
+        Assert.Single(canvas.FindAll(".edge-label textarea.d12-text-editor"));
     }
 
     [Fact]
@@ -233,6 +233,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var edge = AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.DoubleClickElement(canvas.Find(".edge-hit"));
+        canvas.Find("textarea.d12-text-editor").Blur();
 
         canvas.DoubleClickElement(canvas.Find(".edge-label"));
         var editor = canvas.Find("textarea.d12-text-editor");
@@ -247,6 +248,40 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
 
         canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
         Assert.Equal("Connects A to B", ((TextProps)edge.Label!.Props).Text);
+    }
+
+    [Fact]
+    public void EscapeOutOfALabelEditCommitsAndReturnsFocusToTheEdgesStop()
+    {
+        var board = new Board();
+        var edge = AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 200, 0));
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
+
+        var editor = canvas.Find("textarea.d12-text-editor");
+        editor.Input("Kept");
+        editor.KeyDown(new KeyboardEventArgs { Key = "Escape" });
+
+        Assert.Equal("Kept", ((TextProps)edge.Label!.Props).Text);
+        var focus = Assert.Single(CanvasModule.Invocations["focusTabStopAt"]);
+        Assert.Equal(1, focus.Arguments[1]);
+    }
+
+    [Fact]
+    public void LabellingAnEdgeWhoseMidpointIsOffScreenPansTheNewLabelIntoView()
+    {
+        var board = new Board();
+        AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 2000, 0));
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
+
+        var viewport = canvas.Instance.ZoomPanTracker.Viewport;
+        var label = board.Edges.Single().Label!;
+        Assert.Equal(1, canvas.Instance.ZoomPanTracker.Scale);
+        Assert.True(viewport.X > 0);
+        Assert.Single(canvas.FindAll(".edge-label textarea.d12-text-editor"));
+        Assert.True(label.Bounds.Width <= viewport.Width);
     }
 
     [Fact]

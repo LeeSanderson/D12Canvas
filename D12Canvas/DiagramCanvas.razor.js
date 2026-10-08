@@ -78,8 +78,12 @@ export function focusGroupTabStop(container) {
 export function focusTabStopAt(container, index) {
     const stops = container.querySelectorAll('.instance-layer [tabindex="0"]');
     if (index >= 0 && index < stops.length) {
-        stops[index].focus();
+        stops[index].focus({ preventScroll: true });
     }
+}
+
+export function focusCanvas(canvas) {
+    canvas.focus({ preventScroll: true });
 }
 
 // Every press on the board is classified once, here, by walking up from the event target to the
@@ -1161,8 +1165,17 @@ export async function addKeyboardListener(element, dotnetRef) {
                 }
                 break;
             case "Escape":
-                event.preventDefault();
-                dotnetRef.invokeMethodAsync("OnEscapePressed");
+                // An inline editor ends its own edit on Escape; the next Escape reaches the canvas.
+                if (!isEditableTarget(event.target)) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnEscapePressed");
+                }
+                break;
+            case "F2":
+                if (isCanvasTabStopTarget(event.target)) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnBeginEditPressed");
+                }
                 break;
             case "Enter":
                 if (isCanvasTabStopTarget(event.target)) {

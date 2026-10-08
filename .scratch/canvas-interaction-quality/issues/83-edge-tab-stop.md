@@ -13,4 +13,4 @@
 - [x] bUnit covers stop order, the label and `aria-selected`; a markup test asserts the proxy has no role
 - [x] `CONTEXT.md`'s `Edge` term already describes this; no vocabulary change
 
-Still open: ADR 0054's change to ADR 0051, where `Escape` out of an edge label's edit returns focus to the edge's stop, belongs to ticket 101, which owns that edit path. `Space` on an edge stop toggles it through the same toggle a Shift press on an edge uses, as it toggles an instance stop today; ticket 84 decides how the toggle fits additive traversal.
+ADR 0054's change to ADR 0051, where `Escape` out of an edge label's edit returns focus to the edge's stop, shipped with ticket 101. `Space` on an edge stop toggles it through the same toggle a Shift press on an edge uses, as it toggles an instance stop today; ticket 84 decides how the toggle fits additive traversal.

@@ -115,8 +115,9 @@ internal interface IGestureContext
     // Asks the edge's label to open its inline editor, as BeginInlineEdit does for an instance.
     void BeginLabelEdit(Guid edgeId);
 
-    // Asks the instance to open its inline editor. Does nothing for an instance that is not
-    // addressable, not mounted as its full component, or of a type that declines editing.
+    // Asks the instance to open its inline editor after the next render, panning it fully into
+    // view first. Does nothing for an instance that is not addressable, locked, shown as a
+    // placeholder, or of a type that declines editing.
     void BeginInlineEdit(Guid instanceId);
 
     // The object menu when the press hit an entity and something is selected, the canvas menu

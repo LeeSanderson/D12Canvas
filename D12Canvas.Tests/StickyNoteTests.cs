@@ -10,6 +10,30 @@ namespace D12Canvas.Tests;
 // is covered end-to-end in DiagramCanvasInlineTextEditingTests.
 public class StickyNoteTests : ComponentTestBase
 {
+    private readonly BunitJSModuleInterop _inlineEditorModule;
+
+    public StickyNoteTests()
+    {
+        _inlineEditorModule = SetupInlineEditorJsModule();
+    }
+
+    [Fact]
+    public void BeginEditFocusesTheEditorAndSelectsAllOfItsText()
+    {
+        var component = Render<StickyNote>(parameters =>
+            parameters.Add(p => p.Props, new StickyNoteProps("Original", "#FFEB3B", "#000000", 14))
+        );
+
+        component.InvokeAsync(component.Instance.BeginEdit);
+
+        var invocation = Assert.Single(_inlineEditorModule.Invocations["focusAndSelectAll"]);
+        var editor = component.Find("textarea.d12-sticky-note-editor");
+        Assert.Equal(
+            editor.GetAttribute("blazor:elementReference"),
+            ((Microsoft.AspNetCore.Components.ElementReference)invocation.Arguments[0]!).Id
+        );
+    }
+
     [Fact]
     public void RendersTextColorAndFontSizeFromProps()
     {

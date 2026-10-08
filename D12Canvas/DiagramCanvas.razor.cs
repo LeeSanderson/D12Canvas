@@ -392,6 +392,9 @@ public partial class DiagramCanvas : IAsyncDisposable
                 await _jsModule!.InvokeVoidAsync("focusTabStopAt", ContainerElement, index);
             }
         }
+
+        await ReturnFocusAfterEditAsync();
+        BeginPendingEdit();
     }
 
     [JSInvokable]
@@ -679,39 +682,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (commands.Count > 0)
         {
             _history.Do(new CompositeCommand(commands));
-        }
-    }
-
-    private void BeginInlineEdit(Guid instanceId)
-    {
-        if (
-            Board?.GetComponent(instanceId) is not { Locked: false } instance
-            || !IsAddressable(instanceId)
-            || IsPlaceholder(instance)
-            || !Registry.Resolve(instance.ComponentTypeKey).IsInlineEditable
-        )
-        {
-            return;
-        }
-
-        if (
-            _mountedComponents.TryGetValue(instanceId, out var mounted)
-            && mounted.Instance is IInlineEditable editable
-        )
-        {
-            editable.BeginEdit();
-        }
-    }
-
-    private void BeginLabelEdit(Guid edgeId)
-    {
-        if (
-            !IsLocked(edgeId)
-            && _mountedLabels.TryGetValue(edgeId, out var mounted)
-            && mounted.Instance is IInlineEditable editable
-        )
-        {
-            editable.BeginEdit();
         }
     }
 
@@ -2151,15 +2121,9 @@ public partial class DiagramCanvas : IAsyncDisposable
         SetSelection([effectiveId], []);
     }
 
-    // Generic commit point for a built-in's own inline WYSIWYG text edit (or any future
-    // opaque Props edit) - Sticky Note and Text call this from their own editor on blur, via the
-    // ParentCanvas cascading parameter every built-in already has access to. MutateEntityCommand
-    // treats Props as opaque, so this works without DiagramCanvas knowing any TProps
-    // shape. The caller is trusted to have already skipped a no-op (unchanged) edit.
-    // Falls back to Board.FindEdgeLabel when the id isn't an ordinary Board.Components
-    // entry - an edge's Label is the same kind of editable built-in (Text, by default) but lives
-    // only on its owning Edge, so its own inline edit reaches this exact commit point
-    // via the same cascaded InstanceId, just resolved through a different lookup.
+    // One opaque Props edit on one instance or edge label, as one history entry. MutateEntityCommand
+    // treats Props as opaque, so this works without DiagramCanvas knowing any TProps shape. The
+    // caller is trusted to have already skipped a no-op (unchanged) edit.
     public void CommitPropsChange(Guid instanceId, object before, object after)
     {
         var instance = ResolvePropsEntity(instanceId);
@@ -2258,6 +2222,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         _history.Do(new ChangeEdgeLabelCommand(edge, before: null, after: label));
         StateHasChanged();
+        BeginLabelEdit(edgeId);
     }
 
     // An edge label's own rendered box - null when the edge has no label, or when either endpoint
@@ -2278,10 +2243,15 @@ public partial class DiagramCanvas : IAsyncDisposable
             return null;
         }
 
-        var (midX, midY) = route.LabelAnchor;
-        var (width, height) = (edge.Label.Bounds.Width, edge.Label.Bounds.Height);
+        var box = LabelBox(edge.Label, route);
+        return $"left: {box.X}px; top: {box.Y}px; width: {box.Width}px; height: {box.Height}px;";
+    }
 
-        return $"left: {midX - width / 2}px; top: {midY - height / 2}px; width: {width}px; height: {height}px;";
+    private static Bounds LabelBox(ComponentInstance label, EdgeRoute route)
+    {
+        var (midX, midY) = route.LabelAnchor;
+        var (width, height) = (label.Bounds.Width, label.Bounds.Height);
+        return new Bounds(midX - width / 2, midY - height / 2, width, height);
     }
 
     // The registered TComponent's props parameter is a fixed contract:
@@ -2993,7 +2963,10 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         // The drop point is the center of the placed instance, not its top-left corner - matching
         // where the user's cursor (and the browser's default drag ghost) actually is on release.
-        PlaceComponent(componentTypeKey, boardX, boardY);
+        if (PlaceComponent(componentTypeKey, boardX, boardY) is { } placed)
+        {
+            RequestInlineEdit(placed.Id);
+        }
 
         StateHasChanged();
     }
@@ -3030,6 +3003,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         {
             SelectComponent(placed.Id, addToSelection: false);
             _pendingFocusId = placed.Id;
+            RequestInlineEdit(placed.Id);
         }
 
         StateHasChanged();
@@ -3042,9 +3016,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     // call, so undo removes the placed instance and redo restores it with the same Id.
     // The Connector sentinel key never reaches NewCenteredInstance/Registry.Resolve -
     // there's no registration for it to resolve. Returns the placed instance (null for a
-    // Connector, which produces an Edge instead) so ClickToAdd can select/focus it - HandleDrop
-    // discards the return value, leaving drag-and-drop placement's own (lack of) selection
-    // behaviour unchanged.
+    // Connector, which produces an Edge instead) so both callers can open it for editing, and
+    // ClickToAdd can select and focus it; a drop selects nothing.
     private ComponentInstance? PlaceComponent(
         string componentTypeKey,
         double centerX,

@@ -87,9 +87,18 @@ public abstract class ComponentTestBase : BunitContext
 
         module.SetupVoid("focusGroupTabStop", _ => true).SetVoidResult();
         module.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();
+        module.SetupVoid("focusCanvas", _ => true).SetVoidResult();
+        SetupInlineEditorJsModule();
 
         var menuModule = JSInterop.SetupModule("./_content/D12Canvas/ContextMenu.razor.js");
         SetupDisposableCleanupHandle(menuModule, "registerMenu");
+    }
+
+    protected BunitJSModuleInterop SetupInlineEditorJsModule()
+    {
+        var module = JSInterop.SetupModule(D12Canvas.BuiltIns.InlineEditorEntry.ModulePath);
+        module.SetupVoid("focusAndSelectAll", _ => true).SetVoidResult();
+        return module;
     }
 
     // What the browser reports at init. The latest setup wins, so a test calls this again before
