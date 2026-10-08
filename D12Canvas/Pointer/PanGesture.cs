@@ -48,7 +48,7 @@ internal sealed class PanGesture : PointerGesture
             case HitRole.Edge:
             case HitRole.EdgeLabel:
             case HitRole.EdgeEndpoint:
-                if (Press.EntityId is { } edgeId)
+                if (Press.EntityId is { } edgeId && !Context.IsEdgeSelected(edgeId))
                 {
                     Context.SelectEdge(edgeId);
                 }
@@ -62,7 +62,7 @@ internal sealed class PanGesture : PointerGesture
                     var effectiveId = Context.EffectiveSelectionId(entityId);
                     if (!Context.IsSelected(effectiveId))
                     {
-                        Context.ReplaceSelection([effectiveId]);
+                        Context.ReplaceSelection([effectiveId], []);
                     }
                 }
                 break;

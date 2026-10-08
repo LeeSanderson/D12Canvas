@@ -44,11 +44,11 @@ public class SelectEdgeGestureTests
         context.SelectedInstanceIds.Add(Guid.NewGuid());
 
         var gesture = Press(context, role);
-        Assert.Null(context.SelectedEdgeId);
+        Assert.Empty(context.SelectedEdgeIds);
 
         gesture.Release(ReleaseAt(100, 100));
 
-        Assert.Equal(EdgeId, context.SelectedEdgeId);
+        Assert.Equal([EdgeId], context.SelectedEdgeIds);
         Assert.Empty(context.SelectedInstanceIds);
     }
 
@@ -61,7 +61,7 @@ public class SelectEdgeGestureTests
         gesture.Move(PointerEvents.Move(300, 100));
         gesture.Release(ReleaseAt(300, 100));
 
-        Assert.Null(context.SelectedEdgeId);
+        Assert.Empty(context.SelectedEdgeIds);
         Assert.Empty(context.LabelsAdded);
     }
 

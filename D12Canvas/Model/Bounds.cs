@@ -11,6 +11,8 @@ public readonly record struct Bounds(double X, double Y, double Width, double He
     public bool Intersects(Bounds other) =>
         X <= other.Right && Right >= other.X && Y <= other.Bottom && Bottom >= other.Y;
 
+    public bool Contains(double x, double y) => x >= X && x <= Right && y >= Y && y <= Bottom;
+
     // A port's live position is a fraction of Bounds, not a stored offset - this is what lets an
     // attached edge track move/resize for free.
     public (double X, double Y) PointAtFraction(double fractionX, double fractionY) =>

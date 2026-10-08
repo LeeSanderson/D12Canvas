@@ -709,6 +709,16 @@ export async function addKeyboardListener(element, dotnetRef) {
                     }
                 }
                 break;
+            case "KeyA":
+                if (
+                    (event.ctrlKey || event.metaKey) &&
+                    !event.shiftKey &&
+                    !isEditableTarget(event.target)
+                ) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnSelectAllPressed");
+                }
+                break;
             case "KeyG":
                 // Ctrl+G (group) / Ctrl+Shift+G (ungroup). Guarded the same way as
                 // Ctrl+Z above: while focus is on an editable host-page element (e.g. mid inline

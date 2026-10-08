@@ -32,7 +32,7 @@ internal sealed class ResizeSelectionGesture : PointerGesture
             var effectiveId = Context.EffectiveSelectionId(entityId);
             if (!Context.IsSelected(effectiveId))
             {
-                Context.ReplaceSelection([effectiveId]);
+                Context.ReplaceSelection([effectiveId], []);
             }
         }
 

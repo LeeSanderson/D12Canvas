@@ -69,7 +69,7 @@ public class MarqueeSelectGestureTests
         var swept = AddInstance(board, 20, 20);
         var context = new FakeGestureContext(board);
         context.SelectedInstanceIds.Add(alreadySelected.Id);
-        context.SelectionSnapshot = new SelectionSnapshot([alreadySelected.Id], null);
+        context.SelectionSnapshot = new SelectionSnapshot([alreadySelected.Id], []);
         var marquee = new MarqueeSelectGesture(
             PointerEvents.Press(HitRole.Canvas, PointerPress.PrimaryButton, 0, 0, shift: true),
             context
@@ -137,5 +137,81 @@ public class MarqueeSelectGestureTests
 
         Assert.Empty(context.SelectedInstanceIds);
         Assert.Null(context.Marquee);
+    }
+
+    [Fact]
+    public void AnEdgeIsTakenWhenEveryEndIsOnASweptComponentOrFloatsInsideTheBand()
+    {
+        var board = new Board();
+        var swept = AddInstance(board, 20, 20);
+        var unswept = AddInstance(board, 500, 500);
+        var interior = new Edge(
+            new PortEndpoint(swept.Id, PortId.Right),
+            new FloatingEndpoint(90, 90)
+        );
+        var leaving = new Edge(
+            new PortEndpoint(swept.Id, PortId.Right),
+            new PortEndpoint(unswept.Id, PortId.Left)
+        );
+        var dangling = new Edge(
+            new PortEndpoint(Guid.NewGuid(), PortId.Right),
+            new FloatingEndpoint(90, 90)
+        );
+        board.AddEdge(interior);
+        board.AddEdge(leaving);
+        board.AddEdge(dangling);
+        var context = new FakeGestureContext(board);
+        var marquee = new MarqueeSelectGesture(
+            PointerEvents.Press(HitRole.Canvas, PointerPress.PrimaryButton, 0, 0),
+            context
+        );
+
+        marquee.Move(PointerEvents.Move(100, 100));
+
+        Assert.Equal([interior.Id], context.SelectedEdgeIds);
+    }
+
+    [Fact]
+    public void AShrinkingBandDropsTheEdgesItNoLongerCloses()
+    {
+        var board = new Board();
+        var edge = new Edge(new FloatingEndpoint(20, 20), new FloatingEndpoint(80, 20));
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+        var marquee = new MarqueeSelectGesture(
+            PointerEvents.Press(HitRole.Canvas, PointerPress.PrimaryButton, 0, 0),
+            context
+        );
+
+        marquee.Move(PointerEvents.Move(100, 100));
+        Assert.Equal([edge.Id], context.SelectedEdgeIds);
+
+        marquee.Move(PointerEvents.Move(50, 50));
+        Assert.Empty(context.SelectedEdgeIds);
+    }
+
+    [Fact]
+    public void AShiftBandClosesOnlyOverWhatItSweptItself()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 300, 300);
+        var second = AddInstance(board, 400, 300);
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(first.Id, PortId.Right),
+                new PortEndpoint(second.Id, PortId.Left)
+            )
+        );
+        var context = new FakeGestureContext(board);
+        context.SelectionSnapshot = new SelectionSnapshot([first.Id, second.Id], []);
+        var marquee = new MarqueeSelectGesture(
+            PointerEvents.Press(HitRole.Canvas, PointerPress.PrimaryButton, 0, 0, shift: true),
+            context
+        );
+
+        marquee.Move(PointerEvents.Move(100, 100));
+
+        Assert.Equal(new HashSet<Guid> { first.Id, second.Id }, context.SelectedInstanceIds);
+        Assert.Empty(context.SelectedEdgeIds);
     }
 }

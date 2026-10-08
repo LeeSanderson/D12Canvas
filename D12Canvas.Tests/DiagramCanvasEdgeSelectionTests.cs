@@ -8,10 +8,9 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Edges join the selection model - clicking an edge selects it, with a visible affordance and
-// aria-selected, mirroring component-instance selection. An edge's selection lives in its own
-// exclusive slot (_selectedEdgeId), never mixed into _selectedInstanceIds, since edges don't
-// participate in multi-select/grouping.
+// Clicking an edge selects it, with a visible affordance and aria-selected, mirroring
+// component-instance selection. A plain click replaces the whole selection with the edge; Shift
+// adds an edge to a mixed selection, which DiagramCanvasMixedSelectionTests covers.
 public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

@@ -1,15 +1,15 @@
 namespace D12Canvas.Pointer;
 
-// Both selection fields as they were when a press landed, before any press-time collapse.
+// Both selection sets as they were when a press landed, before any press-time collapse.
 // Cancel restores it; a Shift marquee unions into it.
 internal sealed class SelectionSnapshot
 {
-    public SelectionSnapshot(IEnumerable<Guid> instanceIds, Guid? edgeId)
+    public SelectionSnapshot(IEnumerable<Guid> instanceIds, IEnumerable<Guid> edgeIds)
     {
         InstanceIds = instanceIds.ToHashSet();
-        EdgeId = edgeId;
+        EdgeIds = edgeIds.ToHashSet();
     }
 
     public IReadOnlySet<Guid> InstanceIds { get; }
-    public Guid? EdgeId { get; }
+    public IReadOnlySet<Guid> EdgeIds { get; }
 }

@@ -15,14 +15,25 @@ internal interface IGestureContext
     (double X, double Y) ToBoardPoint(double containerX, double containerY);
     Guid EffectiveSelectionId(Guid entityId);
     bool IsSelected(Guid effectiveId);
+    bool IsEdgeSelected(Guid edgeId);
 
     // The selection expanded through its groups to the component instances it moves.
     IReadOnlyList<ComponentInstance> SelectedInstances();
 
-    void ReplaceSelection(IEnumerable<Guid> effectiveIds);
+    IReadOnlyList<Edge> SelectedEdges();
+
+    // Replaces both selection sets.
+    void ReplaceSelection(IEnumerable<Guid> effectiveIds, IEnumerable<Guid> edgeIds);
+
+    // Both leave the selected edges as they are.
     void AddToSelection(Guid effectiveId);
     void RemoveFromSelection(Guid effectiveId);
+
+    // Replaces the whole selection with the one edge.
     void SelectEdge(Guid edgeId);
+
+    // Adds the edge or takes it out, leaving the rest of the selection as it is.
+    void ToggleEdge(Guid edgeId);
     void ClearSelection();
 
     // The point rounded to the dominant grid line on each axis, or the point itself with
@@ -37,8 +48,12 @@ internal interface IGestureContext
     // Replaces the gesture preview's bounds overrides. Board is not touched.
     void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides);
 
+    // Replaces the gesture preview's moved floating endpoints. Board is not touched.
+    void PublishMovedEndpoints(IReadOnlyDictionary<EdgeEnd, FloatingEndpoint> movedEndpoints);
+
     // Writes the last published preview back to Board as one history entry, leaving out every
-    // instance whose previewed bounds equal its committed bounds.
+    // instance whose previewed bounds equal its committed bounds and every edge end still where
+    // it started.
     void CommitPreview();
 
     // Replaces the gesture preview's pending edge line. Board is not touched.

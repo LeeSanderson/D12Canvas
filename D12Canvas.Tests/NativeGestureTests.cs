@@ -23,7 +23,7 @@ public class NativeGestureTests
             context
         ).Begin();
 
-        Assert.Equal(edge.Id, context.SelectedEdgeId);
+        Assert.Equal([edge.Id], context.SelectedEdgeIds);
         Assert.Empty(context.SelectedInstanceIds);
     }
 

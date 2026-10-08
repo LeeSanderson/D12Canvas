@@ -86,4 +86,31 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
 
         await ContentSnapshot.Verify(_page);
     }
+
+    [Fact]
+    public async Task ShapeAndEdgeSelectedTogether_MatchesBaseline()
+    {
+        var (from, to) = await RectangleToStickyNotePorts();
+
+        await _page.Mouse.MoveAsync((float)from.X, (float)from.Y);
+        await _page.Mouse.DownAsync();
+        await _page.Mouse.MoveAsync((float)to.X, (float)to.Y);
+        await _page.Mouse.UpAsync();
+        await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
+
+        var stickyNote = _page.Locator(".component-container[aria-label='Sticky Note']");
+        var box = await stickyNote.BoundingBoxAsync();
+        Assert.NotNull(box);
+        await _page.Mouse.ClickAsync(box!.X + box.Width / 2, box.Y + box.Height / 2);
+        await Expect(stickyNote).ToHaveAttributeAsync("aria-selected", "true");
+
+        await _page.Keyboard.DownAsync("Shift");
+        await _page.Mouse.ClickAsync((float)((from.X + to.X) / 2), (float)((from.Y + to.Y) / 2));
+        await _page.Keyboard.UpAsync("Shift");
+
+        await Expect(_page.Locator(".edge-line")).ToHaveAttributeAsync("aria-selected", "true");
+        await Expect(stickyNote).ToHaveAttributeAsync("aria-selected", "true");
+
+        await ContentSnapshot.Verify(_page);
+    }
 }

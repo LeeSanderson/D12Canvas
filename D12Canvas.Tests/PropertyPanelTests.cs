@@ -332,15 +332,14 @@ public class PropertyPanelTests : ComponentTestBase
         Assert.Equal("#000000", ((PanelTestPropsSecondary)second.Props).AccentColor);
     }
 
-    // Grouping collapses a multi-selection onto a single Group id in DiagramCanvas's selection
-    // set - SinglySelectedComponent must still read this as "nothing to edit" (a Group has no
-    // Props of its own), not mistake the lone selected id for a component.
+    // Grouping collapses a multi-selection onto a single Group id, and the panel reads the
+    // selection expanded through it, so an edit reaches every member.
     [Fact]
-    public async Task ShowsAnEmptyStateWhenTheSelectionIsAGroup()
+    public async Task ASelectedGroupEditsEveryMember()
     {
         var board = new Board();
-        AddInstance(board);
-        AddInstance(board);
+        var first = AddInstance(board);
+        var second = AddInstance(board);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var panel = Render<PropertyPanel>(parameters =>
             parameters.Add(p => p.Canvas, canvas.Instance)
@@ -351,20 +350,21 @@ public class PropertyPanelTests : ComponentTestBase
         canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
+
+        Assert.Equal("#00ff00", ((PanelTestProps)first.Props).Tint);
+        Assert.Equal("#00ff00", ((PanelTestProps)second.Props).Tint);
     }
 
-    // A shift-click can mix a grouped member's own group id (EffectiveSelectionId) with a
-    // standalone instance's plain id in the same ad-hoc selection - that must still read as
-    // "nothing to edit" (SelectedComponents), the same as a lone selected Group, rather than
-    // collapsing to "edit just the standalone instance".
+    // A shift-click can mix a group's id with a standalone instance's plain id in one selection;
+    // the group contributes its members, so the edit reaches all three rather than a subset.
     [Fact]
-    public async Task ShowsAnEmptyStateWhenSelectionMixesAGroupWithAStandaloneInstance()
+    public async Task AGroupMixedWithAStandaloneInstanceEditsAllThree()
     {
         var board = new Board();
-        AddInstance(board);
-        AddInstance(board);
-        AddInstance(board);
+        var first = AddInstance(board);
+        var second = AddInstance(board);
+        var standalone = AddInstance(board);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var panel = Render<PropertyPanel>(parameters =>
             parameters.Add(p => p.Canvas, canvas.Instance)
@@ -374,10 +374,43 @@ public class PropertyPanelTests : ComponentTestBase
         canvas.ClickOn(containers[0]);
         canvas.ClickOn(containers[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
-
         canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
 
-        Assert.NotNull(panel.Find(".d12-property-panel-empty"));
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
+
+        Assert.All(
+            new[] { first, second, standalone },
+            instance => Assert.Equal("#00ff00", ((PanelTestProps)instance.Props).Tint)
+        );
+    }
+
+    [Fact]
+    public void AShapeSelectedWithAnEdgeStillShowsTheShapesFields()
+    {
+        var board = new Board();
+        var source = AddInstance(board);
+        var target = new ComponentInstance(
+            ComponentTypeKey,
+            new PanelTestProps("content", "", 0),
+            new Bounds(300, 0, 200, 200)
+        );
+        board.AddComponent(target);
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(source.Id, PortId.Right),
+                new PortEndpoint(target.Id, PortId.Left)
+            )
+        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        canvas.ClickOn(canvas.FindAll(".component-container")[0]);
+        canvas.ClickElement(canvas.Find(".edge-hit"), shift: true);
+
+        Assert.Single(canvas.Instance.SelectedEdges);
+        Assert.NotNull(panel.Find("#d12-property-panel-field-Tint"));
     }
 
     [Fact]

@@ -7,12 +7,15 @@ namespace D12Canvas.Pointer;
 // pressing a member leaves the selection alone until release, where a click collapses to that
 // member or, under Shift, toggles it out. Every tick publishes the whole selection translated by
 // the board-space distance from the press point, snapped as one rigid body by the top-left of its
-// bounding box, and an active release commits exactly what was last published.
+// instances' bounding box, and an active release commits exactly what was last published. A
+// selected edge's floating ends take the same delta; its attached ends follow their components
+// and have nothing of their own to publish.
 internal sealed class MoveSelectionGesture : PointerGesture
 {
     private readonly (double X, double Y) _pressPoint;
     private Guid? _pressedMember;
     private IReadOnlyList<ComponentInstance> _participants = [];
+    private IReadOnlyList<(EdgeEnd End, FloatingEndpoint Start)> _floatingEnds = [];
     private (double X, double Y) _origin;
 
     public MoveSelectionGesture(PointerPress press, IGestureContext context)
@@ -36,11 +39,12 @@ internal sealed class MoveSelectionGesture : PointerGesture
             }
             else
             {
-                Context.ReplaceSelection([effectiveId]);
+                Context.ReplaceSelection([effectiveId], []);
             }
         }
 
         _participants = Context.SelectedInstances();
+        _floatingEnds = Context.SelectedEdges().SelectMany(FloatingEndsOf).ToList();
         if (Bounds.Union(_participants.Select(participant => participant.Bounds)) is { } box)
         {
             _origin = (box.X, box.Y);
@@ -86,11 +90,25 @@ internal sealed class MoveSelectionGesture : PointerGesture
         }
         else
         {
-            Context.ReplaceSelection([member]);
+            Context.ReplaceSelection([member], []);
         }
     }
 
-    private void PublishTranslatedBy(double deltaX, double deltaY) =>
+    private static IEnumerable<(EdgeEnd End, FloatingEndpoint Start)> FloatingEndsOf(Edge edge)
+    {
+        if (edge.Source is FloatingEndpoint source)
+        {
+            yield return (new EdgeEnd(edge.Id, IsSource: true), source);
+        }
+
+        if (edge.Target is FloatingEndpoint target)
+        {
+            yield return (new EdgeEnd(edge.Id, IsSource: false), target);
+        }
+    }
+
+    private void PublishTranslatedBy(double deltaX, double deltaY)
+    {
         Context.PublishPreview(
             _participants.ToDictionary(
                 participant => participant.Id,
@@ -102,4 +120,14 @@ internal sealed class MoveSelectionGesture : PointerGesture
                     }
             )
         );
+        Context.PublishMovedEndpoints(
+            _floatingEnds.ToDictionary(
+                floating => floating.End,
+                floating => new FloatingEndpoint(
+                    floating.Start.X + deltaX,
+                    floating.Start.Y + deltaY
+                )
+            )
+        );
+    }
 }

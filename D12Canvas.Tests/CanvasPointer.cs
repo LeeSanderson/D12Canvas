@@ -213,7 +213,8 @@ internal static class CanvasPointer
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement element,
         (double X, double Y) at,
-        int pressCount = 1
+        int pressCount = 1,
+        bool shift = false
     )
     {
         var press = PointerEvents.Press(
@@ -222,6 +223,7 @@ internal static class CanvasPointer
             at.X,
             at.Y,
             element.Closest("[data-d12-entity]") is { } entity ? EntityOf(entity) : null,
+            shift,
             pressCount: pressCount,
             part: element.GetAttribute("data-d12-part")
         );
@@ -251,10 +253,11 @@ internal static class CanvasPointer
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement element,
         int pressCount = 1,
-        (double X, double Y) at = default
+        (double X, double Y) at = default,
+        bool shift = false
     )
     {
-        canvas.PressElement(element, at, pressCount);
+        canvas.PressElement(element, at, pressCount, shift);
         canvas.ReleaseAt(at);
     }
 

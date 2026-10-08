@@ -314,4 +314,53 @@ public class MoveSelectionGestureTests
 
         Assert.Equal(new Bounds(0, 0, 50, 50), context.Preview[pressed.Id]);
     }
+
+    [Fact]
+    public void ASelectedEdgesFloatingEndsArePublishedAsMovedEndpointsAndItsAttachedEndsAreNot()
+    {
+        var board = new Board();
+        var pressed = AddInstance(board, 0, 0);
+        var edge = new Edge(
+            new PortEndpoint(pressed.Id, PortId.Right),
+            new FloatingEndpoint(300, 300)
+        );
+        board.AddEdge(edge);
+        var context = new FakeGestureContext(board);
+        context.SelectedInstanceIds.Add(pressed.Id);
+        context.SelectedEdgeIds.Add(edge.Id);
+
+        var move = PressInstance(context, pressed.Id, 10, 10);
+        move.Move(PointerEvents.Move(30, 50));
+
+        var moved = Assert.Single(context.MovedEndpoints);
+        Assert.Equal(new EdgeEnd(edge.Id, IsSource: false), moved.Key);
+        Assert.Equal(new FloatingEndpoint(320, 340), moved.Value);
+    }
+
+    [Fact]
+    public void AnUnselectedEdgesFloatingEndsStayPut()
+    {
+        var board = new Board();
+        var pressed = AddInstance(board, 0, 0);
+        board.AddEdge(new Edge(new FloatingEndpoint(300, 300), new FloatingEndpoint(400, 300)));
+        var context = new FakeGestureContext(board);
+
+        var move = PressInstance(context, pressed.Id, 10, 10);
+        move.Move(PointerEvents.Move(30, 50));
+
+        Assert.Empty(context.MovedEndpoints);
+    }
+
+    [Fact]
+    public void PressingAnUnselectedInstanceDropsTheSelectedEdges()
+    {
+        var board = new Board();
+        var pressed = AddInstance(board, 0, 0);
+        var context = new FakeGestureContext(board);
+        context.SelectedEdgeIds.Add(Guid.NewGuid());
+
+        PressInstance(context, pressed.Id, 10, 10);
+
+        Assert.Empty(context.SelectedEdgeIds);
+    }
 }

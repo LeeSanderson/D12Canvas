@@ -370,9 +370,8 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         Assert.Equal(new Bounds(226, 40, 50, 50), second.Bounds);
     }
 
-    // An edge's own selection slot (_selectedEdgeId) is never mixed into the instance selection
-    // arrow-key nudge reads (ExpandedSelection) - a selected edge has no Bounds of its own to
-    // nudge, so this must fall back to panning too, not silently no-op.
+    // A nudge moves instances only, so a selection holding nothing but an edge has nothing for it
+    // to move and takes the pan fallback, the same as an empty selection.
     [Fact]
     public async Task WithOnlyAnEdgeSelectedArrowKeysPanTheCanvasInsteadOfNudging()
     {

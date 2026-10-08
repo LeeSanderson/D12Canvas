@@ -90,41 +90,16 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void OnHistoryChanged(object? sender, EventArgs e) =>
         Changed?.Invoke(this, EventArgs.Empty);
 
-    // The property panel's selection surface - every top-level selected id resolved
-    // to a ComponentInstance, deliberately NOT expanded through group membership (unlike
-    // ExpandedSelection, which move/resize/delete use). A selected Group's own id lives in Board's
-    // separate group dictionary, so Board.GetComponent returns null for it - and, since a Group has
-    // no Props of its own to edit, ANY unresolvable id in the selection empties the whole result
-    // rather than silently dropping just that one entry (a shift-click can mix a grouped member,
-    // i.e. its group's id per EffectiveSelectionId, with a standalone instance in the
-    // same selection - that must read as "nothing to edit", the same as a lone selected Group,
-    // rather than collapsing to "edit the one standalone instance"). Empty whenever an edge is
-    // selected instead (edges have no Props reachable via this panel). A single resolved instance
-    // is the "edit exactly one instance" case; 2+ (same type or cross-type) is the bulk-edit case.
-    public IReadOnlyList<ComponentInstance> SelectedComponents
-    {
-        get
-        {
-            if (Board is null || _selectedEdgeId is not null)
-            {
-                return Array.Empty<ComponentInstance>();
-            }
+    // Every component instance under the selection, a selected group contributing its members
+    // recursively, so there is never a subset of the selection the panel would edit silently. A
+    // selected edge contributes nothing here and is read through SelectedEdges. One instance is
+    // the "edit exactly one" case; 2+ (same type or cross-type) is the bulk-edit case.
+    public IReadOnlyList<ComponentInstance> SelectedComponents => ResolvedSelection();
 
-            var resolved = new List<ComponentInstance>();
-            foreach (var id in _selectedInstanceIds)
-            {
-                var instance = Board.GetComponent(id);
-                if (instance is null)
-                {
-                    return Array.Empty<ComponentInstance>();
-                }
-
-                resolved.Add(instance);
-            }
-
-            return resolved;
-        }
-    }
+    public IReadOnlyList<Edge> SelectedEdges =>
+        Board is null
+            ? Array.Empty<Edge>()
+            : _selectedEdgeIds.Select(Board.GetEdge).OfType<Edge>().ToList();
 
     // A palette entry has no compile-time-typed payload it can hand across the native HTML5 drag
     // session (Blazor's DragEventArgs.DataTransfer exposes no SetData/GetData) - Palette instead
@@ -153,14 +128,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     private int _clickToAddCascadeCount;
 
     // Selection is transient view state - it lives here, never on Board, and is never
-    // serialized or tracked by undo/redo. Ad-hoc multi-select via marquee/shift-click.
+    // serialized or tracked by undo/redo. Ad-hoc multi-select via marquee/shift-click. Two
+    // parallel sets, because instance, group and edge ids are all bare Guids that only Board can
+    // tell apart, and an edge id must never reach group expansion.
     private readonly HashSet<Guid> _selectedInstanceIds = new();
-
-    // An edge's own exclusive selection slot - edges don't participate in multi-select,
-    // grouping, or move/resize as a unit the way component instances do, so an edge id
-    // is never mixed into _selectedInstanceIds. Selecting an edge always clears any instance
-    // selection, and selecting an instance (or starting a marquee) always clears this.
-    private Guid? _selectedEdgeId;
+    private readonly HashSet<Guid> _selectedEdgeIds = new();
 
     // The open selection context menu, if any - null means none is open. Its
     // anchor point is plain container-relative pixels (not board space), since the menu is canvas
@@ -378,7 +350,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var snapshot = new SelectionSnapshot(_selectedInstanceIds, _selectedEdgeId);
+        var snapshot = new SelectionSnapshot(_selectedInstanceIds, _selectedEdgeIds);
         var context = new CanvasGestureContext(this, snapshot);
         PointerGesture gesture = kind switch
         {
@@ -517,17 +489,22 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         if (restoreSelection && _pressSelection is { } snapshot)
         {
-            SetSelection(snapshot.InstanceIds, snapshot.EdgeId);
+            SetSelection(snapshot.InstanceIds, snapshot.EdgeIds);
         }
 
         _activeGesture.MarkCancelled();
     }
 
-    private void SetSelection(IEnumerable<Guid> instanceIds, Guid? edgeId)
+    // Callers often build the new sets out of the current ones, so both are materialised before
+    // either set is cleared.
+    private void SetSelection(IEnumerable<Guid> instanceIds, IEnumerable<Guid> edgeIds)
     {
+        var instances = instanceIds.ToList();
+        var edges = edgeIds.ToList();
         _selectedInstanceIds.Clear();
-        _selectedInstanceIds.UnionWith(instanceIds);
-        _selectedEdgeId = edgeId;
+        _selectedInstanceIds.UnionWith(instances);
+        _selectedEdgeIds.Clear();
+        _selectedEdgeIds.UnionWith(edges);
         NotifySelectionChanged();
     }
 
@@ -582,6 +559,20 @@ public partial class DiagramCanvas : IAsyncDisposable
             if (Board.GetComponent(id) is { } instance && instance.Bounds != after)
             {
                 commands.Add(new ChangeBoundsCommand(instance, instance.Bounds, after));
+            }
+        }
+
+        foreach (var (end, after) in _preview.MovedEndpoints)
+        {
+            if (Board.GetEdge(end.EdgeId) is not { } edge)
+            {
+                continue;
+            }
+
+            var before = end.IsSource ? edge.Source : edge.Target;
+            if (!before.Equals(after))
+            {
+                commands.Add(new ChangeEdgeEndpointCommand(edge, end.IsSource, before, after));
             }
         }
 
@@ -664,23 +655,38 @@ public partial class DiagramCanvas : IAsyncDisposable
         public bool IsSelected(Guid effectiveId) =>
             canvas._selectedInstanceIds.Contains(effectiveId);
 
+        public bool IsEdgeSelected(Guid edgeId) => canvas._selectedEdgeIds.Contains(edgeId);
+
         public IReadOnlyList<ComponentInstance> SelectedInstances() => canvas.ResolvedSelection();
 
-        public void ReplaceSelection(IEnumerable<Guid> effectiveIds) =>
-            canvas.SetSelection(effectiveIds, null);
+        public IReadOnlyList<Edge> SelectedEdges() => canvas.SelectedEdges;
+
+        public void ReplaceSelection(IEnumerable<Guid> effectiveIds, IEnumerable<Guid> edgeIds) =>
+            canvas.SetSelection(effectiveIds, edgeIds);
 
         public void AddToSelection(Guid effectiveId) =>
-            canvas.SetSelection(canvas._selectedInstanceIds.Append(effectiveId).ToList(), null);
+            canvas.SetSelection(
+                canvas._selectedInstanceIds.Append(effectiveId),
+                canvas._selectedEdgeIds
+            );
 
         public void RemoveFromSelection(Guid effectiveId) =>
             canvas.SetSelection(
-                canvas._selectedInstanceIds.Where(id => id != effectiveId).ToList(),
-                canvas._selectedEdgeId
+                canvas._selectedInstanceIds.Where(id => id != effectiveId),
+                canvas._selectedEdgeIds
             );
 
-        public void SelectEdge(Guid edgeId) => canvas.SelectEdge(edgeId);
+        public void SelectEdge(Guid edgeId) => canvas.SetSelection([], [edgeId]);
 
-        public void ClearSelection() => canvas.SetSelection([], null);
+        public void ToggleEdge(Guid edgeId) =>
+            canvas.SetSelection(
+                canvas._selectedInstanceIds,
+                canvas._selectedEdgeIds.Contains(edgeId)
+                    ? canvas._selectedEdgeIds.Where(id => id != edgeId)
+                    : canvas._selectedEdgeIds.Append(edgeId)
+            );
+
+        public void ClearSelection() => canvas.SetSelection([], []);
 
         public (double X, double Y) SnapToGrid(double x, double y) => canvas.SnapPoint(x, y);
 
@@ -690,6 +696,10 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides) =>
             canvas.PublishPreview(boundsOverrides);
+
+        public void PublishMovedEndpoints(
+            IReadOnlyDictionary<EdgeEnd, FloatingEndpoint> movedEndpoints
+        ) => canvas._preview.PublishMovedEndpoints(movedEndpoints);
 
         public void CommitPreview() => canvas.CommitPreview();
 
@@ -735,10 +745,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // With snap-to-grid off a nudge unit is one screen pixel (1 / Scale board units); with it on
-    // a unit is one dominant grid line. With nothing selected there's no instance to nudge, so this falls back to the arrow-key
-    // pan instead (an edge-only selection - _selectedEdgeId, never mixed into _selectedInstanceIds
-    // - has no Bounds either, so it takes the same pan fallback). PanStep is in screen pixels,
-    // because ZoomPanTracker's pan is, so a pan press covers the same screen distance at any zoom.
+    // a unit is one dominant grid line. With no instance selected there's nothing to nudge, so this
+    // falls back to the arrow-key pan instead, which an edge-only selection takes too: a nudge
+    // moves instances only. PanStep is in screen pixels, because ZoomPanTracker's pan is, so a
+    // pan press covers the same screen distance at any zoom.
     private const double NudgeStep = 1;
     private const double NudgeStepCoarse = 10;
     private const double PanStep = 50;
@@ -1021,10 +1031,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         _portFocusInstanceId = null;
         _pendingConnectorSource = null;
 
-        _selectedInstanceIds.Clear();
-        _selectedEdgeId = null;
         _contextMenu = null;
-        NotifySelectionChanged();
+        SetSelection([], []);
         StateHasChanged();
     }
 
@@ -1075,7 +1083,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         // arming it and confirming a target - a keyboard gesture, unlike a continuous mouse drag,
         // spans multiple discrete key presses with other commands possible in between.
         if (
-            EndpointComponentId(sourceEndpoint) is { } sourceComponentId
+            EndpointAttachment.ComponentIdOf(sourceEndpoint) is { } sourceComponentId
             && Board.GetComponent(sourceComponentId) is not null
             && !chosenEndpoint.Equals(sourceEndpoint)
         )
@@ -1086,19 +1094,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         _pendingConnectorSource = null;
         StateHasChanged();
     }
-
-    // Shared by OnEnterPressed (the armed source's own instance may since have been deleted)
-    // and CyclePortFocus (Board.AllPorts needs a live ComponentInstance) - a PortEndpoint/
-    // CustomPortEndpoint's ComponentId, pulled out via the same pattern-match idiom
-    // Board.ResolveEndpoint already uses. Never a FloatingEndpoint - _portFocusEndpoint and
-    // _pendingConnectorSource are never assigned one.
-    private static Guid? EndpointComponentId(IEdgeEndpoint endpoint) =>
-        endpoint switch
-        {
-            PortEndpoint port => port.ComponentId,
-            CustomPortEndpoint custom => custom.ComponentId,
-            _ => null,
-        };
 
     // The port currently highlighted for a given instance - either it's mid-pick
     // (_portFocusInstanceId) or it's the already-armed connector source waiting for a target to be
@@ -1112,7 +1107,9 @@ public partial class DiagramCanvas : IAsyncDisposable
             return _portFocusEndpoint;
         }
 
-        return _pendingConnectorSource is { } source && EndpointComponentId(source) == instanceId
+        return
+            _pendingConnectorSource is { } source
+            && EndpointAttachment.ComponentIdOf(source) == instanceId
             ? source
             : null;
     }
@@ -1214,10 +1211,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Reads through ExpandedSelection so a selected Group's members are what actually get
     // deleted; the group membership edits those removals force (a group dissolving at one
     // member, disappearing at none) ride in the same CompositeCommand, so one undo restores
-    // every deleted instance and every group exactly as they were.
-    // A selected edge takes a separate branch - it's never mixed into
-    // _selectedInstanceIds (see _selectedEdgeId), and there's no multi-select or "as one unit"
-    // delta to apply, just the one RemoveEdgeCommand.
+    // every deleted instance and every group exactly as they were. Every selected edge is removed
+    // in that same entry; an edge attached to a deleted instance but not itself selected stays.
     [JSInvokable]
     public void OnDeletePressed()
     {
@@ -1228,27 +1223,35 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         if (Board is not null)
         {
-            if (_selectedEdgeId is { } edgeId)
+            var commands = InstanceRemoval
+                .Compose(Board, ExpandedSelection())
+                .Concat(SelectedEdges.Select(edge => new RemoveEdgeCommand(Board, edge)))
+                .ToList();
+            if (commands.Count > 0)
             {
-                var edge = Board.GetEdge(edgeId);
-                if (edge is not null)
-                {
-                    _history.Do(new RemoveEdgeCommand(Board, edge));
-                }
-            }
-            else
-            {
-                var commands = InstanceRemoval.Compose(Board, ExpandedSelection());
-                if (commands.Count > 0)
-                {
-                    _history.Do(new CompositeCommand(commands));
-                }
+                _history.Do(new CompositeCommand(commands));
             }
         }
 
-        _selectedInstanceIds.Clear();
-        _selectedEdgeId = null;
-        NotifySelectionChanged();
+        SetSelection([], []);
+        StateHasChanged();
+    }
+
+    // Ctrl+A selects every top-level entity, a grouped instance as its outermost group, and every
+    // edge on the board.
+    [JSInvokable]
+    public void OnSelectAllPressed()
+    {
+        if (Board is null || PressOwnsBoard)
+        {
+            return;
+        }
+
+        _contextMenu = null;
+        SetSelection(
+            Board.Components.Select(instance => EffectiveSelectionId(instance.Id)),
+            Board.Edges.Select(edge => edge.Id)
+        );
         StateHasChanged();
     }
 
@@ -1259,7 +1262,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Unlike a marquee or a shift-click (which can leave a multi-selection with no single element
     // to hand real DOM focus to), grouping always resolves to exactly one new focusable target -
     // the group's own tab stop - so this moves focus there too, once it exists in the DOM (see
-    // _pendingGroupFocus/OnAfterRenderAsync).
+    // _pendingGroupFocus/OnAfterRenderAsync). Only instances and groups are grouped; a selected
+    // edge cannot be a group member and stays selected beside the new group.
     [JSInvokable]
     public void OnGroupPressed()
     {
@@ -1464,7 +1468,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // (nothing selected) is a no-op here, leaving the @oncontextmenu:preventDefault binding false
     // for that render so the browser's own default menu shows instead.
     private bool HasContextMenuEligibleSelection =>
-        _selectedInstanceIds.Count > 0 || _selectedEdgeId is not null;
+        _selectedInstanceIds.Count > 0 || SelectedEdges.Count > 0;
 
     // Same eligibility OnGroupPressed itself already guards on (2+ top-level entries) - kept as its
     // own property so the menu's own "should Group show" question reads independently of invoking it.
@@ -1553,13 +1557,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     // A shift-click toggles the clicked instance's membership without disturbing the
     // rest of the selection; a plain click always collapses the selection down to just this one.
     // Clicking any member of a Group selects the whole group instead of just that one
-    // instance - selection and group membership converge.
-    // Selecting a component always clears any edge selection - the two slots are
-    // mutually exclusive.
+    // instance - selection and group membership converge. The toggle leaves the selected edges as
+    // they are; the collapse clears them.
     private void SelectComponent(Guid instanceId, bool addToSelection)
     {
         var effectiveId = EffectiveSelectionId(instanceId);
-        _selectedEdgeId = null;
 
         if (addToSelection)
         {
@@ -1571,9 +1573,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        _selectedInstanceIds.Clear();
-        _selectedInstanceIds.Add(effectiveId);
-        NotifySelectionChanged();
+        SetSelection([effectiveId], []);
     }
 
     // Generic commit point for a built-in's own inline WYSIWYG text edit (or any future
@@ -2046,8 +2046,8 @@ public partial class DiagramCanvas : IAsyncDisposable
             return null;
         }
 
-        var from = Live.ResolveEndpoint(edge.Source);
-        var to = Live.ResolveEndpoint(edge.Target);
+        var from = Live.ResolveEnd(edge, isSource: true);
+        var to = Live.ResolveEnd(edge, isSource: false);
 
         return from is null || to is null ? null : (from.Value, to.Value);
     }
@@ -2065,17 +2065,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         return from is null ? null : (from.Value, pending.Point);
     }
 
-    // A click on an edge selects it - the edge counterpart to
-    // SelectComponent, but kept as its own exclusive slot (see _selectedEdgeId) since edges don't
-    // participate in multi-select, grouping, or move/resize as a unit.
-    private void SelectEdge(Guid edgeId)
-    {
-        _selectedInstanceIds.Clear();
-        _selectedEdgeId = edgeId;
-        NotifySelectionChanged();
-    }
-
-    private bool IsEdgeSelected(Guid edgeId) => _selectedEdgeId == edgeId;
+    private bool IsEdgeSelected(Guid edgeId) => _selectedEdgeIds.Contains(edgeId);
 
     private string EdgeLineCssClass(Guid edgeId) =>
         IsEdgeSelected(edgeId) ? "edge-line selected" : "edge-line";
@@ -2126,8 +2116,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     private bool IsEndCarried(Guid edgeId, bool isSource) =>
         IsCarried(edgeId) && _preview.PendingEdge!.IsSource == isSource;
 
-    // Every persisted (not currently being dragged) floating endpoint across the whole
-    // Board, each with a stable render key - an edge can have zero, one, or both ends floating.
+    // Every floating endpoint across the whole Board not carried by a connector drag, at its live
+    // position, each with a stable render key - an edge can have zero, one, or both ends floating.
     private IEnumerable<(Edge Edge, bool IsSource, double X, double Y)> FloatingEndpoints()
     {
         if (Board is null)
@@ -2137,14 +2127,15 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         foreach (var edge in Board.Edges)
         {
-            if (edge.Source is FloatingEndpoint source && !IsEndCarried(edge.Id, true))
+            foreach (var isSource in new[] { true, false })
             {
-                yield return (edge, true, source.X, source.Y);
-            }
-
-            if (edge.Target is FloatingEndpoint target && !IsEndCarried(edge.Id, false))
-            {
-                yield return (edge, false, target.X, target.Y);
+                if (
+                    Live.EndpointOf(edge, isSource) is FloatingEndpoint floating
+                    && !IsEndCarried(edge.Id, isSource)
+                )
+                {
+                    yield return (edge, isSource, floating.X, floating.Y);
+                }
             }
         }
     }

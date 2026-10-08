@@ -12,7 +12,7 @@ internal sealed class FakeGestureContext : IGestureContext
         Board = board;
         ZoomPan = zoomPan ?? new ZoomPanTracker();
         ZoomPan.SetContainerSize(800, 600);
-        SelectionSnapshot = new SelectionSnapshot([], null);
+        SelectionSnapshot = new SelectionSnapshot([], []);
     }
 
     public Board? Board { get; }
@@ -20,7 +20,7 @@ internal sealed class FakeGestureContext : IGestureContext
     public SelectionSnapshot SelectionSnapshot { get; set; }
 
     public HashSet<Guid> SelectedInstanceIds { get; } = new();
-    public Guid? SelectedEdgeId { get; private set; }
+    public HashSet<Guid> SelectedEdgeIds { get; } = new();
     public Bounds? Marquee { get; private set; }
     public List<(double X, double Y)> ContextMenuOpenings { get; } = new();
     public Func<Guid, Guid> EffectiveId { get; set; } = id => id;
@@ -48,32 +48,36 @@ internal sealed class FakeGestureContext : IGestureContext
     private IEnumerable<Guid> ExpandedIds(Guid id) =>
         Board!.GetGroup(id) is { } group ? group.MemberIds.SelectMany(ExpandedIds) : [id];
 
-    public void ReplaceSelection(IEnumerable<Guid> effectiveIds)
+    public bool IsEdgeSelected(Guid edgeId) => SelectedEdgeIds.Contains(edgeId);
+
+    public IReadOnlyList<Edge> SelectedEdges() =>
+        SelectedEdgeIds.Select(id => Board!.GetEdge(id)).OfType<Edge>().ToList();
+
+    public void ReplaceSelection(IEnumerable<Guid> effectiveIds, IEnumerable<Guid> edgeIds)
     {
+        var instances = effectiveIds.ToList();
+        var edges = edgeIds.ToList();
         SelectedInstanceIds.Clear();
-        SelectedInstanceIds.UnionWith(effectiveIds);
-        SelectedEdgeId = null;
+        SelectedInstanceIds.UnionWith(instances);
+        SelectedEdgeIds.Clear();
+        SelectedEdgeIds.UnionWith(edges);
     }
 
-    public void AddToSelection(Guid effectiveId)
-    {
-        SelectedInstanceIds.Add(effectiveId);
-        SelectedEdgeId = null;
-    }
+    public void AddToSelection(Guid effectiveId) => SelectedInstanceIds.Add(effectiveId);
 
     public void RemoveFromSelection(Guid effectiveId) => SelectedInstanceIds.Remove(effectiveId);
 
-    public void SelectEdge(Guid edgeId)
+    public void SelectEdge(Guid edgeId) => ReplaceSelection([], [edgeId]);
+
+    public void ToggleEdge(Guid edgeId)
     {
-        SelectedInstanceIds.Clear();
-        SelectedEdgeId = edgeId;
+        if (!SelectedEdgeIds.Remove(edgeId))
+        {
+            SelectedEdgeIds.Add(edgeId);
+        }
     }
 
-    public void ClearSelection()
-    {
-        SelectedInstanceIds.Clear();
-        SelectedEdgeId = null;
-    }
+    public void ClearSelection() => ReplaceSelection([], []);
 
     public (double X, double Y) SnapToGrid(double x, double y) =>
         GridSpacing is { } spacing
@@ -84,6 +88,13 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides) =>
         Preview = boundsOverrides;
+
+    public IReadOnlyDictionary<EdgeEnd, FloatingEndpoint> MovedEndpoints { get; private set; } =
+        new Dictionary<EdgeEnd, FloatingEndpoint>();
+
+    public void PublishMovedEndpoints(
+        IReadOnlyDictionary<EdgeEnd, FloatingEndpoint> movedEndpoints
+    ) => MovedEndpoints = movedEndpoints;
 
     public void CommitPreview() => Commits.Add(Preview);
 

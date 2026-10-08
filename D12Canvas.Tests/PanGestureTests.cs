@@ -168,7 +168,7 @@ public class PanGestureTests
 
         pan.Release(PointerEvents.Release(PointerPress.SecondaryButton, 10, 10));
 
-        Assert.Equal(edgeId, context.SelectedEdgeId);
+        Assert.Equal([edgeId], context.SelectedEdgeIds);
         Assert.Single(context.ContextMenuOpenings);
     }
 

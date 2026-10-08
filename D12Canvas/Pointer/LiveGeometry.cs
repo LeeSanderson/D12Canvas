@@ -11,8 +11,16 @@ internal sealed class LiveGeometry(Board board, GesturePreview preview)
     public Bounds BoundsOf(ComponentInstance instance) =>
         preview.TryGetBounds(instance.Id, out var bounds) ? bounds : instance.Bounds;
 
+    public IEdgeEndpoint EndpointOf(Edge edge, bool isSource) =>
+        preview.TryGetEndpoint(new EdgeEnd(edge.Id, isSource), out var moved) ? moved
+        : isSource ? edge.Source
+        : edge.Target;
+
     public (double X, double Y)? ResolveEndpoint(IEdgeEndpoint endpoint) =>
         board.ResolveEndpoint(endpoint, BoundsOf);
+
+    public (double X, double Y)? ResolveEnd(Edge edge, bool isSource) =>
+        ResolveEndpoint(EndpointOf(edge, isSource));
 
     public Bounds? GroupBounds(Group group) => board.GetBounds(group, BoundsOf);
 }
