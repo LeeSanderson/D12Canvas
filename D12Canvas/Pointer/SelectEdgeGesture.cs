@@ -4,7 +4,8 @@ namespace D12Canvas.Pointer;
 // threshold selects the edge, or under Shift toggles it in or out of the selection, and a press
 // that crossed the threshold is abandoned, as a native button is, rather than selecting on a
 // release far from what was pressed. A double-press on the line adds a label to an edge that has
-// none, and on the label opens the label's editor.
+// none, and on the label opens the label's editor. An Alt click at any press count selects the
+// next entity down the hit stack from the one selected before the press.
 internal sealed class SelectEdgeGesture(PointerPress press, IGestureContext context)
     : PointerGesture(press, context)
 {
@@ -16,7 +17,7 @@ internal sealed class SelectEdgeGesture(PointerPress press, IGestureContext cont
 
     protected override void OnClick(PointerRelease release)
     {
-        if (Press.EntityId is not { } edgeId)
+        if (Press.EntityId is not { } edgeId || TrySelectNextInHitStack())
         {
             return;
         }

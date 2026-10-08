@@ -47,6 +47,32 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public void StepOutFor(PointerPress press) => StepOutPresses.Add(press);
 
+    public IReadOnlyList<HitStackEntry> HitStackOf(PointerPress press) =>
+        (press.Hits ?? [])
+            .Where(hit =>
+                hit.EntityId is not null
+                && hit.Role is not (HitRole.SelectionBounds or HitRole.SelectionHandle)
+            )
+            .Select(hit =>
+                Board!.GetEdge(hit.EntityId!.Value) is not null
+                    ? new HitStackEntry(hit.EntityId.Value, IsEdge: true)
+                    : new HitStackEntry(EffectiveId(hit.EntityId.Value), IsEdge: false)
+            )
+            .Distinct()
+            .ToList();
+
+    public void SelectHitStackEntry(HitStackEntry entry) =>
+        ReplaceSelection(entry.IsEdge ? [] : [entry.Id], entry.IsEdge ? [entry.Id] : []);
+
+    public void ToggleHitStackEntry(HitStackEntry entry)
+    {
+        var toggled = entry.IsEdge ? SelectedEdgeIds : SelectedInstanceIds;
+        if (!toggled.Remove(entry.Id))
+        {
+            toggled.Add(entry.Id);
+        }
+    }
+
     public bool IsSelected(Guid effectiveId) => SelectedInstanceIds.Contains(effectiveId);
 
     public IReadOnlyList<ComponentInstance> SelectedInstances() =>

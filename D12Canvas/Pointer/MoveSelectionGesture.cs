@@ -5,7 +5,9 @@ namespace D12Canvas.Pointer;
 // A primary press on an instance or on the selection box. Pressing an entity outside the
 // selection selects it at once, or appends it under Shift, so the drag has something to move;
 // pressing a member leaves the selection alone until release, where a click collapses to that
-// member or, under Shift, toggles it out. Every tick publishes the whole selection translated by
+// member or, under Shift, toggles it out. A click on the selection box does the same with the
+// topmost entity beneath it, and an Alt click selects the next entity down the hit stack from the
+// one selected before the press. Every tick publishes the whole selection translated by
 // the board-space distance from the press point, snapped as one rigid body by the top-left of its
 // instances' bounding box, and an active release commits exactly what was last published. A
 // selected edge's floating ends take the same delta; its attached ends follow their components
@@ -65,12 +67,18 @@ internal sealed class MoveSelectionGesture : PointerGesture
 
     protected override void OnRelease(PointerRelease release) => Context.CommitPreview();
 
-    // A double-click on a member of a group that is not entered, or on the selection box over one,
+    // An Alt click cycles whatever its press count, so quick Alt clicks keep stepping down. A
+    // double-click on a member of a group that is not entered, or on the selection box over one,
     // steps one level inside that group and selects the member's ancestor at the new level. On an
     // addressable instance it leaves the selection as the first click of the pair left it and asks
     // the instance to edit.
     protected override void OnClick(PointerRelease release)
     {
+        if (TrySelectNextInHitStack())
+        {
+            return;
+        }
+
         if (Press.PressCount > 1)
         {
             if (Press.EntityId is { } entityId)
@@ -82,6 +90,12 @@ internal sealed class MoveSelectionGesture : PointerGesture
                 TryEnterContainingGroup(participantId);
             }
 
+            return;
+        }
+
+        if (Press.Role == HitRole.SelectionBounds)
+        {
+            ClickThroughSelectionBox();
             return;
         }
 
@@ -97,6 +111,25 @@ internal sealed class MoveSelectionGesture : PointerGesture
         else
         {
             Context.ReplaceSelection([member], []);
+        }
+    }
+
+    // The topmost entity beneath the box stands in for the pressed entity: a click collapses to
+    // it, or under Shift toggles it. With nothing beneath, the selection stays.
+    private void ClickThroughSelectionBox()
+    {
+        if (Context.HitStackOf(Press) is not [var beneath, ..])
+        {
+            return;
+        }
+
+        if (Press.ShiftKey)
+        {
+            Context.ToggleHitStackEntry(beneath);
+        }
+        else
+        {
+            Context.SelectHitStackEntry(beneath);
         }
     }
 

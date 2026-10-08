@@ -31,6 +31,15 @@ internal interface IGestureContext
     // inside it, all the way for an edge, and until a press on empty canvas lies inside its bounds.
     void StepOutFor(PointerPress press);
 
+    // The press's hit stack, each entity resolved as a press on it would select it, with the
+    // selection box, its handles and duplicates left out. Empty when the press carried none.
+    IReadOnlyList<HitStackEntry> HitStackOf(PointerPress press);
+
+    // Both step out of the entered group as far as a press on the entry would, then replace the
+    // selection with the entry or toggle it in or out.
+    void SelectHitStackEntry(HitStackEntry entry);
+    void ToggleHitStackEntry(HitStackEntry entry);
+
     bool IsSelected(Guid effectiveId);
     bool IsEdgeSelected(Guid edgeId);
 

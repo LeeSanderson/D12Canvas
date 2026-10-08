@@ -3,7 +3,9 @@ namespace D12Canvas.Pointer;
 // What the browser-side listener hands the canvas for one press, after it has classified the
 // hit target and taken the synchronous decisions. X and Y are container-relative screen pixels,
 // converted once by the listener so no interop round trip stands between a press and its owner.
-// Public only because Blazor requires the interop entry points and their parameters to be.
+// Public only because Blazor requires the interop entry points and their parameters to be. Hits is
+// what lies under the press point, topmost first, read only for a press on the selection box or
+// a primary press with Alt held, whose click selects from it.
 public sealed record PointerPress(
     int PointerId,
     int Button,
@@ -18,7 +20,8 @@ public sealed record PointerPress(
     bool ShiftKey,
     bool CtrlKey,
     bool AltKey,
-    bool MetaKey
+    bool MetaKey,
+    IReadOnlyList<PointerHit>? Hits = null
 )
 {
     public const int PrimaryButton = 0;

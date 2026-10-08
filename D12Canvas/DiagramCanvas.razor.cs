@@ -676,6 +676,13 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void StepOutFor(PointerPress press) => canvas.StepOutForPress(press);
 
+        public IReadOnlyList<HitStackEntry> HitStackOf(PointerPress press) =>
+            canvas.HitStackOf(press);
+
+        public void SelectHitStackEntry(HitStackEntry entry) => canvas.SelectHitStackEntry(entry);
+
+        public void ToggleHitStackEntry(HitStackEntry entry) => canvas.ToggleHitStackEntry(entry);
+
         public bool IsSelected(Guid effectiveId) =>
             canvas._selectedInstanceIds.Contains(effectiveId);
 
@@ -1717,6 +1724,76 @@ public partial class DiagramCanvas : IAsyncDisposable
                 StepOutWhile(enteredId => !IsInside(entityId, enteredId));
             }
         }
+    }
+
+    private IReadOnlyList<HitStackEntry> HitStackOf(PointerPress press)
+    {
+        if (Board is null || press.Hits is null)
+        {
+            return [];
+        }
+
+        var entries = new List<HitStackEntry>();
+        foreach (var hit in press.Hits)
+        {
+            if (
+                hit.EntityId is not { } id
+                || hit.Role is HitRole.SelectionBounds or HitRole.SelectionHandle
+            )
+            {
+                continue;
+            }
+
+            HitStackEntry? entry =
+                Board.GetEdge(id) is not null ? new HitStackEntry(id, IsEdge: true)
+                : Board.GetComponent(id) is not null
+                    ? new HitStackEntry(PressedSelectionId(id), IsEdge: false)
+                : null;
+            if (entry is { } resolved && !entries.Contains(resolved))
+            {
+                entries.Add(resolved);
+            }
+        }
+
+        return entries;
+    }
+
+    // What a press on the entity selects once it has stepped out as far as it needs: the ancestor,
+    // or the entity itself, whose parent is the deepest entered group holding it, or the outermost
+    // one when no entered group holds it.
+    private Guid PressedSelectionId(Guid id)
+    {
+        var current = id;
+        while (
+            Board!.FindParentGroup(current) is { } parent && !_enteredGroupIds.Contains(parent.Id)
+        )
+        {
+            current = parent.Id;
+        }
+
+        return current;
+    }
+
+    private void StepOutFor(HitStackEntry entry) =>
+        StepOutWhile(enteredId => entry.IsEdge || !IsInside(entry.Id, enteredId));
+
+    private void SelectHitStackEntry(HitStackEntry entry)
+    {
+        StepOutFor(entry);
+        SetSelection(entry.IsEdge ? [] : [entry.Id], entry.IsEdge ? [entry.Id] : []);
+    }
+
+    private void ToggleHitStackEntry(HitStackEntry entry)
+    {
+        StepOutFor(entry);
+        var toggled = entry.IsEdge ? _selectedEdgeIds : _selectedInstanceIds;
+        var after = toggled.Contains(entry.Id)
+            ? toggled.Where(id => id != entry.Id)
+            : toggled.Append(entry.Id);
+        SetSelection(
+            entry.IsEdge ? _selectedInstanceIds : after,
+            entry.IsEdge ? after : _selectedEdgeIds
+        );
     }
 
     // Steps out one level at a time while the condition holds for the entered group.

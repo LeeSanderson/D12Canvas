@@ -33,12 +33,32 @@
     [SupplyParameterFromQuery(Name = "group")]
     public bool GroupTargetAndNote { get; set; }
 
+    [SupplyParameterFromQuery(Name = "stack")]
+    public bool StackRectangles { get; set; }
+
     protected override void OnInitialized()
     {
         if (GroupTargetAndNote)
         {
             _board.AddGroup(new Group([TargetId, NoteId]));
         }
+
+        if (StackRectangles)
+        {
+            StackSourceTargetAndLooseEnd();
+        }
+    }
+
+    private void StackSourceTargetAndLooseEnd()
+    {
+        _board.RemoveEdge(LabelledEdgeId);
+        _board.RemoveEdge(FloatingEdgeId);
+        var target = _board.GetComponent(TargetId)!;
+        target.Bounds = new Bounds(80, 70, 160, 100);
+        target.ZIndex = 1;
+        var looseEnd = _board.GetComponent(LooseEndId)!;
+        looseEnd.Bounds = new Bounds(120, 100, 160, 100);
+        looseEnd.ZIndex = 2;
     }
 
     private WheelDeviceProfile WheelProfile =>

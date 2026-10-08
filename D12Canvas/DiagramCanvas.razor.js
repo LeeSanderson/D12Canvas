@@ -85,6 +85,10 @@ const NATIVELY_INTERACTIVE = "input, textarea, button, select, a[href], [tabinde
 // the pointer, since a captured pointerup is targeted at the canvas whatever it is over.
 const EDGE_END_ROLES = new Set(["port", "port-strip", "edge-endpoint"]);
 
+// A primary press on these roles carries the hit stack at the press point when Alt is held, and on
+// the selection box always, since its click selects what lies beneath it.
+const ALT_CYCLE_ROLES = new Set(["instance", "edge", "edge-label"]);
+
 function isNativelyInteractive(element) {
     return element.matches(NATIVELY_INTERACTIVE) || element.isContentEditable === true;
 }
@@ -186,6 +190,21 @@ function menuVerdict(target, hit) {
     return "canvas";
 }
 
+// With Alt held, a primary press on author content reaches through to the instance unless the
+// browser has a reason to keep it: an editable target or a live text selection in the instance.
+function altPrimaryCell(event, hit) {
+    if (event.button !== PRIMARY_BUTTON || !event.altKey || hit.role !== "author-content") {
+        return hit;
+    }
+
+    const instance = event.target.closest('[data-d12-role="instance"]') ?? event.target;
+    if (isEditableTarget(event.target) || hasLiveTextSelectionInside(instance)) {
+        return hit;
+    }
+
+    return { role: "instance", entityId: hit.entityId, part: null, native: false };
+}
+
 function modifiersOf(event) {
     return {
         shiftKey: event.shiftKey,
@@ -228,6 +247,12 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         return count;
     };
 
+    const hitStackFor = (event, hit) =>
+        event.button === PRIMARY_BUTTON &&
+        (hit.role === "selection-bounds" || (event.altKey && ALT_CYCLE_ROLES.has(hit.role)))
+            ? hitStackAt(canvas, event.clientX, event.clientY)
+            : null;
+
     const pressFor = (event, hit) => {
         const point = containerPoint(event);
         return {
@@ -241,7 +266,8 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             pressCount: pressCountFor(event),
             x: point.x,
             y: point.y,
-            ...modifiersOf(event)
+            ...modifiersOf(event),
+            hits: hitStackFor(event, hit)
         };
     };
 
@@ -292,7 +318,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         }
 
         const hit = classifyPresses
-            ? classify(event.target, canvas)
+            ? altPrimaryCell(event, classify(event.target, canvas))
             : { role: "canvas", entityId: null, part: null, native: false };
 
         // A primary press on author content belongs to the browser: nothing is captured or

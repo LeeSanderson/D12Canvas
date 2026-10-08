@@ -78,6 +78,28 @@ internal abstract class PointerGesture
 
     public void MarkCancelled() => Phase = GesturePhase.Cancelled;
 
+    // An Alt click selects the next entity down the hit stack from the one selected before the
+    // press. Ctrl with Alt is left alone, since that is how AltGr arrives on Windows.
+    protected bool TrySelectNextInHitStack()
+    {
+        if (
+            !Press.AltKey
+            || Press.CtrlKey
+            || HitStack.NextBelow(
+                Context.HitStackOf(Press),
+                Context.SelectionSnapshot,
+                Context.EffectiveSelectionId
+            )
+                is not { } next
+        )
+        {
+            return false;
+        }
+
+        Context.SelectHitStackEntry(next);
+        return true;
+    }
+
     protected virtual void OnPress() { }
 
     protected abstract void OnMove(PointerMove move);

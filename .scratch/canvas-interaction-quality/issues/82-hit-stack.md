@@ -4,11 +4,11 @@
 
 **Blocked by:** 81 (Entered group)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] A click on empty space inside the selection box, above a shape, selects that shape rather than keeping the selection
-- [ ] Alt+click on a stack of three selects the next one down on each press and wraps to the top after the bottom
-- [ ] Alt+click on a grouped member outside its entered group selects the next entity beneath, resolved as its group
-- [ ] Alt is never read at press for anything else and Ctrl+click is untouched
-- [ ] bUnit covers the two outcomes through the entry points given a supplied stack; a probe proves the stack arrives in paint order from a real page
-- [ ] `CONTEXT.md`'s `Hit stack` term describes what shipped
+- [x] A click on empty space inside the selection box, above a shape, selects that shape rather than keeping the selection
+- [x] Alt+click on a stack of three selects the next one down on each press and wraps to the top after the bottom
+- [x] Alt+click on a grouped member outside its entered group selects the next entity beneath, resolved as its group
+- [x] Alt is never read at press for anything else and Ctrl+click is untouched
+- [x] bUnit covers the two outcomes through the entry points given a supplied stack; a probe proves the stack arrives in paint order from a real page
+- [x] `CONTEXT.md`'s `Hit stack` term describes what shipped
