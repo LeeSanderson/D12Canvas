@@ -4,12 +4,16 @@
 
 **Blocked by:** 66 (A group's members always resolve), 101 (The canvas starts every inline edit)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Placing a text and pressing Escape without typing leaves the board and the history exactly as before placement
-- [ ] Clearing an existing text and committing removes it in one undoable entry; Ctrl+Z brings it back with its text
-- [ ] Clearing a sticky note leaves an empty sticky note
-- [ ] An edge label cleared to whitespace is removed and focus lands on the edge's stop
-- [ ] Removing a grouped text that leaves its group with one member dissolves the group in the same entry
-- [ ] `Retract` has history tests; the registration option is validated and documented in the registration surface
-- [ ] `CONTEXT.md`'s `History` and `Inline edit` terms describe what shipped
+- [x] Placing a text and pressing Escape without typing leaves the board and the history exactly as before placement
+- [x] Clearing an existing text and committing removes it in one undoable entry; Ctrl+Z brings it back with its text
+- [x] Clearing a sticky note leaves an empty sticky note
+- [x] An edge label cleared to whitespace is removed and focus lands on the edge's stop
+- [x] Removing a grouped text that leaves its group with one member dissolves the group in the same entry
+- [x] `Retract` has history tests; the registration option is validated and documented in the registration surface
+- [x] `CONTEXT.md`'s `History` and `Inline edit` terms describe what shipped
+
+Shipped with three choices the ADR did not spell out. Registration refuses an `IsEmpty` predicate on a component type that does not implement `IInlineEditable`, since no edit ever ends on it. The canvas holds the creation it may retract only until history next changes, not only while it is on top by reference: placing a text, typing, committing and undoing put the creation back on top with the text change on redo, and retracting it there would have left that redo entry pointing at an instance no longer on the board. An instance already empty when its edit opens, a loaded empty `Text` opened with `F2` and closed unchanged, is removed too, as the ADR says.
+
+Still open: focus after an abandoned `Quick create` going to its source waits for ticket 103. A blur commit that arrives after a press has locked history is dropped, as a non-empty commit already was; the real-browser probe for a click on empty canvas shows the blur arriving first.

@@ -47,6 +47,7 @@ internal static class BuiltInComponents
                 builder.Icon = "🔤";
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(200, 40);
+                builder.IsEmpty = props => string.IsNullOrWhiteSpace(props.Text);
             }
         );
 

@@ -33,7 +33,7 @@ public sealed class CommandHistory
     // pushed or undone since a command it's holding a reference to, before mutating it in place.
     public ICommand? PeekUndo => _undoStack.Last?.Value;
 
-    // Fires whenever Do/Undo/Redo actually mutates board content - not on a no-op Undo/Redo
+    // Fires whenever Do/Undo/Redo/Retract actually mutates board content - not on a no-op Undo/Redo
     // against an empty stack. Carries no payload; a host owns its own dirty-tracking on top of it.
     public event EventHandler? Changed;
 
@@ -57,6 +57,22 @@ public sealed class CommandHistory
         // A new gesture abandons whatever was undone - it can no longer be redone.
         _redoStack.Clear();
         NotifyChanged();
+    }
+
+    // Takes back a command still on top of the undo stack, by reference, as though it had never
+    // been done: it is undone and dropped, and redo is left as it was. False when anything was
+    // pushed or undone since, which leaves the caller to record its change as a new entry.
+    public bool Retract(ICommand command)
+    {
+        if (IsLocked || !ReferenceEquals(PeekUndo, command))
+        {
+            return false;
+        }
+
+        _undoStack.RemoveLast();
+        command.Undo();
+        NotifyChanged();
+        return true;
     }
 
     public void Undo()

@@ -103,6 +103,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void OnHistoryChanged(object? sender, EventArgs e)
     {
+        _retractableCreation = null;
         ReconcileEnteredGroups();
         _duplicateRun.BoardChanged(id =>
             Board?.GetComponent(id) is not null
@@ -2220,7 +2221,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         var (midX, midY) = route.LabelAnchor;
         var label = NewCenteredInstance(DefaultEdgeLabelComponentTypeKey, midX, midY);
 
-        _history.Do(new ChangeEdgeLabelCommand(edge, before: null, after: label));
+        RecordCreation(label.Id, new ChangeEdgeLabelCommand(edge, before: null, after: label));
         StateHasChanged();
         BeginLabelEdit(edgeId);
     }
@@ -3031,7 +3032,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         var instance = NewCenteredInstance(componentTypeKey, centerX, centerY);
-        _history.Do(new AddEntityCommand(Board!, instance));
+        RecordCreation(instance.Id, new AddEntityCommand(Board!, instance));
         return instance;
     }
 

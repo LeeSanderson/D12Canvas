@@ -1,6 +1,7 @@
 using System.Linq;
 using D12Canvas.Panel;
 using D12Canvas.Registration;
+using Microsoft.AspNetCore.Components;
 using Xunit;
 
 namespace D12Canvas.Tests;
@@ -450,5 +451,78 @@ public class D12CanvasOptionsTests
         );
 
         Assert.Equal(nameof(PanelTestProps.Label), exception.PropertyName);
+    }
+
+    [Fact]
+    public void AnIsEmptyPredicateOnATypeThatIsNotInlineEditableThrows()
+    {
+        var options = new D12CanvasOptions();
+
+        var exception = Assert.Throws<EmptyPredicateWithoutInlineEditException>(
+            () =>
+                options.RegisterComponent<TestComponentDouble, TestProps>(
+                    "widget",
+                    builder =>
+                    {
+                        builder.DisplayName = "Widget";
+                        builder.AccessibleName = "Widget";
+                        builder.DefaultProps = new TestProps();
+                        builder.IsEmpty = props => props.Text.Length == 0;
+                    }
+                )
+        );
+
+        Assert.Equal("widget", exception.Key);
+    }
+
+    [Fact]
+    public void AnIsEmptyPredicateIsEvaluatedAgainstBoxedProps()
+    {
+        var options = new D12CanvasOptions();
+
+        options.RegisterComponent<InlineEditableTestComponent, TestProps>(
+            "widget",
+            builder =>
+            {
+                builder.DisplayName = "Widget";
+                builder.AccessibleName = "Widget";
+                builder.DefaultProps = new TestProps();
+                builder.IsEmpty = props => props.Text.Length == 0;
+            }
+        );
+
+        var registration = options.Registry.Resolve("widget");
+        Assert.True(registration.CountsAsEmpty(new TestProps("")));
+        Assert.False(registration.CountsAsEmpty(new TestProps("words")));
+        Assert.False(registration.CountsAsEmpty(new object()));
+    }
+
+    [Fact]
+    public void ATypeWithoutAnIsEmptyPredicateNeverCountsAsEmpty()
+    {
+        var options = new D12CanvasOptions();
+
+        options.RegisterComponent<InlineEditableTestComponent, TestProps>(
+            "widget",
+            builder =>
+            {
+                builder.DisplayName = "Widget";
+                builder.AccessibleName = "Widget";
+                builder.DefaultProps = new TestProps();
+            }
+        );
+
+        var registration = options.Registry.Resolve("widget");
+        Assert.Null(registration.IsEmpty);
+        Assert.False(registration.CountsAsEmpty(new TestProps("")));
+    }
+
+    private sealed class InlineEditableTestComponent : IComponent, IInlineEditable
+    {
+        public void Attach(RenderHandle renderHandle) { }
+
+        public Task SetParametersAsync(ParameterView parameters) => Task.CompletedTask;
+
+        public void BeginEdit() { }
     }
 }

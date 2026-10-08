@@ -434,4 +434,237 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         var reloadedInstance = Assert.Single(reloaded.Components);
         Assert.Equal("Persisted text", ((StickyNoteProps)reloadedInstance.Props).Text);
     }
+
+    private Edge AddEdgeBetweenTwoRectangles()
+    {
+        var source = AddRectangle(0, 0);
+        var target = AddRectangle(300, 0);
+        var edge = new Edge(
+            new PortEndpoint(source.Id, PortId.Right),
+            new PortEndpoint(target.Id, PortId.Left)
+        );
+        _board.AddEdge(edge);
+        return edge;
+    }
+
+    private static Task Redo(IRenderedComponent<DiagramCanvas> canvas) =>
+        canvas.InvokeAsync(() => canvas.Instance.OnRedoPressed());
+
+    [Fact]
+    public async Task PlacingATextAndPressingEscapeWithoutTypingLeavesTheBoardAndHistoryAsBefore()
+    {
+        var note = AddStickyNote("Moved");
+        var canvas = RenderCanvas();
+        canvas.ClickOn(ContainerOf(canvas, note.Id));
+        canvas.DragOn(ContainerOf(canvas, note.Id), (100, 100), (150, 120));
+        var moved = note.Bounds;
+
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd("text"));
+        PressEscapeIn(TextEditor(canvas));
+
+        Assert.Equal([note.Id], _board.Components.Select(instance => instance.Id));
+        Assert.Empty(canvas.FindAll("textarea"));
+        Assert.Empty(canvas.Instance.SelectedComponents);
+        Assert.Single(CanvasModule.Invocations["focusCanvas"]);
+
+        await Undo(canvas);
+        Assert.NotEqual(moved, note.Bounds);
+        await Redo(canvas);
+        Assert.Equal(moved, note.Bounds);
+        await Redo(canvas);
+        Assert.Single(_board.Components);
+    }
+
+    [Fact]
+    public async Task ATextPlacedAndLeftAsWhitespaceIsRemovedOnBlurWithNoEntry()
+    {
+        var canvas = RenderCanvas();
+
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd("text"));
+        TextEditor(canvas).Input("   ");
+        TextEditor(canvas).Blur();
+
+        Assert.Empty(_board.Components);
+        Assert.Empty(CanvasModule.Invocations["focusCanvas"]);
+        await Undo(canvas);
+        Assert.Empty(_board.Components);
+        await Redo(canvas);
+        Assert.Empty(_board.Components);
+    }
+
+    [Fact]
+    public async Task ClearingAnExistingTextRemovesItInOneEntryAndUndoBringsItBackWithItsText()
+    {
+        var text = AddText("Words");
+        var canvas = RenderCanvas();
+
+        DoublePress(canvas, text.Id);
+        TextEditor(canvas).Input("");
+        PressEscapeIn(TextEditor(canvas));
+
+        Assert.Empty(_board.Components);
+        Assert.Empty(canvas.Instance.SelectedComponents);
+        Assert.Single(CanvasModule.Invocations["focusCanvas"]);
+
+        await Undo(canvas);
+
+        var restored = Assert.Single(_board.Components);
+        Assert.Same(text, restored);
+        Assert.Equal("Words", TextOf(restored));
+        Assert.Contains("Words", canvas.Find("p.d12-text").TextContent);
+    }
+
+    [Fact]
+    public async Task AnEmptyTextOpenedAndClosedUnchangedIsRemoved()
+    {
+        var text = AddText("");
+        var canvas = RenderCanvas();
+        ContainerOf(canvas, text.Id).Focus();
+
+        await PressF2(canvas);
+        PressEscapeIn(TextEditor(canvas));
+
+        Assert.Empty(_board.Components);
+        await Undo(canvas);
+        Assert.Same(text, Assert.Single(_board.Components));
+    }
+
+    [Fact]
+    public async Task ClearingAStickyNoteLeavesAnEmptyStickyNote()
+    {
+        var note = AddStickyNote("Words");
+        var canvas = RenderCanvas();
+
+        DoublePress(canvas, note.Id);
+        StickyEditor(canvas).Input("");
+        StickyEditor(canvas).Blur();
+
+        Assert.Same(note, Assert.Single(_board.Components));
+        Assert.Equal("", TextOf(note));
+        await Undo(canvas);
+        Assert.Equal("Words", TextOf(note));
+    }
+
+    [Fact]
+    public async Task AStickyNotePlacedAndAbandonedStaysAsOneEntry()
+    {
+        var canvas = RenderCanvas();
+
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd("sticky-note"));
+        PressEscapeIn(StickyEditor(canvas));
+
+        Assert.Single(_board.Components);
+        await Undo(canvas);
+        Assert.Empty(_board.Components);
+    }
+
+    [Fact]
+    public async Task RemovingAGroupedTextThatLeavesOneMemberDissolvesTheGroupInTheSameEntry()
+    {
+        var text = AddText("Words");
+        var note = AddStickyNote("Other", 300, 0);
+        var group = new Group([text.Id, note.Id]);
+        _board.AddGroup(group);
+        var canvas = RenderCanvas();
+
+        DoublePress(canvas, text.Id);
+        canvas.ClickOn(ContainerOf(canvas, text.Id), pressCount: 2);
+        TextEditor(canvas).Input("");
+        PressEscapeIn(TextEditor(canvas));
+
+        Assert.Equal([note.Id], _board.Components.Select(instance => instance.Id));
+        Assert.Empty(_board.Groups);
+
+        await Undo(canvas);
+
+        Assert.Equal("Words", TextOf(text));
+        Assert.Equal(2, _board.Components.Count);
+        var restoredGroup = Assert.Single(_board.Groups);
+        Assert.Equal(group.Id, restoredGroup.Id);
+        Assert.Equal([text.Id, note.Id], restoredGroup.MemberIds);
+    }
+
+    [Fact]
+    public async Task ACommandBetweenCreationAndAnEmptyEditEndKeepsTheCreationAndRemovesAsItsOwnEntry()
+    {
+        var canvas = RenderCanvas();
+
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd("text"));
+        var text = Assert.Single(_board.Components);
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd("rectangle"));
+        PressEscapeIn(TextEditor(canvas));
+
+        Assert.DoesNotContain(text, _board.Components);
+        await Undo(canvas);
+        Assert.Contains(text, _board.Components);
+        Assert.Equal(2, _board.Components.Count);
+        await Undo(canvas);
+        Assert.Equal([text.Id], _board.Components.Select(instance => instance.Id));
+        await Undo(canvas);
+        Assert.Empty(_board.Components);
+    }
+
+    [Fact]
+    public async Task AnUndoSinceTheCreationKeepsTheCreationAndRemovesAsItsOwnEntry()
+    {
+        var canvas = RenderCanvas();
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd("text"));
+        var text = Assert.Single(_board.Components);
+        TextEditor(canvas).Input("a");
+        TextEditor(canvas).Blur();
+        await Undo(canvas);
+
+        ContainerOf(canvas, text.Id).Focus();
+        await PressF2(canvas);
+        PressEscapeIn(TextEditor(canvas));
+
+        Assert.Empty(_board.Components);
+        await Undo(canvas);
+        Assert.Same(text, Assert.Single(_board.Components));
+        Assert.Equal("", TextOf(text));
+        await Undo(canvas);
+        Assert.Empty(_board.Components);
+    }
+
+    [Fact]
+    public async Task AnEdgeLabelAddedAndAbandonedLeavesNoLabelAndNoEntry()
+    {
+        var edge = AddEdgeBetweenTwoRectangles();
+        var canvas = RenderCanvas();
+
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
+        PressEscapeIn(TextEditor(canvas));
+
+        Assert.Null(edge.Label);
+        Assert.Empty(canvas.FindAll(".edge-label"));
+        Assert.Equal(1, FocusTabStopIndices[^1]);
+        await Undo(canvas);
+        Assert.Null(edge.Label);
+        await Redo(canvas);
+        Assert.Null(edge.Label);
+    }
+
+    [Fact]
+    public async Task AnEdgeLabelClearedToWhitespaceIsRemovedAndFocusLandsOnTheEdgesStop()
+    {
+        var edge = AddEdgeBetweenTwoRectangles();
+        var label = new ComponentInstance(
+            "text",
+            new TextProps("Name", null, 16, "normal", "left"),
+            new Bounds(0, 0, 80, 24)
+        );
+        edge.Label = label;
+        var canvas = RenderCanvas();
+
+        canvas.DoubleClickElement(canvas.Find(".edge-label"));
+        TextEditor(canvas).Input("  \t ");
+        PressEscapeIn(TextEditor(canvas));
+
+        Assert.Null(edge.Label);
+        Assert.Equal([1], FocusTabStopIndices);
+
+        await Undo(canvas);
+        Assert.Same(label, edge.Label);
+        Assert.Equal("Name", TextOf(label));
+    }
 }

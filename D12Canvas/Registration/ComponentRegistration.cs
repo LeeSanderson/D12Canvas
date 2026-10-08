@@ -20,9 +20,12 @@ public sealed record ComponentRegistration(
     IReadOnlyList<EditableProperty>? EditableProperties = null,
     // The TProps properties declared [AssetReference], discovered by RegisterComponent in the same
     // pass as EditableProperties. null means none, and a type with none costs nothing at render.
-    IReadOnlyList<PropertyInfo>? AssetReferences = null
+    IReadOnlyList<PropertyInfo>? AssetReferences = null,
+    Func<object, bool>? IsEmpty = null
 )
 {
+    public bool CountsAsEmpty(object props) => IsEmpty?.Invoke(props) == true;
+
     // Known before any instance of the type is mounted, so the canvas can tell a type that
     // declines editing from one that has not mounted yet.
     public bool IsInlineEditable => typeof(IInlineEditable).IsAssignableFrom(ComponentType);

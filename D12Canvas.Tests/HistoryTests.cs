@@ -248,4 +248,121 @@ public class HistoryTests
         Assert.False(history.CanUndo);
         Assert.True(history.CanRedo);
     }
+
+    private static (ComponentInstance Instance, ICommand Move) Moved(CommandHistory history)
+    {
+        var instance = new ComponentInstance(
+            "sticky-note",
+            new TestProps(),
+            new Bounds(0, 0, 50, 50)
+        );
+        var move = new ChangeBoundsCommand(
+            instance,
+            new Bounds(0, 0, 50, 50),
+            new Bounds(10, 10, 50, 50)
+        );
+        history.Do(move);
+        return (instance, move);
+    }
+
+    [Fact]
+    public void RetractUndoesTheTopEntryAndLeavesNothingToRedo()
+    {
+        var history = new CommandHistory();
+        var (instance, move) = Moved(history);
+
+        Assert.True(history.Retract(move));
+
+        Assert.Equal(new Bounds(0, 0, 50, 50), instance.Bounds);
+        Assert.False(history.CanUndo);
+        Assert.False(history.CanRedo);
+    }
+
+    [Fact]
+    public void RetractLeavesEarlierEntriesInPlace()
+    {
+        var history = new CommandHistory();
+        var (earlier, _) = Moved(history);
+        var (retracted, move) = Moved(history);
+
+        Assert.True(history.Retract(move));
+        Assert.Equal(new Bounds(0, 0, 50, 50), retracted.Bounds);
+
+        history.Undo();
+        Assert.Equal(new Bounds(0, 0, 50, 50), earlier.Bounds);
+        Assert.False(history.CanUndo);
+    }
+
+    [Fact]
+    public void RetractLeavesTheRedoStackAsItWas()
+    {
+        var history = new CommandHistory();
+        var (_, move) = Moved(history);
+        var (undone, _) = Moved(history);
+        history.Undo();
+
+        Assert.True(history.Retract(move));
+
+        history.Redo();
+        Assert.Equal(new Bounds(10, 10, 50, 50), undone.Bounds);
+    }
+
+    [Fact]
+    public void RetractOfACommandNoLongerOnTopDoesNothing()
+    {
+        var history = new CommandHistory();
+        var (instance, move) = Moved(history);
+        var (later, _) = Moved(history);
+
+        Assert.False(history.Retract(move));
+
+        Assert.Equal(new Bounds(10, 10, 50, 50), instance.Bounds);
+        Assert.Equal(new Bounds(10, 10, 50, 50), later.Bounds);
+        history.Undo();
+        history.Undo();
+        Assert.Equal(new Bounds(0, 0, 50, 50), instance.Bounds);
+    }
+
+    [Fact]
+    public void RetractOfAnUndoneCommandDoesNothing()
+    {
+        var history = new CommandHistory();
+        var (instance, move) = Moved(history);
+        history.Undo();
+
+        Assert.False(history.Retract(move));
+
+        Assert.True(history.CanRedo);
+        history.Redo();
+        Assert.Equal(new Bounds(10, 10, 50, 50), instance.Bounds);
+    }
+
+    [Fact]
+    public void RetractWhileLockedDoesNothing()
+    {
+        var history = new CommandHistory();
+        var (instance, move) = Moved(history);
+        history.Lock();
+
+        Assert.False(history.Retract(move));
+
+        Assert.Equal(new Bounds(10, 10, 50, 50), instance.Bounds);
+        Assert.True(history.CanUndo);
+    }
+
+    [Fact]
+    public void RetractFiresChangedOnlyWhenItActs()
+    {
+        var history = new CommandHistory();
+        var (_, move) = Moved(history);
+        var (_, later) = Moved(history);
+        var changedCount = 0;
+        history.Changed += (_, _) => changedCount++;
+
+        history.Retract(move);
+        Assert.Equal(0, changedCount);
+
+        history.Retract(later);
+        Assert.Equal(1, changedCount);
+    }
 }

@@ -1,3 +1,4 @@
+using D12Canvas.History;
 using D12Canvas.Model;
 using Microsoft.JSInterop;
 
@@ -15,6 +16,10 @@ public partial class DiagramCanvas
     // edge whose label was edited, and to the canvas when there is no such stop on screen.
     private bool _returningFocusAfterEdit;
     private Guid? _editFocusStopId;
+
+    // Held from a creation until anything else changes history, so a retraction never leaves an
+    // undone entry for the retracted instance on redo.
+    private (Guid Id, ICommand Command)? _retractableCreation;
 
     [JSInvokable]
     public void OnBeginEditPressed()
@@ -35,20 +40,91 @@ public partial class DiagramCanvas
     // The component calls this once at every edit end, whether or not anything changed.
     public void CommitInlineEdit(Guid instanceId, object before, object after, bool returnFocus)
     {
-        if (!Equals(before, after))
+        var labelledEdge = EdgeLabelled(instanceId);
+        var entity = ResolvePropsEntity(instanceId);
+        var removed = entity is not null && EndsEmpty(entity, before, after);
+
+        if (removed)
+        {
+            RemoveEmptied(entity!, labelledEdge, before, after);
+        }
+        else if (!Equals(before, after))
         {
             CommitPropsChange(instanceId, before, after);
         }
 
         if (returnFocus)
         {
-            _returningFocusAfterEdit = true;
-            _editFocusStopId = Board?.GetComponent(instanceId) is not null
-                ? instanceId
-                : EdgeLabelled(instanceId)?.Id;
+            ReturnFocusAfterEdit(instanceId, labelledEdge, removed);
         }
 
         StateHasChanged();
+    }
+
+    private bool EndsEmpty(ComponentInstance instance, object before, object after) =>
+        Registry
+            .Resolve(instance.ComponentTypeKey)
+            .CountsAsEmpty(UnresolvedForCommit(instance, before, after).After);
+
+    private void RemoveEmptied(
+        ComponentInstance instance,
+        Edge? labelledEdge,
+        object before,
+        object after
+    )
+    {
+        if (_retractableCreation is { } creation && creation.Id == instance.Id)
+        {
+            _retractableCreation = null;
+            if (_history.Retract(creation.Command))
+            {
+                return;
+            }
+        }
+
+        var commands = new List<ICommand>();
+        if (!Equals(before, after))
+        {
+            var (committedBefore, unresolvedAfter) = UnresolvedForCommit(instance, before, after);
+            commands.Add(new MutateEntityCommand(instance, committedBefore, unresolvedAfter));
+        }
+
+        if (labelledEdge is not null)
+        {
+            commands.Add(new ChangeEdgeLabelCommand(labelledEdge, instance, after: null));
+        }
+        else
+        {
+            commands.AddRange(InstanceRemoval.Compose(Board!, [instance.Id]));
+        }
+
+        _history.Do(new CompositeCommand(commands));
+    }
+
+    // A removed instance has no stop left, so focus goes to the stop of the edge it labelled, or
+    // to the canvas with nothing selected.
+    private void ReturnFocusAfterEdit(Guid instanceId, Edge? labelledEdge, bool removed)
+    {
+        _returningFocusAfterEdit = true;
+        if (labelledEdge is not null)
+        {
+            _editFocusStopId = labelledEdge.Id;
+        }
+        else if (removed)
+        {
+            _editFocusStopId = null;
+            SetSelection([], []);
+        }
+        else
+        {
+            _editFocusStopId = instanceId;
+        }
+    }
+
+    private void RecordCreation(Guid id, ICommand command)
+    {
+        _history.Do(command);
+        _retractableCreation = (id, command);
     }
 
     private Edge? EdgeLabelled(Guid labelId) =>

@@ -143,6 +143,47 @@ public sealed class InlineEditProbes(PlaywrightFixture playwright, DemoAppFixtur
     }
 
     [Fact]
+    public async Task ATextPlacedAndAbandonedByClickingEmptyCanvas_IsRemoved()
+    {
+        await Page.Locator("button[aria-label='Text']").ClickAsync();
+        await Expect(Page.Locator(".component-container")).ToHaveCountAsync(5);
+        await Expect(Page.Locator("textarea.d12-text-editor")).ToBeFocusedAsync();
+
+        var empty = await PagePointOnCanvasAsync(560, 40);
+        await Page.Mouse.ClickAsync(empty.X, empty.Y);
+
+        await Expect(Page.Locator(".component-container")).ToHaveCountAsync(4);
+        await Expect(Editor).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task ATextPlacedAndAbandonedWithEscape_IsRemovedAndFocusGoesToTheCanvas()
+    {
+        await Page.Locator("button[aria-label='Text']").ClickAsync();
+        await Expect(Page.Locator("textarea.d12-text-editor")).ToBeFocusedAsync();
+        await Page.Keyboard.TypeAsync("   ");
+
+        await Page.Keyboard.PressAsync("Escape");
+
+        await Expect(Page.Locator(".component-container")).ToHaveCountAsync(4);
+        await Expect(Page.Locator(".diagram-canvas")).ToBeFocusedAsync();
+    }
+
+    [Fact]
+    public async Task ClearingAnExistingTextAndPressingEscape_RemovesItAndCtrlZBringsItBack()
+    {
+        await Instance(TextId).DblClickAsync();
+        await Expect(Editor).ToBeFocusedAsync();
+        await Page.Keyboard.PressAsync("Delete");
+
+        await Page.Keyboard.PressAsync("Escape");
+        await Expect(Instance(TextId)).ToHaveCountAsync(0);
+
+        await Page.Keyboard.PressAsync("Control+z");
+        await Expect(Instance(TextId).Locator("p.d12-text")).ToHaveTextAsync("Release notes");
+    }
+
+    [Fact]
     public async Task EnterOnThePalettesStickyNoteEntry_OpensTheNewNoteForTyping()
     {
         await Page.Locator("button[aria-label='Sticky Note']").FocusAsync();

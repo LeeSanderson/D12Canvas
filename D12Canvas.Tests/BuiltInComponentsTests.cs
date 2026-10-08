@@ -191,6 +191,29 @@ public class BuiltInComponentsTests
         Assert.Equal(expected, RegisterAndResolve(key).IsInlineEditable);
     }
 
+    [Theory]
+    [InlineData("text", true)]
+    [InlineData("sticky-note", false)]
+    [InlineData("rectangle", false)]
+    [InlineData("image", false)]
+    public void OnlyTextDeclaresThatEmptyMeansAbsent(string key, bool declares)
+    {
+        Assert.Equal(declares, RegisterAndResolve(key).IsEmpty is not null);
+    }
+
+    [Theory]
+    [InlineData("", true)]
+    [InlineData("   ", true)]
+    [InlineData("\n\t", true)]
+    [InlineData("Words", false)]
+    [InlineData("  x  ", false)]
+    public void TextCountsBlankOrWhitespaceTextAsEmpty(string text, bool empty)
+    {
+        var props = new TextProps(text, null, 16, "normal", "left");
+
+        Assert.Equal(empty, RegisterAndResolve("text").CountsAsEmpty(props));
+    }
+
     private static ComponentRegistration RegisterAndResolve(string key)
     {
         var services = new ServiceCollection();

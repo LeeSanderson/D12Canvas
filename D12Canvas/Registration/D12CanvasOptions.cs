@@ -52,22 +52,29 @@ public sealed class D12CanvasOptions
 
         PropertyRoleValidator.Validate(editableProperties);
 
-        _registry.Register(
-            new ComponentRegistration(
-                key,
-                typeof(TComponent),
-                typeof(TProps),
-                builder.DisplayName,
-                builder.AccessibleName,
-                builder.DefaultProps,
-                builder.Icon,
-                builder.Role,
-                builder.DefaultSize,
-                builder.Category,
-                editableProperties,
-                AssetReferenceSchema.DiscoverFrom(typeof(TProps))
-            )
+        var isEmpty = builder.IsEmpty;
+        var registration = new ComponentRegistration(
+            key,
+            typeof(TComponent),
+            typeof(TProps),
+            builder.DisplayName,
+            builder.AccessibleName,
+            builder.DefaultProps,
+            builder.Icon,
+            builder.Role,
+            builder.DefaultSize,
+            builder.Category,
+            editableProperties,
+            AssetReferenceSchema.DiscoverFrom(typeof(TProps)),
+            isEmpty is null ? null : props => props is TProps typed && isEmpty(typed)
         );
+
+        if (isEmpty is not null && !registration.IsInlineEditable)
+        {
+            throw new EmptyPredicateWithoutInlineEditException(key, typeof(TComponent));
+        }
+
+        _registry.Register(registration);
 
         return this;
     }
