@@ -29,8 +29,9 @@ internal sealed record SpacingGuide(SnapAxis Axis, double From, double To, doubl
 
 // The search behind object snapping, run per axis. A move offers the mover's start, centre and end
 // against the same three lines of every candidate, plus the equal-spacing positions; a resize
-// offers only the edge it moves. A snap already held survives until its anchor drifts past the
-// sticky distance, so a match takes less effort to keep than to acquire.
+// offers only the edges it moves, which is both edges of a driven axis under a centre resize. A
+// snap already held survives until its anchor drifts past the sticky distance, so a match takes
+// less effort to keep than to acquire.
 internal static class ObjectSnap
 {
     public const double StickyFactor = 1.75;
@@ -61,16 +62,16 @@ internal static class ObjectSnap
         return Resolve(options, anchor => ValueOf(mover, axis, anchor), tolerance, held);
     }
 
-    public static AxisSnap? ForEdge(
+    public static AxisSnap? ForEdges(
         Bounds box,
-        SnapAnchor edge,
+        IReadOnlyList<SnapAnchor> edges,
         IReadOnlyList<Bounds> candidates,
         SnapAxis axis,
         double tolerance,
         AxisSnap? held
     )
     {
-        var options = PointOptions(candidates, axis, [edge]).ToList();
+        var options = PointOptions(candidates, axis, edges).ToList();
         return Resolve(options, anchor => ValueOf(box, axis, anchor), tolerance, held);
     }
 
@@ -87,12 +88,12 @@ internal static class ObjectSnap
         AlignmentGuides(snapped, candidates, axis, BoxAnchors)
             .Concat(SpacingGuides(snapped, candidates, axis));
 
-    public static IEnumerable<SnapGuide> GuidesForEdge(
+    public static IEnumerable<SnapGuide> GuidesForEdges(
         Bounds snapped,
-        SnapAnchor edge,
+        IReadOnlyList<SnapAnchor> edges,
         IReadOnlyList<Bounds> candidates,
         SnapAxis axis
-    ) => AlignmentGuides(snapped, candidates, axis, [edge]);
+    ) => AlignmentGuides(snapped, candidates, axis, edges);
 
     public static double ValueOf(Bounds box, SnapAxis axis, SnapAnchor anchor) =>
         anchor switch

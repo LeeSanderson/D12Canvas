@@ -144,6 +144,127 @@ internal static class ResizeMath
         return new Bounds(left, top, right - left, bottom - top);
     }
 
+    // Each driven axis grows by twice the delta, and the floor holds both edges the same distance
+    // from the centre.
+    public static Bounds ApplyAboutCentre(
+        Bounds start,
+        ResizeDirection direction,
+        double deltaX,
+        double deltaY,
+        double minWidth,
+        double minHeight
+    )
+    {
+        var (left, right) = (start.X, start.Right);
+        if (HandleEdge(direction, SnapAxis.X) is { } xEdge)
+        {
+            var growth = xEdge == SnapAnchor.End ? deltaX : -deltaX;
+            (left, right) = AboutCentre(start.X, start.Right, start.Width + 2 * growth, minWidth);
+        }
+
+        var (top, bottom) = (start.Y, start.Bottom);
+        if (HandleEdge(direction, SnapAxis.Y) is { } yEdge)
+        {
+            var growth = yEdge == SnapAnchor.End ? deltaY : -deltaY;
+            (top, bottom) = AboutCentre(
+                start.Y,
+                start.Bottom,
+                start.Height + 2 * growth,
+                minHeight
+            );
+        }
+
+        return new Bounds(left, top, right - left, bottom - top);
+    }
+
+    // Each driven axis of a centre resize takes whichever of its two edges is nearer a grid line
+    // and moves the other edge the same amount the opposite way, the handle's edge winning a tie.
+    // The floor is applied after the snap, so at the limit the box may sit off the grid.
+    public static Bounds SnapAboutCentre(
+        Bounds resized,
+        ResizeDirection direction,
+        double minWidth,
+        double minHeight,
+        double spacing
+    )
+    {
+        var (left, right) = (resized.X, resized.Right);
+        if (HandleEdge(direction, SnapAxis.X) is { } xEdge)
+        {
+            (left, right) = SnapAxisAboutCentre(left, right, xEdge, minWidth, spacing);
+        }
+
+        var (top, bottom) = (resized.Y, resized.Bottom);
+        if (HandleEdge(direction, SnapAxis.Y) is { } yEdge)
+        {
+            (top, bottom) = SnapAxisAboutCentre(top, bottom, yEdge, minHeight, spacing);
+        }
+
+        return new Bounds(left, top, right - left, bottom - top);
+    }
+
+    public static SnapAnchor? HandleEdge(ResizeDirection direction, SnapAxis axis) =>
+        (axis, direction) switch
+        {
+            (
+                SnapAxis.X,
+                ResizeDirection.Left
+                    or ResizeDirection.TopLeft
+                    or ResizeDirection.BottomLeft
+            ) => SnapAnchor.Start,
+            (
+                SnapAxis.X,
+                ResizeDirection.Right
+                    or ResizeDirection.TopRight
+                    or ResizeDirection.BottomRight
+            ) => SnapAnchor.End,
+            (
+                SnapAxis.Y,
+                ResizeDirection.Top
+                    or ResizeDirection.TopLeft
+                    or ResizeDirection.TopRight
+            ) => SnapAnchor.Start,
+            (
+                SnapAxis.Y,
+                ResizeDirection.Bottom
+                    or ResizeDirection.BottomLeft
+                    or ResizeDirection.BottomRight
+            ) => SnapAnchor.End,
+            _ => null,
+        };
+
+    private static (double Start, double End) SnapAxisAboutCentre(
+        double start,
+        double end,
+        SnapAnchor handleEdge,
+        double minimum,
+        double spacing
+    )
+    {
+        var startCorrection = GridSnap.NearestLine(start, spacing) - start;
+        var endCorrection = GridSnap.NearestLine(end, spacing) - end;
+        var startWins =
+            Math.Abs(startCorrection) < Math.Abs(endCorrection)
+            || (
+                Math.Abs(startCorrection) == Math.Abs(endCorrection)
+                && handleEdge == SnapAnchor.Start
+            );
+        var shift = startWins ? startCorrection : -endCorrection;
+        return AboutCentre(start, end, end - start - 2 * shift, minimum);
+    }
+
+    private static (double Start, double End) AboutCentre(
+        double start,
+        double end,
+        double size,
+        double minimum
+    )
+    {
+        var centre = (start + end) / 2;
+        var half = Math.Max(size, minimum) / 2;
+        return (centre - half, centre + half);
+    }
+
     private static double LineAtOrBelow(double coordinate, double spacing) =>
         Math.Floor(coordinate / spacing + GridLineTolerance) * spacing;
 

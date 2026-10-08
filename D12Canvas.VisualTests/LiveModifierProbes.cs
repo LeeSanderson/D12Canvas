@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Microsoft.Playwright;
+using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
@@ -108,5 +110,46 @@ public sealed class LiveModifierProbes(PlaywrightFixture playwright, DemoAppFixt
 
         await Page.Keyboard.UpAsync("Control");
         await Page.Mouse.UpAsync();
+    }
+
+    [Fact]
+    public async Task PressingAltMidResize_GrowsAboutTheCentreAndReleasingItPutsTheFarEdgeBack()
+    {
+        var rectangle = Page.Locator(".component-container[aria-label='Rectangle']").First;
+        var centre = await CentreOfAsync(rectangle);
+        await Page.Mouse.ClickAsync(centre.X, centre.Y);
+        var handle = rectangle.Locator(".resize-handle.right");
+        await Expect(handle).ToBeVisibleAsync();
+        var before = await BoxOfAsync(rectangle);
+        var start = await CentreOfAsync(handle);
+        await Page.Mouse.MoveAsync(start.X, start.Y);
+        await Page.Mouse.DownAsync();
+        await Page.Mouse.MoveAsync(start.X + 60, start.Y, new() { Steps = 4 });
+        await SettleAsync();
+        var plain = await BoxOfAsync(rectangle);
+
+        await Page.Keyboard.DownAsync("Alt");
+        await SettleAsync();
+        var centred = await BoxOfAsync(rectangle);
+        Assert.Equal(before.X + before.Width / 2, centred.X + centred.Width / 2, 0.5);
+        Assert.True(
+            centred.X < plain.X - 20,
+            $"left edge {centred.X} did not move out from {plain.X}"
+        );
+
+        await Page.Keyboard.UpAsync("Alt");
+        await SettleAsync();
+        var released = await BoxOfAsync(rectangle);
+        Assert.Equal(plain.X, released.X, 0.5);
+        Assert.Equal(plain.Width, released.Width, 0.5);
+
+        await Page.Mouse.UpAsync();
+    }
+
+    private static async Task<LocatorBoundingBoxResult> BoxOfAsync(ILocator locator)
+    {
+        var box = await locator.BoundingBoxAsync();
+        Assert.NotNull(box);
+        return box!;
     }
 }

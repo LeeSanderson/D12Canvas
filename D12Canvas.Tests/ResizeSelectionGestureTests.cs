@@ -393,4 +393,211 @@ public class ResizeSelectionGestureTests
 
         Assert.Equal(new Bounds(0, 0, 198, 100), context.Preview[shape.Id]);
     }
+
+    [Fact]
+    public void AltOnARightHandleGrowsBothSidesEquallyAboutTheCentreAndLeavesTheHeightAlone()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 0, 100, 60));
+        var context = SelectedOn(board, shape);
+        var resize = PressHandle(context, shape.Id, "right", 200, 30);
+
+        resize.Move(PointerEvents.Move(230, 45, alt: true));
+
+        Assert.Equal(new Bounds(70, 0, 160, 60), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void AltOnACornerDrivesBothAxesAboutTheCentre()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 100, 100, 100));
+        var context = SelectedOn(board, shape);
+        var resize = PressHandle(context, shape.Id, "top-left", 100, 100);
+
+        resize.Move(PointerEvents.Move(80, 70, alt: true));
+
+        Assert.Equal(new Bounds(80, 70, 140, 160), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void TogglingAltMidResizeRecomputesFromTheStartBoxWithTheHandleStayingUnderThePointer()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 0, 100, 60));
+        var context = SelectedOn(board, shape);
+        var resize = PressHandle(context, shape.Id, "right", 200, 30);
+
+        resize.Move(PointerEvents.Move(230, 30));
+        Assert.Equal(new Bounds(100, 0, 130, 60), context.Preview[shape.Id]);
+
+        resize.Move(PointerEvents.Move(230, 30, alt: true));
+        Assert.Equal(new Bounds(70, 0, 160, 60), context.Preview[shape.Id]);
+
+        resize.Move(PointerEvents.Move(230, 30));
+        Assert.Equal(new Bounds(100, 0, 130, 60), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void AReleaseAfterAnAltToggleCommitsTheCentredBoxLastShown()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 0, 100, 60));
+        var context = SelectedOn(board, shape);
+        var resize = PressHandle(context, shape.Id, "right", 200, 30);
+
+        resize.Move(PointerEvents.Move(230, 30));
+        resize.Move(PointerEvents.Move(230, 30, alt: true));
+        resize.Release(ReleaseAt(230, 30));
+
+        var committed = Assert.Single(context.Commits);
+        Assert.Equal(new Bounds(70, 0, 160, 60), committed[shape.Id]);
+    }
+
+    [Fact]
+    public void TheFloorClampsACentreResizeSymmetricallySoTheCentreNeverMoves()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 100, 100, 80));
+        var context = SelectedOn(board, shape);
+        var resize = PressHandle(context, shape.Id, "bottom-right", 200, 180);
+
+        resize.Move(PointerEvents.Move(-100, -100, alt: true));
+
+        Assert.Equal(
+            new Bounds(125, 115, ResizeMath.DefaultMinWidth, ResizeMath.DefaultMinHeight),
+            context.Preview[shape.Id]
+        );
+    }
+
+    [Fact]
+    public void UnderGridSnapTheHandleEdgeWinsACentreResizeWhenItNeedsTheSmallerCorrection()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 108, 60));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        var resize = PressHandle(context, shape.Id, "right", 108, 30);
+
+        resize.Move(PointerEvents.Move(115, 30, alt: true));
+
+        Assert.Equal(new Bounds(-12, 0, 132, 60), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void UnderGridSnapTheMirroredEdgeWinsACentreResizeWhenItNeedsTheSmallerCorrection()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 108, 60));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        var resize = PressHandle(context, shape.Id, "right", 108, 30);
+
+        resize.Move(PointerEvents.Move(125, 30, alt: true));
+
+        Assert.Equal(new Bounds(-20, 0, 148, 60), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void UnderGridSnapACentreResizeNeverShrinksBelowTheFloor()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(7, 0, 100, 60));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        var resize = PressHandle(context, shape.Id, "right", 107, 30);
+
+        resize.Move(PointerEvents.Move(0, 30, alt: true));
+
+        Assert.Equal(new Bounds(32, 0, ResizeMath.DefaultMinWidth, 60), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void ObjectSnappingLetsTheMirroredEdgeOfACentreResizeSnapInPlaceOfTheGrid()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 0, 100, 60));
+        AddInstance(board, new Bounds(43, 300, 0, 50));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "right", 200, 30);
+
+        resize.Move(PointerEvents.Move(255, 30, alt: true));
+
+        Assert.Equal(new Bounds(43, 0, 214, 60), context.Preview[shape.Id]);
+        Assert.Equal([new AlignmentGuide(SnapAxis.X, 43)], context.Guides);
+    }
+
+    [Fact]
+    public void ACentreResizeGuidesTheMirroredEdgeWhereItLandsOnANeighbourToo()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 0, 100, 60));
+        AddInstance(board, new Bounds(43, 300, 0, 50));
+        AddInstance(board, new Bounds(257, 400, 0, 50));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "right", 200, 30);
+
+        resize.Move(PointerEvents.Move(255, 30, alt: true));
+
+        Assert.Equal(new Bounds(43, 0, 214, 60), context.Preview[shape.Id]);
+        Assert.Equal(
+            [new AlignmentGuide(SnapAxis.X, 43), new AlignmentGuide(SnapAxis.X, 257)],
+            context.Guides
+        );
+    }
+
+    [Fact]
+    public void AMixedSelectionCentresOnTheInstancesOnlyBox()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 0, 100, 60));
+        var edge = new Edge(
+            new PortEndpoint(shape.Id, PortId.Right),
+            new FloatingEndpoint(600, 30)
+        );
+        board.AddEdge(edge);
+        var context = SelectedOn(board, shape);
+        context.SelectedEdgeIds.Add(edge.Id);
+        var resize = PressSelectionHandle(context, "right", 200, 30);
+
+        resize.Move(PointerEvents.Move(230, 30, alt: true));
+
+        Assert.Equal(new Bounds(70, 0, 160, 60), context.Preview[shape.Id]);
+    }
+
+    [Fact]
+    public void ReleasingAltDropsAMirroredEdgesSnapAndTheHandleEdgeTakesTheGridAgain()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(100, 0, 100, 60));
+        AddInstance(board, new Bounds(43, 300, 0, 50));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "right", 200, 30);
+
+        resize.Move(PointerEvents.Move(255, 30, alt: true));
+        resize.Move(PointerEvents.Move(255, 30));
+
+        Assert.Equal(new Bounds(100, 0, 160, 60), context.Preview[shape.Id]);
+        Assert.Empty(context.Guides);
+    }
+
+    [Fact]
+    public void CtrlFreesACentreResizeFromSnapping()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 108, 60));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        var resize = PressHandle(context, shape.Id, "right", 108, 30);
+
+        resize.Move(PointerEvents.Move(115, 30, ctrl: true, alt: true));
+
+        Assert.Equal(new Bounds(-7, 0, 122, 60), context.Preview[shape.Id]);
+    }
 }

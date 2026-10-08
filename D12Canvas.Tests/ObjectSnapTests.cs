@@ -110,9 +110,9 @@ public class ObjectSnapTests
         var besideTheEnd = new Bounds(200, 200, 100, 100);
         var besideTheCentre = new Bounds(95, 300, 10, 10);
 
-        var snap = ObjectSnap.ForEdge(
+        var snap = ObjectSnap.ForEdges(
             box,
-            SnapAnchor.End,
+            [SnapAnchor.End],
             [besideTheEnd, besideTheCentre],
             SnapAxis.X,
             Tolerance,
@@ -121,15 +121,34 @@ public class ObjectSnapTests
 
         Assert.Equal(new AxisSnap(SnapAnchor.End, 200), snap);
         Assert.Null(
-            ObjectSnap.ForEdge(
+            ObjectSnap.ForEdges(
                 box,
-                SnapAnchor.End,
+                [SnapAnchor.End],
                 [besideTheCentre],
                 SnapAxis.X,
                 Tolerance,
                 held: null
             )
         );
+    }
+
+    [Fact]
+    public void BothOfferedEdgesCompeteAndTheSmallerCorrectionWins()
+    {
+        var box = new Bounds(0, 0, 196, 50);
+        var besideTheStart = new Bounds(-2, 200, 0, 10);
+        var besideTheEnd = new Bounds(201, 300, 0, 10);
+
+        var snap = ObjectSnap.ForEdges(
+            box,
+            [SnapAnchor.Start, SnapAnchor.End],
+            [besideTheEnd, besideTheStart],
+            SnapAxis.X,
+            Tolerance,
+            held: null
+        );
+
+        Assert.Equal(new AxisSnap(SnapAnchor.Start, -2), snap);
     }
 
     [Fact]

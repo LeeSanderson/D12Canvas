@@ -40,8 +40,9 @@ internal static class PointerEvents
         double y,
         bool shift = false,
         bool ctrl = false,
-        double velocity = 0
-    ) => new(PointerId, x, y, Buttons: 1, shift, ctrl, AltKey: false, MetaKey: false, velocity);
+        double velocity = 0,
+        bool alt = false
+    ) => new(PointerId, x, y, Buttons: 1, shift, ctrl, alt, MetaKey: false, velocity);
 
     public static PointerRelease Release(int button, double x, double y) =>
         new(

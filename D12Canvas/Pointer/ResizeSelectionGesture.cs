@@ -5,12 +5,15 @@ namespace D12Canvas.Pointer;
 // A primary press on a shape's resize handle or on one of the selection box's handles. A single
 // shape and a multi-selection are one gesture: every tick resizes the selection's bounding box by
 // the board-space distance from the press, with the edge opposite the handle anchored, and scales
-// each member exactly inside it. The edges the handle moves snap, never below the minimum size,
-// which a multi-selection raises so no member shrinks past the floor: per axis, object snapping
-// takes the moving edge to a neighbour's edge or centre where it matches and the grid rounds it
-// where it does not. Nothing snaps while Ctrl is held, read from every move. Shift does nothing
-// here, kept free for preserve-aspect-ratio. An active release commits what was last published; a
-// click changes nothing.
+// each member exactly inside it. While Alt is held the box's centre is anchored instead and the
+// opposite edge mirrors the handle; Alt is read from every move and each move recomputes from the
+// start box, so a toggle keeps the handle under the pointer and the opposite edge jumps. The edges
+// that move snap, never below the minimum size, which a multi-selection raises so no member
+// shrinks past the floor: per axis, object snapping takes a moving edge to a neighbour's edge or
+// centre where it matches and the grid rounds it where it does not, and under a centre resize
+// whichever of the two edges needs the smaller correction wins. Nothing snaps while Ctrl is held,
+// read from every move. Shift does nothing here, kept free for preserve-aspect-ratio. An active
+// release commits what was last published; a click changes nothing.
 internal sealed class ResizeSelectionGesture : PointerGesture
 {
     private readonly (double X, double Y) _pressPoint;
@@ -57,14 +60,25 @@ internal sealed class ResizeSelectionGesture : PointerGesture
     protected override void OnMove(PointerMove move)
     {
         var current = Context.ToBoardPoint(move.X, move.Y);
-        var unsnapped = ResizeMath.Apply(
-            _startBox,
-            _direction,
-            current.X - _pressPoint.X,
-            current.Y - _pressPoint.Y,
-            _minimum.Width,
-            _minimum.Height
-        );
+        var centred = move.AltKey;
+        var (deltaX, deltaY) = (current.X - _pressPoint.X, current.Y - _pressPoint.Y);
+        var unsnapped = centred
+            ? ResizeMath.ApplyAboutCentre(
+                _startBox,
+                _direction,
+                deltaX,
+                deltaY,
+                _minimum.Width,
+                _minimum.Height
+            )
+            : ResizeMath.Apply(
+                _startBox,
+                _direction,
+                deltaX,
+                deltaY,
+                _minimum.Width,
+                _minimum.Height
+            );
         var resized = unsnapped;
 
         var guides = new List<SnapGuide>();
@@ -77,40 +91,55 @@ internal sealed class ResizeSelectionGesture : PointerGesture
         {
             if (Context.GridSpacing is { } spacing)
             {
-                resized = ResizeMath.SnapMovingEdges(
-                    resized,
-                    _startBox,
-                    _direction,
-                    _minimum.Width,
-                    _minimum.Height,
-                    spacing
-                );
+                resized = centred
+                    ? ResizeMath.SnapAboutCentre(
+                        resized,
+                        _direction,
+                        _minimum.Width,
+                        _minimum.Height,
+                        spacing
+                    )
+                    : ResizeMath.SnapMovingEdges(
+                        resized,
+                        _startBox,
+                        _direction,
+                        _minimum.Width,
+                        _minimum.Height,
+                        spacing
+                    );
             }
 
             var candidates = ObjectSnapCandidates(move, _participantIds);
             var tolerance = ObjectSnapTolerance;
-            (resized, _heldX) = SnapEdge(
+            (resized, _heldX) = SnapEdges(
                 resized,
                 unsnapped,
                 SnapAxis.X,
+                centred,
                 candidates,
                 tolerance,
                 _heldX
             );
-            (resized, _heldY) = SnapEdge(
+            (resized, _heldY) = SnapEdges(
                 resized,
                 unsnapped,
                 SnapAxis.Y,
+                centred,
                 candidates,
                 tolerance,
                 _heldY
             );
             foreach (var (axis, held) in new[] { (SnapAxis.X, _heldX), (SnapAxis.Y, _heldY) })
             {
-                if (held is { } snap)
+                if (held is not null)
                 {
                     guides.AddRange(
-                        ObjectSnap.GuidesForEdge(resized, snap.Anchor, candidates, axis)
+                        ObjectSnap.GuidesForEdges(
+                            resized,
+                            MovingEdges(axis, centred),
+                            candidates,
+                            axis
+                        )
                     );
                 }
             }
@@ -120,37 +149,43 @@ internal sealed class ResizeSelectionGesture : PointerGesture
         Context.PublishGuides(guides);
     }
 
-    // The edge the handle moves on this axis, matched from where the pointer put it before any grid
-    // rounding, so object snapping replaces the grid on the axis where it fires. A match that would
-    // take the box below its minimum size is not taken.
-    private (Bounds Box, AxisSnap? Held) SnapEdge(
+    // The edges moving on this axis, matched from where the pointer put them before any grid
+    // rounding, so object snapping replaces the grid on the axis where it fires. The nearest match
+    // wins; under a centre resize the other edge moves the same amount the opposite way. A match
+    // that would take the box below its minimum size is not taken.
+    private (Bounds Box, AxisSnap? Held) SnapEdges(
         Bounds box,
         Bounds unsnapped,
         SnapAxis axis,
+        bool centred,
         IReadOnlyList<Bounds> candidates,
         double tolerance,
         AxisSnap? held
     )
     {
-        if (MovingEdge(axis) is not { } edge)
-        {
-            return (box, null);
-        }
-
-        if (ObjectSnap.ForEdge(unsnapped, edge, candidates, axis, tolerance, held) is not { } snap)
+        var edges = MovingEdges(axis, centred);
+        if (
+            edges.Count == 0
+            || ObjectSnap.ForEdges(unsnapped, edges, candidates, axis, tolerance, held)
+                is not { } snap
+        )
         {
             return (box, null);
         }
 
         var minimum = axis == SnapAxis.X ? _minimum.Width : _minimum.Height;
-        var (start, end) = axis == SnapAxis.X ? (box.X, box.Right) : (box.Y, box.Bottom);
-        if (edge == SnapAnchor.Start)
+        var (start, end) =
+            axis == SnapAxis.X ? (unsnapped.X, unsnapped.Right) : (unsnapped.Y, unsnapped.Bottom);
+        var correction = ObjectSnap.Offset(unsnapped, axis, snap);
+        if (snap.Anchor == SnapAnchor.Start)
         {
-            start = snap.Target;
+            start += correction;
+            end -= centred ? correction : 0;
         }
         else
         {
-            end = snap.Target;
+            end += correction;
+            start -= centred ? correction : 0;
         }
 
         if (end - start < minimum)
@@ -173,34 +208,12 @@ internal sealed class ResizeSelectionGesture : PointerGesture
         return (snapped, snap);
     }
 
-    private SnapAnchor? MovingEdge(SnapAxis axis) =>
-        (axis, _direction) switch
+    private IReadOnlyList<SnapAnchor> MovingEdges(SnapAxis axis, bool centred) =>
+        ResizeMath.HandleEdge(_direction, axis) switch
         {
-            (
-                SnapAxis.X,
-                ResizeDirection.Left
-                    or ResizeDirection.TopLeft
-                    or ResizeDirection.BottomLeft
-            ) => SnapAnchor.Start,
-            (
-                SnapAxis.X,
-                ResizeDirection.Right
-                    or ResizeDirection.TopRight
-                    or ResizeDirection.BottomRight
-            ) => SnapAnchor.End,
-            (
-                SnapAxis.Y,
-                ResizeDirection.Top
-                    or ResizeDirection.TopLeft
-                    or ResizeDirection.TopRight
-            ) => SnapAnchor.Start,
-            (
-                SnapAxis.Y,
-                ResizeDirection.Bottom
-                    or ResizeDirection.BottomLeft
-                    or ResizeDirection.BottomRight
-            ) => SnapAnchor.End,
-            _ => null,
+            null => [],
+            _ when centred => [SnapAnchor.Start, SnapAnchor.End],
+            { } edge => [edge],
         };
 
     protected override void OnRelease(PointerRelease release) => Context.CommitPreview();
