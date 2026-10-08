@@ -4,8 +4,13 @@
 
 @if (RoutingStyle == EdgeRouting.Straight)
 {
+    if (IsSelected)
+    {
+        <line x1="@From.X" y1="@From.Y" x2="@To.X" y2="@To.Y" class="edge-halo" />
+    }
     <line x1="@From.X" y1="@From.Y" x2="@To.X" y2="@To.Y"
-          class="@LineCssClass"
+          class="edge-line"
+          style="@ColorOverride"
           marker-start="@MarkerUrl(SourceArrow)"
           marker-end="@MarkerUrl(TargetArrow)"
           aria-selected="@(IsSelected ? "true" : null)" />
@@ -15,8 +20,13 @@
 }
 else
 {
+    if (IsSelected)
+    {
+        <path d="@PathData" class="edge-halo" />
+    }
     <path d="@PathData"
-          class="@LineCssClass"
+          class="edge-line"
+          style="@ColorOverride"
           marker-start="@MarkerUrl(SourceArrow)"
           marker-end="@MarkerUrl(TargetArrow)"
           aria-selected="@(IsSelected ? "true" : null)" />

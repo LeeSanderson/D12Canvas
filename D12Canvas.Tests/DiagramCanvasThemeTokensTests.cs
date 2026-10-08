@@ -187,6 +187,77 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         );
     }
 
+    [Theory]
+    [InlineData(".diagram-container {", "#4a4a4a")]
+    [InlineData("@media (prefers-color-scheme: dark)", "#a0a0a0")]
+    [InlineData("[data-d12-theme=\"light\"] .diagram-container {", "#4a4a4a")]
+    [InlineData("[data-d12-theme=\"dark\"] .diagram-container {", "#a0a0a0")]
+    public void EveryBlockDeclaresTheEdgeToken(string marker, string expected)
+    {
+        var canvas = Render<DiagramCanvas>();
+        var block = ExtractBlock(StyleBlockText(canvas), marker);
+
+        Assert.Equal(expected, TokenValue(block, "--d12-edge"));
+    }
+
+    [Theory]
+    [InlineData("[data-d12-theme=\"light\"] .diagram-container {")]
+    [InlineData("[data-d12-theme=\"dark\"] .diagram-container {")]
+    public void TheEdgeTokenKeepsAtLeastThreeToOneContrastAgainstTheSurface(string marker)
+    {
+        var canvas = Render<DiagramCanvas>();
+        var block = ExtractBlock(StyleBlockText(canvas), marker);
+
+        var ratio = ContrastRatio(
+            TokenValue(block, "--d12-edge"),
+            TokenValue(block, "--d12-surface")
+        );
+
+        Assert.True(ratio >= 3, $"contrast {ratio:F2} is below 3:1");
+    }
+
+    [Fact]
+    public void AnEdgeLinePaintsItsOverrideFallingBackToTheEdgeTokenAndNoLiteral()
+    {
+        var canvas = Render<DiagramCanvas>();
+        var css = StyleBlockText(canvas);
+        var line = ExtractBlock(css, ".edge-line {");
+
+        Assert.Contains("stroke: var(--d12-edge-override, var(--d12-edge))", line);
+        Assert.DoesNotContain("#", line);
+        Assert.DoesNotContain(".edge-line.selected", css);
+        Assert.DoesNotContain(".edge-arrowhead", css);
+    }
+
+    [Fact]
+    public void TheSelectionHaloIsATranslucentAccentStroke()
+    {
+        var canvas = Render<DiagramCanvas>();
+        var halo = ExtractBlock(StyleBlockText(canvas), ".edge-halo {");
+
+        Assert.Contains("stroke: var(--d12-accent)", halo);
+        Assert.Contains("stroke-opacity:", halo);
+        Assert.DoesNotContain("#", halo);
+    }
+
+    private static double ContrastRatio(string first, string second)
+    {
+        var a = RelativeLuminance(first);
+        var b = RelativeLuminance(second);
+        return (Math.Max(a, b) + 0.05) / (Math.Min(a, b) + 0.05);
+    }
+
+    private static double RelativeLuminance(string hex)
+    {
+        double Channel(int offset)
+        {
+            var value = Convert.ToInt32(hex.Substring(offset, 2), 16) / 255.0;
+            return value <= 0.03928 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        return 0.2126 * Channel(1) + 0.7152 * Channel(3) + 0.0722 * Channel(5);
+    }
+
     private static string TokenValue(string block, string token)
     {
         var start = block.IndexOf(token + ":", StringComparison.Ordinal) + token.Length + 1;

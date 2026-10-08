@@ -11,9 +11,8 @@ namespace D12Canvas.Tests;
 // Per-edge routing style (straight/orthogonal/curved) and arrowheads (none/start/end/both), never
 // board-wide. Straight stays a <line> (preserving the x1/y1/x2/y2 contract other tests already
 // depend on, e.g. DiagramCanvasPortDragTests); Orthogonal/Curved render as a <path> with a
-// computed `d`. Arrowheads are SVG <marker> refs on marker-start/marker-end, switching to a
-// selected-color marker while the edge is selected (mirroring .edge-line.selected's own stroke
-// swap).
+// computed `d`. Arrowheads are SVG <marker> refs on marker-start/marker-end to one shared marker
+// filled from the line's own stroke, so selection, which only adds a halo, never changes them.
 public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -124,7 +123,7 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
     }
 
     [Fact]
-    public void ASelectedEdgeUsesTheSelectedColorArrowMarker()
+    public void ASelectedEdgeKeepsTheSameArrowMarker()
     {
         var board = new Board();
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
@@ -132,10 +131,20 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
 
         canvas.ClickElement(canvas.Find(".edge-hit"));
 
-        Assert.Equal(
-            "url(#edge-arrow-selected)",
-            canvas.Find(".edge-line").GetAttribute("marker-end")
-        );
+        Assert.Equal("url(#edge-arrow)", canvas.Find(".edge-line").GetAttribute("marker-end"));
+    }
+
+    [Fact]
+    public void TheOneArrowMarkerFillsFromTheReferencingStroke()
+    {
+        var board = new Board();
+        AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        var marker = Assert.Single(canvas.FindAll("marker"));
+
+        Assert.Equal("edge-arrow", marker.Id);
+        Assert.Equal("context-stroke", marker.QuerySelector("path")!.GetAttribute("fill"));
     }
 
     [Fact]
@@ -200,10 +209,10 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
         canvas.ClickElement(canvas.Find(".edge-hit"));
         var edge = canvas.Find(".edge-line");
 
-        Assert.Equal("url(#edge-arrow-selected)", edge.GetAttribute("marker-start"));
+        Assert.Equal("url(#edge-arrow)", edge.GetAttribute("marker-start"));
         Assert.Null(edge.GetAttribute("marker-end"));
         Assert.Equal("true", edge.GetAttribute("aria-selected"));
-        Assert.Contains("selected", edge.ClassList);
+        Assert.Equal("path", canvas.Find(".edge-halo").TagName, ignoreCase: true);
     }
 
     [Fact]

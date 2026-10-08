@@ -48,6 +48,9 @@ internal sealed record GroupEnvelope(Guid Id, IReadOnlyList<Guid> MemberIds);
 // Label defaults to null the same way - an edge saved before this property existed (or one that
 // simply never had a label added) has no "Label" property at all, and should still deserialize
 // with a null label rather than throwing.
+//
+// Color is omitted from the JSON when null, so a board with no coloured edges serialises
+// byte-for-byte as it did before the field existed, and an absent property reads as no colour.
 internal sealed record EdgeEnvelope(
     Guid Id,
     EdgeEndpointEnvelope Source,
@@ -55,7 +58,8 @@ internal sealed record EdgeEnvelope(
     EdgeRouting RoutingStyle = EdgeRouting.Straight,
     ArrowStyle SourceArrow = ArrowStyle.None,
     ArrowStyle TargetArrow = ArrowStyle.Arrow,
-    ComponentInstanceEnvelope? Label = null
+    ComponentInstanceEnvelope? Label = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Color = null
 );
 
 // CustomPortId defaults to null (last positional, same "field didn't exist yet" tolerance the

@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.Components;
 
 namespace D12Canvas;
 
-// One edge's line and its wider hit stroke. The canvas re-renders every edge's parameters on each
-// of its own renders, so this skips its own render unless something it draws has changed: a pan
-// or a drag of an unrelated shape costs one parameter set here and no diff.
+// One edge's line, its selection halo beneath it while selected, and its wider hit stroke. The
+// canvas re-renders every edge's parameters on each of its own renders, so this skips its own
+// render unless something it draws has changed: a pan or a drag of an unrelated shape costs one
+// parameter set here and no diff. An author colour rides in as an inline rebind of
+// --d12-edge-override, emitted only when set, so a null colour falls through to the theme token.
 public partial class EdgeView
 {
     [Parameter]
@@ -32,9 +34,12 @@ public partial class EdgeView
     [Parameter]
     public ArrowStyle TargetArrow { get; set; }
 
+    [Parameter]
+    public string? Color { get; set; }
+
     private Drawn _drawn;
 
-    private string LineCssClass => IsSelected ? "edge-line selected" : "edge-line";
+    private string? ColorOverride => Color is null ? null : $"--d12-edge-override: {Color}";
 
     protected override void OnInitialized() => _drawn = Current();
 
@@ -51,13 +56,10 @@ public partial class EdgeView
     }
 
     private Drawn Current() =>
-        new(EdgeId, RoutingStyle, From, To, PathData, IsSelected, SourceArrow, TargetArrow);
+        new(EdgeId, RoutingStyle, From, To, PathData, IsSelected, SourceArrow, TargetArrow, Color);
 
-    // Selected edges use the selected-colour marker so an arrowhead never mismatches its line.
-    private string? MarkerUrl(ArrowStyle arrow) =>
-        arrow == ArrowStyle.None ? null
-        : IsSelected ? "url(#edge-arrow-selected)"
-        : "url(#edge-arrow)";
+    private static string? MarkerUrl(ArrowStyle arrow) =>
+        arrow == ArrowStyle.None ? null : "url(#edge-arrow)";
 
     private readonly record struct Drawn(
         Guid EdgeId,
@@ -67,6 +69,7 @@ public partial class EdgeView
         string PathData,
         bool IsSelected,
         ArrowStyle SourceArrow,
-        ArrowStyle TargetArrow
+        ArrowStyle TargetArrow,
+        string? Color
     );
 }

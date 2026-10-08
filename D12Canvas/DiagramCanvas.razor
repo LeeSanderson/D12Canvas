@@ -31,7 +31,8 @@
             <svg class="edges-layer">
                 @if (Board is not null)
                 {
-                    @* One pair of arrowhead markers per selection state (not per edge) -
+                    @* One arrowhead marker shared by every edge, filled from the referencing
+                       line's own stroke through context-stroke so it always matches the line -
                        orient="auto-start-reverse" lets the same marker point correctly whether
                        it's used as marker-start or marker-end. Gated on there being at least one
                        edge (rather than unconditional) so a board with none renders byte-identical
@@ -42,10 +43,7 @@
                     {
                         <defs>
                             <marker id="edge-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-                                <path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead" />
-                            </marker>
-                            <marker id="edge-arrow-selected" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-                                <path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrowhead selected" />
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
                             </marker>
                         </defs>
                     }
@@ -63,7 +61,8 @@
                                       PathData="@route.PathData"
                                       IsSelected="@IsEdgeSelected(edge.Id)"
                                       SourceArrow="edge.SourceArrow"
-                                      TargetArrow="edge.TargetArrow" />
+                                      TargetArrow="edge.TargetArrow"
+                                      Color="@edge.Color" />
                         }
                     }
                 }
@@ -284,6 +283,7 @@
         --d12-board-text: #000000;
         --d12-board-fill: #FFFFFF;
         --d12-board-stroke: #333333;
+        --d12-edge: #4a4a4a;
         width: 100%;
         height: 100%;
         display: grid;
@@ -304,6 +304,7 @@
             --d12-board-fill: #2e2e2e;
             --d12-board-stroke: #8a8a8a;
             --d12-alignment-guide: #ff5c97;
+            --d12-edge: #a0a0a0;
         }
     }
 
@@ -318,6 +319,7 @@
         --d12-board-fill: #FFFFFF;
         --d12-board-stroke: #333333;
         --d12-alignment-guide: #e5246b;
+        --d12-edge: #4a4a4a;
     }
 
     .diagram-container[data-d12-theme="dark"],
@@ -331,6 +333,7 @@
         --d12-board-fill: #2e2e2e;
         --d12-board-stroke: #8a8a8a;
         --d12-alignment-guide: #ff5c97;
+        --d12-edge: #a0a0a0;
     }
 
     .diagram-canvas {
@@ -472,9 +475,18 @@
         pointer-events: none;
     }
 
+    .edge-halo {
+        fill: none;
+        stroke: var(--d12-accent);
+        stroke-opacity: 0.35;
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
     .edge-line {
         fill: none;
-        stroke: #4a4a4a;
+        stroke: var(--d12-edge-override, var(--d12-edge));
         stroke-width: 2;
     }
 
@@ -484,19 +496,6 @@
         stroke-width: calc(var(--d12-edge-hit-band) / var(--d12-scale));
         pointer-events: stroke;
         cursor: pointer;
-    }
-
-    .edge-line.selected {
-        stroke: #2f80ed;
-        stroke-width: 3;
-    }
-
-    .edge-arrowhead {
-        fill: #4a4a4a;
-    }
-
-    .edge-arrowhead.selected {
-        fill: #2f80ed;
     }
 
     .edge-label {

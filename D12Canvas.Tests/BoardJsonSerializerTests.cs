@@ -552,6 +552,54 @@ public class BoardJsonSerializerTests
         Assert.Equal(EdgeRouting.Straight, restoredEdge!.RoutingStyle);
         Assert.Equal(ArrowStyle.None, restoredEdge.SourceArrow);
         Assert.Equal(ArrowStyle.Arrow, restoredEdge.TargetArrow);
+        Assert.Null(restoredEdge.Color);
+    }
+
+    [Fact]
+    public void ABoardWithNoEdgeColoursWritesNoColourAndReserialisesByteIdentically()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var first = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        board.AddComponent(first);
+        board.AddEdge(
+            new Edge(new PortEndpoint(first.Id, PortId.Right), new FloatingEndpoint(200, 40))
+        );
+
+        var json = serializer.Serialize(board);
+
+        using var document = JsonDocument.Parse(json);
+        var edgeJson = document.RootElement.GetProperty("Edges")[0];
+        Assert.False(edgeJson.TryGetProperty("Color", out _));
+        Assert.Equal(json, serializer.Serialize(serializer.Deserialize(json)));
+        Assert.Equal(json, serializer.Serialize(serializer.DeserializePartial(json).Board));
+    }
+
+    [Fact]
+    public void AColouredEdgeRoundTripsThroughBothLoadPaths()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var edge = new Edge(
+            new FloatingEndpoint(0, 0),
+            new FloatingEndpoint(100, 0),
+            color: "#e5246b"
+        );
+        board.AddEdge(edge);
+
+        var json = serializer.Serialize(board);
+
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(
+            "#e5246b",
+            document.RootElement.GetProperty("Edges")[0].GetProperty("Color").GetString()
+        );
+        Assert.Equal("#e5246b", serializer.Deserialize(json).GetEdge(edge.Id)!.Color);
+        Assert.Equal("#e5246b", serializer.DeserializePartial(json).Board.GetEdge(edge.Id)!.Color);
     }
 
     // An edge's embedded Label round-trips through the same envelope as an ordinary

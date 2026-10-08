@@ -7,8 +7,12 @@ namespace D12Canvas.Model;
 // case (Straight, no arrow at Source, arrow at Target). Label is a full ComponentInstance embedded
 // directly here (not a Board.Components entry) - it has no existence independent of the edge that
 // owns it, so deleting the edge removes the label by construction, with no separate cleanup needed.
+// Color is a CSS colour or null for no author opinion; an empty string is stored as null so
+// absence has one representation.
 public sealed class Edge
 {
+    private string? _color;
+
     public Guid Id { get; }
     public IEdgeEndpoint Source { get; set; }
     public IEdgeEndpoint Target { get; set; }
@@ -17,6 +21,12 @@ public sealed class Edge
     public ArrowStyle TargetArrow { get; set; }
     public ComponentInstance? Label { get; set; }
 
+    public string? Color
+    {
+        get => _color;
+        set => _color = string.IsNullOrEmpty(value) ? null : value;
+    }
+
     public Edge(
         IEdgeEndpoint source,
         IEdgeEndpoint target,
@@ -24,7 +34,8 @@ public sealed class Edge
         EdgeRouting routingStyle = EdgeRouting.Straight,
         ArrowStyle sourceArrow = ArrowStyle.None,
         ArrowStyle targetArrow = ArrowStyle.Arrow,
-        ComponentInstance? label = null
+        ComponentInstance? label = null,
+        string? color = null
     )
     {
         Id = id ?? Guid.NewGuid();
@@ -34,5 +45,6 @@ public sealed class Edge
         SourceArrow = sourceArrow;
         TargetArrow = targetArrow;
         Label = label;
+        Color = color;
     }
 }

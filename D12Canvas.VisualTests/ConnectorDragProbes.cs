@@ -138,7 +138,9 @@ public sealed class ConnectorDragProbes(PlaywrightFixture playwright, DemoAppFix
             onLine.GetProperty("y").GetSingle() + 6
         );
 
-        await Expect(Page.Locator($".edge-line.selected + [data-d12-entity='{LabelledEdgeId}']"))
+        await Expect(
+                Page.Locator($".edge-halo + .edge-line + [data-d12-entity='{LabelledEdgeId}']")
+            )
             .ToHaveCountAsync(1);
     }
 

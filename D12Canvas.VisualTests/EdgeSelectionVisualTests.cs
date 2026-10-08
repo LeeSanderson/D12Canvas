@@ -60,7 +60,7 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
         await _page.Mouse.ClickAsync(midpoint.X, midpoint.Y);
 
         await Expect(_page.Locator(".edge-line")).ToHaveAttributeAsync("aria-selected", "true");
-        await Expect(_page.Locator(".edge-line")).ToHaveClassAsync("edge-line selected");
+        await Expect(_page.Locator(".edge-halo")).ToHaveCountAsync(1);
 
         await ContentSnapshot.Verify(_page);
     }

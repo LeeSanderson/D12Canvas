@@ -349,7 +349,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             edge.RoutingStyle,
             edge.SourceArrow,
             edge.TargetArrow,
-            edge.Label is null ? null : ToComponentEnvelope(edge.Label)
+            edge.Label is null ? null : ToComponentEnvelope(edge.Label),
+            edge.Color
         );
 
     private static EdgeEndpointEnvelope ToEndpointEnvelope(IEdgeEndpoint endpoint) =>
@@ -388,7 +389,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             envelope.RoutingStyle,
             envelope.SourceArrow,
             envelope.TargetArrow,
-            envelope.Label is null ? null : FromComponentEnvelope(envelope.Label)
+            envelope.Label is null ? null : FromComponentEnvelope(envelope.Label),
+            envelope.Color
         );
 
     private static IEdgeEndpoint FromEndpointEnvelope(EdgeEndpointEnvelope? envelope) =>

@@ -1,0 +1,81 @@
+@page "/edge-colour-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Edge Colour Demo</PageTitle>
+
+<div class="edge-colour-layout">
+    <div class="theme-pane" data-d12-theme="light">
+        <DiagramCanvas Board="_lightBoard" />
+    </div>
+    <div class="theme-pane" data-d12-theme="dark">
+        <DiagramCanvas Board="_darkBoard" />
+    </div>
+</div>
+
+<style>
+    .edge-colour-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .theme-pane {
+        flex: 1;
+        height: 560px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    // The same board on a light and a dark pane: an uncoloured straight edge painted from each
+    // pane's edge token, and two edges in an authored colour that stays the same on both.
+    public const string AuthoredColour = "#e5246b";
+
+    private readonly Board _lightBoard = SeedBoard();
+    private readonly Board _darkBoard = SeedBoard();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        Connect(board, 40, 300, EdgeRouting.Straight, ArrowStyle.None, null, rowTop: 30, rise: 0);
+        Connect(board, 40, 300, EdgeRouting.Orthogonal, ArrowStyle.Arrow, AuthoredColour, rowTop: 180, rise: 80);
+        Connect(board, 40, 300, EdgeRouting.Curved, ArrowStyle.None, AuthoredColour, rowTop: 400, rise: 40);
+        return board;
+    }
+
+    private static void Connect(
+        Board board,
+        double sourceX,
+        double targetX,
+        EdgeRouting routingStyle,
+        ArrowStyle sourceArrow,
+        string? color,
+        double rowTop,
+        double rise
+    )
+    {
+        var source = AddRectangle(board, sourceX, rowTop);
+        var target = AddRectangle(board, targetX, rowTop + rise);
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(source.Id, PortId.Right),
+                new PortEndpoint(target.Id, PortId.Left),
+                routingStyle: routingStyle,
+                sourceArrow: sourceArrow,
+                color: color
+            )
+        );
+    }
+
+    private static ComponentInstance AddRectangle(Board board, double x, double y)
+    {
+        var instance = new ComponentInstance(
+            "rectangle",
+            new RectangleProps(null, null, 2),
+            new Bounds(x, y, 100, 100)
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
+}

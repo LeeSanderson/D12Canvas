@@ -63,7 +63,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
     }
 
     [Fact]
-    public void AnUnselectedEdgeHasNoAriaSelectedAttributeOrSelectedClass()
+    public void AnUnselectedEdgeHasNoAriaSelectedAttributeOrHalo()
     {
         var board = new Board();
         AddEdgeBetween(board, AddInstance(board, 100, 100), AddInstance(board, 250, 100));
@@ -71,7 +71,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
 
         var line = canvas.Find(".edge-line");
         Assert.Null(line.GetAttribute("aria-selected"));
-        Assert.DoesNotContain("selected", line.ClassList);
+        Assert.Empty(canvas.FindAll(".edge-halo"));
     }
 
     // The line paints and takes no presses; the stroke over it is the hit region, sized against
@@ -146,7 +146,7 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
 
         var line = canvas.Find(".edge-line");
         Assert.Equal("true", line.GetAttribute("aria-selected"));
-        Assert.Contains("selected", line.ClassList);
+        Assert.Single(canvas.FindAll(".edge-halo"));
     }
 
     [Fact]

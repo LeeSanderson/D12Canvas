@@ -66,6 +66,41 @@ public class ChangeEdgeStyleCommandTests
     }
 
     [Fact]
+    public void TheColourRoundTripsThroughApplyUndoAndRedo()
+    {
+        var edge = NewEdge();
+        var command = new ChangeEdgeStyleCommand(
+            edge,
+            before: new EdgeStyle(EdgeRouting.Straight, ArrowStyle.None, ArrowStyle.Arrow),
+            after: new EdgeStyle(EdgeRouting.Straight, ArrowStyle.None, ArrowStyle.Arrow, "#e5246b")
+        );
+
+        command.Apply();
+        Assert.Equal("#e5246b", edge.Color);
+
+        command.Undo();
+        Assert.Null(edge.Color);
+
+        command.Apply();
+        Assert.Equal("#e5246b", edge.Color);
+    }
+
+    [Fact]
+    public void AnEmptyColourIsStoredAsNoColour()
+    {
+        var edge = NewEdge();
+        var command = new ChangeEdgeStyleCommand(
+            edge,
+            before: new EdgeStyle(EdgeRouting.Straight, ArrowStyle.None, ArrowStyle.Arrow, "red"),
+            after: new EdgeStyle(EdgeRouting.Straight, ArrowStyle.None, ArrowStyle.Arrow, "")
+        );
+
+        command.Apply();
+
+        Assert.Null(edge.Color);
+    }
+
+    [Fact]
     public void RedoReappliesTheAfterSnapshot()
     {
         var edge = NewEdge();

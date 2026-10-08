@@ -2,9 +2,9 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Routing style and arrowheads change as one undoable gesture, the Edge counterpart to
-// ChangeBoundsCommand - RoutingStyle/SourceArrow/TargetArrow are bundled the same way Bounds
-// bundles X/Y/Width/Height, regardless of how many of the three a given gesture actually touched.
+// Routing style, arrowheads and colour change as one undoable gesture, the Edge counterpart to
+// ChangeBoundsCommand - bundled the same way Bounds bundles X/Y/Width/Height, regardless of how
+// many of them a given gesture actually touched.
 public sealed class ChangeEdgeStyleCommand : ICommand
 {
     private readonly Edge _edge;
@@ -27,5 +27,6 @@ public sealed class ChangeEdgeStyleCommand : ICommand
         _edge.RoutingStyle = style.RoutingStyle;
         _edge.SourceArrow = style.SourceArrow;
         _edge.TargetArrow = style.TargetArrow;
+        _edge.Color = style.Color;
     }
 }
