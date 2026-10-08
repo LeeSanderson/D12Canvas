@@ -17,15 +17,16 @@ internal static partial class ImagePicture
     public static bool IsEmptyImage(ComponentInstance? instance) =>
         IsImage(instance) && string.IsNullOrWhiteSpace(((ImageProps)instance!.Props).Url);
 
-    // The topmost entity under the drop, if it is an empty image. A drop whose topmost entity is
-    // anything else, a filled image or an edge drawn over the image included, fills nothing.
+    // The topmost entity under the drop, if it is an unlocked empty image. A drop whose topmost
+    // entity is anything else, a filled or locked image or an edge drawn over the image included,
+    // fills nothing.
     public static ComponentInstance? FillTarget(Board board, IEnumerable<Guid> hitsTopmostFirst)
     {
         foreach (var id in hitsTopmostFirst)
         {
             if (board.GetComponent(id) is { } instance)
             {
-                return IsEmptyImage(instance) ? instance : null;
+                return IsEmptyImage(instance) && !instance.Locked ? instance : null;
             }
 
             if (board.GetEdge(id) is not null || board.FindEdgeLabel(id) is not null)

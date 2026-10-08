@@ -8,9 +8,10 @@
      aria-label="@AccessibleName"
      aria-selected="@(IsSelected ? "true" : null)"
      tabindex="@(Focusable ? "0" : null)"
-     data-d12-role="@(HasHitRegion ? HitRole.Instance : null)"
+     data-d12-role="@(HasHitMarker ? HitRole.Instance : null)"
      data-d12-entity="@EntityId"
      data-d12-unaddressable="@(Addressable ? null : "true")"
+     data-d12-locked="@(Locked ? "true" : null)"
      @onfocus="HandleFocus">
 
     <div class="container-content">

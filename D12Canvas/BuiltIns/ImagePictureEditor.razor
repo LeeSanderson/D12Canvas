@@ -5,8 +5,8 @@
 @inject IJSRuntime JS
 
 <div class="d12-image-picture-editor">
-    <button type="button" class="d12-image-picture-button" disabled="@(Context.AddAsset is null)" @onclick="ChooseFile">Choose file…</button>
-    <button type="button" class="d12-image-picture-button" @onclick="RemoveImage">Remove image</button>
+    <button type="button" class="d12-image-picture-button" disabled="@(Context.AddAsset is null || Context.Disabled)" @onclick="ChooseFile">Choose file…</button>
+    <button type="button" class="d12-image-picture-button" disabled="@Context.Disabled" @onclick="RemoveImage">Remove image</button>
 </div>
 
 <style>

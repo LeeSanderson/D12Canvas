@@ -17,7 +17,8 @@ internal static class PointerEvents
         bool shift = false,
         int pressCount = 1,
         string? part = null,
-        string? menuVerdict = null
+        string? menuVerdict = null,
+        bool locked = false
     ) =>
         new(
             PointerId,
@@ -34,7 +35,8 @@ internal static class PointerEvents
             CtrlKey: false,
             AltKey: false,
             MetaKey: false,
-            MenuVerdict: menuVerdict
+            MenuVerdict: menuVerdict,
+            Locked: locked
         );
 
     public static PointerMove Move(

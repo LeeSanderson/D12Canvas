@@ -75,12 +75,21 @@ public class ContextMenuTests : ComponentTestBase
     }
 
     [Fact]
-    public void ASingleInstanceShowsDeleteThenTheFourLayeringRowsInTheirOwnSection()
+    public void ASingleInstanceShowsDeleteThenTheFourLayeringRowsThenLockEachInItsOwnSection()
     {
         var menu = RenderMenu(SingleInstance);
 
         Assert.Equal(
-            ["Delete", "|", "Bring to Front", "Bring Forward", "Send Backward", "Send to Back"],
+            [
+                "Delete",
+                "|",
+                "Bring to Front",
+                "Bring Forward",
+                "Send Backward",
+                "Send to Back",
+                "|",
+                "Lock",
+            ],
             Layout(menu)
         );
     }
@@ -101,6 +110,8 @@ public class ContextMenuTests : ComponentTestBase
                 "Bring Forward",
                 "Send Backward",
                 "Send to Back",
+                "|",
+                "Lock",
             ],
             Layout(menu)
         );
@@ -112,15 +123,15 @@ public class ContextMenuTests : ComponentTestBase
         var menu = RenderMenu(SingleInstance);
 
         Assert.DoesNotContain("Ungroup", Layout(menu));
-        Assert.Single(menu.FindAll(".d12-context-menu-separator"));
+        Assert.Equal(2, menu.FindAll(".d12-context-menu-separator").Count);
     }
 
     [Fact]
-    public void AnEdgeOnlySelectionShowsDeleteAloneWithNoSeparator()
+    public void AnEdgeOnlySelectionShowsDeleteThenLock()
     {
         var menu = RenderMenu(new ContextMenuContext(ContextMenuSet.Object));
 
-        Assert.Equal(["Delete"], Layout(menu));
+        Assert.Equal(["Delete", "|", "Lock"], Layout(menu));
     }
 
     [Fact]
@@ -417,6 +428,37 @@ public class ContextMenuTests : ComponentTestBase
         await menu.InvokeAsync(() => menu.Instance.RequestClose());
 
         Assert.True(closed);
+    }
+
+    [Fact]
+    public void ALockedSelectionReadsUnlockWithTheLockChordAndOffersNoDelete()
+    {
+        var menu = RenderMenu(SingleInstance with { SelectionLocked = true, CanDelete = false });
+
+        Assert.Contains("Unlock", Layout(menu));
+        Assert.DoesNotContain("Lock", Layout(menu));
+        Assert.DoesNotContain("Delete", Layout(menu));
+        Assert.Equal("Ctrl+Shift+L", HintOf(menu, "Unlock"));
+    }
+
+    [Fact]
+    public void UnlockAllIsTheCanvasMenusLastRowWithNoHintAndOnlyWhileSomethingIsLocked()
+    {
+        var withLocks = RenderMenu(EmptyBoardCanvas with { CanUnlockAll = true });
+        var withoutLocks = RenderMenu(EmptyBoardCanvas);
+
+        Assert.Equal(["|", "Unlock All"], Layout(withLocks).TakeLast(2));
+        Assert.Null(HintOf(withLocks, "Unlock All"));
+        Assert.DoesNotContain("Unlock All", Layout(withoutLocks));
+    }
+
+    [Fact]
+    public void UnlockAllIsNeverOnTheObjectMenu()
+    {
+        Assert.DoesNotContain(
+            "Unlock All",
+            Layout(RenderMenu(SingleInstance with { CanUnlockAll = true }))
+        );
     }
 
     [Fact]

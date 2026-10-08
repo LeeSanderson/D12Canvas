@@ -290,6 +290,36 @@ public class DiagramCanvasImageTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task DroppingAPictureOnALockedEmptyImageLeavesItEmptyAndMakesANewImage()
+    {
+        var board = new Board();
+        var locked = AddImage(board);
+        locked.Locked = true;
+        var canvas = RenderCanvas(board);
+
+        await Drop(canvas, 100, 100, [locked.Id], HoldImage(CanvasModule, 1, PictureBytes));
+
+        Assert.Equal("", UrlOf(locked));
+        Assert.Equal(ReferenceTo(PictureBytes), UrlOf(Assert.Single(AddedSince(board, locked))));
+    }
+
+    [Fact]
+    public async Task TheImageRowsLeaveOutALockedImage()
+    {
+        var board = new Board();
+        var locked = AddImage(board);
+        locked.Locked = true;
+        var canvas = RenderCanvas(board);
+
+        await OpenObjectMenu(canvas, locked);
+
+        Assert.DoesNotContain(
+            canvas.FindAll(".d12-context-menu-label"),
+            label => label.TextContent is "Choose image…" or "Remove image"
+        );
+    }
+
+    [Fact]
     public async Task TwoFilesDroppedOnTheCanvasCascadeAndUndoAsOne()
     {
         var board = new Board();

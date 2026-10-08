@@ -55,7 +55,8 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public HashSet<Guid> WithoutHitRegion { get; } = new();
 
-    public bool HasHitRegion(Guid instanceId) => !WithoutHitRegion.Contains(instanceId);
+    public bool HasHitRegion(Guid entityId) =>
+        !WithoutHitRegion.Contains(entityId) && !Board!.IsLocked(entityId);
 
     public void EnterGroup(Guid groupId) => EnteredGroups.Add(groupId);
 
@@ -173,6 +174,10 @@ internal sealed class FakeGestureContext : IGestureContext
     }
 
     public void PublishPendingFragment(Board? pendingFragment) => PendingFragment = pendingFragment;
+
+    public Bounds? SelectionFrame { get; private set; }
+
+    public void PublishSelectionFrame(Bounds frame) => SelectionFrame = frame;
 
     private static readonly IComponentRegistry Registry = BuildRegistry();
 

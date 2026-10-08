@@ -350,7 +350,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             edge.SourceArrow,
             edge.TargetArrow,
             edge.Label is null ? null : ToComponentEnvelope(edge.Label),
-            edge.Color
+            edge.Color,
+            edge.Locked
         );
 
     private static EdgeEndpointEnvelope ToEndpointEnvelope(IEdgeEndpoint endpoint) =>
@@ -390,7 +391,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             envelope.SourceArrow,
             envelope.TargetArrow,
             envelope.Label is null ? null : FromComponentEnvelope(envelope.Label),
-            envelope.Color
+            envelope.Color,
+            envelope.Locked
         );
 
     private static IEdgeEndpoint FromEndpointEnvelope(EdgeEndpointEnvelope? envelope) =>
@@ -421,7 +423,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             instance.ZIndex,
             instance
                 .CustomPorts.Select(p => new PortDefEnvelope(p.Id, p.FractionX, p.FractionY))
-                .ToList()
+                .ToList(),
+            instance.Locked
         );
 
     private ComponentInstance FromComponentEnvelope(ComponentInstanceEnvelope envelope)
@@ -443,7 +446,8 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             ),
             envelope.ZIndex,
             envelope.Id,
-            envelope.CustomPorts?.Select(p => new PortDef(p.Id, p.FractionX, p.FractionY)).ToList()
+            envelope.CustomPorts?.Select(p => new PortDef(p.Id, p.FractionX, p.FractionY)).ToList(),
+            envelope.Locked
         );
     }
 }

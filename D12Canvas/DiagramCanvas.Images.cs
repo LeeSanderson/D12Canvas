@@ -14,7 +14,8 @@ public partial class DiagramCanvas
 {
     private bool CanChangePicture => SelectedImages().Count > 0;
 
-    // Every selected entity is an image, so a picture chosen once goes into all of them.
+    // Every selected entity is an image, so a picture chosen once goes into all of them that are
+    // not locked.
     private IReadOnlyList<ComponentInstance> SelectedImages()
     {
         if (Board is null || _selectedEdgeIds.Count > 0 || _selectedInstanceIds.Count == 0)
@@ -24,7 +25,7 @@ public partial class DiagramCanvas
 
         var instances = _selectedInstanceIds.Select(Board.GetComponent).ToList();
         return instances.All(ImagePicture.IsImage)
-            ? instances.OfType<ComponentInstance>().ToList()
+            ? instances.OfType<ComponentInstance>().Where(image => !image.Locked).ToList()
             : [];
     }
 

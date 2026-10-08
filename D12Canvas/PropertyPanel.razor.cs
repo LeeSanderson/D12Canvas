@@ -55,6 +55,14 @@ public partial class PropertyPanel : IDisposable
     private IReadOnlyList<ComponentInstance> SelectedInstances =>
         Canvas?.SelectedComponents ?? Array.Empty<ComponentInstance>();
 
+    // A locked selection is shown with every field disabled and one live control that unlocks it,
+    // which is what keeps a lock reachable without a pointer. A selection with anything unlocked
+    // stays editable, and an edit writes only to the unlocked instances.
+    private bool AllLocked =>
+        SelectedInstances.Count > 0 && SelectedInstances.All(instance => instance.Locked);
+
+    private void Unlock() => Canvas?.OnUnlockPressed();
+
     // One rendered row. A same-type selection (1 or 2+ instances) maps every
     // target to the SAME reflected PropertyInfo, since they all share one TProps type. A cross-type
     // multi-selection instead maps each instance to whichever of ITS OWN type's properties declares
@@ -191,7 +199,8 @@ public partial class PropertyPanel : IDisposable
         new(
             FirstTargetValue(field),
             newValue => Commit(field, newValue),
-            Canvas?.Board is { } board ? board.AddAsset : null
+            Canvas?.Board is { } board ? board.AddAsset : null,
+            AllLocked
         );
 
     private static string FormatValue(object? value) =>

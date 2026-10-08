@@ -9,6 +9,10 @@
     }
     else
     {
+        @if (AllLocked)
+        {
+            <button type="button" class="d12-property-panel-unlock" @onclick="Unlock">Unlock</button>
+        }
         <ul class="d12-property-panel-fields">
             @foreach (var field in Fields)
             {
@@ -22,6 +26,7 @@
                                 class="d12-property-panel-input"
                                 type="text"
                                 value="@CurrentValue(field)"
+                                disabled="@AllLocked"
                                 @onchange="@(e => CommitEdit(field, e))"
                             />
                             break;
@@ -31,6 +36,7 @@
                                 class="d12-property-panel-input"
                                 type="number"
                                 value="@CurrentValue(field)"
+                                disabled="@AllLocked"
                                 @onchange="@(e => CommitEdit(field, e))"
                             />
                             break;
@@ -41,6 +47,7 @@
                                     class="@ColorInputClass(field)"
                                     type="color"
                                     value="@CurrentValue(field)"
+                                    disabled="@AllLocked"
                                     @onchange="@(e => CommitEdit(field, e))"
                                 />
                                 @if (field.CanHoldNull)
@@ -55,6 +62,7 @@
                                             type="button"
                                             class="d12-property-panel-clear"
                                             aria-label="Use theme colour"
+                                            disabled="@AllLocked"
                                             @onclick="@(() => Commit(field, null))"
                                         >
                                             Use theme colour
@@ -69,6 +77,7 @@
                                 class="d12-property-panel-checkbox"
                                 type="checkbox"
                                 checked="@CurrentBoolValue(field)"
+                                disabled="@AllLocked"
                                 @onchange="@(e => CommitEdit(field, e))"
                             />
                             break;
@@ -77,6 +86,7 @@
                                 id="@field.FieldId"
                                 class="d12-property-panel-input"
                                 value="@CurrentValue(field)"
+                                disabled="@AllLocked"
                                 @onchange="@(e => CommitEdit(field, e))"
                             >
                                 @foreach (var option in field.Options!)
@@ -215,7 +225,8 @@
         color: var(--d12-muted-text);
     }
 
-    .d12-property-panel-clear {
+    .d12-property-panel-clear,
+    .d12-property-panel-unlock {
         font: inherit;
         font-size: 12px;
         padding: 2px 6px;
@@ -224,6 +235,11 @@
         background: transparent;
         color: inherit;
         cursor: pointer;
+    }
+
+    .d12-property-panel-fields :disabled {
+        opacity: 0.5;
+        cursor: default;
     }
 
     .d12-property-panel-checkbox {

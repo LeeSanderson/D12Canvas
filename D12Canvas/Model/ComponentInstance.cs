@@ -8,6 +8,10 @@ public sealed class ComponentInstance
     public Bounds Bounds { get; set; }
     public int ZIndex { get; set; }
 
+    // No command changes a locked instance and no primary press or marquee reaches it, while the
+    // keyboard still does. Written only through ChangeLockedCommand.
+    public bool Locked { get; set; }
+
     // An end user's own runtime-added ports on this specific instance - nothing a component
     // type's developer declares at registration. A plain mutable list (rather than a dedicated
     // Add/Remove method) since AddCustomPortCommand already owns the undo/redo discipline around
@@ -20,7 +24,8 @@ public sealed class ComponentInstance
         Bounds bounds,
         int zIndex = 0,
         Guid? id = null,
-        IReadOnlyList<PortDef>? customPorts = null
+        IReadOnlyList<PortDef>? customPorts = null,
+        bool locked = false
     )
     {
         Id = id ?? Guid.NewGuid();
@@ -29,5 +34,6 @@ public sealed class ComponentInstance
         Bounds = bounds;
         ZIndex = zIndex;
         CustomPorts = customPorts is null ? new List<PortDef>() : new List<PortDef>(customPorts);
+        Locked = locked;
     }
 }

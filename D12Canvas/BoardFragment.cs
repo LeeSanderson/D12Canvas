@@ -13,12 +13,16 @@ internal static class BoardFragment
     // The selected instances and groups, a group carrying its members recursively, the edges
     // interior to them, every selected edge, and every asset the copied instances refer to. An end
     // of a selected edge on an instance outside the copy floats at where it resolves now; an edge
-    // nobody selected travels only when both ends are on copied instances.
+    // nobody selected travels only when both ends are on copied instances. Every copy keeps its
+    // Locked flag. Without locked entities, as a cut carries, a locked instance or selected edge
+    // stays behind and a copied group left with fewer than two members is repaired as a delete
+    // would repair it.
     public static Board Of(
         Board board,
         IEnumerable<Guid> selectedIds,
         IEnumerable<Guid> selectedEdgeIds,
-        IComponentRegistry registry
+        IComponentRegistry registry,
+        bool withoutLocked = false
     )
     {
         var instanceIds = new HashSet<Guid>();
@@ -26,6 +30,11 @@ internal static class BoardFragment
         foreach (var id in selectedIds)
         {
             Collect(board, id, instanceIds, groups);
+        }
+
+        if (withoutLocked)
+        {
+            instanceIds.RemoveWhere(id => board.GetComponent(id)!.Locked);
         }
 
         var fragment = new Board();
@@ -46,8 +55,15 @@ internal static class BoardFragment
             );
         }
 
+        if (withoutLocked)
+        {
+            GroupRepair
+                .Plan(fragment.Groups.ToList(), id => fragment.GetComponent(id) is not null)
+                .ApplyTo(fragment);
+        }
+
         var selectedEdges = selectedEdgeIds.ToHashSet();
-        foreach (var edge in board.Edges)
+        foreach (var edge in board.Edges.Where(edge => !(withoutLocked && edge.Locked)))
         {
             var copy =
                 selectedEdges.Contains(edge.Id) ? CarriedEdge(board, edge, instanceIds)
@@ -136,7 +152,8 @@ internal static class BoardFragment
             instance.Bounds,
             instance.ZIndex,
             instance.Id,
-            instance.CustomPorts
+            instance.CustomPorts,
+            instance.Locked
         );
 
     private static Edge CopyOf(Edge edge, IEdgeEndpoint source, IEdgeEndpoint target) =>
@@ -148,7 +165,8 @@ internal static class BoardFragment
             edge.SourceArrow,
             edge.TargetArrow,
             edge.Label is null ? null : CopyOf(edge.Label),
-            edge.Color
+            edge.Color,
+            edge.Locked
         );
 
     // A copy of the fragment in which every entity id is new: instances, groups and the member
@@ -208,7 +226,8 @@ internal static class BoardFragment
                     edge.SourceArrow,
                     edge.TargetArrow,
                     edge.Label is null ? null : Renamed(edge.Label, NewId(), _ => NewId()),
-                    edge.Color
+                    edge.Color,
+                    edge.Locked
                 )
             );
         }
@@ -231,7 +250,8 @@ internal static class BoardFragment
             id,
             instance
                 .CustomPorts.Select(port => port with { Id = newPortId((instance.Id, port.Id)) })
-                .ToList()
+                .ToList(),
+            instance.Locked
         );
 
     private static IEdgeEndpoint? Renamed(

@@ -21,9 +21,10 @@ internal interface IGestureContext
     // Whether the entity lies inside the entered group, which every entity does when none is.
     bool IsInScope(Guid entityId);
 
-    // Whether the instance takes part in pointer hits at all. The markup emits its hit marker only
-    // when it does, and the marquee sweeps only what does, so the two cannot disagree.
-    bool HasHitRegion(Guid instanceId);
+    // Whether the instance or edge takes part in primary-press hits and the marquee, which a locked
+    // one does not. The markup marks a locked entity so the listener's press passes it by, and the
+    // marquee sweeps only what does take part, so the two cannot disagree.
+    bool HasHitRegion(Guid entityId);
 
     // Steps inside a group that is a direct member of the entered group, or a top-level group
     // when none is entered. The selection is left to the caller.
@@ -93,6 +94,9 @@ internal interface IGestureContext
 
     // Replaces the gesture preview's pending fragment; null drops it. Board is not touched.
     void PublishPendingFragment(Board? pendingFragment);
+
+    // Draws the selection's box at the frame rather than around its members. Board is not touched.
+    void PublishSelectionFrame(Bounds frame);
 
     // Writes the last published preview back to Board as one history entry, leaving out every
     // instance whose previewed bounds equal its committed bounds and every edge end still where

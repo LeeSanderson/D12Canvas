@@ -70,6 +70,25 @@ public class PropertyPanelImageTests : ComponentTestBase
     }
 
     [Fact]
+    public void ALockedImagesUrlRowOffersBothButtonsDisabled()
+    {
+        var board = new Board();
+        var image = AddImage(board, "https://example.com/a.png");
+        image.Locked = true;
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+
+        canvas.ContainerOf(image.Id).Focus();
+
+        Assert.All(
+            panel.FindAll(".d12-image-picture-button"),
+            button => Assert.True(button.HasAttribute("disabled"))
+        );
+    }
+
+    [Fact]
     public async Task ChooseFileFillsTheSelectedEmptyImageKeepingItsBoxAndUndoEmptiesIt()
     {
         var board = new Board();

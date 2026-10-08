@@ -148,6 +148,25 @@ public class DiagramCanvasHitStackTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task AClickInsideTheSelectionBoxPassesALockedShapeBy()
+    {
+        _middle.Locked = true;
+        var canvas = RenderCanvas();
+        await Select(canvas, _bottom, _top);
+
+        await Click(
+            canvas,
+            PressWith(
+                HitRole.SelectionBounds,
+                null,
+                [SelectionBoxHit, InstanceHit(_middle), InstanceHit(_bottom)]
+            )
+        );
+
+        Assert.Equal([_bottom.Id], SelectedIds(canvas));
+    }
+
+    [Fact]
     public async Task AShiftClickInsideTheSelectionBoxAddsTheShapeBeneathIt()
     {
         var canvas = RenderCanvas();

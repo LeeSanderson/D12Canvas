@@ -8,8 +8,9 @@ namespace D12Canvas.Pointer;
 // stays put to the pointer, naming the shape under the pointer as the drop target so its ports
 // show. The release resolves what lies under the pointer, topmost first: a port pins the end to
 // it, a shape's body attaches it as an auto endpoint, nothing at all leaves it floating at the
-// release point, and chrome or another edge in between is looked through. A drop on the shape the
-// other end is attached to changes nothing.
+// release point, and chrome, another edge or a locked shape in between is looked through. A locked
+// edge is never carried, so a port span with one pinned to it pulls a new edge. A drop on the
+// shape the other end is attached to changes nothing.
 internal sealed class DragEdgeEndGesture : PointerGesture
 {
     private IEdgeEndpoint? _anchor;
@@ -27,7 +28,7 @@ internal sealed class DragEdgeEndGesture : PointerGesture
 
         if (Press.Role == HitRole.EdgeEndpoint)
         {
-            if (board.GetEdge(entityId) is { } edge)
+            if (board.GetEdge(entityId) is { Locked: false } edge)
             {
                 var isSource = Press.Part == "source";
                 _carried = (edge.Id, isSource);
@@ -44,7 +45,7 @@ internal sealed class DragEdgeEndGesture : PointerGesture
 
         if (
             board.FindEdgeAttachedTo(port) is { } attached
-            && board.GetEdge(attached.EdgeId) is { } anchored
+            && board.GetEdge(attached.EdgeId) is { Locked: false } anchored
         )
         {
             _carried = attached;
@@ -134,7 +135,7 @@ internal sealed class DragEdgeEndGesture : PointerGesture
         (hits ?? []).FirstOrDefault(hit =>
             (hit.Role is HitRole.Port or HitRole.Instance or HitRole.AuthorContent)
             && hit.EntityId is { } entityId
-            && Context.Board?.GetComponent(entityId) is not null
+            && Context.Board?.GetComponent(entityId) is { Locked: false }
         );
 
     // A port marker names a standard port by its PortId and a custom port by its id.

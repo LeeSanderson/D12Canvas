@@ -28,7 +28,8 @@ internal sealed record ComponentInstanceEnvelope(
     object? Props,
     BoundsEnvelope Bounds,
     int ZIndex,
-    IReadOnlyList<PortDefEnvelope>? CustomPorts = null
+    IReadOnlyList<PortDefEnvelope>? CustomPorts = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool Locked = false
 );
 
 internal readonly record struct PortDefEnvelope(Guid Id, double FractionX, double FractionY);
@@ -51,6 +52,7 @@ internal sealed record GroupEnvelope(Guid Id, IReadOnlyList<Guid> MemberIds);
 //
 // Color is omitted from the JSON when null, so a board with no coloured edges serialises
 // byte-for-byte as it did before the field existed, and an absent property reads as no colour.
+// Locked is omitted when false on an edge and on an instance alike, for the same reason.
 internal sealed record EdgeEnvelope(
     Guid Id,
     EdgeEndpointEnvelope Source,
@@ -59,7 +61,8 @@ internal sealed record EdgeEnvelope(
     ArrowStyle SourceArrow = ArrowStyle.None,
     ArrowStyle TargetArrow = ArrowStyle.Arrow,
     ComponentInstanceEnvelope? Label = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Color = null
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Color = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool Locked = false
 );
 
 // CustomPortId defaults to null (last positional, same "field didn't exist yet" tolerance the

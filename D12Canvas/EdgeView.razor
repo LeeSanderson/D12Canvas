@@ -16,7 +16,8 @@
           aria-selected="@(IsSelected ? "true" : null)" />
     <line x1="@From.X" y1="@From.Y" x2="@To.X" y2="@To.Y"
           class="edge-hit"
-          data-d12-role="@HitRole.Edge" data-d12-entity="@EdgeId" />
+          data-d12-role="@HitRole.Edge" data-d12-entity="@EdgeId"
+          data-d12-locked="@(Locked ? "true" : null)" />
 }
 else
 {
@@ -32,5 +33,6 @@ else
           aria-selected="@(IsSelected ? "true" : null)" />
     <path d="@PathData"
           class="edge-hit"
-          data-d12-role="@HitRole.Edge" data-d12-entity="@EdgeId" />
+          data-d12-role="@HitRole.Edge" data-d12-entity="@EdgeId"
+          data-d12-locked="@(Locked ? "true" : null)" />
 }

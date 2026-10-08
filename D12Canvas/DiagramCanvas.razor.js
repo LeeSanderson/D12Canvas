@@ -129,15 +129,23 @@ function classify(target, canvas) {
         if (role) {
             const entity = element.closest("[data-d12-entity]");
             const entityId = entity === null ? null : entity.getAttribute("data-d12-entity");
-            if (authorContent === null || element.hasAttribute("data-d12-unaddressable")) {
-                return { role, entityId, part: element.getAttribute("data-d12-part"), native: false };
+            const locked = element.closest("[data-d12-locked]") !== null;
+            if (authorContent === null || element.hasAttribute("data-d12-unaddressable") || locked) {
+                return {
+                    role,
+                    entityId,
+                    part: element.getAttribute("data-d12-part"),
+                    native: false,
+                    locked
+                };
             }
 
             return {
                 role: "author-content",
                 entityId,
                 part: null,
-                native: authorContent === "inferred"
+                native: authorContent === "inferred",
+                locked
             };
         }
 
@@ -148,11 +156,26 @@ function classify(target, canvas) {
         }
     }
 
-    return { role: "canvas", entityId: null, part: null, native: false };
+    return CANVAS_HIT;
+}
+
+const CANVAS_HIT = Object.freeze({
+    role: "canvas",
+    entityId: null,
+    part: null,
+    native: false,
+    locked: false
+});
+
+// A locked entity takes no primary press, which lands on the canvas instead; the secondary button
+// still reaches it so its menu can offer Unlock.
+function lockedPrimaryCell(button, hit) {
+    return button === PRIMARY_BUTTON && hit.locked ? CANVAS_HIT : hit;
 }
 
 // Every marked element under a point, topmost first, each classified as a press on it would be.
-// The browser's own hit test answers, so pointer-events and paint order are respected.
+// The browser's own hit test answers, so pointer-events and paint order are respected. A locked
+// entity is left out, as a primary press passes it by.
 function hitStackAt(canvas, clientX, clientY) {
     const hits = [];
     for (const element of document.elementsFromPoint(clientX, clientY)) {
@@ -164,6 +187,7 @@ function hitStackAt(canvas, clientX, clientY) {
         const last = hits[hits.length - 1];
         if (
             hit.role === "canvas" ||
+            hit.locked ||
             (last !== undefined &&
                 last.role === hit.role &&
                 last.entityId === hit.entityId &&
@@ -418,6 +442,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             role: hit.role,
             entityId: hit.entityId,
             part: hit.part,
+            locked: hit.locked,
             pressCount: pressCountFor(event, button),
             x: point.x,
             y: point.y,
@@ -475,8 +500,8 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         }
 
         const hit = classifyPresses
-            ? altPrimaryCell(event, button, classify(event.target, canvas))
-            : { role: "canvas", entityId: null, part: null, native: false };
+            ? lockedPrimaryCell(button, altPrimaryCell(event, button, classify(event.target, canvas)))
+            : CANVAS_HIT;
 
         // A primary press on author content belongs to the browser: nothing is captured or
         // tracked, so its move and release never reach C#, and C# hears only the press itself.
@@ -499,7 +524,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         // press on author content is: no capture, nothing prevented, and C# hears only the press.
         let verdict = null;
         if (button === SECONDARY_BUTTON) {
-            verdict = menuVerdict(event.target, hit);
+            verdict = hit.locked ? "canvas" : menuVerdict(event.target, hit);
             menuVerdictSlot.verdict = verdict;
             if (verdict === "browser") {
                 dotnetRef.invokeMethodAsync("OnPointerPressed", pressFor(event, button, hit, verdict));
@@ -1184,6 +1209,17 @@ export async function addKeyboardListener(element, dotnetRef) {
                 ) {
                     event.preventDefault();
                     dotnetRef.invokeMethodAsync("OnDuplicatePressed");
+                }
+                break;
+            case "KeyL":
+                if (
+                    (event.ctrlKey || event.metaKey) &&
+                    event.shiftKey &&
+                    !event.altKey &&
+                    !isEditableTarget(event.target)
+                ) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync("OnToggleLockPressed");
                 }
                 break;
             case "KeyG":

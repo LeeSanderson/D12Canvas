@@ -85,4 +85,48 @@ public class PressToKindTests
             PressToKind.Resolve(PointerEvents.Press(role, PointerPress.PrimaryButton, 0, 0))
         );
     }
+
+    [Theory]
+    [MemberData(nameof(EveryRole))]
+    public void ThePrimaryButtonOnALockedEntityIsTheMarqueeWhateverItsRole(string role)
+    {
+        Assert.Equal(
+            GestureKind.MarqueeSelect,
+            PressToKind.Resolve(
+                PointerEvents.Press(role, PointerPress.PrimaryButton, 0, 0, locked: true)
+            )
+        );
+    }
+
+    [Theory]
+    [InlineData(PointerPress.BrowserMenuVerdict)]
+    [InlineData(PointerPress.CanvasMenuVerdict)]
+    [InlineData(null)]
+    public void TheSecondaryButtonOnALockedEntityPansWhateverTheMenuVerdict(string? verdict)
+    {
+        Assert.Equal(
+            GestureKind.Pan,
+            PressToKind.Resolve(
+                PointerEvents.Press(
+                    HitRole.AuthorContent,
+                    PointerPress.SecondaryButton,
+                    0,
+                    0,
+                    menuVerdict: verdict,
+                    locked: true
+                )
+            )
+        );
+    }
+
+    [Fact]
+    public void TheMiddleButtonOnALockedEntityPans()
+    {
+        Assert.Equal(
+            GestureKind.Pan,
+            PressToKind.Resolve(
+                PointerEvents.Press(HitRole.Instance, PointerPress.MiddleButton, 0, 0, locked: true)
+            )
+        );
+    }
 }

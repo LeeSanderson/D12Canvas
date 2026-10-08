@@ -34,6 +34,9 @@ public enum ContextMenuCommand
     ToggleObjectSnapping,
     ChooseImage,
     RemoveImage,
+    Lock,
+    Unlock,
+    UnlockAll,
 }
 
 // What DiagramCanvas resolved at the moment a menu opened: everything a row needs to decide
@@ -41,7 +44,10 @@ public enum ContextMenuCommand
 // from the board. AsyncClipboard is whether the browser offers the clipboard to a click, which it
 // does only in a secure context; without it the clipboard rows are left out and the keys still
 // work. CanChangePicture is whether every selected entity is an image. CanAlign and
-// CanDistribute count the selection's instances and groups, never its edges.
+// CanDistribute count the selection's instances and groups, never its edges. CanDelete and CanCut
+// are whether a delete would remove anything, which nothing locked is. SelectionLocked is whether
+// every top-level selected entity is locked, which makes the lock row read Unlock. CanUnlockAll is
+// whether anything on the board is locked.
 public sealed record ContextMenuContext(
     ContextMenuSet Set,
     bool CanGroup = false,
@@ -57,5 +63,8 @@ public sealed record ContextMenuContext(
     bool AsyncClipboard = false,
     bool CanChangePicture = false,
     bool CanAlign = false,
-    bool CanDistribute = false
+    bool CanDistribute = false,
+    bool CanDelete = true,
+    bool SelectionLocked = false,
+    bool CanUnlockAll = false
 );

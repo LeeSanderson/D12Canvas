@@ -25,8 +25,8 @@ public partial class DiagramCanvas
         SelectedEdges.Count > 0
         || ExpandedSelection().Any(id => Board?.GetComponent(id) is not null);
 
-    // The board envelope of what a copy carries, or null when the selection holds nothing, so the
-    // browser's own copy of selected page text runs instead.
+    // The board envelope of what a copy carries, a locked entity copied locked, or null when the
+    // selection holds nothing, so the browser's own copy of selected page text runs instead.
     [JSInvokable]
     public string? OnCopyRequested() =>
         PressOwnsBoard || CopiedFragment() is not { } fragment
@@ -35,11 +35,12 @@ public partial class DiagramCanvas
 
     // A copy and then the removal of exactly what it carried, in one history entry: the selection
     // as a delete would remove it, plus the edges carried between the removed instances. Undo does
-    // not take the payload back off the clipboard.
+    // not take the payload back off the clipboard. Nothing locked is carried, since nothing locked
+    // is removed.
     [JSInvokable]
     public string? OnCutRequested()
     {
-        if (PressOwnsBoard || CopiedFragment() is not { } fragment)
+        if (PressOwnsBoard || CopiedFragment(forCut: true) is not { } fragment)
         {
             return null;
         }
@@ -59,11 +60,17 @@ public partial class DiagramCanvas
         }
 
         var commands = InstanceRemoval
-            .Compose(Board, fragment.Components.Select(instance => instance.Id))
+            .Compose(
+                Board,
+                fragment
+                    .Components.Where(copied => Board.GetComponent(copied.Id) is { Locked: false })
+                    .Select(copied => copied.Id)
+            )
             .Concat(
                 fragment
                     .Edges.Select(carried => Board.GetEdge(carried.Id))
                     .OfType<Edge>()
+                    .Where(edge => !edge.Locked)
                     .Select(edge => new RemoveEdgeCommand(Board, edge))
             )
             .ToList();
@@ -73,7 +80,7 @@ public partial class DiagramCanvas
         }
 
         _contextMenu = null;
-        SetSelection([], []);
+        KeepSurvivingSelection();
         StateHasChanged();
     }
 
@@ -86,14 +93,20 @@ public partial class DiagramCanvas
             pointerX is { } x && pointerY is { } y ? ToBoardPoint((x, y), (0, 0)) : ViewportCentre()
         );
 
-    private Board? CopiedFragment()
+    private Board? CopiedFragment(bool forCut = false)
     {
         if (Board is null)
         {
             return null;
         }
 
-        var fragment = BoardFragment.Of(Board, _selectedInstanceIds, _selectedEdgeIds, Registry);
+        var fragment = BoardFragment.Of(
+            Board,
+            _selectedInstanceIds,
+            _selectedEdgeIds,
+            Registry,
+            withoutLocked: forCut
+        );
         return fragment.Components.Count == 0 && fragment.Edges.Count == 0 ? null : fragment;
     }
 
@@ -171,7 +184,7 @@ public partial class DiagramCanvas
     // selection moved while the write was in flight.
     private async Task CopyFromMenu(bool cut)
     {
-        if (_jsModule is null || PressOwnsBoard || CopiedFragment() is not { } fragment)
+        if (_jsModule is null || PressOwnsBoard || CopiedFragment(forCut: cut) is not { } fragment)
         {
             return;
         }

@@ -4,8 +4,9 @@ namespace D12Canvas.Pointer;
 
 // What the active pointer gesture publishes while it runs: the bounds of its participants, keyed
 // by instance id, the floating edge ends it carries, keyed by edge end, at most one pending edge
-// line, the guides drawn along what object snapping matched, and the pending fragment a clone drag
-// adds at release, whose entities are not in Board yet. Written only by that gesture,
+// line, the guides drawn along what object snapping matched, the pending fragment a clone drag
+// adds at release, whose entities are not in Board yet, and the selection frame a resize holding
+// locked members draws in place of the selection's box. Written only by that gesture,
 // read only through live geometry, discarded on cancel and written back verbatim on commit. Board
 // is never touched while it holds anything.
 internal sealed class GesturePreview
@@ -22,6 +23,8 @@ internal sealed class GesturePreview
     public IReadOnlyList<SnapGuide> Guides { get; private set; } = [];
 
     public Board? PendingFragment { get; private set; }
+
+    public Bounds? SelectionFrame { get; private set; }
 
     public bool TryGetBounds(Guid instanceId, out Bounds bounds) =>
         _boundsOverrides.TryGetValue(instanceId, out bounds);
@@ -42,6 +45,8 @@ internal sealed class GesturePreview
 
     public void PublishPendingFragment(Board? pendingFragment) => PendingFragment = pendingFragment;
 
+    public void PublishSelectionFrame(Bounds? frame) => SelectionFrame = frame;
+
     public void Clear()
     {
         _boundsOverrides = new();
@@ -49,6 +54,7 @@ internal sealed class GesturePreview
         PendingEdge = null;
         Guides = [];
         PendingFragment = null;
+        SelectionFrame = null;
     }
 }
 

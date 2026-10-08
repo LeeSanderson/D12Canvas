@@ -21,6 +21,9 @@ public sealed class Edge
     public ArrowStyle TargetArrow { get; set; }
     public ComponentInstance? Label { get; set; }
 
+    // Locked as an instance is: no command repositions, restyles or relabels it.
+    public bool Locked { get; set; }
+
     public string? Color
     {
         get => _color;
@@ -35,7 +38,8 @@ public sealed class Edge
         ArrowStyle sourceArrow = ArrowStyle.None,
         ArrowStyle targetArrow = ArrowStyle.Arrow,
         ComponentInstance? label = null,
-        string? color = null
+        string? color = null,
+        bool locked = false
     )
     {
         Id = id ?? Guid.NewGuid();
@@ -46,5 +50,6 @@ public sealed class Edge
         TargetArrow = targetArrow;
         Label = label;
         Color = color;
+        Locked = locked;
     }
 }

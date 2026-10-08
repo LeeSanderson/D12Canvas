@@ -112,6 +112,16 @@ public class ImagePictureTests
         Assert.Null(ImagePicture.FillTarget(board, [edge.Id, empty.Id]));
     }
 
+    [Fact]
+    public void ADropOnALockedEmptyImageFillsNothing()
+    {
+        var board = new Board();
+        var empty = AddImage(board, "");
+        empty.Locked = true;
+
+        Assert.Null(ImagePicture.FillTarget(board, [empty.Id]));
+    }
+
     [Theory]
     [InlineData(double.NaN, 32)]
     [InlineData(double.PositiveInfinity, 32)]

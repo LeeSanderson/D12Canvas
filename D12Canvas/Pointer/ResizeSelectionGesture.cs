@@ -20,6 +20,7 @@ internal sealed class ResizeSelectionGesture : PointerGesture
     private readonly ResizeDirection _direction;
     private IReadOnlyList<ComponentInstance> _participants = [];
     private Bounds _startBox;
+    private bool _holdsLocked;
     private (double Width, double Height) _minimum;
     private HashSet<Guid> _participantIds = [];
     private AxisSnap? _heldX;
@@ -45,10 +46,12 @@ internal sealed class ResizeSelectionGesture : PointerGesture
             }
         }
 
-        _participants = Context.SelectedInstances();
+        var selected = Context.SelectedInstances();
+        _participants = selected.Where(instance => !instance.Locked).ToList();
+        _holdsLocked = _participants.Count < selected.Count;
         _participantIds = _participants.Select(participant => participant.Id).ToHashSet();
         var startBounds = _participants.Select(participant => participant.Bounds).ToList();
-        if (Bounds.Union(startBounds) is { } box)
+        if (Bounds.Union(selected.Select(instance => instance.Bounds)) is { } box)
         {
             _startBox = box;
             _minimum = ResizeMath.MinimumBoxSizeFor(box, startBounds);
@@ -220,13 +223,21 @@ internal sealed class ResizeSelectionGesture : PointerGesture
 
     protected override void OnClick(PointerRelease release) { }
 
-    private void PublishScaledTo(Bounds box) =>
+    // With a locked member in the selection the box under the pointer is the frame being dragged,
+    // which a locked member left at its size may stick out of until the release re-derives it.
+    private void PublishScaledTo(Bounds box)
+    {
         Context.PublishPreview(
             _participants.ToDictionary(
                 participant => participant.Id,
                 participant => ResizeMath.ScaleWithinBox(participant.Bounds, _startBox, box)
             )
         );
+        if (_holdsLocked)
+        {
+            Context.PublishSelectionFrame(box);
+        }
+    }
 
     private static ResizeDirection DirectionOf(string? part) =>
         part switch

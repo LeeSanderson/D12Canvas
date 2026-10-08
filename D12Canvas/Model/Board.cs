@@ -225,6 +225,33 @@ public sealed class Board
         : GetGroup(memberId) is { } nested ? GetBounds(nested, boundsOf)
         : null;
 
+    // An instance or an edge by its own flag; a group, which holds no flag, when it has a resolving
+    // member and every resolving member is locked, nested groups recursively. Any other id is not.
+    public bool IsLocked(Guid id)
+    {
+        if (GetComponent(id) is { } instance)
+        {
+            return instance.Locked;
+        }
+
+        if (GetEdge(id) is { } edge)
+        {
+            return edge.Locked;
+        }
+
+        if (GetGroup(id) is not { } group)
+        {
+            return false;
+        }
+
+        var resolving = group
+            .MemberIds.Where(memberId =>
+                GetComponent(memberId) is not null || GetGroup(memberId) is not null
+            )
+            .ToList();
+        return resolving.Count > 0 && resolving.All(IsLocked);
+    }
+
     // Walks up through any nesting to find the outermost group (recursively) containing the given
     // entity id - used so clicking any member of a group, however deeply nested, converges
     // selection on the top-level group.

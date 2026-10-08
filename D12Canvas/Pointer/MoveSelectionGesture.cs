@@ -26,8 +26,8 @@ internal sealed class MoveSelectionGesture : PointerGesture
     private Guid? _pressedMember;
     private IReadOnlyList<ComponentInstance> _participants = [];
     private IReadOnlyList<(EdgeEnd End, FloatingEndpoint Start)> _floatingEnds = [];
-    private (double X, double Y) _origin;
-    private Bounds _box;
+    private Bounds _movedBox;
+    private Bounds _wholeBox;
     private HashSet<Guid> _participantIds = [];
     private AxisSnap? _heldX;
     private AxisSnap? _heldY;
@@ -59,17 +59,26 @@ internal sealed class MoveSelectionGesture : PointerGesture
             }
         }
 
-        _participants = Context.SelectedInstances();
+        var selected = Context.SelectedInstances();
+        _participants = selected.Where(instance => !instance.Locked).ToList();
         _participantIds = _participants.Select(participant => participant.Id).ToHashSet();
-        _floatingEnds = Context.SelectedEdges().SelectMany(FloatingEndsOf).ToList();
-        if (Bounds.Union(_participants.Select(participant => participant.Bounds)) is { } box)
-        {
-            _origin = (box.X, box.Y);
-            _box = box;
-        }
+        _floatingEnds = Context
+            .SelectedEdges()
+            .Where(edge => !edge.Locked)
+            .SelectMany(FloatingEndsOf)
+            .ToList();
+        _wholeBox = Bounds.Union(selected.Select(instance => instance.Bounds)) ?? default;
+        _movedBox =
+            Bounds.Union(_participants.Select(participant => participant.Bounds)) ?? default;
 
         PublishTranslatedBy(0, 0);
     }
+
+    // What the pointer drags: the unlocked members, which are what a move carries, or the whole
+    // copy while cloning, since a locked member's copy follows the pointer too.
+    private Bounds Box => _carriedCopies is null ? _movedBox : _wholeBox;
+
+    private (double X, double Y) Origin => (Box.X, Box.Y);
 
     // Shift holds the axis the press-anchored delta has moved least along. That axis is never
     // snapped, since rounding it would move the selection along the axis just locked. On each free
@@ -84,13 +93,13 @@ internal sealed class MoveSelectionGesture : PointerGesture
         var xLocked = move.ShiftKey && Math.Abs(deltaY) > Math.Abs(deltaX);
         var yLocked = move.ShiftKey && !xLocked;
 
-        var x = xLocked ? _origin.X : _origin.X + deltaX;
-        var y = yLocked ? _origin.Y : _origin.Y + deltaY;
+        var x = xLocked ? Origin.X : Origin.X + deltaX;
+        var y = yLocked ? Origin.Y : Origin.Y + deltaY;
         var guides = new List<SnapGuide>();
         if (!move.CtrlKey)
         {
             var candidates = ObjectSnapCandidates(move, CarriedIds());
-            var raw = _box with { X = x, Y = y };
+            var raw = Box with { X = x, Y = y };
             var tolerance = ObjectSnapTolerance;
             _heldX = xLocked
                 ? null
@@ -128,7 +137,7 @@ internal sealed class MoveSelectionGesture : PointerGesture
             _heldY = null;
         }
 
-        PublishTranslatedBy(x - _origin.X, y - _origin.Y);
+        PublishTranslatedBy(x - Origin.X, y - Origin.Y);
         Context.PublishGuides(guides);
     }
 
@@ -145,7 +154,7 @@ internal sealed class MoveSelectionGesture : PointerGesture
     ) =>
         held is null
             ? []
-            : ObjectSnap.GuidesForMove(_box with { X = x, Y = y }, candidates, axis).ToList();
+            : ObjectSnap.GuidesForMove(Box with { X = x, Y = y }, candidates, axis).ToList();
 
     private double SnapAxisCoordinate(
         double coordinate,

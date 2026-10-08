@@ -4,17 +4,17 @@
 
 **Blocked by:** 95 (System clipboard), 99 (Align and distribute)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Lock from the menu or Ctrl+Shift+L; a locked shape cannot be pressed, marqueed, nudged, deleted or resized, and Ctrl+Z undoes the lock
-- [ ] Right-click on a locked shape selects it and the menu shows Unlock; Unlock All on the canvas menu unlocks everything in one entry
-- [ ] Tab reaches a locked shape; the panel shows its fields disabled with an unlock control
-- [ ] Dragging a group with one locked member moves the others and leaves the locked one in place; resizing scales the unlocked members inside the real bounds
-- [ ] Aligning a selection with a partly locked group measures its unlocked members' box
-- [ ] Deleting a partly locked group removes the unlocked members and the group repairs; a fully locked group is untouched
-- [ ] Copy, duplicate and paste of a locked shape produce a locked copy; Cut with only locked entities selected is ineligible
-- [ ] A locked edge cannot be repositioned and is not a drop target
-- [ ] A board saved without the field loads unchanged and serialises byte-identically
-- [ ] Command, serializer and hit-test tests; the press-to-kind table gains locked rows
-- [ ] Full visual suite run in the pinned image with `-parallel none` if any markup changes; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Locked` term describes what shipped
+- [x] Lock from the menu or Ctrl+Shift+L; a locked shape cannot be pressed, marqueed, nudged, deleted or resized, and Ctrl+Z undoes the lock
+- [x] Right-click on a locked shape selects it and the menu shows Unlock; Unlock All on the canvas menu unlocks everything in one entry
+- [x] Tab reaches a locked shape; the panel shows its fields disabled with an unlock control
+- [x] Dragging a group with one locked member moves the others and leaves the locked one in place; resizing scales the unlocked members inside the real bounds
+- [x] Aligning a selection with a partly locked group measures its unlocked members' box
+- [x] Deleting a partly locked group removes the unlocked members and the group repairs; a fully locked group is untouched
+- [x] Copy, duplicate and paste of a locked shape produce a locked copy; Cut with only locked entities selected is ineligible
+- [x] A locked edge cannot be repositioned and is not a drop target
+- [x] A board saved without the field loads unchanged and serialises byte-identically
+- [x] Command, serializer and hit-test tests; the press-to-kind table gains locked rows
+- [x] Full visual suite run in the pinned image with `-parallel none` if any markup changes; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Locked` term describes what shipped

@@ -408,6 +408,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnPointerPressed(PointerPress press)
     {
+        press = WithLockRead(press);
         if (_activeGesture is not null || PressToKind.Resolve(press) is not { } kind)
         {
             return;
@@ -452,6 +453,30 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         StateHasChanged();
+    }
+
+    // The board has the last word on the lock the listener read from the markup. A primary press
+    // on a locked entity is a press on empty canvas, so it steps out and marquees as one would.
+    private PointerPress WithLockRead(PointerPress press)
+    {
+        var locked = press.Locked || press.EntityId is { } id && IsLocked(id);
+        if (!locked)
+        {
+            return press;
+        }
+
+        return press.Button == PointerPress.PrimaryButton
+            ? press with
+            {
+                Role = HitRole.Canvas,
+                EntityId = null,
+                Part = null,
+                Locked = true,
+            }
+            : press with
+            {
+                Locked = true,
+            };
     }
 
     [JSInvokable]
@@ -631,7 +656,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         var commands = new List<ICommand>();
         foreach (var (id, after) in _preview.BoundsOverrides)
         {
-            if (Board.GetComponent(id) is { } instance && instance.Bounds != after)
+            if (Board.GetComponent(id) is { Locked: false } instance && instance.Bounds != after)
             {
                 commands.Add(new ChangeBoundsCommand(instance, instance.Bounds, after));
             }
@@ -639,7 +664,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         foreach (var (end, after) in _preview.MovedEndpoints)
         {
-            if (Board.GetEdge(end.EdgeId) is not { } edge)
+            if (Board.GetEdge(end.EdgeId) is not { Locked: false } edge)
             {
                 continue;
             }
@@ -660,7 +685,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void BeginInlineEdit(Guid instanceId)
     {
         if (
-            Board?.GetComponent(instanceId) is not { } instance
+            Board?.GetComponent(instanceId) is not { Locked: false } instance
             || !IsAddressable(instanceId)
             || IsPlaceholder(instance)
             || !Registry.Resolve(instance.ComponentTypeKey).IsInlineEditable
@@ -681,7 +706,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void BeginLabelEdit(Guid edgeId)
     {
         if (
-            _mountedLabels.TryGetValue(edgeId, out var mounted)
+            !IsLocked(edgeId)
+            && _mountedLabels.TryGetValue(edgeId, out var mounted)
             && mounted.Instance is IInlineEditable editable
         )
         {
@@ -699,7 +725,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void ChangeEdgeEndpoint(Guid edgeId, bool isSource, IEdgeEndpoint endpoint)
     {
-        if (Board?.GetEdge(edgeId) is { } edge)
+        if (Board?.GetEdge(edgeId) is { Locked: false } edge)
         {
             var before = isSource ? edge.Source : edge.Target;
             _history.Do(new ChangeEdgeEndpointCommand(edge, isSource, before, endpoint));
@@ -737,7 +763,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public bool IsInScope(Guid entityId) => canvas.IsInScope(entityId);
 
-        public bool HasHitRegion(Guid instanceId) => canvas.HasHitRegion(instanceId);
+        public bool HasHitRegion(Guid entityId) => canvas.HasHitRegion(entityId);
 
         public void EnterGroup(Guid groupId) => canvas.EnterGroup(groupId);
 
@@ -811,6 +837,9 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void PublishPendingFragment(Board? pendingFragment) =>
             canvas._preview.PublishPendingFragment(pendingFragment);
+
+        public void PublishSelectionFrame(Bounds frame) =>
+            canvas._preview.PublishSelectionFrame(frame);
 
         public void BeginInlineEdit(Guid instanceId) => canvas.BeginInlineEdit(instanceId);
 
@@ -926,7 +955,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var targets = ResolvedSelection();
+        var targets = UnlockedSelection();
         if (targets.Count == 0)
         {
             return;
@@ -1049,7 +1078,10 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var instance = Board.GetComponent(_selectedInstanceIds.Single());
+        var instance = Board.GetComponent(_selectedInstanceIds.Single())
+            is { Locked: false } unlocked
+            ? unlocked
+            : null;
         var direction = ResizeDirectionFor(code, shiftKey);
         if (instance is null || direction is null)
         {
@@ -1195,7 +1227,7 @@ public partial class DiagramCanvas : IAsyncDisposable
                 return;
             }
 
-            if (_focusedTabStopId is not { } id || Board.GetComponent(id) is null)
+            if (_focusedTabStopId is not { } id || Board.GetComponent(id) is not { Locked: false })
             {
                 return;
             }
@@ -1222,6 +1254,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (
             sourceEndpoint.ComponentId is { } sourceComponentId
             && Board.GetComponent(sourceComponentId) is not null
+            && !(chosenEndpoint.ComponentId is { } targetId && IsLocked(targetId))
             && chosenEndpoint.ComponentId != sourceComponentId
         )
         {
@@ -1340,6 +1373,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // member, disappearing at none) ride in the same CompositeCommand, so one undo restores
     // every deleted instance and every group exactly as they were. Every selected edge is removed
     // in that same entry; an edge attached to a deleted instance but not itself selected stays.
+    // Nothing locked is removed, and whatever is left of the selection stays selected.
     [JSInvokable]
     public void OnDeletePressed()
     {
@@ -1348,24 +1382,39 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        if (Board is not null)
+        if (Board is null)
         {
-            var commands = InstanceRemoval
-                .Compose(Board, ExpandedSelection())
-                .Concat(SelectedEdges.Select(edge => new RemoveEdgeCommand(Board, edge)))
-                .ToList();
-            if (commands.Count > 0)
-            {
-                _history.Do(new CompositeCommand(commands));
-            }
+            SetSelection([], []);
+            StateHasChanged();
+            return;
         }
 
-        SetSelection([], []);
+        var commands = InstanceRemoval
+            .Compose(Board, UnlockedSelection().Select(instance => instance.Id))
+            .Concat(UnlockedSelectedEdges().Select(edge => new RemoveEdgeCommand(Board, edge)))
+            .ToList();
+        if (commands.Count > 0)
+        {
+            _history.Do(new CompositeCommand(commands));
+        }
+
+        KeepSurvivingSelection();
         StateHasChanged();
     }
 
+    // After a removal the selection holds what is still on the board, which is what the removal
+    // left because it was locked.
+    private void KeepSurvivingSelection() =>
+        SetSelection(
+            _selectedInstanceIds.Where(id =>
+                Board?.GetComponent(id) is not null || Board?.GetGroup(id) is not null
+            ),
+            _selectedEdgeIds.Where(id => Board?.GetEdge(id) is not null)
+        );
+
     // Ctrl+A selects every top-level entity, a grouped instance as its outermost group, and every
     // edge on the board. With a group entered it selects that group's direct members instead.
+    // Nothing locked is taken, a fully locked group included.
     [JSInvokable]
     public void OnSelectAllPressed()
     {
@@ -1377,13 +1426,15 @@ public partial class DiagramCanvas : IAsyncDisposable
         _contextMenu = null;
         if (EnteredGroupId is { } enteredId && Board.GetGroup(enteredId) is { } entered)
         {
-            SetSelection(entered.MemberIds, []);
+            SetSelection(entered.MemberIds.Where(id => !IsLocked(id)), []);
         }
         else
         {
             SetSelection(
-                Board.Components.Select(instance => EffectiveSelectionId(instance.Id)),
-                Board.Edges.Select(edge => edge.Id)
+                Board
+                    .Components.Select(instance => EffectiveSelectionId(instance.Id))
+                    .Where(id => !IsLocked(id)),
+                Board.Edges.Where(edge => !edge.Locked).Select(edge => edge.Id)
             );
         }
 
@@ -1541,7 +1592,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var selected = ResolvedSelection().OrderBy(instance => instance.ZIndex).ToList();
+        var selected = UnlockedSelection().OrderBy(instance => instance.ZIndex).ToList();
 
         if (selected.Count == 0)
         {
@@ -1589,7 +1640,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         foreach (var id in ExpandedSelection())
         {
             var instance = Board.GetComponent(id);
-            if (instance is null)
+            if (instance is null || instance.Locked)
             {
                 continue;
             }
@@ -1628,11 +1679,14 @@ public partial class DiagramCanvas : IAsyncDisposable
             ObjectSnapping: ObjectSnapping,
             ApplePlatform: _applePlatform,
             CanCopy: CanCopySelection,
-            CanCut: CanCopySelection,
+            CanCut: CanCopySelection && CanRemoveSelection,
             AsyncClipboard: _asyncClipboard,
             CanChangePicture: CanChangePicture,
             CanAlign: arrangeable >= AlignDistribute.AlignThreshold,
-            CanDistribute: arrangeable >= AlignDistribute.DistributeThreshold
+            CanDistribute: arrangeable >= AlignDistribute.DistributeThreshold,
+            CanDelete: CanRemoveSelection,
+            SelectionLocked: SelectionIsLocked,
+            CanUnlockAll: HasAnythingLocked
         );
     }
 
@@ -1652,7 +1706,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private bool CanUngroupSelection =>
         _selectedInstanceIds.Any(id => Board?.GetGroup(id) is not null);
 
-    private bool CanArrangeSelection => _selectedInstanceIds.Count > 0;
+    private bool CanArrangeSelection => UnlockedSelection().Count > 0;
 
     // Shift+F10 or the ContextMenu key, once the listener's Menu verdict gave the request to the
     // canvas. The keyboard has no press target, so the selection decides the set, and the menu
@@ -1770,6 +1824,9 @@ public partial class DiagramCanvas : IAsyncDisposable
             ContextMenuCommand.SelectAll => OnSelectAllPressed,
             ContextMenuCommand.ToggleSnapToGrid => OnToggleSnapToGridPressed,
             ContextMenuCommand.ToggleObjectSnapping => OnToggleObjectSnappingPressed,
+            ContextMenuCommand.Lock => OnLockPressed,
+            ContextMenuCommand.Unlock => OnUnlockPressed,
+            ContextMenuCommand.UnlockAll => OnUnlockAllPressed,
             _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
         };
         action();
@@ -1855,10 +1912,16 @@ public partial class DiagramCanvas : IAsyncDisposable
         return current;
     }
 
-    // Every instance on the board is content, and content keeps its hit region at every zoom,
-    // a placeholder included. Pointer participation is decided here and nowhere else; keyboard
-    // reachability never reads it.
-    private bool HasHitRegion(Guid instanceId) => Board?.GetComponent(instanceId) is not null;
+    // Every instance and edge on the board is content, and content keeps its hit region at every
+    // zoom, a placeholder included, unless it is locked. Primary-press participation is decided
+    // here and nowhere else; keyboard reachability never reads it.
+    private bool HasHitRegion(Guid entityId) =>
+        (Board?.GetComponent(entityId) is not null || Board?.GetEdge(entityId) is not null)
+        && !IsLocked(entityId);
+
+    // A clone drag's copies are drawn before they are on the board and carry no hit marker; a
+    // locked instance keeps its marker, so a secondary press still reaches it.
+    private bool IsOnBoard(Guid instanceId) => Board?.GetComponent(instanceId) is not null;
 
     private bool IsInScope(Guid id) =>
         EnteredGroupId is not { } enteredId || IsInside(id, enteredId);
@@ -1946,6 +2009,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
+    // A locked entity is left out, as a primary press would pass it by.
     private IReadOnlyList<HitStackEntry> HitStackOf(PointerPress press)
     {
         if (Board is null || press.Hits is null)
@@ -1959,6 +2023,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             if (
                 hit.EntityId is not { } id
                 || hit.Role is HitRole.SelectionBounds or HitRole.SelectionHandle
+                || IsLocked(id)
             )
             {
                 continue;
@@ -2143,9 +2208,10 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // Shared by CommitPropsChange and CommitPropsChangeBatch - an id is either an
     // ordinary Board.Components entry or an edge's Label, which lives only on its
-    // owning Edge rather than in Board's own component dictionary.
+    // owning Edge rather than in Board's own component dictionary. A locked instance, or the label
+    // of a locked edge, resolves to nothing, so no props edit reaches it.
     private ComponentInstance? ResolvePropsEntity(Guid id) =>
-        Board?.GetComponent(id) ?? Board?.FindEdgeLabel(id);
+        IsPropsEntityLocked(id) ? null : Board?.GetComponent(id) ?? Board?.FindEdgeLabel(id);
 
     // The commit point for a routing-style/arrowhead change on a specific edge - the
     // Edge counterpart to CommitPropsChange. No panel UI calls this yet, but the command/undo
@@ -2153,7 +2219,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void CommitEdgeStyleChange(Guid edgeId, EdgeStyle before, EdgeStyle after)
     {
         var edge = Board?.GetEdge(edgeId);
-        if (edge is null)
+        if (edge is null || edge.Locked)
         {
             return;
         }
@@ -2177,7 +2243,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void AddEdgeLabel(Guid edgeId)
     {
         var edge = Board?.GetEdge(edgeId);
-        if (edge is null || edge.Label is not null)
+        if (edge is null || edge.Locked || edge.Label is not null)
         {
             return;
         }
@@ -2783,6 +2849,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (Board is null)
         {
             return null;
+        }
+
+        if (_preview.SelectionFrame is { } frame)
+        {
+            return frame;
         }
 
         var shown = ShownSelection();

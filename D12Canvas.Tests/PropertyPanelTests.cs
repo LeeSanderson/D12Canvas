@@ -839,6 +839,52 @@ public class PropertyPanelTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task ALockedSelectionShowsEveryFieldDisabledAndAnUnlockControlThatWorks()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, tint: "#ff0000");
+        instance.Locked = true;
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        canvas.Find(".component-container").Focus();
+
+        Assert.All(
+            panel.FindAll(".d12-property-panel-field input, .d12-property-panel-field select"),
+            control => Assert.True(control.HasAttribute("disabled"))
+        );
+        Assert.True(panel.Find(".d12-property-panel-clear").HasAttribute("disabled"));
+
+        panel.Find(".d12-property-panel-unlock").Click();
+
+        Assert.False(instance.Locked);
+        Assert.Empty(panel.FindAll(".d12-property-panel-unlock"));
+        Assert.All(
+            panel.FindAll(".d12-property-panel-field input, .d12-property-panel-field select"),
+            control => Assert.False(control.HasAttribute("disabled"))
+        );
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.True(instance.Locked);
+    }
+
+    [Fact]
+    public void AnUnlockedSelectionOffersNoUnlockControl()
+    {
+        var board = new Board();
+        AddInstance(board);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var panel = Render<PropertyPanel>(parameters =>
+            parameters.Add(p => p.Canvas, canvas.Instance)
+        );
+        Select(canvas);
+
+        Assert.Empty(panel.FindAll(".d12-property-panel-unlock"));
+    }
+
+    [Fact]
     public async Task CommittingTheSameCustomValueAgainRecordsNoAdditionalHistoryEntry()
     {
         var board = new Board();

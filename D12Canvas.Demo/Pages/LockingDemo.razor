@@ -1,0 +1,60 @@
+@page "/locking-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Locking Demo</PageTitle>
+
+<div class="locking-layout">
+    <div class="locking-canvas">
+        <DiagramCanvas @ref="_canvas" Board="_board" />
+    </div>
+    <div class="locking-panel">
+        <PropertyPanel Canvas="_canvas" />
+    </div>
+</div>
+
+<style>
+    .locking-layout {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .locking-canvas {
+        width: 620px;
+        height: 480px;
+    }
+
+    .locking-panel {
+        width: 260px;
+    }
+</style>
+
+@code {
+    private static readonly Guid FreeId = Guid.Parse("10c00000-0000-0000-0000-000000000001");
+    private static readonly Guid LockedId = Guid.Parse("10c00000-0000-0000-0000-000000000002");
+
+    private readonly Board _board = SeedBoard();
+    private DiagramCanvas? _canvas;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#cfe3ff", null, 2), new Bounds(60, 80, 160, 100), id: FreeId)
+        );
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#ffe0b3", null, 2), new Bounds(300, 80, 160, 100), id: LockedId, locked: true)
+        );
+        return board;
+    }
+}

@@ -390,4 +390,67 @@ public class BoardFragmentTests
         Assert.Equal([Asset.IdFor([9, 9, 9])], placement.RejectedAssetIds);
         Assert.Empty(board.Assets);
     }
+
+    [Fact]
+    public void ACopyOfALockedInstanceAndEdgeIsLockedWithFreshIdsToo()
+    {
+        var board = new Board();
+        var shape = AddShape(board, 0);
+        shape.Locked = true;
+        var other = AddShape(board, 200);
+        var edge = Connect(board, shape, other);
+        edge.Locked = true;
+
+        var copy = BoardFragment.WithFreshIds(Copy(board, [shape.Id, other.Id], [edge.Id]));
+
+        Assert.Single(copy.Components, instance => instance.Locked);
+        Assert.True(copy.Edges.Single().Locked);
+    }
+
+    [Fact]
+    public void WithoutLockedACutLeavesLockedInstancesAndEdgesBehind()
+    {
+        var board = new Board();
+        var locked = AddShape(board, 0);
+        locked.Locked = true;
+        var first = AddShape(board, 200);
+        var second = AddShape(board, 400);
+        var lockedEdge = Connect(board, first, second);
+        lockedEdge.Locked = true;
+
+        var cutFragment = BoardFragment.Of(
+            board,
+            [locked.Id, first.Id, second.Id],
+            [lockedEdge.Id],
+            Registry,
+            withoutLocked: true
+        );
+
+        Assert.Equal(
+            new[] { first.Id, second.Id }.Order(),
+            cutFragment.Components.Select(instance => instance.Id).Order()
+        );
+        Assert.Empty(cutFragment.Edges);
+    }
+
+    [Fact]
+    public void WithoutLockedAGroupLeftWithOneMemberIsDissolvedAndOneLeftWithTwoIsKept()
+    {
+        var board = new Board();
+        var locked = AddShape(board, 0);
+        locked.Locked = true;
+        var lone = AddShape(board, 200);
+        var pair = new Group([locked.Id, lone.Id]);
+        board.AddGroup(pair);
+        var kept = new Group([AddShape(board, 400).Id, AddShape(board, 600).Id, locked.Id]);
+        board.AddGroup(kept);
+
+        var pairCutFragment = BoardFragment.Of(board, [pair.Id], [], Registry, withoutLocked: true);
+        var keptCutFragment = BoardFragment.Of(board, [kept.Id], [], Registry, withoutLocked: true);
+
+        Assert.Empty(pairCutFragment.Groups);
+        Assert.Equal(lone.Id, pairCutFragment.Components.Single().Id);
+        Assert.Equal(2, keptCutFragment.Groups.Single().MemberIds.Count);
+        Assert.DoesNotContain(locked.Id, keptCutFragment.Groups.Single().MemberIds);
+    }
 }

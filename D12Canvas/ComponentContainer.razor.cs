@@ -29,10 +29,15 @@ public partial class ComponentContainer
     [Parameter]
     public Guid? EntityId { get; set; }
 
-    // False for an instance that takes no part in pointer hits, which renders no hit marker so a
-    // press passes through it. The canvas decides, from the same predicate the marquee reads.
+    // A locked instance is marked so a primary press passes it by, and shows no affordance: no
+    // resize handle and no port, so nothing is pulled from it and nothing is dropped on it.
     [Parameter]
-    public bool HasHitRegion { get; set; } = true;
+    public bool Locked { get; set; }
+
+    // False for an instance that is not on the board yet, a clone drag's copy, which renders no hit
+    // marker so a press passes through it.
+    [Parameter]
+    public bool HasHitMarker { get; set; } = true;
 
     [Parameter]
     public string? AccessibleName { get; set; }
@@ -133,7 +138,8 @@ public partial class ComponentContainer
     private bool _lastRenderedAutoPortFocused;
     private double _lastRenderedScale;
     private bool _lastRenderedIsDropTarget;
-    private bool _lastRenderedHasHitRegion;
+    private bool _lastRenderedLocked;
+    private bool _lastRenderedHasHitMarker;
 
     private string ContainerStyle =>
         $"left: {X}px; top: {Y}px; width: {Width}px; height: {Height}px; z-index: {ZIndex};";
@@ -177,7 +183,8 @@ public partial class ComponentContainer
             || FocusedCustomPortId != _lastRenderedFocusedCustomPortId
             || AutoPortFocused != _lastRenderedAutoPortFocused
             || IsDropTarget != _lastRenderedIsDropTarget
-            || HasHitRegion != _lastRenderedHasHitRegion
+            || Locked != _lastRenderedLocked
+            || HasHitMarker != _lastRenderedHasHitMarker
             // The partition is measured in screen pixels, so a zoom can add or drop a span.
             || (ShowPorts && Scale != _lastRenderedScale);
     }
@@ -203,7 +210,8 @@ public partial class ComponentContainer
         _lastRenderedAutoPortFocused = AutoPortFocused;
         _lastRenderedScale = Scale;
         _lastRenderedIsDropTarget = IsDropTarget;
-        _lastRenderedHasHitRegion = HasHitRegion;
+        _lastRenderedLocked = Locked;
+        _lastRenderedHasHitMarker = HasHitMarker;
     }
 
     private Task HandleFocus() => OnFocus.InvokeAsync();
@@ -235,10 +243,10 @@ public partial class ComponentContainer
 
     // The visibility gate for the resize spans and the corner handles, suppressed for a
     // multi-selected member, whose shared bounding-box overlay grows its own handles instead.
-    private bool ShowSelectionOverlay => IsSelected && !IsMultiSelected;
+    private bool ShowSelectionOverlay => IsSelected && !IsMultiSelected && !Locked;
 
     // Ports show on a single selection and on the drop target of a connector drag, never on hover.
-    private bool ShowPorts => ShowSelectionOverlay || IsDropTarget;
+    private bool ShowPorts => ShowSelectionOverlay || (IsDropTarget && !Locked);
 
     private bool ShowsStandardPort(PortId side) =>
         AutoPortFocused

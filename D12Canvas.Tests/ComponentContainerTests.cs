@@ -1,5 +1,6 @@
 using Bunit;
 using D12Canvas.Model;
+using D12Canvas.Pointer;
 using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
@@ -162,13 +163,64 @@ public class ComponentContainerTests : ComponentTestBase
     }
 
     [Fact]
-    public void AnInstanceWithNoHitRegionCarriesNoHitMarker()
+    public void ALockedInstanceKeepsItsHitMarkerAndIsMarkedLocked()
     {
         var container = Render<ComponentContainer>(parameters =>
-            parameters.Add(p => p.HasHitRegion, false)
+            parameters.Add(p => p.Locked, true)
+        );
+
+        var root = container.Find(".component-container");
+        Assert.Equal(HitRole.Instance, root.GetAttribute("data-d12-role"));
+        Assert.Equal("true", root.GetAttribute("data-d12-locked"));
+    }
+
+    [Fact]
+    public void AnInstanceWithNoHitMarkerCarriesNoRole()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.HasHitMarker, false)
         );
 
         Assert.Null(container.Find(".component-container").GetAttribute("data-d12-role"));
+    }
+
+    [Fact]
+    public void AnUnlockedInstanceCarriesNoLockMarker()
+    {
+        var container = Render<ComponentContainer>();
+
+        Assert.Null(container.Find(".component-container").GetAttribute("data-d12-locked"));
+    }
+
+    [Fact]
+    public void ASelectedLockedInstanceShowsNoResizeHandleAndNoPort()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters
+                .Add(p => p.IsSelected, true)
+                .Add(p => p.Locked, true)
+                .Add(p => p.Width, 200)
+                .Add(p => p.Height, 200)
+        );
+
+        Assert.Empty(container.FindAll(".resize-handle"));
+        Assert.Empty(container.FindAll(".resize-span"));
+        Assert.Empty(container.FindAll(".port-span"));
+        Assert.Empty(container.FindAll(".port"));
+    }
+
+    [Fact]
+    public void ALockedInstanceIsNeverShownAsADropTarget()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters
+                .Add(p => p.IsDropTarget, true)
+                .Add(p => p.Locked, true)
+                .Add(p => p.Width, 200)
+                .Add(p => p.Height, 200)
+        );
+
+        Assert.Empty(container.FindAll(".port-span"));
     }
 
     [Fact]

@@ -7,7 +7,8 @@ namespace D12Canvas;
 // canvas re-renders every edge's parameters on each of its own renders, so this skips its own
 // render unless something it draws has changed: a pan or a drag of an unrelated shape costs one
 // parameter set here and no diff. An author colour rides in as an inline rebind of
-// --d12-edge-override, emitted only when set, so a null colour falls through to the theme token.
+// --d12-edge-override, emitted only when set, so a null colour falls through to the theme token. A
+// locked edge marks its hit stroke so a primary press passes it by.
 public partial class EdgeView
 {
     [Parameter]
@@ -37,6 +38,9 @@ public partial class EdgeView
     [Parameter]
     public string? Color { get; set; }
 
+    [Parameter]
+    public bool Locked { get; set; }
+
     private Drawn _drawn;
 
     private string? ColorOverride =>
@@ -57,7 +61,18 @@ public partial class EdgeView
     }
 
     private Drawn Current() =>
-        new(EdgeId, RoutingStyle, From, To, PathData, IsSelected, SourceArrow, TargetArrow, Color);
+        new(
+            EdgeId,
+            RoutingStyle,
+            From,
+            To,
+            PathData,
+            IsSelected,
+            SourceArrow,
+            TargetArrow,
+            Color,
+            Locked
+        );
 
     private static string? MarkerUrl(ArrowStyle arrow) =>
         arrow == ArrowStyle.None ? null : "url(#edge-arrow)";
@@ -71,6 +86,7 @@ public partial class EdgeView
         bool IsSelected,
         ArrowStyle SourceArrow,
         ArrowStyle TargetArrow,
-        string? Color
+        string? Color,
+        bool Locked
     );
 }

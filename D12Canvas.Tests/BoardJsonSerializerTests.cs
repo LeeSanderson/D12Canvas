@@ -1020,6 +1020,97 @@ public class BoardJsonSerializerTests
         );
         Assert.Equal("no-such-type", exception.Key);
     }
+
+    [Fact]
+    public void ABoardWithNothingLockedWritesNoLockedFieldAndReserialisesByteIdentically()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var instance = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10)
+        );
+        board.AddComponent(instance);
+        board.AddEdge(
+            new Edge(new PortEndpoint(instance.Id, PortId.Right), new FloatingEndpoint(200, 40))
+        );
+
+        var json = serializer.Serialize(board);
+
+        Assert.DoesNotContain("Locked", json);
+        Assert.Equal(json, serializer.Serialize(serializer.Deserialize(json)));
+        Assert.Equal(json, serializer.Serialize(serializer.DeserializePartial(json).Board));
+    }
+
+    [Fact]
+    public void ABoardSavedWithoutTheLockedFieldLoadsUnlocked()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [
+                {
+                  "Id": "11111111-1111-1111-1111-111111111111",
+                  "ComponentTypeKey": "test-props",
+                  "Props": {},
+                  "Bounds": { "X": 0, "Y": 0, "Width": 10, "Height": 10 },
+                  "ZIndex": 0
+                }
+              ],
+              "Edges": [
+                {
+                  "Id": "88888888-8888-8888-8888-888888888888",
+                  "Source": { "ComponentId": null, "PortId": null, "X": 1, "Y": 2 },
+                  "Target": { "ComponentId": null, "PortId": null, "X": 3, "Y": 4 }
+                }
+              ]
+            }
+            """;
+
+        var restored = serializer.Deserialize(json);
+
+        Assert.False(restored.Components.Single().Locked);
+        Assert.False(restored.Edges.Single().Locked);
+    }
+
+    [Fact]
+    public void ALockedInstanceAndEdgeRoundTripThroughBothLoadPaths()
+    {
+        var serializer = new BoardJsonSerializer(BuildRegistry());
+        var board = new Board();
+        var instance = new ComponentInstance(
+            TestComponentKey,
+            new TestProps(),
+            new Bounds(0, 0, 10, 10),
+            locked: true
+        );
+        board.AddComponent(instance);
+        var edge = new Edge(new FloatingEndpoint(0, 0), new FloatingEndpoint(100, 0), locked: true);
+        board.AddEdge(edge);
+
+        var json = serializer.Serialize(board);
+
+        using var document = JsonDocument.Parse(json);
+        Assert.True(
+            document.RootElement.GetProperty("Components")[0].GetProperty("Locked").GetBoolean()
+        );
+        Assert.True(
+            document.RootElement.GetProperty("Edges")[0].GetProperty("Locked").GetBoolean()
+        );
+        foreach (
+            var restored in new[]
+            {
+                serializer.Deserialize(json),
+                serializer.DeserializePartial(json).Board,
+            }
+        )
+        {
+            Assert.True(restored.GetComponent(instance.Id)!.Locked);
+            Assert.True(restored.GetEdge(edge.Id)!.Locked);
+        }
+    }
 }
 
 internal sealed record OtherTestProps(int Value = 0);

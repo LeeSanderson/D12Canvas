@@ -62,7 +62,8 @@
                                       IsSelected="@IsEdgeSelected(edge.Id)"
                                       SourceArrow="edge.SourceArrow"
                                       TargetArrow="edge.TargetArrow"
-                                      Color="@edge.Color" />
+                                      Color="@edge.Color"
+                                      Locked="edge.Locked" />
                         }
                     }
                 }
@@ -80,7 +81,8 @@
                     {
                         var labelRegistration = Registry.Resolve(edge.Label!.ComponentTypeKey);
                         <div @key="@($"{edge.Id}-label")" class="edge-label" style="@labelStyle"
-                             data-d12-role="@HitRole.EdgeLabel" data-d12-entity="@edge.Id">
+                             data-d12-role="@HitRole.EdgeLabel" data-d12-entity="@edge.Id"
+                             data-d12-locked="@(edge.Locked ? "true" : null)">
                             <CascadingValue Value="edge.Label.Id" Name="InstanceId">
                                 <DynamicComponent @ref="_mountedLabels[edge.Id]" Type="labelRegistration.ComponentType" Parameters="ComponentParameters(BoundProps(edge.Label, labelRegistration))" />
                             </CascadingValue>
@@ -107,7 +109,8 @@
                         {
                             <div @key="instance.Id"
                                  class="lod-placeholder"
-                                 data-d12-role="@(HasHitRegion(instance.Id) ? HitRole.Instance : null)" data-d12-entity="@instance.Id"
+                                 data-d12-role="@(IsOnBoard(instance.Id) ? HitRole.Instance : null)" data-d12-entity="@instance.Id"
+                                 data-d12-locked="@(instance.Locked ? "true" : null)"
                                  style="@LodPlaceholderStyle(stop.Bounds, instance.ZIndex)"
                                  aria-hidden="true">
                                 @if (!string.IsNullOrEmpty(registration.Icon))
@@ -122,7 +125,8 @@
                             var boundProps = BoundProps(instance, registration);
                             <ComponentContainer @key="instance.Id"
                                                 EntityId="instance.Id"
-                                                HasHitRegion="@HasHitRegion(instance.Id)"
+                                                Locked="instance.Locked"
+                                                HasHitMarker="@IsOnBoard(instance.Id)"
                                                 X="stop.Bounds.X"
                                                 Y="stop.Bounds.Y"
                                                 Width="stop.Bounds.Width"
@@ -212,7 +216,8 @@
                     {
                         <circle @key="@($"{floating.Edge.Id}-{(floating.IsSource ? "source" : "target")}")"
                                 cx="@floating.X" cy="@floating.Y" r="6" class="floating-endpoint"
-                                data-d12-role="@HitRole.EdgeEndpoint" data-d12-entity="@floating.Edge.Id" data-d12-part="@(floating.IsSource ? "source" : "target")"></circle>
+                                data-d12-role="@HitRole.EdgeEndpoint" data-d12-entity="@floating.Edge.Id" data-d12-part="@(floating.IsSource ? "source" : "target")"
+                                data-d12-locked="@(floating.Edge.Locked ? "true" : null)"></circle>
                     }
                 }
                 @if (PendingEdgeRoute() is { } pendingRoute)
@@ -235,17 +240,19 @@
             {
                 @* The box is a solid hit target: a press anywhere inside the multi-selection's
                    bounds lands on it rather than on whatever sits beneath, and moves the whole
-                   selection. A press on one of its handles resizes the selection instead. *@
-                <div class="selection-bounding-box" style="@SelectionBoundingBoxStyle"
-                     data-d12-role="@HitRole.SelectionBounds">
-                    <div class="group-resize-handle top-left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top-left"></div>
-                    <div class="group-resize-handle top" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top"></div>
-                    <div class="group-resize-handle top-right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="top-right"></div>
-                    <div class="group-resize-handle right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="right"></div>
-                    <div class="group-resize-handle bottom-right" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom-right"></div>
-                    <div class="group-resize-handle bottom" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom"></div>
-                    <div class="group-resize-handle bottom-left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="bottom-left"></div>
-                    <div class="group-resize-handle left" data-d12-role="@HitRole.SelectionHandle" data-d12-part="left"></div>
+                   selection. A press on one of its handles resizes the selection instead. A
+                   selection with nothing unlocked in it takes no primary press, so its box and
+                   handles are unmarked and its handles hidden. *@
+                <div class="@SelectionBoxCssClass" style="@SelectionBoundingBoxStyle"
+                     data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionBounds : null)">
+                    <div class="group-resize-handle top-left" data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionHandle : null)" data-d12-part="top-left"></div>
+                    <div class="group-resize-handle top" data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionHandle : null)" data-d12-part="top"></div>
+                    <div class="group-resize-handle top-right" data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionHandle : null)" data-d12-part="top-right"></div>
+                    <div class="group-resize-handle right" data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionHandle : null)" data-d12-part="right"></div>
+                    <div class="group-resize-handle bottom-right" data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionHandle : null)" data-d12-part="bottom-right"></div>
+                    <div class="group-resize-handle bottom" data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionHandle : null)" data-d12-part="bottom"></div>
+                    <div class="group-resize-handle bottom-left" data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionHandle : null)" data-d12-part="bottom-left"></div>
+                    <div class="group-resize-handle left" data-d12-role="@(SelectionTakesPresses ? HitRole.SelectionHandle : null)" data-d12-part="left"></div>
                 </div>
             }
             </div>
@@ -394,6 +401,10 @@
     .edge-tab-stop:focus-visible:not([aria-selected="true"]) {
         outline: 2px dashed var(--d12-accent);
         outline-offset: 6px;
+    }
+
+    .selection-bounding-box.locked .group-resize-handle {
+        display: none;
     }
 
     .group-resize-handle {

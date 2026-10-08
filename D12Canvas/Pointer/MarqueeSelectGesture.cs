@@ -9,7 +9,8 @@ namespace D12Canvas.Pointer;
 // be collected across several sweeps. With no group entered an edge comes along by closure rather
 // than by geometry: it is taken when each of its ends is attached to a component the band swept,
 // a swept group's members included, or floats inside the band. Inside an entered group the
-// selection holds members only, so no edge is taken. A release below the threshold is the click
+// selection holds members only, so no edge is taken. Nothing locked is taken, an instance or an
+// edge, so a locked end leaves its edge behind too. A release below the threshold is the click
 // on empty canvas: it clears the selection and nothing else.
 internal sealed class MarqueeSelectGesture : PointerGesture
 {
@@ -38,7 +39,8 @@ internal sealed class MarqueeSelectGesture : PointerGesture
             .ToHashSet();
         var closed = (Context.HasEnteredGroup ? [] : board?.Edges ?? [])
             .Where(edge =>
-                IsClosedOver(board!, edge.Source, swept, band)
+                Context.HasHitRegion(edge.Id)
+                && IsClosedOver(board!, edge.Source, swept, band)
                 && IsClosedOver(board!, edge.Target, swept, band)
             )
             .Select(edge => edge.Id);

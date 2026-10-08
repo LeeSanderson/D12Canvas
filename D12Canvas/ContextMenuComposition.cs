@@ -38,6 +38,7 @@ internal static class ContextMenuComposition
     private static readonly Chord CopyChord = new("C", Primary: true);
     private static readonly Chord PasteChord = new("V", Primary: true);
     private static readonly Chord DuplicateChord = new("D", Primary: true);
+    private static readonly Chord LockChord = new("L", Primary: true, Shift: true);
 
     private static readonly IReadOnlyList<IReadOnlyList<RowDefinition>> Sections =
     [
@@ -62,7 +63,7 @@ internal static class ContextMenuComposition
                 DuplicateChord
             ),
         ],
-        [Row(ContextMenuCommand.Delete, "Delete", OnObject, DeleteChord)],
+        [Row(ContextMenuCommand.Delete, "Delete", c => OnObject(c) && c.CanDelete, DeleteChord)],
         [
             Row(
                 ContextMenuCommand.SelectAll,
@@ -99,6 +100,15 @@ internal static class ContextMenuComposition
             Row(ContextMenuCommand.SendToBack, "Send to Back", CanArrange, SendToBackChord),
         ],
         [
+            Row(ContextMenuCommand.Lock, "Lock", c => OnObject(c) && !c.SelectionLocked, LockChord),
+            Row(
+                ContextMenuCommand.Unlock,
+                "Unlock",
+                c => OnObject(c) && c.SelectionLocked,
+                LockChord
+            ),
+        ],
+        [
             new RowDefinition(
                 ContextMenuCommand.ToggleSnapToGrid,
                 OnCanvas,
@@ -114,6 +124,7 @@ internal static class ContextMenuComposition
                 c => c.ObjectSnapping
             ),
         ],
+        [Unhinted(ContextMenuCommand.UnlockAll, "Unlock All", c => OnCanvas(c) && c.CanUnlockAll)],
         [
             Unhinted(ContextMenuCommand.ChooseImage, "Choose image…", CanChangePicture),
             Unhinted(ContextMenuCommand.RemoveImage, "Remove image", CanChangePicture),

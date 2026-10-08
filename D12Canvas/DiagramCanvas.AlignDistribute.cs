@@ -4,7 +4,9 @@ using D12Canvas.Model;
 namespace D12Canvas;
 
 // The selection is read unexpanded, so a selected group is one box with one delta that every
-// member below it shares, and its own arrangement survives. Edges are not part of it.
+// member below it shares, and its own arrangement survives. Edges are not part of it. Each entity
+// is measured by the box of its unlocked instances, which are all a delta moves, so a fully locked
+// one is left out and counts toward no threshold.
 public partial class DiagramCanvas
 {
     public void OnAlignLeftPressed() => AlignSelection(AlignEdge.Left);
@@ -41,9 +43,7 @@ public partial class DiagramCanvas
         var commands = new List<ICommand>();
         foreach (var delta in arrange(ArrangeableSelection()))
         {
-            var leaves = new HashSet<Guid>();
-            ExpandInto(delta.Id, leaves);
-            foreach (var leaf in leaves.Select(Board.GetComponent).OfType<ComponentInstance>())
+            foreach (var leaf in UnlockedLeavesOf(delta.Id))
             {
                 var before = leaf.Bounds;
                 var after = before with { X = before.X + delta.Dx, Y = before.Y + delta.Dy };
@@ -70,17 +70,23 @@ public partial class DiagramCanvas
         var entities = new List<ArrangedEntity>();
         foreach (var id in _selectedInstanceIds)
         {
-            var bounds =
-                Board.GetComponent(id) is { } instance ? instance.Bounds
-                : Board.GetGroup(id) is { } group ? Board.GetBounds(group)
-                : null;
-            if (bounds is { } box)
+            if (Bounds.Union(UnlockedLeavesOf(id).Select(leaf => leaf.Bounds)) is { } box)
             {
                 entities.Add(new ArrangedEntity(id, box));
             }
         }
 
         return entities;
+    }
+
+    private IEnumerable<ComponentInstance> UnlockedLeavesOf(Guid id)
+    {
+        var leaves = new HashSet<Guid>();
+        ExpandInto(id, leaves);
+        return leaves
+            .Select(Board!.GetComponent)
+            .OfType<ComponentInstance>()
+            .Where(leaf => !leaf.Locked);
     }
 
     private double? SnapSpacing => SnapToGrid ? DominantGridSpacing() : null;
