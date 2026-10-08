@@ -400,7 +400,7 @@ public class DiagramCanvasClipboardTests : ComponentTestBase
     }
 
     [Fact]
-    public async Task TheObjectMenuLeadsWithCutCopyAndPaste()
+    public async Task TheObjectMenuLeadsWithCutCopyPasteAndDuplicate()
     {
         ReportPlatform(applePlatform: false, asyncClipboard: true);
         var board = new Board();
@@ -409,7 +409,7 @@ public class DiagramCanvasClipboardTests : ComponentTestBase
 
         await OpenObjectMenu(canvas, shape);
 
-        Assert.Equal(["Cut", "Copy", "Paste", "Delete"], MenuLabels(canvas).Take(4));
+        Assert.Equal(["Cut", "Copy", "Paste", "Duplicate", "Delete"], MenuLabels(canvas).Take(5));
     }
 
     [Fact]

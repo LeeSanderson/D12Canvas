@@ -90,7 +90,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     // reverting/reapplying).
     public event EventHandler? SelectionChanged;
 
-    private void NotifySelectionChanged() => SelectionChanged?.Invoke(this, EventArgs.Empty);
+    private void NotifySelectionChanged()
+    {
+        _duplicateRun.SelectionChanged(_selectedInstanceIds, _selectedEdgeIds);
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     // Re-exposes CommandHistory.Changed for host/chrome code (e.g. a Save button's
     // disabled-when-clean state) - same "internal signal re-raised as a public event" shape as
@@ -100,6 +104,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void OnHistoryChanged(object? sender, EventArgs e)
     {
         ReconcileEnteredGroups();
+        _duplicateRun.BoardChanged(id =>
+            Board?.GetComponent(id) is not null
+            || Board?.GetGroup(id) is not null
+            || Board?.GetEdge(id) is not null
+        );
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -282,6 +291,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             _previousBoard = Board;
             CancelActiveGesture(restoreSelection: false);
             _enteredGroupIds.Clear();
+            _duplicateRun.End();
         }
     }
 
@@ -1710,6 +1720,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         Action action = command switch
         {
+            ContextMenuCommand.Duplicate => OnDuplicatePressed,
             ContextMenuCommand.Delete => OnDeletePressed,
             ContextMenuCommand.Group => OnGroupPressed,
             ContextMenuCommand.Ungroup => OnUngroupPressed,

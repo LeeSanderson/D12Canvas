@@ -13,6 +13,7 @@ public enum ContextMenuCommand
     Cut,
     Copy,
     Paste,
+    Duplicate,
     Delete,
     Group,
     Ungroup,

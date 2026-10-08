@@ -4,12 +4,12 @@
 
 **Blocked by:** 95 (System clipboard)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Ctrl+D with something copied earlier leaves the clipboard untouched
-- [ ] Ctrl+D, drag the copy somewhere, Ctrl+D again lands the third at the same offset again, even off-grid
-- [ ] Clicking elsewhere and pressing Ctrl+D starts a fresh run at +20,+20
-- [ ] The duplicate is selected and focus does not move to it (no inline edit opens)
-- [ ] The Duplicate menu row works and shows its chord
-- [ ] Pure C# tests for the run's offset rule; bUnit for the keydown and menu routes
-- [ ] `CONTEXT.md`'s `Duplicate run` term describes what shipped
+- [x] Ctrl+D with something copied earlier leaves the clipboard untouched
+- [x] Ctrl+D, drag the copy somewhere, Ctrl+D again lands the third at the same offset again, even off-grid
+- [x] Clicking elsewhere and pressing Ctrl+D starts a fresh run at +20,+20
+- [x] The duplicate is selected and focus does not move to it (no inline edit opens)
+- [x] The Duplicate menu row works and shows its chord
+- [x] Pure C# tests for the run's offset rule; bUnit for the keydown and menu routes
+- [x] `CONTEXT.md`'s `Duplicate run` term describes what shipped

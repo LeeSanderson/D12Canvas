@@ -41,6 +41,7 @@ public sealed class ContextMenuProbes(PlaywrightFixture playwright, DemoAppFixtu
                     "Ctrl+X",
                     "Ctrl+C",
                     "Ctrl+V",
+                    "Ctrl+D",
                     "Delete",
                     "Ctrl+Shift+]",
                     "Ctrl+]",

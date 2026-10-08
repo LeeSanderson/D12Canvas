@@ -503,8 +503,8 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
 
         await RightClickEdge(canvas, edge);
 
-        Assert.Equal(["Delete"], Labels(canvas));
-        Assert.Empty(canvas.FindAll(".d12-context-menu-separator"));
+        Assert.Equal(["Duplicate", "Delete"], Labels(canvas));
+        Assert.Single(canvas.FindAll(".d12-context-menu-separator"));
     }
 
     [Fact]

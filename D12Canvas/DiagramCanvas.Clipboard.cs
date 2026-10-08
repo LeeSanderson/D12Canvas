@@ -120,11 +120,7 @@ public partial class DiagramCanvas
             var step = _pasteCascade.OffsetFor((left, top));
             BoardFragment.Translate(read.Fragment, left + step - extent.X, top + step - extent.Y);
 
-            var placement = BoardFragment.PlaceOnto(Board, read.Fragment);
-            _history.Do(placement.Command);
-            _contextMenu = null;
-            StepOutWhile(_ => true);
-            SetSelection(placement.TopLevelIds, placement.EdgeIds);
+            var placement = Place(read.Fragment);
             warnings.AddRange(
                 placement.RejectedAssetIds.Select(id => new BoardDeserializeWarning(
                     id,
@@ -139,6 +135,18 @@ public partial class DiagramCanvas
         }
 
         StateHasChanged();
+    }
+
+    // What was placed becomes the selection at the board's top level, since the fragment's
+    // groups and instances are added there.
+    private BoardFragment.Placement Place(Board fragment)
+    {
+        var placement = BoardFragment.PlaceOnto(Board!, fragment);
+        _history.Do(placement.Command);
+        _contextMenu = null;
+        StepOutWhile(_ => true);
+        SetSelection(placement.TopLevelIds, placement.EdgeIds);
+        return placement;
     }
 
     private (double X, double Y) ViewportCentre()

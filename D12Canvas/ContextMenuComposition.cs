@@ -34,6 +34,7 @@ internal static class ContextMenuComposition
     private static readonly Chord CutChord = new("X", Primary: true);
     private static readonly Chord CopyChord = new("C", Primary: true);
     private static readonly Chord PasteChord = new("V", Primary: true);
+    private static readonly Chord DuplicateChord = new("D", Primary: true);
 
     private static readonly IReadOnlyList<IReadOnlyList<RowDefinition>> Sections =
     [
@@ -51,6 +52,12 @@ internal static class ContextMenuComposition
                 CopyChord
             ),
             Row(ContextMenuCommand.Paste, "Paste", c => c.AsyncClipboard, PasteChord),
+            Row(
+                ContextMenuCommand.Duplicate,
+                "Duplicate",
+                c => OnObject(c) && c.CanCopy,
+                DuplicateChord
+            ),
         ],
         [Row(ContextMenuCommand.Delete, "Delete", OnObject, DeleteChord)],
         [
