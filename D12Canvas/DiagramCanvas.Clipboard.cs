@@ -97,10 +97,6 @@ public partial class DiagramCanvas
         return fragment.Components.Count == 0 && fragment.Edges.Count == 0 ? null : fragment;
     }
 
-    // The fragment is centred on the anchor and moved as one body, its top-left on the grid when
-    // snapping is on. A repeat that would land on the same spot lands one cascade step further
-    // along, which is measured after snapping so a pointer nudged within one grid cell still
-    // cascades. What was pasted becomes the selection, at the board's top level.
     private void Paste(string text, (double X, double Y) anchor)
     {
         if (Board is null || PressOwnsBoard)
@@ -108,19 +104,30 @@ public partial class DiagramCanvas
             return;
         }
 
-        if (ClipboardPayload.From(text, Serializer, Registry) is not { } read)
+        if (ClipboardPayload.From(text, Serializer, Registry) is { } read)
         {
-            return;
+            PasteFragment(read.Fragment, anchor, read.Warnings);
         }
+    }
 
-        var warnings = read.Warnings.ToList();
-        if (BoardFragment.Extent(read.Fragment) is { } extent)
+    // The fragment is centred on the anchor and moved as one body, its top-left on the grid when
+    // snapping is on. A repeat that would land on the same spot lands one cascade step further
+    // along, which is measured after snapping so a pointer nudged within one grid cell still
+    // cascades. What was pasted becomes the selection, at the board's top level.
+    private void PasteFragment(
+        Board fragment,
+        (double X, double Y) anchor,
+        IEnumerable<BoardDeserializeWarning> readWarnings
+    )
+    {
+        var warnings = readWarnings.ToList();
+        if (BoardFragment.Extent(fragment) is { } extent)
         {
             var (left, top) = SnapPoint(anchor.X - extent.Width / 2, anchor.Y - extent.Height / 2);
             var step = _pasteCascade.OffsetFor((left, top));
-            BoardFragment.Translate(read.Fragment, left + step - extent.X, top + step - extent.Y);
+            BoardFragment.Translate(fragment, left + step - extent.X, top + step - extent.Y);
 
-            var placement = Place(read.Fragment);
+            var placement = Place(fragment);
             warnings.AddRange(
                 placement.RejectedAssetIds.Select(id => new BoardDeserializeWarning(
                     id,
@@ -185,6 +192,13 @@ public partial class DiagramCanvas
         }
 
         var anchor = MenuPasteAnchor(menu);
+        var images = await _jsModule.InvokeAsync<HeldImage[]>("readClipboardImages");
+        if (images.Length > 0)
+        {
+            await PasteImages(images, anchor);
+            return;
+        }
+
         if (await _jsModule.InvokeAsync<string?>("readClipboardText") is { } text)
         {
             Paste(text, anchor);

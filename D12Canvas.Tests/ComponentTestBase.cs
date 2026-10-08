@@ -1,6 +1,7 @@
 using Bunit;
 using D12Canvas.Registration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 using Xunit;
 
 namespace D12Canvas.Tests;
@@ -79,6 +80,8 @@ public abstract class ComponentTestBase : BunitContext
         SetupDisposableCleanupHandle(module, "addKeyboardListener");
         SetupDisposableCleanupHandle(module, "addWheelListener");
         SetupDisposableCleanupHandle(module, "addClipboardListener");
+        SetupDisposableCleanupHandle(module, "addFileDropListener");
+        module.Setup<HeldImage[]>("readClipboardImages", _ => true).SetResult([]);
         PointerListener = SetupDisposableCleanupHandle(module, "addPointerListener");
         PointerListener.SetupVoid("promote", _ => true).SetVoidResult();
 
@@ -97,6 +100,38 @@ public abstract class ComponentTestBase : BunitContext
             .SetResult(new InitialFacts(800, 600, applePlatform, asyncClipboard));
 
     protected BunitJSModuleInterop CanvasModule { get; private set; } = null!;
+
+    // A decoded image file the browser is holding for the module, whose bytes the module hands
+    // over by token.
+    protected static HeldImage HoldImage(
+        BunitJSModuleInterop module,
+        int token,
+        byte[] bytes,
+        double width = 64,
+        double height = 32,
+        string mimeType = "image/png"
+    )
+    {
+        module
+            .Setup<IJSStreamReference>(
+                "takeImageBytes",
+                invocation => Equals(invocation.Arguments[0], token)
+            )
+            .SetResult(new BytesStreamReference(bytes));
+        return new HeldImage(token, mimeType, width, height);
+    }
+
+    private sealed class BytesStreamReference(byte[] bytes) : IJSStreamReference
+    {
+        public long Length => bytes.Length;
+
+        public ValueTask<Stream> OpenReadStreamAsync(
+            long maxAllowedSize = 512000,
+            CancellationToken cancellationToken = default
+        ) => ValueTask.FromResult<Stream>(new MemoryStream(bytes));
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
 
     // The handle the pointer listener returns, for asserting what the canvas tells the listener.
     protected BunitJSModuleInterop PointerListener { get; private set; } = null!;

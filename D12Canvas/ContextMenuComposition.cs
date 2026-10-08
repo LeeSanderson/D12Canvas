@@ -99,6 +99,10 @@ internal static class ContextMenuComposition
                 c => c.ObjectSnapping
             ),
         ],
+        [
+            Unhinted(ContextMenuCommand.ChooseImage, "Choose image…", CanChangePicture),
+            Unhinted(ContextMenuCommand.RemoveImage, "Remove image", CanChangePicture),
+        ],
     ];
 
     public static IReadOnlyList<IReadOnlyList<ContextMenuRow>> Compose(
@@ -131,6 +135,15 @@ internal static class ContextMenuComposition
         Func<ContextMenuContext, bool> isEligible,
         Chord chord
     ) => new(command, isEligible, label, _ => chord, _ => null);
+
+    private static RowDefinition Unhinted(
+        ContextMenuCommand command,
+        string label,
+        Func<ContextMenuContext, bool> isEligible
+    ) => new(command, isEligible, label, _ => null, _ => null);
+
+    private static bool CanChangePicture(ContextMenuContext context) =>
+        OnObject(context) && context.CanChangePicture;
 
     private static bool OnObject(ContextMenuContext context) =>
         context.Set == ContextMenuSet.Object;

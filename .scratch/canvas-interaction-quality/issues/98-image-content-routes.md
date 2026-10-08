@@ -4,13 +4,15 @@
 
 **Blocked by:** 95 (System clipboard)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Choose file in the panel fills the selected empty image and keeps its box; Remove image returns it to the placeholder; both undo
-- [ ] Dropping a PNG onto an empty image fills it; dropping it on canvas creates an image at the picture's pixel size, bounded to half the viewport
-- [ ] Dropping two files on canvas creates two cascaded images in one history entry
-- [ ] Pasting a bitmap from the clipboard creates a new image even when an empty image is selected
-- [ ] Pasting the same picture twice stores its bytes once
-- [ ] The two rows appear only when every selected entity is an image
-- [ ] A demo page shows the empty-image placeholder on a dark board for the visual suite; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Empty image` term describes what shipped
+- [x] Choose file in the panel fills the selected empty image and keeps its box; Remove image returns it to the placeholder; both undo
+- [x] Dropping a PNG onto an empty image fills it; dropping it on canvas creates an image at the picture's pixel size, bounded to half the viewport
+- [x] Dropping two files on canvas creates two cascaded images in one history entry
+- [x] Pasting a bitmap from the clipboard creates a new image even when an empty image is selected
+- [x] Pasting the same picture twice stores its bytes once
+- [x] The two rows appear only when every selected entity is an image
+- [x] A demo page shows the empty-image placeholder on a dark board for the visual suite; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Empty image` term describes what shipped
+
+Not done here: the panel editor shows the first selected image's state rather than a mixed indicator when the selected images hold different pictures; that waits for the mixed-values work (ticket 108). No locking exists yet, so "unlocked" is not checked on a drop.

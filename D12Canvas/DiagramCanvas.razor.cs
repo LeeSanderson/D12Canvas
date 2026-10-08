@@ -353,6 +353,14 @@ public partial class DiagramCanvas : IAsyncDisposable
                     _dotNetObjectRef
                 )
             );
+            _cleanupHandles.Add(
+                await _jsModule.InvokeAsync<IJSObjectReference>(
+                    "addFileDropListener",
+                    CanvasElement,
+                    ContainerElement,
+                    _dotNetObjectRef
+                )
+            );
 
             StateHasChanged();
         }
@@ -1619,7 +1627,8 @@ public partial class DiagramCanvas : IAsyncDisposable
             ApplePlatform: _applePlatform,
             CanCopy: CanCopySelection,
             CanCut: CanCopySelection,
-            AsyncClipboard: _asyncClipboard
+            AsyncClipboard: _asyncClipboard,
+            CanChangePicture: CanChangePicture
         );
 
     // Same eligibility OnGroupPressed itself already guards on (2+ sibling entries) - kept as its
@@ -1726,6 +1735,12 @@ public partial class DiagramCanvas : IAsyncDisposable
                     await PasteFromMenu(menu);
                 }
 
+                return;
+            case ContextMenuCommand.ChooseImage:
+                await ChoosePictureFromMenu();
+                return;
+            case ContextMenuCommand.RemoveImage:
+                SetPictureOfSelectedImages("");
                 return;
         }
 

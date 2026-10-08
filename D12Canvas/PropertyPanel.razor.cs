@@ -188,7 +188,11 @@ public partial class PropertyPanel : IDisposable
     // closed over this same field - Commit directly, not via CommitEdit, since a Custom editor's
     // value is already CLR-typed and needs no ChangeEventArgs/ConvertValue parsing.
     private CustomEditorContext CustomContext(PanelField field) =>
-        new(FirstTargetValue(field), newValue => Commit(field, newValue));
+        new(
+            FirstTargetValue(field),
+            newValue => Commit(field, newValue),
+            Canvas?.Board is { } board ? board.AddAsset : null
+        );
 
     private static string FormatValue(object? value) =>
         value switch

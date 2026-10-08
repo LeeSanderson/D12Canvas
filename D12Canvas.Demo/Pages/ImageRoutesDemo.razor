@@ -1,0 +1,65 @@
+@page "/image-routes-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Image Routes Demo</PageTitle>
+
+<div class="image-routes-layout" data-d12-theme="dark">
+    <div class="image-routes-canvas">
+        <DiagramCanvas @ref="_canvas" Board="_board" />
+    </div>
+    <div class="image-routes-panel">
+        <PropertyPanel Canvas="_canvas" />
+    </div>
+</div>
+
+<style>
+    .image-routes-layout {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .image-routes-canvas {
+        width: 620px;
+        height: 480px;
+    }
+
+    .image-routes-panel {
+        width: 260px;
+    }
+</style>
+
+@code {
+    // An empty image beside one holding a 160x80 picture, on a dark board with the property panel.
+    public const string PictureBase64 =
+        "iVBORw0KGgoAAAANSUhEUgAAAKAAAABQCAIAAAARP+ljAAAAlUlEQVR42u3RQQ0AAAjEsBODO3TjAxO8SJMpWDPVelwsACzAAizAAizAAgxYgAVYgAVYgAUYsAALsAALsAALsAADFmABFmABFmABBizAAizAAizAAgxYgAVYgAVYgAVYgAELsAALsAALsAADFmABFmABFmABBuwCYAEWYAEWYAEWYMACLMACLMACLMCABViABViAddUCswasOfQDXTgAAAAASUVORK5CYII=";
+
+    private static readonly Guid EmptyImageId = Guid.Parse("f0000000-0000-0000-0000-000000000001");
+    private static readonly Guid FilledImageId = Guid.Parse("f0000000-0000-0000-0000-000000000002");
+
+    private readonly Board _board = SeedBoard();
+    private DiagramCanvas? _canvas;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("image", new ImageProps("", "", "cover"), new Bounds(40, 60, 240, 180), id: EmptyImageId)
+        );
+        var picture = board.AddAsset(Convert.FromBase64String(PictureBase64), "image/png");
+        board.AddComponent(
+            new ComponentInstance("image", new ImageProps(picture, "A pink block", "cover"), new Bounds(340, 60, 240, 180), id: FilledImageId)
+        );
+        return board;
+    }
+}

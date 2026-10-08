@@ -1,3 +1,7 @@
+import { holdImages, takeImageBytes, chooseImageFile } from "./imageFiles.js";
+
+export { takeImageBytes, chooseImageFile };
+
 export async function getContainerDimensions(element) {
     const rect = element.getBoundingClientRect();
     return {
@@ -915,8 +919,24 @@ export function addClipboardListener(container, canvas, dotnetRef) {
         }
     };
 
+    // A bitmap on the clipboard wins over any text beside it, which for a copied picture is
+    // usually its address or markup rather than anything worth a text shape.
     const handlePaste = (event) => {
         if (!clipboardEventReachesCanvas(container) || event.clipboardData === null) {
+            return;
+        }
+
+        const anchor = pointer;
+        const images = Array.from(event.clipboardData.files).filter((file) =>
+            file.type.startsWith("image/")
+        );
+        if (images.length > 0) {
+            event.preventDefault();
+            holdImages(images).then((held) => {
+                if (held.length > 0) {
+                    dotnetRef.invokeMethodAsync("OnImagesPasted", held, anchor?.x ?? null, anchor?.y ?? null);
+                }
+            });
             return;
         }
 
@@ -926,7 +946,7 @@ export function addClipboardListener(container, canvas, dotnetRef) {
         }
 
         event.preventDefault();
-        dotnetRef.invokeMethodAsync("OnPasteReceived", text, pointer?.x ?? null, pointer?.y ?? null);
+        dotnetRef.invokeMethodAsync("OnPasteReceived", text, anchor?.x ?? null, anchor?.y ?? null);
     };
 
     canvas.addEventListener("pointermove", trackPointer);
@@ -955,6 +975,61 @@ export async function writeClipboardText(text) {
     } catch {
         return false;
     }
+}
+
+export async function readClipboardImages() {
+    try {
+        const blobs = [];
+        for (const item of await navigator.clipboard.read()) {
+            const type = item.types.find((candidate) => candidate.startsWith("image/"));
+            if (type !== undefined) {
+                blobs.push(await item.getType(type));
+            }
+        }
+
+        return await holdImages(blobs);
+    } catch {
+        return [];
+    }
+}
+
+// A file dragged in from outside the page carries "Files" in its types, which a palette drag never
+// does, so the palette's own drop path is left alone. The browser's default for a file drop, which
+// would navigate away to the file, is already prevented on the canvas. The entities under the drop
+// point go along topmost first, so .NET can tell whether an empty image is what the file landed on.
+export function addFileDropListener(canvas, container, dotnetRef) {
+    const carriesFiles = (event) => event.dataTransfer?.types.includes("Files") ?? false;
+
+    const handleDrop = (event) => {
+        if (!carriesFiles(event)) {
+            return;
+        }
+
+        const rect = container.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const hits = [];
+        for (const element of document.elementsFromPoint(event.clientX, event.clientY)) {
+            const entity = container.contains(element)
+                ? element.closest("[data-d12-entity]")?.getAttribute("data-d12-entity")
+                : null;
+            if (entity && !hits.includes(entity)) {
+                hits.push(entity);
+            }
+        }
+
+        holdImages(Array.from(event.dataTransfer.files)).then((held) => {
+            if (held.length > 0) {
+                dotnetRef.invokeMethodAsync("OnImageFilesDropped", held, x, y, hits);
+            }
+        });
+    };
+
+    canvas.addEventListener("drop", handleDrop);
+
+    return {
+        dispose: () => canvas.removeEventListener("drop", handleDrop)
+    };
 }
 
 export async function readClipboardText() {

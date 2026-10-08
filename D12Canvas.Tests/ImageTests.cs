@@ -33,6 +33,17 @@ public class ImageTests : ComponentTestBase
     }
 
     [Fact]
+    public void ThePlaceholderPaintsFromTheCanvasThemeTokens()
+    {
+        var image = Render<Image>();
+
+        var placeholder = ExtractBlock(StyleBlockText(image), ".d12-image-placeholder");
+        Assert.Contains("background-color: var(--d12-surface)", placeholder);
+        Assert.Contains("border: 1px dashed var(--d12-border)", placeholder);
+        Assert.Contains("color: var(--d12-muted-text)", placeholder);
+    }
+
+    [Fact]
     public void RendersPlaceholderWhenImageFailsToLoad()
     {
         var image = Render<Image>(parameters =>

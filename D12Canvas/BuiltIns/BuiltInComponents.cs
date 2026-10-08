@@ -1,3 +1,4 @@
+using D12Canvas.Panel;
 using D12Canvas.Registration;
 
 namespace D12Canvas.BuiltIns;
@@ -50,7 +51,7 @@ internal static class BuiltInComponents
         );
 
         options.RegisterComponent<Image, ImageProps>(
-            "image",
+            ImagePicture.ComponentKey,
             builder =>
             {
                 builder.DisplayName = "Image";
@@ -59,6 +60,25 @@ internal static class BuiltInComponents
                 builder.Icon = "🖼️";
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(240, 180);
+                builder.EditableProperties =
+                [
+                    new EditableProperty(
+                        typeof(ImageProps).GetProperty(nameof(ImageProps.Url))!,
+                        EditorKind.Custom,
+                        CustomEditor: context =>
+                            builder =>
+                            {
+                                builder.OpenComponent<ImagePictureEditor>(0);
+                                builder.AddComponentParameter(
+                                    1,
+                                    nameof(ImagePictureEditor.Context),
+                                    context
+                                );
+                                builder.CloseComponent();
+                            }
+                    ),
+                    .. EditablePropertySchema.DiscoverFrom(typeof(ImageProps)),
+                ];
             }
         );
     }

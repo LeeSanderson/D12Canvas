@@ -24,13 +24,15 @@ public enum ContextMenuCommand
     SelectAll,
     ToggleSnapToGrid,
     ToggleObjectSnapping,
+    ChooseImage,
+    RemoveImage,
 }
 
 // What DiagramCanvas resolved at the moment a menu opened: everything a row needs to decide
 // whether it is eligible, how it reads and which hint it shows, so the menu itself reads nothing
 // from the board. AsyncClipboard is whether the browser offers the clipboard to a click, which it
 // does only in a secure context; without it the clipboard rows are left out and the keys still
-// work.
+// work. CanChangePicture is whether every selected entity is an image.
 public sealed record ContextMenuContext(
     ContextMenuSet Set,
     bool CanGroup = false,
@@ -43,5 +45,6 @@ public sealed record ContextMenuContext(
     bool ApplePlatform = false,
     bool CanCopy = false,
     bool CanCut = false,
-    bool AsyncClipboard = false
+    bool AsyncClipboard = false,
+    bool CanChangePicture = false
 );
