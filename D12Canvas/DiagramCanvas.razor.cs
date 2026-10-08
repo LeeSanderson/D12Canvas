@@ -189,6 +189,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     private Board? _previousBoard;
     private readonly GesturePreview _preview = new();
 
+    private readonly EdgeRouteCache _routes = new();
+
     // The participants of the live gesture that have been mounted at some point during it, each
     // with the placeholder state it was mounted with. Mounting only grows until release, so an
     // instance carried past the viewport edge stays in the user's hand, and a placeholder never
@@ -285,6 +287,11 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (Board is not null)
+        {
+            _routes.RetainOnly(Board.Edges);
+        }
+
         if (firstRender)
         {
             _jsModule = await JS.InvokeAsync<IJSObjectReference>(
@@ -1644,15 +1651,21 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    private Bounds? EdgeBox(Edge edge) =>
-        EdgeLine(edge) is { } line
-            ? new Bounds(
-                Math.Min(line.From.X, line.To.X),
-                Math.Min(line.From.Y, line.To.Y),
-                Math.Abs(line.To.X - line.From.X),
-                Math.Abs(line.To.Y - line.From.Y)
-            )
-            : null;
+    private Bounds? EdgeBox(Edge edge)
+    {
+        if (RouteOf(edge) is not { } route)
+        {
+            return null;
+        }
+
+        var (left, top) = (route.Points.Min(point => point.X), route.Points.Min(point => point.Y));
+        return new Bounds(
+            left,
+            top,
+            route.Points.Max(point => point.X) - left,
+            route.Points.Max(point => point.Y) - top
+        );
+    }
 
     private void CloseContextMenu()
     {
@@ -2071,9 +2084,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     // has one (a double-press elsewhere on the line never clobbers an existing label; editing it
     // further goes through a double-press on the label itself, not this) or if the edge's own line
     // can't currently be resolved (a dangling endpoint). The new label is a default (empty) Text
-    // instance centered on the edge's current midpoint - Bounds.X/Y are never read again afterwards
-    // (see EdgeLabelStyle), only Width/Height matter, the same "position is always live-derived,
-    // never persisted" trick ports and floating endpoints already rely on.
+    // instance centered halfway along the edge's drawn path - Bounds.X/Y are never read again
+    // afterwards (see EdgeLabelStyle), only Width/Height matter, the same "position is always
+    // live-derived, never persisted" trick ports and floating endpoints already rely on.
     private void AddEdgeLabel(Guid edgeId)
     {
         var edge = Board?.GetEdge(edgeId);
@@ -2082,32 +2095,22 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var line = EdgeLine(edge);
-        if (line is null)
+        if (RouteOf(edge) is not { } route)
         {
             return;
         }
 
-        var (midX, midY) = Midpoint(line.Value.From, line.Value.To);
+        var (midX, midY) = route.LabelAnchor;
         var label = NewCenteredInstance(DefaultEdgeLabelComponentTypeKey, midX, midY);
 
         _history.Do(new ChangeEdgeLabelCommand(edge, before: null, after: label));
         StateHasChanged();
     }
 
-    private static (double X, double Y) Midpoint(
-        (double X, double Y) from,
-        (double X, double Y) to
-    ) => ((from.X + to.X) / 2, (from.Y + to.Y) / 2);
-
-    // An edge label's own rendered box - null when the edge has no label, or (like
-    // EdgeLine) when either endpoint can't currently be resolved. Recomputed every render from the
-    // edge's CURRENT endpoints rather than anything stored on the label itself, so it rides along
-    // for free as either endpoint moves or resizes - the label's own Bounds.X/Y are ignored for
-    // positioning, only Width/Height are read. The anchor is the straight-line midpoint between the
-    // two endpoints regardless of the edge's own RoutingStyle - a reasonable approximation for
-    // Orthogonal/Curved too, not full on-path placement.
-    // While a connector drag carries one of this edge's ends, the label follows the pending line
+    // An edge label's own rendered box - null when the edge has no label, or when either endpoint
+    // can't currently be resolved. Centred halfway along the edge's drawn path, recomputed from
+    // its current route, so the label's own Bounds.X/Y are ignored and only Width/Height are read.
+    // While a connector drag carries one of this edge's ends, the label follows the pending route
     // rather than the edge's committed endpoints, so it doesn't detach and freeze mid-drag.
     private string? EdgeLabelStyle(Edge edge)
     {
@@ -2116,13 +2119,13 @@ public partial class DiagramCanvas : IAsyncDisposable
             return null;
         }
 
-        var line = IsCarried(edge.Id) ? PendingEdgeLine() : EdgeLine(edge);
-        if (line is null)
+        var route = IsCarried(edge.Id) ? PendingEdgeRoute() : RouteOf(edge);
+        if (route is null)
         {
             return null;
         }
 
-        var (midX, midY) = Midpoint(line.Value.From, line.Value.To);
+        var (midX, midY) = route.LabelAnchor;
         var (width, height) = (edge.Label.Bounds.Width, edge.Label.Bounds.Height);
 
         return $"left: {midX - width / 2}px; top: {midY - height / 2}px; width: {width}px; height: {height}px;";
@@ -2592,7 +2595,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // board units - layer 0's spacing, and (at scale 1.0) also its on-screen px spacing, matching
     // the legacy fixed grid's look at the default zoom level.
-    private const double GridBaseSpacing = 20;
+    internal const double GridBaseSpacing = 20;
     private const int GridSpacingStep = 10;
 
     private readonly record struct GridLayer(int Level, double Opacity);
@@ -2701,36 +2704,42 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    // An edge's rendered endpoints, resolved through live geometry on every render - this is
-    // what lets an attached edge follow its instances through a move or resize in flight with no
-    // separate update path. Null (skip rendering) if either endpoint's instance no longer exists.
-    private ((double X, double Y) From, (double X, double Y) To)? EdgeLine(Edge edge)
+    // An edge's current route, resolved through live geometry so an attached edge follows its
+    // instances through a move or resize in flight, and cached on its inputs, so a render that
+    // moved nothing the edge depends on (a pan, a zoom, a drag elsewhere) routes nothing. Null
+    // (skip rendering) if either endpoint's instance no longer exists.
+    private EdgeRoute? RouteOf(Edge edge)
     {
-        if (Board is null)
+        if (Board is null || Live.RouteRequestOf(edge) is not { } request)
         {
             return null;
         }
 
-        var from = Live.ResolveEnd(edge, isSource: true);
-        var to = Live.ResolveEnd(edge, isSource: false);
-
-        return from is null || to is null ? null : (from.Value, to.Value);
+        return _routes.RouteFor(edge.Id, request);
     }
 
-    // The pending edge line a connector drag publishes, from the end that stays put to the
-    // pointer. While it carries an existing edge's end it is the only thing drawing that edge.
-    private ((double X, double Y) From, (double X, double Y) To)? PendingEdgeLine()
+    internal int RoutesComputed => _routes.RoutesComputed;
+
+    // The route a connector drag draws, between the end that stays put and the pointer. A new
+    // edge is straight; a carried end of an existing edge routes in that edge's own style with
+    // the pointer as a floating end, standing in for the edge while it is drawn.
+    private EdgeRoute? PendingEdgeRoute()
     {
         if (Board is null || _preview.PendingEdge is not { } pending)
         {
             return null;
         }
 
-        var from = Live.ResolveEndpoint(
-            pending.Anchor,
-            new FloatingEndpoint(pending.Point.X, pending.Point.Y)
-        );
-        return from is null ? null : (from.Value, pending.Point);
+        var pointer = new FloatingEndpoint(pending.Point.X, pending.Point.Y);
+        var style =
+            pending.EdgeId is { } edgeId && Board.GetEdge(edgeId) is { } edge
+                ? edge.RoutingStyle
+                : EdgeRouting.Straight;
+        var request =
+            style == EdgeRouting.Straight || !pending.IsSource
+                ? Live.RouteRequestBetween(pending.Anchor, pointer, style)
+                : Live.RouteRequestBetween(pointer, pending.Anchor, style);
+        return request is { } routed ? EdgeRouter.Route(routed) : null;
     }
 
     private bool IsEdgeSelected(Guid edgeId) => _selectedEdgeIds.Contains(edgeId);
@@ -2742,50 +2751,6 @@ public partial class DiagramCanvas : IAsyncDisposable
                 ? _selectedEdgeIds.Where(id => id != edgeId)
                 : _selectedEdgeIds.Append(edgeId)
         );
-
-    private string EdgeLineCssClass(Guid edgeId) =>
-        IsEdgeSelected(edgeId) ? "edge-line selected" : "edge-line";
-
-    // Orthogonal/Curved routing needs an SVG <path> (a <line> can only ever be
-    // straight), rendered via a computed `d`. Straight itself stays a plain <line> - see the
-    // markup - so every existing test asserting x1/y1/x2/y2 on a default edge is untouched.
-    private static string EdgePathD(
-        EdgeRouting routing,
-        (double X, double Y) from,
-        (double X, double Y) to
-    )
-    {
-        var f = InvariantPoint(from);
-        var t = InvariantPoint(to);
-        var midX = ((from.X + to.X) / 2).ToString(CultureInfo.InvariantCulture);
-
-        return routing switch
-        {
-            EdgeRouting.Orthogonal => $"M {f.X} {f.Y} L {midX} {f.Y} L {midX} {t.Y} L {t.X} {t.Y}",
-            EdgeRouting.Curved => $"M {f.X} {f.Y} C {midX} {f.Y} {midX} {t.Y} {t.X} {t.Y}",
-            _ => $"M {f.X} {f.Y} L {t.X} {t.Y}",
-        };
-    }
-
-    private static (string X, string Y) InvariantPoint((double X, double Y) point) =>
-        (
-            point.X.ToString(CultureInfo.InvariantCulture),
-            point.Y.ToString(CultureInfo.InvariantCulture)
-        );
-
-    // Which <marker> (if any) an edge endpoint's ArrowStyle resolves to - null omits
-    // the marker-start/marker-end attribute entirely (Blazor's usual null-means-absent attribute
-    // convention, same as aria-selected above). Selected edges use the selected-color marker so an
-    // arrowhead never reads as a mismatched color against its own (now-blue) line.
-    private static string? EdgeMarkerUrl(ArrowStyle arrow, bool selected)
-    {
-        if (arrow == ArrowStyle.None)
-        {
-            return null;
-        }
-
-        return selected ? "url(#edge-arrow-selected)" : "url(#edge-arrow)";
-    }
 
     private bool IsCarried(Guid edgeId) => _preview.PendingEdge?.EdgeId == edgeId;
 

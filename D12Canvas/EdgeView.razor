@@ -1,0 +1,26 @@
+@namespace D12Canvas
+@using D12Canvas.Model
+@using D12Canvas.Pointer
+
+@if (RoutingStyle == EdgeRouting.Straight)
+{
+    <line x1="@From.X" y1="@From.Y" x2="@To.X" y2="@To.Y"
+          class="@LineCssClass"
+          marker-start="@MarkerUrl(SourceArrow)"
+          marker-end="@MarkerUrl(TargetArrow)"
+          aria-selected="@(IsSelected ? "true" : null)" />
+    <line x1="@From.X" y1="@From.Y" x2="@To.X" y2="@To.Y"
+          class="edge-hit"
+          data-d12-role="@HitRole.Edge" data-d12-entity="@EdgeId" />
+}
+else
+{
+    <path d="@PathData"
+          class="@LineCssClass"
+          marker-start="@MarkerUrl(SourceArrow)"
+          marker-end="@MarkerUrl(TargetArrow)"
+          aria-selected="@(IsSelected ? "true" : null)" />
+    <path d="@PathData"
+          class="edge-hit"
+          data-d12-role="@HitRole.Edge" data-d12-entity="@EdgeId" />
+}

@@ -178,6 +178,55 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
     }
 
     [Fact]
+    public void ALabelOnAnOrthogonalEdgeSitsHalfwayAlongItsPathRatherThanAtTheChordMidpoint()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 0, 100);
+        var target = AddInstance(board, 300, 0);
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(source.Id, PortId.Top),
+                new PortEndpoint(target.Id, PortId.Left),
+                routingStyle: EdgeRouting.Orthogonal
+            )
+        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.DoubleClickElement(canvas.Find(".edge-hit"));
+
+        // Up from (25, 100) to (25, 25), then right to (300, 25): 350 long, so halfway is (125, 25).
+        Assert.Equal("M 25 100 L 25 25 L 300 25", canvas.Find(".edge-line").GetAttribute("d"));
+        Assert.Equal(
+            "left: 85px; top: 13px; width: 80px; height: 24px;",
+            canvas.Find(".edge-label").GetAttribute("style")
+        );
+    }
+
+    [Fact]
+    public void ACarriedEndOfAnOrthogonalEdgePreviewsInTheEdgesOwnStyle()
+    {
+        var board = new Board();
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
+        board.AddEdge(
+            new Edge(
+                new PortEndpoint(source.Id, PortId.Right),
+                new PortEndpoint(target.Id, PortId.Left),
+                routingStyle: EdgeRouting.Orthogonal
+            )
+        );
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+
+        canvas.PressPort(source.Id, "Right", (150, 125));
+        canvas.MoveTo((150, 400));
+
+        var preview = canvas.Find(".connector-drag-preview");
+        Assert.Equal("path", preview.TagName, ignoreCase: true);
+        Assert.StartsWith("M 150 400 L 150 ", preview.GetAttribute("d"));
+        Assert.EndsWith(" 125 L 250 125", preview.GetAttribute("d"));
+    }
+
+    [Fact]
     public void EditingTheLabelsTextCommitsOneMutateEntityCommand()
     {
         var board = new Board();

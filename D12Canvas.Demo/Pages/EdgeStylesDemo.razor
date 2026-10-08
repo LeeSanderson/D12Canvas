@@ -6,7 +6,7 @@
 <PageTitle>Edge Styles Demo</PageTitle>
 
 <div class="canvas-container">
-    <DiagramCanvas Board="_board" />
+    <DiagramCanvas Board="Board" />
 </div>
 
 <style>
@@ -24,6 +24,51 @@
     // diagonally (not aligned on either axis) so Orthogonal's right-angle bend and Curved's
     // S-curve are both visually distinct from a straight line.
     private readonly Board _board = SeedBoard();
+
+    // ?sides=orthogonal or ?sides=curved swaps the board for one edge leaving from each side of a
+    // shape, each into the top of a shape below and to its right.
+    [SupplyParameterFromQuery(Name = "sides")]
+    public string? Sides { get; set; }
+
+    private Board? _sidesBoard;
+
+    private Board Board => _sidesBoard ?? _board;
+
+    protected override void OnParametersSet() =>
+        _sidesBoard = Enum.TryParse<EdgeRouting>(Sides, ignoreCase: true, out var routing)
+            ? SeedSidesBoard(routing)
+            : null;
+
+    private static Board SeedSidesBoard(EdgeRouting routingStyle)
+    {
+        var board = new Board();
+        var cells = new[] { (0, 0), (480, 0), (0, 440), (480, 440) };
+        foreach (var (side, (cellX, cellY)) in StandardPorts.All.Zip(cells))
+        {
+            var source = AddSquare(board, cellX + 80, cellY + 120);
+            var target = AddSquare(board, cellX + 280, cellY + 260);
+            board.AddEdge(
+                new Edge(
+                    new PortEndpoint(source.Id, side),
+                    new PortEndpoint(target.Id, PortId.Top),
+                    routingStyle: routingStyle
+                )
+            );
+        }
+
+        return board;
+    }
+
+    private static ComponentInstance AddSquare(Board board, double x, double y)
+    {
+        var instance = new ComponentInstance(
+            "rectangle",
+            new RectangleProps("#e3f2fd", "#1565c0", 3),
+            new Bounds(x, y, 100, 100)
+        );
+        board.AddComponent(instance);
+        return instance;
+    }
 
     private static ComponentInstance AddRectangle(Board board, double x, double y)
     {

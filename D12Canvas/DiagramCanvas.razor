@@ -53,37 +53,17 @@
                        transparent stroke over it, a constant 20 screen pixels at any zoom. *@
                     @foreach (var edge in Board.Edges)
                     {
-                        if (!IsCarried(edge.Id))
+                        if (!IsCarried(edge.Id) && RouteOf(edge) is { } route)
                         {
-                            var line = EdgeLine(edge);
-                            if (line is not null)
-                            {
-                                var markerStart = EdgeMarkerUrl(edge.SourceArrow, IsEdgeSelected(edge.Id));
-                                var markerEnd = EdgeMarkerUrl(edge.TargetArrow, IsEdgeSelected(edge.Id));
-                                if (edge.RoutingStyle == EdgeRouting.Straight)
-                                {
-                                    <line @key="edge.Id" x1="@line.Value.From.X" y1="@line.Value.From.Y" x2="@line.Value.To.X" y2="@line.Value.To.Y"
-                                      class="@EdgeLineCssClass(edge.Id)"
-                                      marker-start="@markerStart"
-                                      marker-end="@markerEnd"
-                                      aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)" />
-                                    <line @key="@($"{edge.Id}-hit")" x1="@line.Value.From.X" y1="@line.Value.From.Y" x2="@line.Value.To.X" y2="@line.Value.To.Y"
-                                      class="edge-hit"
-                                      data-d12-role="@HitRole.Edge" data-d12-entity="@edge.Id" />
-                                }
-                                else
-                                {
-                                    var pathD = EdgePathD(edge.RoutingStyle, line.Value.From, line.Value.To);
-                                    <path @key="edge.Id" d="@pathD"
-                                      class="@EdgeLineCssClass(edge.Id)"
-                                      marker-start="@markerStart"
-                                      marker-end="@markerEnd"
-                                      aria-selected="@(IsEdgeSelected(edge.Id) ? "true" : null)" />
-                                    <path @key="@($"{edge.Id}-hit")" d="@pathD"
-                                      class="edge-hit"
-                                      data-d12-role="@HitRole.Edge" data-d12-entity="@edge.Id" />
-                                }
-                            }
+                            <EdgeView @key="edge.Id"
+                                      EdgeId="edge.Id"
+                                      RoutingStyle="edge.RoutingStyle"
+                                      From="route.Points[0]"
+                                      To="route.Points[^1]"
+                                      PathData="@route.PathData"
+                                      IsSelected="@IsEdgeSelected(edge.Id)"
+                                      SourceArrow="edge.SourceArrow"
+                                      TargetArrow="edge.TargetArrow" />
                         }
                     }
                 }
@@ -236,9 +216,16 @@
                                 data-d12-role="@HitRole.EdgeEndpoint" data-d12-entity="@floating.Edge.Id" data-d12-part="@(floating.IsSource ? "source" : "target")"></circle>
                     }
                 }
-                @if (PendingEdgeLine() is { } pendingLine)
+                @if (PendingEdgeRoute() is { } pendingRoute)
                 {
-                    <line x1="@pendingLine.From.X" y1="@pendingLine.From.Y" x2="@pendingLine.To.X" y2="@pendingLine.To.Y" class="connector-drag-preview" />
+                    if (pendingRoute.Request.Style == EdgeRouting.Straight)
+                    {
+                        <line x1="@pendingRoute.Points[0].X" y1="@pendingRoute.Points[0].Y" x2="@pendingRoute.Points[^1].X" y2="@pendingRoute.Points[^1].Y" class="connector-drag-preview" />
+                    }
+                    else
+                    {
+                        <path d="@pendingRoute.PathData" class="connector-drag-preview" />
+                    }
                 }
             </svg>
             @if (_marqueeBounds is not null)
@@ -525,6 +512,7 @@
     }
 
     .connector-drag-preview {
+        fill: none;
         stroke: var(--d12-connector-preview);
         stroke-width: 2;
         stroke-dasharray: 6 4;

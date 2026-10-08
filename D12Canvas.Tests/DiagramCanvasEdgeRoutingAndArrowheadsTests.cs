@@ -1,3 +1,4 @@
+using System.Globalization;
 using Bunit;
 using D12Canvas.History;
 using D12Canvas.Model;
@@ -138,7 +139,7 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
     }
 
     [Fact]
-    public void AnOrthogonalEdgeRendersAsAPathWithARightAngleBendAtTheMidpoint()
+    public void AnOrthogonalEdgeRendersAsAPathBendingInTheGapBetweenItsShapes()
     {
         var board = new Board();
         AddEdgeBetween(
@@ -175,7 +176,11 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
         Assert.Equal("path", edge.TagName, ignoreCase: true);
         var d = edge.GetAttribute("d");
         Assert.NotNull(d);
-        Assert.Equal("M 150 125 C 225 125 225 225 300 225", d);
+        // Each control point sits on its port's normal, four tenths of the end-to-end distance out.
+        var offset = 0.4 * Math.Sqrt(150 * 150 + 100 * 100);
+        var outOfSource = (150 + offset).ToString(CultureInfo.InvariantCulture);
+        var outOfTarget = (300 - offset).ToString(CultureInfo.InvariantCulture);
+        Assert.Equal($"M 150 125 C {outOfSource} 125 {outOfTarget} 225 300 225", d);
     }
 
     [Fact]
