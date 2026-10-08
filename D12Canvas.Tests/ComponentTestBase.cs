@@ -62,7 +62,7 @@ public abstract class ComponentTestBase : BunitContext
     protected void SetupDiagramCanvasJsModule()
     {
         var module = JSInterop.SetupModule("./_content/D12Canvas/DiagramCanvas.razor.js");
-        _canvasModule = module;
+        CanvasModule = module;
         module
             .Setup<Dictionary<string, double>>("getContainerDimensions", _ => true)
             .SetResult(
@@ -78,6 +78,7 @@ public abstract class ComponentTestBase : BunitContext
         SetupDisposableCleanupHandle(module, "addResizeListener");
         SetupDisposableCleanupHandle(module, "addKeyboardListener");
         SetupDisposableCleanupHandle(module, "addWheelListener");
+        SetupDisposableCleanupHandle(module, "addClipboardListener");
         PointerListener = SetupDisposableCleanupHandle(module, "addPointerListener");
         PointerListener.SetupVoid("promote", _ => true).SetVoidResult();
 
@@ -90,12 +91,12 @@ public abstract class ComponentTestBase : BunitContext
 
     // What the browser reports at init. The latest setup wins, so a test calls this again before
     // rendering to stand on an Apple platform.
-    protected void ReportPlatform(bool applePlatform) =>
-        _canvasModule
+    protected void ReportPlatform(bool applePlatform, bool asyncClipboard = false) =>
+        CanvasModule
             .Setup<InitialFacts>("initialFacts", _ => true)
-            .SetResult(new InitialFacts(800, 600, applePlatform));
+            .SetResult(new InitialFacts(800, 600, applePlatform, asyncClipboard));
 
-    private BunitJSModuleInterop _canvasModule = null!;
+    protected BunitJSModuleInterop CanvasModule { get; private set; } = null!;
 
     // The handle the pointer listener returns, for asserting what the canvas tells the listener.
     protected BunitJSModuleInterop PointerListener { get; private set; } = null!;

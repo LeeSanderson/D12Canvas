@@ -62,9 +62,13 @@
     private string _editBuffer = "";
     private ElementReference _editorRef;
 
-    private string Style => $"background-color: {Props.Color};";
+    private string Style => InlineStyleValue.Declaration("background-color", Props.Color);
 
-    private string TextStyle => $"color: {Props.TextColor}; font-size: {Props.FontSize}px;";
+    private string TextStyle =>
+        InlineStyleValue.Join(
+            InlineStyleValue.Declaration("color", Props.TextColor),
+            $"font-size: {Props.FontSize}px;"
+        );
 
     // A Text-type field is edited inline/WYSIWYG on the canvas, never through the property panel.
     // The canvas calls this from outside any event of this component's own, so it renders itself.

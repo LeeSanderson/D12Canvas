@@ -56,7 +56,11 @@ else
 
     private string Style =>
         ThemedDefault.Override("--d12-board-text-override", Props.Color)
-        + $"font-size: {Props.FontSize}px; font-weight: {Props.FontWeight}; text-align: {Props.TextAlign};";
+        + InlineStyleValue.Join(
+            $"font-size: {Props.FontSize}px;",
+            InlineStyleValue.Declaration("font-weight", Props.FontWeight),
+            InlineStyleValue.Declaration("text-align", Props.TextAlign)
+        );
 
     // A Text-type field is edited inline/WYSIWYG on the canvas, never through the property panel.
     // The canvas calls this for a Text on the board and for an edge label.

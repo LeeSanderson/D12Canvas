@@ -10,7 +10,15 @@ export async function getContainerDimensions(element) {
 
 export async function initialFacts(element) {
     const rect = element.getBoundingClientRect();
-    return { width: rect.width, height: rect.height, applePlatform: isApplePlatform() };
+    return {
+        width: rect.width,
+        height: rect.height,
+        applePlatform: isApplePlatform(),
+        asyncClipboard:
+            window.isSecureContext &&
+            typeof navigator.clipboard?.writeText === "function" &&
+            typeof navigator.clipboard?.read === "function"
+    };
 }
 
 // Returns a disposable handle object rather than a bare function - a JS function isn't
@@ -836,6 +844,131 @@ function keyReachesCanvas(container) {
     }
 
     return container.contains(document.activeElement);
+}
+
+// Clipboard keys go to the canvas only while focus is inside its container and not in an editable
+// element, and only when no text inside it is selected, so the page's own copy and paste and an
+// author's selected text are left to the browser.
+function clipboardEventReachesCanvas(container) {
+    const active = document.activeElement;
+    return (
+        active !== null &&
+        container.contains(active) &&
+        !isEditableTarget(active) &&
+        !hasLiveTextSelectionInside(container)
+    );
+}
+
+// Ctrl+C, Ctrl+X and Ctrl+V are the browser's copy, cut and paste events rather than keydown rows,
+// because a paste event's clipboardData is the one read that needs no permission, and setData
+// inside a copy event needs none either. setData only works while the event is being dispatched,
+// so the payload is asked for synchronously. A host where .NET cannot answer synchronously writes
+// through the async clipboard instead, which needs a secure context.
+export function addClipboardListener(container, canvas, dotnetRef) {
+    let pointer = null;
+
+    const trackPointer = (event) => {
+        const rect = container.getBoundingClientRect();
+        pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    };
+
+    const forgetPointer = () => {
+        pointer = null;
+    };
+
+    const writeAsynchronously = async (cut) => {
+        const payload = await dotnetRef.invokeMethodAsync("OnCopyRequested");
+        if (payload === null || !(await writeClipboardText(payload))) {
+            return;
+        }
+
+        if (cut) {
+            await dotnetRef.invokeMethodAsync("OnCutRequested");
+        }
+    };
+
+    const handleCopyOrCut = (event) => {
+        if (!clipboardEventReachesCanvas(container) || event.clipboardData === null) {
+            return;
+        }
+
+        const cut = event.type === "cut";
+        let payload;
+        try {
+            payload = dotnetRef.invokeMethod(cut ? "OnCutRequested" : "OnCopyRequested");
+        } catch {
+            writeAsynchronously(cut);
+            return;
+        }
+
+        if (payload === null || payload === undefined) {
+            return;
+        }
+
+        event.clipboardData.setData("text/plain", payload);
+        event.preventDefault();
+
+        // A cut can remove the very stop that holds focus, once its render lands, which would drop
+        // focus to the body and leave the Ctrl+V that usually follows with nowhere to land.
+        if (cut) {
+            canvas.focus({ preventScroll: true });
+        }
+    };
+
+    const handlePaste = (event) => {
+        if (!clipboardEventReachesCanvas(container) || event.clipboardData === null) {
+            return;
+        }
+
+        const text = event.clipboardData.getData("text/plain");
+        if (text.trim() === "") {
+            return;
+        }
+
+        event.preventDefault();
+        dotnetRef.invokeMethodAsync("OnPasteReceived", text, pointer?.x ?? null, pointer?.y ?? null);
+    };
+
+    canvas.addEventListener("pointermove", trackPointer);
+    canvas.addEventListener("pointerleave", forgetPointer);
+    document.addEventListener("copy", handleCopyOrCut);
+    document.addEventListener("cut", handleCopyOrCut);
+    document.addEventListener("paste", handlePaste);
+
+    return {
+        dispose: () => {
+            canvas.removeEventListener("pointermove", trackPointer);
+            canvas.removeEventListener("pointerleave", forgetPointer);
+            document.removeEventListener("copy", handleCopyOrCut);
+            document.removeEventListener("cut", handleCopyOrCut);
+            document.removeEventListener("paste", handlePaste);
+        }
+    };
+}
+
+// The menu's routes. A click fires no clipboard event, so a row can only use the async clipboard;
+// the click's user activation is still live when the payload comes back from .NET.
+export async function writeClipboardText(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export async function readClipboardText() {
+    try {
+        for (const item of await navigator.clipboard.read()) {
+            if (item.types.includes("text/plain")) {
+                return await (await item.getType("text/plain")).text();
+            }
+        }
+    } catch {
+        // Refused or unavailable: the paste does nothing.
+    }
+
+    return null;
 }
 
 export async function addKeyboardListener(element, dotnetRef) {

@@ -55,5 +55,5 @@ else
 
     private bool MissingUrl => string.IsNullOrWhiteSpace(Props.Url);
 
-    private string Style => $"object-fit: {Props.Fit};";
+    private string Style => InlineStyleValue.Declaration("object-fit", Props.Fit);
 }

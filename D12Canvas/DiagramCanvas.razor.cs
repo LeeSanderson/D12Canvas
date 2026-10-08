@@ -303,6 +303,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
             _zoomPanTracker.SetContainerSize((int)facts.Width, (int)facts.Height);
             _applePlatform = facts.ApplePlatform;
+            _asyncClipboard = facts.AsyncClipboard;
 
             var resizeCleanup = await _jsModule.InvokeAsync<IJSObjectReference>(
                 "addResizeListener",
@@ -334,6 +335,14 @@ public partial class DiagramCanvas : IAsyncDisposable
             _cleanupHandles.Add(keyboardCleanup);
             _cleanupHandles.Add(_pointerListener);
             _cleanupHandles.Add(wheelCleanup);
+            _cleanupHandles.Add(
+                await _jsModule.InvokeAsync<IJSObjectReference>(
+                    "addClipboardListener",
+                    ContainerElement,
+                    CanvasElement,
+                    _dotNetObjectRef
+                )
+            );
 
             StateHasChanged();
         }
@@ -1586,7 +1595,10 @@ public partial class DiagramCanvas : IAsyncDisposable
             SnapToGrid: SnapToGrid,
             SnapToGridChordLive: EnableSnapToGridShortcut,
             ObjectSnapping: ObjectSnapping,
-            ApplePlatform: _applePlatform
+            ApplePlatform: _applePlatform,
+            CanCopy: CanCopySelection,
+            CanCut: CanCopySelection,
+            AsyncClipboard: _asyncClipboard
         );
 
     // Same eligibility OnGroupPressed itself already guards on (2+ sibling entries) - kept as its
@@ -1675,9 +1687,27 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     // Closes the menu first so a command that itself calls StateHasChanged (every OnXPressed
     // does) never re-renders with a stale menu still open.
-    private void InvokeFromContextMenu(ContextMenuCommand command)
+    private async Task InvokeFromContextMenu(ContextMenuCommand command)
     {
+        var menu = _contextMenu;
         _contextMenu = null;
+        switch (command)
+        {
+            case ContextMenuCommand.Cut:
+                await CopyFromMenu(cut: true);
+                return;
+            case ContextMenuCommand.Copy:
+                await CopyFromMenu(cut: false);
+                return;
+            case ContextMenuCommand.Paste:
+                if (menu is not null)
+                {
+                    await PasteFromMenu(menu);
+                }
+
+                return;
+        }
+
         Action action = command switch
         {
             ContextMenuCommand.Delete => OnDeletePressed,

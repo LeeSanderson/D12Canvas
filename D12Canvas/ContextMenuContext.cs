@@ -10,6 +10,9 @@ public enum ContextMenuSet
 
 public enum ContextMenuCommand
 {
+    Cut,
+    Copy,
+    Paste,
     Delete,
     Group,
     Ungroup,
@@ -24,7 +27,9 @@ public enum ContextMenuCommand
 
 // What DiagramCanvas resolved at the moment a menu opened: everything a row needs to decide
 // whether it is eligible, how it reads and which hint it shows, so the menu itself reads nothing
-// from the board.
+// from the board. AsyncClipboard is whether the browser offers the clipboard to a click, which it
+// does only in a secure context; without it the clipboard rows are left out and the keys still
+// work.
 public sealed record ContextMenuContext(
     ContextMenuSet Set,
     bool CanGroup = false,
@@ -34,5 +39,8 @@ public sealed record ContextMenuContext(
     bool SnapToGrid = false,
     bool SnapToGridChordLive = true,
     bool ObjectSnapping = false,
-    bool ApplePlatform = false
+    bool ApplePlatform = false,
+    bool CanCopy = false,
+    bool CanCut = false,
+    bool AsyncClipboard = false
 );

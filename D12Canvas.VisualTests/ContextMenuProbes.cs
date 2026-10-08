@@ -36,7 +36,18 @@ public sealed class ContextMenuProbes(PlaywrightFixture playwright, DemoAppFixtu
         await OpenMenuOnSourceAsync();
 
         await Expect(Menu.Locator(".d12-context-menu-hint"))
-            .ToHaveTextAsync(["Delete", "Ctrl+Shift+]", "Ctrl+]", "Ctrl+[", "Ctrl+Shift+["]);
+            .ToHaveTextAsync(
+                [
+                    "Ctrl+X",
+                    "Ctrl+C",
+                    "Ctrl+V",
+                    "Delete",
+                    "Ctrl+Shift+]",
+                    "Ctrl+]",
+                    "Ctrl+[",
+                    "Ctrl+Shift+[",
+                ]
+            );
     }
 
     [Fact]

@@ -79,6 +79,8 @@ public abstract class InteractionProbe : IAsyncLifetime
 
     protected IPage Page { get; private set; } = null!;
 
+    protected IBrowserContext Context => _context;
+
     // The page a probe drives, and how many instances it seeds, which the probe waits for.
     protected virtual string ProbePagePath => "/interaction-probe-demo";
 

@@ -39,7 +39,8 @@ public partial class EdgeView
 
     private Drawn _drawn;
 
-    private string? ColorOverride => Color is null ? null : $"--d12-edge-override: {Color}";
+    private string? ColorOverride =>
+        InlineStyleValue.Safe(Color) is { } color ? $"--d12-edge-override: {color}" : null;
 
     protected override void OnInitialized() => _drawn = Current();
 

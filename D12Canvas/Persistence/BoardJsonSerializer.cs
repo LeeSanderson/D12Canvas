@@ -6,7 +6,7 @@ namespace D12Canvas.Persistence;
 
 public sealed class BoardJsonSerializer : IBoardSerializer
 {
-    private const int CurrentSchemaVersion = 1;
+    internal const int CurrentSchemaVersion = 1;
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
