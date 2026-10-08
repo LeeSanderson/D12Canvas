@@ -299,7 +299,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         if (Board is not null)
         {
-            _routes.RetainOnly(Board.Edges);
+            _routes.RetainOnly(RenderedEdges().ToList());
         }
 
         if (firstRender)
@@ -597,7 +597,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             if (
                 !_stickyParticipants.ContainsKey(id)
                 && mountArea.Intersects(bounds)
-                && Board.GetComponent(id) is { } instance
+                && (Board.GetComponent(id) ?? PendingCopies?.GetComponent(id)) is { } instance
             )
             {
                 _stickyParticipants[id] = IsBelowLodThreshold(instance.Bounds);
@@ -611,6 +611,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         if (Board is null)
         {
+            return;
+        }
+
+        if (PendingCopies is { } copies)
+        {
+            CommitClone(copies);
             return;
         }
 
@@ -792,6 +798,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         ) => canvas._preview.PublishMovedEndpoints(movedEndpoints);
 
         public void CommitPreview() => canvas.CommitPreview();
+
+        public Board? CopyOfSelection() => canvas.CopyOfSelection();
+
+        public void PublishPendingFragment(Board? pendingFragment) =>
+            canvas._preview.PublishPendingFragment(pendingFragment);
 
         public void BeginInlineEdit(Guid instanceId) => canvas.BeginInlineEdit(instanceId);
 
@@ -1767,13 +1778,20 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    private bool IsSelected(Guid instanceId) => ExpandedSelection().Contains(instanceId);
+    private bool IsSelected(Guid instanceId) => ShownSelection().Contains(instanceId);
+
+    // What draws as selected: the selection, or a clone drag's copies while they are in the hand.
+    private HashSet<Guid> ShownSelection() =>
+        PendingCopies is { } copies
+            ? copies.Components.Select(copy => copy.Id).ToHashSet()
+            : ExpandedSelection();
 
     // A top-level Group's own selection state - unlike IsSelected, this must NOT read through
     // ExpandedSelection (which flattens a selected group down to its member ids, so the group's
     // own id is never "contained" in it). The raw, unexpanded selection set is exactly the group's
     // own aria-selected state.
-    private bool IsGroupSelected(Guid groupId) => _selectedInstanceIds.Contains(groupId);
+    private bool IsGroupSelected(Guid groupId) =>
+        PendingCopies is null && _selectedInstanceIds.Contains(groupId);
 
     // Distinguishes "selected" from "selected as part of a group of 2+" - only the
     // latter suppresses a ComponentContainer's own resize handles in favour of the shared overlay's.
@@ -1781,13 +1799,13 @@ public partial class DiagramCanvas : IAsyncDisposable
     // members counts the same as an ad-hoc 2+ multi-selection.
     private bool IsMultiSelected(Guid instanceId)
     {
-        var expanded = ExpandedSelection();
+        var expanded = ShownSelection();
         return expanded.Count > 1 && expanded.Contains(instanceId);
     }
 
     // The shared bounding-box overlay (and its resize handles) must show for a
     // selected Group of 2+ members too, not only an ad-hoc multi-selection.
-    private bool HasMultiMemberSelection => ExpandedSelection().Count > 1;
+    private bool HasMultiMemberSelection => ShownSelection().Count > 1;
 
     // The ancestor of an entity, or the entity itself, that is a direct member of the entered
     // group, or the outermost one when no group is entered or the entity lies outside it - shared
@@ -2739,9 +2757,12 @@ public partial class DiagramCanvas : IAsyncDisposable
             return null;
         }
 
-        var expanded = ExpandedSelection();
+        var shown = ShownSelection();
         return Bounds.Union(
-            Board.Components.Where(instance => expanded.Contains(instance.Id)).Select(Live.BoundsOf)
+            Board
+                .Components.Concat(PendingCopies?.Components ?? [])
+                .Where(instance => shown.Contains(instance.Id))
+                .Select(Live.BoundsOf)
         );
     }
 
@@ -2783,7 +2804,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         return request is { } routed ? EdgeRouter.Route(routed) : null;
     }
 
-    private bool IsEdgeSelected(Guid edgeId) => _selectedEdgeIds.Contains(edgeId);
+    private bool IsEdgeSelected(Guid edgeId) =>
+        PendingCopies is { } copies
+            ? copies.GetEdge(edgeId) is not null
+            : _selectedEdgeIds.Contains(edgeId);
 
     private void ToggleEdge(Guid edgeId) =>
         SetSelection(
@@ -2807,7 +2831,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             yield break;
         }
 
-        foreach (var edge in Board.Edges)
+        foreach (var edge in RenderedEdges())
         {
             foreach (var isSource in new[] { true, false })
             {

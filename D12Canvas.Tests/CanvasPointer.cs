@@ -41,8 +41,12 @@ internal static class CanvasPointer
         this IRenderedComponent<DiagramCanvas> canvas,
         double x,
         double y,
-        bool shift = false
-    ) => canvas.InvokeAsync(() => canvas.Instance.OnPointerMoved(PointerEvents.Move(x, y, shift)));
+        bool shift = false,
+        bool alt = false
+    ) =>
+        canvas.InvokeAsync(
+            () => canvas.Instance.OnPointerMoved(PointerEvents.Move(x, y, shift, alt: alt))
+        );
 
     public static Task Release(
         this IRenderedComponent<DiagramCanvas> canvas,
@@ -165,8 +169,9 @@ internal static class CanvasPointer
 
     public static void MoveTo(
         this IRenderedComponent<DiagramCanvas> canvas,
-        (double X, double Y) to
-    ) => canvas.Move(to.X, to.Y).GetAwaiter().GetResult();
+        (double X, double Y) to,
+        bool alt = false
+    ) => canvas.Move(to.X, to.Y, alt: alt).GetAwaiter().GetResult();
 
     public static void ReleaseAt(
         this IRenderedComponent<DiagramCanvas> canvas,

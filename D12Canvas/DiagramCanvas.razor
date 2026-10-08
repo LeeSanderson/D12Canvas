@@ -49,7 +49,7 @@
                     }
                     @* Each edge is drawn by a line that takes no presses and hit by a wider
                        transparent stroke over it, a constant 20 screen pixels at any zoom. *@
-                    @foreach (var edge in Board.Edges)
+                    @foreach (var edge in RenderedEdges())
                     {
                         if (!IsCarried(edge.Id) && RouteOf(edge) is { } route)
                         {
@@ -74,7 +74,7 @@
                    ComponentContainer (it's never independently selectable, movable, or resizable).
                    Its box is fully live-derived every render (EdgeLabelStyle) - skipped entirely
                    when the edge has no label or its line can't currently be resolved. *@
-                @foreach (var edge in Board.Edges)
+                @foreach (var edge in RenderedEdges())
                 {
                     if (EdgeLabelStyle(edge) is { } labelStyle)
                     {
@@ -92,7 +92,7 @@
             <div class="instance-layer">
             @if (Board is not null)
             {
-                @foreach (var stop in OrderedTabStops())
+                @foreach (var stop in RenderedStops())
                 {
                     if (stop.Instance is { } instance)
                     {
@@ -132,7 +132,7 @@
                                                 Role="@registration.Role"
                                                 IsSelected="@IsSelected(instance.Id)"
                                                 IsMultiSelected="@IsMultiSelected(instance.Id)"
-                                                Focusable="@IsAddressable(instance.Id)"
+                                                Focusable="@(IsAddressable(instance.Id) && !IsPendingCopy(instance.Id))"
                                                 Addressable="@IsAddressable(instance.Id)"
                                                 Props="boundProps"
                                                 OnFocus="@(() => FocusEntity(instance.Id))"

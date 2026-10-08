@@ -14,6 +14,12 @@ namespace D12Canvas.Pointer;
 // held and left unsnapped while Ctrl is, and an active release commits exactly what was last
 // published. A selected edge's floating ends take the same delta; its attached ends follow their
 // components and have nothing of their own to publish.
+//
+// Holding Alt makes it a clone drag: the delta is published onto a copy of the selection, held in
+// the preview's pending fragment, and the originals stay where they are as snap candidates. Alt is
+// read on every move, so letting go of it puts the delta back on the originals. The copy is built
+// on the first move that wants it, so an Alt click builds nothing, and is kept for the rest of the
+// press, so toggling Alt shows the same copy each time.
 internal sealed class MoveSelectionGesture : PointerGesture
 {
     private readonly (double X, double Y) _pressPoint;
@@ -25,6 +31,8 @@ internal sealed class MoveSelectionGesture : PointerGesture
     private HashSet<Guid> _participantIds = [];
     private AxisSnap? _heldX;
     private AxisSnap? _heldY;
+    private Board? _copies;
+    private Board? _carriedCopies;
 
     public MoveSelectionGesture(PointerPress press, IGestureContext context)
         : base(press, context)
@@ -70,6 +78,7 @@ internal sealed class MoveSelectionGesture : PointerGesture
     protected override void OnMove(PointerMove move)
     {
         var current = Context.ToBoardPoint(move.X, move.Y);
+        _carriedCopies = move.AltKey ? Copies() : null;
         var deltaX = current.X - _pressPoint.X;
         var deltaY = current.Y - _pressPoint.Y;
         var xLocked = move.ShiftKey && Math.Abs(deltaY) > Math.Abs(deltaX);
@@ -80,7 +89,7 @@ internal sealed class MoveSelectionGesture : PointerGesture
         var guides = new List<SnapGuide>();
         if (!move.CtrlKey)
         {
-            var candidates = ObjectSnapCandidates(move, _participantIds);
+            var candidates = ObjectSnapCandidates(move, CarriedIds());
             var raw = _box with { X = x, Y = y };
             var tolerance = ObjectSnapTolerance;
             _heldX = xLocked
@@ -274,8 +283,24 @@ internal sealed class MoveSelectionGesture : PointerGesture
         }
     }
 
+    private Board? Copies() => _copies ??= Context.CopyOfSelection();
+
+    // A clone's originals are not carried, so they stay on the board as candidates; its copies are
+    // not on the board at all, so they never are.
+    private IReadOnlyCollection<Guid> CarriedIds() =>
+        _carriedCopies is { } copies
+            ? copies.Components.Select(copy => copy.Id).ToList()
+            : _participantIds;
+
     private void PublishTranslatedBy(double deltaX, double deltaY)
     {
+        if (_carriedCopies is { } copies)
+        {
+            PublishCopiesTranslatedBy(copies, deltaX, deltaY);
+            return;
+        }
+
+        Context.PublishPendingFragment(null);
         Context.PublishPreview(
             _participants.ToDictionary(
                 participant => participant.Id,
@@ -295,6 +320,28 @@ internal sealed class MoveSelectionGesture : PointerGesture
                     floating.Start.Y + deltaY
                 )
             )
+        );
+    }
+
+    private void PublishCopiesTranslatedBy(Board copies, double deltaX, double deltaY)
+    {
+        Context.PublishPendingFragment(copies);
+        Context.PublishPreview(
+            copies.Components.ToDictionary(
+                copy => copy.Id,
+                copy => copy.Bounds with { X = copy.Bounds.X + deltaX, Y = copy.Bounds.Y + deltaY }
+            )
+        );
+        Context.PublishMovedEndpoints(
+            copies
+                .Edges.SelectMany(FloatingEndsOf)
+                .ToDictionary(
+                    floating => floating.End,
+                    floating => new FloatingEndpoint(
+                        floating.Start.X + deltaX,
+                        floating.Start.Y + deltaY
+                    )
+                )
         );
     }
 }

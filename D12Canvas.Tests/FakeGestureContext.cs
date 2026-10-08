@@ -1,5 +1,6 @@
 using D12Canvas.Model;
 using D12Canvas.Pointer;
+using D12Canvas.Registration;
 
 namespace D12Canvas.Tests;
 
@@ -145,7 +146,50 @@ internal sealed class FakeGestureContext : IGestureContext
         IReadOnlyDictionary<EdgeEnd, FloatingEndpoint> movedEndpoints
     ) => MovedEndpoints = movedEndpoints;
 
-    public void CommitPreview() => Commits.Add(Preview);
+    public void CommitPreview()
+    {
+        Commits.Add(Preview);
+        CommittedFragments.Add(PendingFragment);
+    }
+
+    public List<Board?> CommittedFragments { get; } = new();
+
+    public Board? PendingFragment { get; private set; }
+
+    public int CopiesBuilt { get; private set; }
+
+    public Board? CopyOfSelection()
+    {
+        var fragment = BoardFragment.Of(Board!, SelectedInstanceIds, SelectedEdgeIds, Registry);
+        if (fragment.Components.Count == 0 && fragment.Edges.Count == 0)
+        {
+            return null;
+        }
+
+        CopiesBuilt++;
+        var copies = BoardFragment.WithFreshIds(fragment);
+        BoardFragment.StackAbove(Board!, copies);
+        return copies;
+    }
+
+    public void PublishPendingFragment(Board? pendingFragment) => PendingFragment = pendingFragment;
+
+    private static readonly IComponentRegistry Registry = BuildRegistry();
+
+    private static IComponentRegistry BuildRegistry()
+    {
+        var options = new D12CanvasOptions();
+        options.RegisterComponent<TestComponentDouble, TestProps>(
+            "test-props",
+            builder =>
+            {
+                builder.DisplayName = "Test Props";
+                builder.AccessibleName = "Test props component";
+                builder.DefaultProps = new TestProps();
+            }
+        );
+        return options.Registry;
+    }
 
     public PendingEdge? PendingEdge { get; private set; }
     public List<(IEdgeEndpoint Source, IEdgeEndpoint Target)> AddedEdges { get; } = new();

@@ -329,17 +329,7 @@ internal static class BoardFragment
     // fragment is placed once.
     public static Placement PlaceOnto(Board board, Board fragment)
     {
-        var baseZIndex = board.NextZIndex();
-        var ranks = fragment
-            .Components.Select(instance => instance.ZIndex)
-            .Distinct()
-            .Order()
-            .Select((zIndex, rank) => (zIndex, rank))
-            .ToDictionary(pair => pair.zIndex, pair => pair.rank);
-        foreach (var instance in fragment.Components)
-        {
-            instance.ZIndex = baseZIndex + ranks[instance.ZIndex];
-        }
+        StackAbove(board, fragment);
 
         var rejectedAssetIds = new List<string>();
         foreach (var asset in fragment.Assets)
@@ -374,6 +364,24 @@ internal static class BoardFragment
             fragment.Edges.Select(edge => edge.Id).ToList(),
             rejectedAssetIds
         );
+    }
+
+    // Restacks the fragment directly above everything on the board, keeping its own order. Doing it
+    // again against the same board changes nothing, so a clone drag's copies can be stacked while
+    // they are still in the user's hand and placed unchanged at release.
+    public static void StackAbove(Board board, Board fragment)
+    {
+        var baseZIndex = board.NextZIndex();
+        var ranks = fragment
+            .Components.Select(instance => instance.ZIndex)
+            .Distinct()
+            .Order()
+            .Select((zIndex, rank) => (zIndex, rank))
+            .ToDictionary(pair => pair.zIndex, pair => pair.rank);
+        foreach (var instance in fragment.Components)
+        {
+            instance.ZIndex = baseZIndex + ranks[instance.ZIndex];
+        }
     }
 
     // An asset whose id is not the hash of its bytes is refused, since the board's table is keyed

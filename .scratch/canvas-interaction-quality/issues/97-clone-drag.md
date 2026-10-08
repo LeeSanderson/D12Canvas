@@ -4,12 +4,12 @@
 
 **Blocked by:** 86 (Live modifiers, axis lock and snap-to-grid on by default), 96 (Duplicate and the duplicate run)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Alt+drag on a selection of two connected shapes leaves them where they are and drops copies with their edge at the release point, in one history entry
-- [ ] Pressing Alt mid-move shows the originals snap back and copies appear under the pointer; releasing Alt reverses it
-- [ ] After release the copies are selected and Ctrl+D continues at the drag's offset
-- [ ] Escape mid-clone leaves the board untouched and the originals selected
-- [ ] The pending fragment is readable through the preview; gesture-object tests cover the live switch and the commit
-- [ ] A mid-clone visual baseline exists; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Clone drag` term describes what shipped
+- [x] Alt+drag on a selection of two connected shapes leaves them where they are and drops copies with their edge at the release point, in one history entry
+- [x] Pressing Alt mid-move shows the originals snap back and copies appear under the pointer; releasing Alt reverses it
+- [x] After release the copies are selected and Ctrl+D continues at the drag's offset
+- [x] Escape mid-clone leaves the board untouched and the originals selected
+- [x] The pending fragment is readable through the preview; gesture-object tests cover the live switch and the commit
+- [x] A mid-clone visual baseline exists; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Clone drag` term describes what shipped

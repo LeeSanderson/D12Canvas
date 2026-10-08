@@ -1,0 +1,41 @@
+@page "/clone-drag-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Clone Drag Demo</PageTitle>
+
+<div class="clone-drag-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .clone-drag-canvas {
+        width: 700px;
+        height: 500px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid LeftId = Guid.Parse("e0000000-0000-0000-0000-000000000001");
+    private static readonly Guid RightId = Guid.Parse("e0000000-0000-0000-0000-000000000002");
+
+    private readonly Board _board = SeedBoard();
+
+    private static void AddRectangle(Board board, Guid id, Bounds bounds) =>
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#cfe3ff", null, 2), bounds, id: id)
+        );
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        AddRectangle(board, LeftId, new Bounds(80, 80, 160, 100));
+        AddRectangle(board, RightId, new Bounds(360, 80, 160, 100));
+        board.AddEdge(
+            new Edge(new PortEndpoint(LeftId, PortId.Right), new PortEndpoint(RightId, PortId.Left))
+        );
+        return board;
+    }
+}

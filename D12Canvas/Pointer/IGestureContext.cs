@@ -87,9 +87,17 @@ internal interface IGestureContext
     // Replaces the gesture preview's moved floating endpoints. Board is not touched.
     void PublishMovedEndpoints(IReadOnlyDictionary<EdgeEnd, FloatingEndpoint> movedEndpoints);
 
+    // A copy of the selection exactly as duplicate would build it, every id fresh and stacked
+    // above the board, or null when nothing copyable is selected. Board is not touched.
+    Board? CopyOfSelection();
+
+    // Replaces the gesture preview's pending fragment; null drops it. Board is not touched.
+    void PublishPendingFragment(Board? pendingFragment);
+
     // Writes the last published preview back to Board as one history entry, leaving out every
     // instance whose previewed bounds equal its committed bounds and every edge end still where
-    // it started.
+    // it started. With a pending fragment it adds the fragment where the preview shows it
+    // instead, makes it the selection and starts a duplicate run from it.
     void CommitPreview();
 
     // Replaces the gesture preview's pending edge line. Board is not touched.
