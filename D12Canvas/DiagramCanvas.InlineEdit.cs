@@ -31,7 +31,8 @@ public partial class DiagramCanvas
     public void OnBeginEditPressed()
     {
         if (
-            _focusedTabStopId is not { } focusedId
+            PlacingPort
+            || _focusedTabStopId is not { } focusedId
             || Board?.GetComponent(focusedId) is null
             || !IsAddressable(focusedId)
         )

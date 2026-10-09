@@ -40,7 +40,7 @@ public partial class DiagramCanvas
     [JSInvokable]
     public string? OnCutRequested()
     {
-        if (PressOwnsBoard || CopiedFragment(forCut: true) is not { } fragment)
+        if (PressOwnsBoard || PlacingPort || CopiedFragment(forCut: true) is not { } fragment)
         {
             return null;
         }
@@ -112,7 +112,7 @@ public partial class DiagramCanvas
 
     private void Paste(string text, (double X, double Y) anchor)
     {
-        if (Board is null || PressOwnsBoard)
+        if (Board is null || PressOwnsBoard || PlacingPort)
         {
             return;
         }

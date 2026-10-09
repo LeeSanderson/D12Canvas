@@ -126,6 +126,14 @@ internal static class ContextMenuComposition
         ],
         [Unhinted(ContextMenuCommand.UnlockAll, "Unlock All", c => OnCanvas(c) && c.CanUnlockAll)],
         [
+            Unhinted(
+                ContextMenuCommand.AddPortHere,
+                "Add port here",
+                c => OnObject(c) && c.CanAddPortHere
+            ),
+            Unhinted(ContextMenuCommand.PlacePort, "Add port…", c => OnObject(c) && c.CanPlacePort),
+        ],
+        [
             Unhinted(ContextMenuCommand.ChooseImage, "Choose image…", CanChangePicture),
             Unhinted(ContextMenuCommand.RemoveImage, "Remove image", CanChangePicture),
         ],

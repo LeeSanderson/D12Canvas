@@ -37,3 +37,6 @@ The hit-region predicate is `HasHitRegion`, read by the container markup, the LO
 Not changed, and worth a look: `.component-container` keeps `min-width: 100px; min-height: 100px`, so a shape under 100 board units renders larger than its `Bounds`. Edges already attach at the bounds-derived points; the partition is computed from `Bounds` too, while its percentages resolve against the rendered box. Author content inherits the body's `move` cursor, as before.
 
 Baselines: three new ones, a selected shape's ports, a crowded side and a selected shape at a fifth of full zoom, plus the custom-port baseline moved to the new `/border-partition-demo` page and the hover-ports baseline deleted. Removing the always-rendered port dots moved every HTML baseline with an instance. The PNGs that moved are the ones where hover or a multi-selection used to show ports, and the connector drags, which now select their source first. All 1350 bUnit tests pass (1 skipped). The full visual suite of 198 tests passed in the pinned image under `-parallel none` after folding, which also confirms ticket 91's two baselines.
+
+
+Ticket 104 re-adds a caller for `AddCustomPortCommand`: the object menu's Add port here row, shown when the opening right-press landed on a side's resize span or a port span of the one selected instance, and the keyboard's Add port… row, which starts port placement.

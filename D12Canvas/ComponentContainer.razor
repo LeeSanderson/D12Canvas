@@ -51,6 +51,11 @@
         }
     }
 
+    @if (ProvisionalPort is { } provisional)
+    {
+        <div class="port port-focused port-provisional" style="@PortDotStyle(provisional.FractionX, provisional.FractionY)"></div>
+    }
+
     @if (ShowSelectionOverlay)
     {
         <div class="resize-handle top-left" data-d12-role="@HitRole.ResizeHandle" data-d12-part="top-left"></div>
@@ -155,6 +160,11 @@
     .port.port-focused {
         outline: 3px solid #f39c12;
         outline-offset: 2px;
+    }
+
+    .port.port-provisional {
+        background-color: transparent;
+        border-color: #2ecc71;
     }
 
     .port-top {

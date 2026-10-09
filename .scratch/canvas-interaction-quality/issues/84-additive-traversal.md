@@ -20,3 +20,5 @@ Shipped with three choices the ADR did not spell out. A keyboard-focused selecte
 `F2` shipped with ticket 101 and ends the mode when it opens an editor; the focus return from an edit's `Escape` ends it too. Still open: keyboard port placement (ticket 104) and `Quick create` (103) do not exist yet, so Escape's placement stage and those handoffs have nothing to hook; each ends the mode through `_pendingFocusId` if it hands focus that way. Escape with the context menu open still closes the menu in the same press as whichever stage runs, as before.
 
 `Quick create` shipped with ticket 103 and ends the mode through `_pendingFocusId`. Escape's stages needed nothing for it: a port press is cancelled by the first stage, and a keyboard quick create commits at once.
+
+Keyboard port placement shipped with ticket 104. `Escape` ends placement as its own stage beside port picking, before additive traversal, and keeps the selection; entering placement hands focus to the instance through `_pendingFocusId`, which ends the mode.

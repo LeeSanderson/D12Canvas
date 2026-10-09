@@ -37,6 +37,8 @@ public enum ContextMenuCommand
     Lock,
     Unlock,
     UnlockAll,
+    AddPortHere,
+    PlacePort,
 }
 
 // What DiagramCanvas resolved at the moment a menu opened: everything a row needs to decide
@@ -47,7 +49,9 @@ public enum ContextMenuCommand
 // CanDistribute count the selection's instances and groups, never its edges. CanDelete and CanCut
 // are whether a delete would remove anything, which nothing locked is. SelectionLocked is whether
 // every top-level selected entity is locked, which makes the lock row read Unlock. CanUnlockAll is
-// whether anything on the board is locked.
+// whether anything on the board is locked. CanAddPortHere is whether the press that opened the menu
+// landed on a border span of the one selected instance, which names a side and a fraction;
+// CanPlacePort is whether a menu opened from the keyboard is on one selected unlocked instance.
 public sealed record ContextMenuContext(
     ContextMenuSet Set,
     bool CanGroup = false,
@@ -66,5 +70,7 @@ public sealed record ContextMenuContext(
     bool CanDistribute = false,
     bool CanDelete = true,
     bool SelectionLocked = false,
-    bool CanUnlockAll = false
+    bool CanUnlockAll = false,
+    bool CanAddPortHere = false,
+    bool CanPlacePort = false
 );

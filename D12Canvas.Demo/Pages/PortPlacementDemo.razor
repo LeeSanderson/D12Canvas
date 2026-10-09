@@ -1,0 +1,37 @@
+@page "/port-placement-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Port Placement Demo</PageTitle>
+
+<div class="port-placement-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .port-placement-canvas {
+        width: 700px;
+        height: 400px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid ShapeId = Guid.Parse("9d000000-0000-0000-0000-000000000001");
+    private static readonly Guid NeighbourId = Guid.Parse("9d000000-0000-0000-0000-000000000002");
+
+    private readonly Board _board = SeedBoard();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#cfe3ff", null, 2), new Bounds(120, 120, 240, 120), id: ShapeId)
+        );
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#ffe3cf", null, 2), new Bounds(460, 120, 160, 120), id: NeighbourId)
+        );
+        return board;
+    }
+}

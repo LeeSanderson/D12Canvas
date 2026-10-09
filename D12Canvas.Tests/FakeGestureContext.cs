@@ -221,6 +221,6 @@ internal sealed class FakeGestureContext : IGestureContext
 
     public void BeginInlineEdit(Guid instanceId) => InlineEditRequests.Add(instanceId);
 
-    public void OpenContextMenuAt(double containerX, double containerY, bool pressHitEntity) =>
-        ContextMenuOpenings.Add((containerX, containerY, pressHitEntity));
+    public void OpenContextMenuAt(PointerPress press) =>
+        ContextMenuOpenings.Add((press.X, press.Y, press.Role != HitRole.Canvas));
 }

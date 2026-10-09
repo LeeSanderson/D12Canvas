@@ -16,6 +16,7 @@ public partial class DiagramCanvas
         if (
             Board is null
             || PressOwnsBoard
+            || PlacingPort
             || CopiedFragment() is not { } fragment
             || BoardFragment.Extent(fragment) is not { } source
         )

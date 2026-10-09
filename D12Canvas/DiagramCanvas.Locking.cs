@@ -22,7 +22,7 @@ public partial class DiagramCanvas
 
     public void OnUnlockAllPressed()
     {
-        if (Board is null || PressOwnsBoard)
+        if (Board is null || PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -41,7 +41,7 @@ public partial class DiagramCanvas
 
     private void SetSelectionLocked(bool locked)
     {
-        if (Board is null || PressOwnsBoard)
+        if (Board is null || PressOwnsBoard || PlacingPort)
         {
             return;
         }

@@ -15,6 +15,7 @@ public partial class DiagramCanvas
     {
         if (
             PressOwnsBoard
+            || PlacingPort
             || _portFocusInstanceId is not null
             || _pendingConnectorSource is not null
             || _selectedInstanceIds.Count != 1

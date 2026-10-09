@@ -170,7 +170,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         double X,
         double Y,
         ContextMenuSet Set,
-        bool OpenedFromKeyboard = false
+        bool OpenedFromKeyboard = false,
+        PortAtPress? PortAtPress = null
     );
 
     // Read once when the listeners start, for the pointer path's Ctrl+click and for shortcut hints.
@@ -413,6 +414,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void OnPointerPressed(PointerPress press)
     {
         press = WithLockRead(press);
+        if (_activeGesture is null && _portPlacement is not null)
+        {
+            EndPortPlacement();
+        }
+
         if (_activeGesture is not null || PressToKind.Resolve(press) is not { } kind)
         {
             return;
@@ -707,6 +713,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // press invalidates whichever stop the keyboard was on and any port pick in progress there.
     private void HandleCanvasFocus()
     {
+        EndPortPlacementOnFocus(null);
         _focusedTabStopId = null;
         _portFocusInstanceId = null;
         _additiveTraversal = false;
@@ -715,6 +722,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnFocusLeftContainer()
     {
+        if (_portPlacement is not null)
+        {
+            EndPortPlacement();
+        }
+
         _focusedTabStopId = null;
         _additiveTraversal = false;
     }
@@ -829,13 +841,18 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public void BeginLabelEdit(Guid edgeId) => canvas.BeginLabelEdit(edgeId);
 
-        public void OpenContextMenuAt(double containerX, double containerY, bool pressHitEntity)
+        public void OpenContextMenuAt(PointerPress press)
         {
             var set =
-                pressHitEntity && canvas.HasSelection
+                press.Role != HitRole.Canvas && canvas.HasSelection
                     ? ContextMenuSet.Object
                     : ContextMenuSet.Canvas;
-            canvas._contextMenu = new ContextMenuState(containerX, containerY, set);
+            canvas._contextMenu = new ContextMenuState(
+                press.X,
+                press.Y,
+                set,
+                PortAtPress: set == ContextMenuSet.Object ? canvas.PortAtBorderPress(press) : null
+            );
         }
     }
 
@@ -871,6 +888,16 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnArrowKeyPressed(string code, bool shiftKey)
     {
+        if (_portPlacement is { } placement)
+        {
+            if (!PressOwnsBoard)
+            {
+                MovePortPlacement(placement, code, shiftKey);
+            }
+
+            return;
+        }
+
         // While picking a port (see OnEnterPressed), arrow keys jump directly to one of the
         // focused instance's four standard ports instead of nudging/panning - Top/Right/Bottom/Left
         // already read as Up/Right/Down/Left, so this takes over the same keys rather than adding
@@ -960,9 +987,24 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private (double X, double Y) ScreenNudgeDelta(double dirX, double dirY, bool shiftKey)
     {
-        var step = (shiftKey ? NudgeStepCoarse : NudgeStep) / _zoomPanTracker.Scale;
+        var step = ScreenNudgeStep(shiftKey);
         return (dirX * step, dirY * step);
     }
+
+    private double ScreenNudgeStep(bool coarse) =>
+        (coarse ? NudgeStepCoarse : NudgeStep) / _zoomPanTracker.Scale;
+
+    // One nudge step from a single coordinate, the rule NudgeSelection applies per axis to the
+    // selection's top-left.
+    private double NudgeAlong(double coordinate, double direction, bool coarse) =>
+        SnapToGrid
+            ? NextGridLine(
+                coordinate,
+                direction,
+                DominantGridSpacing(),
+                coarse ? NudgeStepCoarse : NudgeStep
+            )
+            : coordinate + direction * ScreenNudgeStep(coarse);
 
     // Measured from the top-left of the selection's bounding box, the point snap-to-grid anchors,
     // and read off the current bounds so each press in a held burst steps from where the last
@@ -1044,6 +1086,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (
             Board is null
             || PressOwnsBoard
+            || PlacingPort
             || _portFocusInstanceId is not null
             || _selectedInstanceIds.Count != 1
         )
@@ -1145,6 +1188,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         {
             _contextMenu = null;
         }
+        else if (_portPlacement is not null)
+        {
+            _portPlacement = null;
+        }
         else if (_portFocusInstanceId is not null || _pendingConnectorSource is not null)
         {
             _portFocusInstanceId = null;
@@ -1188,6 +1235,12 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         if (Board is null || PressOwnsBoard)
         {
+            return;
+        }
+
+        if (_portPlacement is { } placement)
+        {
+            CommitPortPlacement(placement);
             return;
         }
 
@@ -1275,7 +1328,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnSpacePressed()
     {
-        if (PressOwnsBoard)
+        if (PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -1350,7 +1403,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnDeletePressed()
     {
-        if (PressOwnsBoard)
+        if (PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -1391,7 +1444,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnSelectAllPressed()
     {
-        if (Board is null || PressOwnsBoard)
+        if (Board is null || PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -1426,7 +1479,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnGroupPressed()
     {
-        if (Board is null || PressOwnsBoard || !CanGroupSelection)
+        if (Board is null || PressOwnsBoard || PlacingPort || !CanGroupSelection)
         {
             return;
         }
@@ -1448,7 +1501,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnUngroupPressed()
     {
-        if (Board is null || PressOwnsBoard || !CanUngroupSelection)
+        if (Board is null || PressOwnsBoard || PlacingPort || !CanUngroupSelection)
         {
             return;
         }
@@ -1485,7 +1538,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnUndoPressed()
     {
-        if (PressOwnsBoard)
+        if (PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -1498,7 +1551,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnRedoPressed()
     {
-        if (PressOwnsBoard)
+        if (PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -1560,7 +1613,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // board's current extreme, assigned in ascending original-ZIndex order.
     private void RestackSelection(bool toFront)
     {
-        if (Board is null || PressOwnsBoard)
+        if (Board is null || PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -1604,7 +1657,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // once" shape.
     private void ApplyZIndexChange(Func<ComponentInstance, int?> computeNewZIndex)
     {
-        if (Board is null || PressOwnsBoard)
+        if (Board is null || PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -1638,11 +1691,11 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private bool HasSelection => _selectedInstanceIds.Count > 0 || SelectedEdges.Count > 0;
 
-    private ContextMenuContext ContextMenuContextFor(ContextMenuSet set)
+    private ContextMenuContext ContextMenuContextFor(ContextMenuState menu)
     {
         var arrangeable = ArrangeableSelection().Count;
         return new(
-            set,
+            menu.Set,
             CanGroup: CanGroupSelection,
             CanUngroup: CanUngroupSelection,
             CanArrange: CanArrangeSelection,
@@ -1659,7 +1712,9 @@ public partial class DiagramCanvas : IAsyncDisposable
             CanDistribute: arrangeable >= AlignDistribute.DistributeThreshold,
             CanDelete: CanRemoveSelection,
             SelectionLocked: SelectionIsLocked,
-            CanUnlockAll: HasAnythingLocked
+            CanUnlockAll: HasAnythingLocked,
+            CanAddPortHere: menu.PortAtPress is not null,
+            CanPlacePort: menu.OpenedFromKeyboard && SinglePortTarget() is not null
         );
     }
 
@@ -1688,7 +1743,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     [JSInvokable]
     public void OnContextMenuKeyPressed()
     {
-        if (Board is null || PressOwnsBoard || _portFocusInstanceId is not null)
+        if (Board is null || PressOwnsBoard || PlacingPort || _portFocusInstanceId is not null)
         {
             return;
         }
@@ -1773,6 +1828,16 @@ public partial class DiagramCanvas : IAsyncDisposable
                 return;
             case ContextMenuCommand.RemoveImage:
                 SetPictureOfSelectedImages("");
+                return;
+            case ContextMenuCommand.AddPortHere:
+                if (menu?.PortAtPress is { } portAtPress)
+                {
+                    AddPortAtPress(portAtPress);
+                }
+
+                return;
+            case ContextMenuCommand.PlacePort:
+                BeginPortPlacement();
                 return;
         }
 
@@ -2500,6 +2565,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             Board is null
             || _jsModule is null
             || PressOwnsBoard
+            || PlacingPort
             || _portFocusInstanceId is not null
             || DirectionalFocus.DirectionFor(code) is not { } direction
         )
@@ -2569,6 +2635,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     // the landing moves focus only and the selection stays as it is.
     private void FocusEntity(Guid id)
     {
+        EndPortPlacementOnFocus(id);
         _focusedTabStopId = id;
 
         // Any genuine focus-changing navigation (Tab, Shift+Tab) invalidates an in-progress port

@@ -115,7 +115,7 @@ public partial class DiagramCanvas
         string[] hitEntityIds
     )
     {
-        if (Board is null || PressOwnsBoard)
+        if (Board is null || PressOwnsBoard || PlacingPort)
         {
             return;
         }
@@ -183,7 +183,7 @@ public partial class DiagramCanvas
 
     private async Task PasteImages(IEnumerable<HeldImage> images, (double X, double Y) anchor)
     {
-        if (Board is null || PressOwnsBoard)
+        if (Board is null || PressOwnsBoard || PlacingPort)
         {
             return;
         }

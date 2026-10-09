@@ -19,3 +19,5 @@
 Shipped with three choices the ADR did not spell out. A quick create steps out of an entered group, as paste and duplicate do, because the copy is added at the board's top level; so an abandoned copy of a grouped source hands focus and selection to the source's top-level group rather than the member. A click on a port that an edge end is pinned to quick-creates from that port rather than carrying the end, since the carry needs movement. Under snap the candidate box is snapped before the occupancy test, and a box that only touches another counts as occupied, which is how `Bounds.Intersects` already reads.
 
 Still open: the pan into view before an edit is still a plain pan write until a framing transition exists (ticket 106).
+
+Keyboard port placement shipped with ticket 104, and `OnQuickCreatePressed` now does nothing while placing.

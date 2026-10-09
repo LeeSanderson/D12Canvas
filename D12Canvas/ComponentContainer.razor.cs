@@ -104,6 +104,11 @@ public partial class ComponentContainer
     [Parameter]
     public bool AutoPortFocused { get; set; }
 
+    // Where keyboard port placement has the port it would add, as fractions of the bounds; drawn as
+    // a hollow dot and not yet one of CustomPorts.
+    [Parameter]
+    public (double FractionX, double FractionY)? ProvisionalPort { get; set; }
+
     // The canvas's zoom, which the border partition reads because its spans are measured in screen
     // pixels.
     [Parameter]
@@ -136,6 +141,7 @@ public partial class ComponentContainer
     private PortId? _lastRenderedFocusedPortId;
     private Guid? _lastRenderedFocusedCustomPortId;
     private bool _lastRenderedAutoPortFocused;
+    private (double FractionX, double FractionY)? _lastRenderedProvisionalPort;
     private double _lastRenderedScale;
     private bool _lastRenderedIsDropTarget;
     private bool _lastRenderedLocked;
@@ -182,6 +188,7 @@ public partial class ComponentContainer
             || FocusedPortId != _lastRenderedFocusedPortId
             || FocusedCustomPortId != _lastRenderedFocusedCustomPortId
             || AutoPortFocused != _lastRenderedAutoPortFocused
+            || ProvisionalPort != _lastRenderedProvisionalPort
             || IsDropTarget != _lastRenderedIsDropTarget
             || Locked != _lastRenderedLocked
             || HasHitMarker != _lastRenderedHasHitMarker
@@ -208,6 +215,7 @@ public partial class ComponentContainer
         _lastRenderedFocusedPortId = FocusedPortId;
         _lastRenderedFocusedCustomPortId = FocusedCustomPortId;
         _lastRenderedAutoPortFocused = AutoPortFocused;
+        _lastRenderedProvisionalPort = ProvisionalPort;
         _lastRenderedScale = Scale;
         _lastRenderedIsDropTarget = IsDropTarget;
         _lastRenderedLocked = Locked;
@@ -291,7 +299,10 @@ public partial class ComponentContainer
         $"calc({FormatPercent(fraction)}% + {Format(portTargets)} * var(--d12-port-target) / var(--d12-scale))";
 
     private static string CustomPortStyle(PortDef port) =>
-        $"left: calc({FormatPercent(port.FractionX)}% - var(--d12-port-dot) / 2); top: calc({FormatPercent(port.FractionY)}% - var(--d12-port-dot) / 2);";
+        PortDotStyle(port.FractionX, port.FractionY);
+
+    private static string PortDotStyle(double fractionX, double fractionY) =>
+        $"left: calc({FormatPercent(fractionX)}% - var(--d12-port-dot) / 2); top: calc({FormatPercent(fractionY)}% - var(--d12-port-dot) / 2);";
 
     private static string FormatPercent(double fraction) => Format(fraction * 100);
 

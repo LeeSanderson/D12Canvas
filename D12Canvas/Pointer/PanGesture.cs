@@ -39,7 +39,7 @@ internal sealed class PanGesture : PointerGesture
 
         Context.StepOutFor(Press);
         ResolveSelectionForMenu();
-        Context.OpenContextMenuAt(Press.X, Press.Y, Press.Role != HitRole.Canvas);
+        Context.OpenContextMenuAt(Press);
     }
 
     // One predicate: does the pressed entity, resolved outward to its group, belong to the current

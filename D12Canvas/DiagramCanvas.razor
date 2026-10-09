@@ -143,6 +143,7 @@
                                                 FocusedPortId="@FocusedStandardPortIdFor(instance.Id)"
                                                 FocusedCustomPortId="@FocusedCustomPortIdFor(instance.Id)"
                                                 AutoPortFocused="@(FocusedPortEndpointFor(instance.Id) is AutoPortEndpoint)"
+                                                ProvisionalPort="@ProvisionalPortFor(instance.Id)"
                                                 Scale="_zoomPanTracker.Scale"
                                                 IsDropTarget="@(_preview.PendingEdge?.DropTargetId == instance.Id)"
                                                 CustomPorts="instance.CustomPorts">
@@ -267,7 +268,7 @@
        content, so its anchor (_contextMenu.X/Y) is plain container-relative pixels, not board space. *@
     @if (_contextMenu is not null)
     {
-        <ContextMenu Context="ContextMenuContextFor(_contextMenu.Set)"
+        <ContextMenu Context="ContextMenuContextFor(_contextMenu)"
                      X="_contextMenu.X" Y="_contextMenu.Y"
                      ContainerWidth="_zoomPanTracker.ContainerWidth"
                      ContainerHeight="_zoomPanTracker.ContainerHeight"

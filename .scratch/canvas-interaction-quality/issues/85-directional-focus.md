@@ -16,3 +16,5 @@
 Shipped with two choices the ADR did not spell out. A candidate off the origin's row or column scores its gap plus the distance between the two boxes' perpendicular extents, not their centres, so a tall neighbour is not penalised for its height. A zero-size origin, the viewport centre or a floating edge source, counts as in a stop's row when the point lies within the stop's extent. Focus leaving the container now also forgets the focused stop, so a move after tabbing out measures from the selection rather than from a stop that no longer has focus.
 
 Still open: keyboard port placement (ticket 104) does not exist yet, so the placement guard has nothing to hook; it belongs beside the port-picking guard in `OnDirectionalFocusPressed`. Ticket 73's shortcut table has not landed either, so the chord is a branch in the existing arrow row.
+
+Keyboard port placement shipped with ticket 104, and `OnDirectionalFocusPressed` now does nothing while placing, beside the port-picking guard.
