@@ -121,4 +121,17 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
         Assert.Contains("--d12-shadow", rootRule);
         Assert.Contains("box-shadow: 0 2px 8px var(--d12-shadow)", rootRule);
     }
+
+    [Theory]
+    [InlineData(".d12-context-menu {", "rgba(0, 0, 0, 0.15)")]
+    [InlineData("@media (prefers-color-scheme: dark)", "rgba(0, 0, 0, 0.5)")]
+    [InlineData("[data-d12-theme=\"light\"] .d12-context-menu {", "rgba(0, 0, 0, 0.15)")]
+    [InlineData("[data-d12-theme=\"dark\"] .d12-context-menu {", "rgba(0, 0, 0, 0.5)")]
+    public void TheDropShadowDeepensOnDark(string marker, string shadow)
+    {
+        var menu = RenderMenu();
+        var block = ExtractBlock(StyleBlockText(menu), marker);
+
+        Assert.Contains($"--d12-shadow: {shadow};", block);
+    }
 }

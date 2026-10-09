@@ -298,13 +298,15 @@
         --d12-board-fill: #FFFFFF;
         --d12-board-stroke: #333333;
         --d12-edge: #4a4a4a;
+        --d12-canvas-frame: #ccc;
+        --d12-inline-edit-outline: rgba(0, 0, 0, 0.4);
         width: 100%;
         height: 100%;
         display: grid;
         grid-template-rows: minmax(400px, auto) minmax(400px, 100%);
         position: relative;
         overflow: hidden;
-        border: 1px solid #ccc;
+        border: 1px solid var(--d12-canvas-frame);
     }
 
     @@media (prefers-color-scheme: dark) {
@@ -319,6 +321,8 @@
             --d12-board-stroke: #8a8a8a;
             --d12-alignment-guide: #ff5c97;
             --d12-edge: #a0a0a0;
+            --d12-canvas-frame: #444;
+            --d12-inline-edit-outline: rgba(255, 255, 255, 0.4);
         }
     }
 
@@ -334,6 +338,8 @@
         --d12-board-stroke: #333333;
         --d12-alignment-guide: #e5246b;
         --d12-edge: #4a4a4a;
+        --d12-canvas-frame: #ccc;
+        --d12-inline-edit-outline: rgba(0, 0, 0, 0.4);
     }
 
     .diagram-container[data-d12-theme="dark"],
@@ -348,6 +354,8 @@
         --d12-board-stroke: #8a8a8a;
         --d12-alignment-guide: #ff5c97;
         --d12-edge: #a0a0a0;
+        --d12-canvas-frame: #444;
+        --d12-inline-edit-outline: rgba(255, 255, 255, 0.4);
     }
 
     .diagram-canvas {
@@ -367,8 +375,8 @@
     .drag-over-affordance {
         position: absolute;
         inset: 0;
-        box-shadow: inset 0 0 0 3px #4a90d9;
-        background-color: rgba(74, 144, 217, 0.08);
+        box-shadow: inset 0 0 0 3px var(--d12-accent);
+        background-color: color-mix(in srgb, var(--d12-accent) 8%, transparent);
         pointer-events: none;
     }
 
@@ -381,7 +389,7 @@
 
     .selection-bounding-box {
         position: absolute;
-        border: 1px solid #2f80ed;
+        border: 1px solid var(--d12-accent);
         pointer-events: auto;
     }
 
@@ -418,7 +426,7 @@
         position: absolute;
         width: 10px;
         height: 10px;
-        background-color: #2f80ed;
+        background-color: var(--d12-accent);
         border-radius: 50%;
         pointer-events: auto;
     }

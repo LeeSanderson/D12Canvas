@@ -240,6 +240,76 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         Assert.DoesNotContain("#", halo);
     }
 
+    [Theory]
+    [InlineData(".diagram-container {", "#ccc", "rgba(0, 0, 0, 0.4)")]
+    [InlineData("@media (prefers-color-scheme: dark)", "#444", "rgba(255, 255, 255, 0.4)")]
+    [InlineData("[data-d12-theme=\"light\"] .diagram-container {", "#ccc", "rgba(0, 0, 0, 0.4)")]
+    [InlineData(
+        "[data-d12-theme=\"dark\"] .diagram-container {",
+        "#444",
+        "rgba(255, 255, 255, 0.4)"
+    )]
+    public void EveryBlockDeclaresTheCanvasFrameAndTheInlineEditOutline(
+        string marker,
+        string frame,
+        string editOutline
+    )
+    {
+        var canvas = Render<DiagramCanvas>();
+        var block = ExtractBlock(StyleBlockText(canvas), marker);
+
+        Assert.Equal(frame, TokenValue(block, "--d12-canvas-frame"));
+        Assert.Equal(editOutline, TokenValue(block, "--d12-inline-edit-outline"));
+    }
+
+    [Fact]
+    public void TheContainerBorderReadsTheCanvasFrameNotTheGridLineColour()
+    {
+        var canvas = Render<DiagramCanvas>();
+        var rootRule = ExtractBlock(StyleBlockText(canvas), ".diagram-container {");
+
+        Assert.Contains("border: 1px solid var(--d12-canvas-frame)", rootRule);
+    }
+
+    [Theory]
+    [InlineData(".selection-bounding-box {", "border: 1px solid var(--d12-accent)")]
+    [InlineData("\n    .group-resize-handle {", "background-color: var(--d12-accent)")]
+    [InlineData(".drag-over-affordance {", "box-shadow: inset 0 0 0 3px var(--d12-accent)")]
+    [InlineData(
+        ".drag-over-affordance {",
+        "background-color: color-mix(in srgb, var(--d12-accent) 8%, transparent)"
+    )]
+    public void TheCanvasSelectionChromeReadsTheAccent(string marker, string declaration)
+    {
+        var canvas = Render<DiagramCanvas>();
+        var rule = ExtractBlock(StyleBlockText(canvas), marker);
+
+        Assert.Contains(declaration, rule);
+    }
+
+    [Theory]
+    [InlineData(".component-container.selected {", "outline: 2px solid var(--d12-accent)")]
+    [InlineData(".resize-handle::after {", "background-color: var(--d12-accent)")]
+    [InlineData(".port {", "background-color: var(--d12-connector-preview)")]
+    [InlineData(".port.port-provisional {", "border-color: var(--d12-connector-preview)")]
+    public void TheContainerChromeReadsTheCanvasTokens(string marker, string declaration)
+    {
+        var container = Render<ComponentContainer>();
+        var rule = ExtractBlock(StyleBlockText(container), marker);
+
+        Assert.Contains(declaration, rule);
+    }
+
+    [Theory]
+    [InlineData("Text.razor", ".d12-text-editor {")]
+    [InlineData("StickyNote.razor", ".d12-sticky-note-editor {")]
+    public void TheInlineEditorOutlineReadsItsOwnToken(string file, string marker)
+    {
+        var rule = ExtractBlock(ColourLiterals.LibraryStyleBlocks()[file], marker);
+
+        Assert.Contains("outline: 1px dashed var(--d12-inline-edit-outline)", rule);
+    }
+
     private static double ContrastRatio(string first, string second)
     {
         var a = RelativeLuminance(first);
