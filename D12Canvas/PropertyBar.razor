@@ -115,14 +115,8 @@
 </div>
 
 <style>
+    @(RaisedSurface.TokenRules(".d12-property-bar"))
     .d12-property-bar {
-        --d12-surface: #fff;
-        --d12-border: #ccc;
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #666;
-        --d12-text: #212529;
-        --d12-shadow: rgba(0, 0, 0, 0.15);
-        color-scheme: light;
         position: absolute;
         z-index: 900;
         display: flex;
@@ -145,38 +139,14 @@
         white-space: nowrap;
     }
 
-    @@media (prefers-color-scheme: dark) {
+    @@media (prefers-reduced-motion: reduce) {
         .d12-property-bar {
-            --d12-surface: #2a2a2a;
-            --d12-border: rgba(255, 255, 255, 0.12);
-            --d12-accent: #2f80ed;
-            --d12-muted-text: #a0a0a0;
-            --d12-text: #e8e8e8;
-            --d12-shadow: rgba(0, 0, 0, 0.5);
-            color-scheme: dark;
+            transition-duration: 0s !important;
         }
     }
 
-    .d12-property-bar[data-d12-theme="light"],
-    [data-d12-theme="light"] .d12-property-bar {
-        --d12-surface: #fff;
-        --d12-border: #ccc;
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #666;
-        --d12-text: #212529;
-        --d12-shadow: rgba(0, 0, 0, 0.15);
-        color-scheme: light;
-    }
-
-    .d12-property-bar[data-d12-theme="dark"],
-    [data-d12-theme="dark"] .d12-property-bar {
-        --d12-surface: #2a2a2a;
-        --d12-border: rgba(255, 255, 255, 0.12);
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #a0a0a0;
-        --d12-text: #e8e8e8;
-        --d12-shadow: rgba(0, 0, 0, 0.5);
-        color-scheme: dark;
+    .d12-property-bar.d12-property-bar-settling:not(:hover, :focus-within) {
+        visibility: hidden;
     }
 
     .diagram-container:has(.d12-property-bar:hover, .d12-property-bar:focus-within) {

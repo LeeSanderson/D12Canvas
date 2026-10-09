@@ -15,7 +15,7 @@ public class PropertyPanelThemeTokensTests : ComponentTestBase
         var panel = Render<PropertyPanel>();
         var css = StyleBlockText(panel);
 
-        var rootRule = ExtractBlock(css, ".d12-property-panel {");
+        var rootRule = ExtractEveryBlock(css, ".d12-property-panel {");
         foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, rootRule);
@@ -45,11 +45,8 @@ public class PropertyPanelThemeTokensTests : ComponentTestBase
         var panel = Render<PropertyPanel>();
         var css = StyleBlockText(panel);
 
-        var overrideBlock = ExtractBlock(
-            css,
-            $"[data-d12-theme=\"{theme}\"] .d12-property-panel {{"
-        );
-        Assert.Contains($".d12-property-panel[data-d12-theme=\"{theme}\"]", css);
+        var overrideBlock = ExtractBlock(css, $"[data-d12-theme={theme}] .d12-property-panel {{");
+        Assert.Contains($".d12-property-panel[data-d12-theme={theme}]", css);
         foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, overrideBlock);
@@ -62,18 +59,18 @@ public class PropertyPanelThemeTokensTests : ComponentTestBase
         var panel = Render<PropertyPanel>();
         var css = StyleBlockText(panel);
 
-        Assert.Contains("color-scheme: light", ExtractBlock(css, ".d12-property-panel {"));
+        Assert.Contains("color-scheme: light", ExtractEveryBlock(css, ".d12-property-panel {"));
         Assert.Contains(
             "color-scheme: dark",
             ExtractBlock(css, "@media (prefers-color-scheme: dark)")
         );
         Assert.Contains(
             "color-scheme: light",
-            ExtractBlock(css, "[data-d12-theme=\"light\"] .d12-property-panel {")
+            ExtractBlock(css, "[data-d12-theme=light] .d12-property-panel {")
         );
         Assert.Contains(
             "color-scheme: dark",
-            ExtractBlock(css, "[data-d12-theme=\"dark\"] .d12-property-panel {")
+            ExtractBlock(css, "[data-d12-theme=dark] .d12-property-panel {")
         );
     }
 
@@ -83,7 +80,7 @@ public class PropertyPanelThemeTokensTests : ComponentTestBase
         var panel = Render<PropertyPanel>();
         var css = StyleBlockText(panel);
 
-        Assert.Contains("color: var(--d12-text)", ExtractBlock(css, ".d12-property-panel {"));
+        Assert.Contains("color: var(--d12-text)", ExtractEveryBlock(css, ".d12-property-panel {"));
         Assert.Contains("color: inherit", ExtractBlock(css, ".d12-property-panel-input {"));
     }
 

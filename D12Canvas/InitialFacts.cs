@@ -1,12 +1,13 @@
 namespace D12Canvas;
 
 // What the browser reports once, when the canvas first renders: the container's size, whether
-// this is an Apple platform, which decides how a shortcut hint is drawn, and whether the async
+// this is an Apple platform, which decides how a shortcut hint is drawn, whether the async
 // clipboard exists, which it does only in a secure context and which the menu's clipboard rows
-// need.
+// need, and what the keyboard layout prints on each key a hint names, where the browser can say.
 internal sealed record InitialFacts(
     double Width,
     double Height,
     bool ApplePlatform,
-    bool AsyncClipboard = false
+    bool AsyncClipboard = false,
+    Dictionary<string, string>? KeyLabels = null
 );

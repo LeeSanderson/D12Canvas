@@ -28,11 +28,18 @@ public partial class PropertyBar : IAsyncDisposable
     [Parameter]
     public double ContainerHeight { get; set; }
 
+    // The canvas's own transform transition while a framing flight runs, so the bar travels with
+    // the content instead of arriving ahead of it.
+    [Parameter]
+    public TimeSpan FlightDuration { get; set; }
+
     private ElementReference _barRef;
     private IJSObjectReference? _module;
     private IJSObjectReference? _registration;
     private double? _width;
     private string? _measuredLayout;
+    private (double Left, double Top) _shown;
+    private string? _shownLayout;
 
     // A row still mixed after an edit renders the same empty value as before, so Blazor would keep
     // whatever was typed into it. Keying a mixed row on the edit count rebuilds it after every edit.
@@ -48,15 +55,47 @@ public partial class PropertyBar : IAsyncDisposable
     {
         get
         {
-            var (left, top) = PropertyBarPlacement.Place(
-                Anchor,
-                _width ?? 0,
-                ContainerWidth,
-                ContainerHeight
+            var placed = FormattableString.Invariant(
+                $"left: {_shown.Left}px; top: {_shown.Top}px;"
             );
-            var placed = FormattableString.Invariant($"left: {left}px; top: {top}px;");
-            return _width is null ? placed + " visibility: hidden;" : placed;
+            if (_width is null)
+            {
+                return placed + " visibility: hidden;";
+            }
+
+            return FlightDuration > TimeSpan.Zero
+                ? placed
+                    + FormattableString.Invariant(
+                        $" transition: left {FlightDuration.TotalMilliseconds}ms ease-out, top {FlightDuration.TotalMilliseconds}ms ease-out;"
+                    )
+                : placed;
         }
+    }
+
+    protected override void OnParametersSet() => Reposition();
+
+    // Once measured, a bar keeps its place through a move smaller than the minimum, as long as its
+    // rows are the same ones it was showing.
+    private void Reposition()
+    {
+        var target = PropertyBarPlacement.Place(
+            Anchor,
+            _width ?? 0,
+            ContainerWidth,
+            ContainerHeight
+        );
+        var layout = _width is null ? null : Layout;
+        _shown =
+            layout is not null && layout == _shownLayout
+                ? PropertyBarPlacement.Settle(
+                    _shown,
+                    target,
+                    _width!.Value,
+                    ContainerWidth,
+                    ContainerHeight
+                )
+                : target;
+        _shownLayout = layout;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -80,6 +119,8 @@ public partial class PropertyBar : IAsyncDisposable
         if (width != _width)
         {
             _width = width;
+            _shownLayout = null;
+            Reposition();
             StateHasChanged();
         }
     }

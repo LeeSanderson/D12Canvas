@@ -58,20 +58,37 @@ public partial class DiagramCanvas
         : Board.Edges;
 
     // Every copy mounts whatever windowing says, since windowing reads committed bounds and the
-    // copies have none yet. They take no tab stop of their own until they are on the board.
+    // copies have none yet. A copied top-level group renders its stop too, as the copied shapes
+    // render their containers, so it can show selected; none of them takes focus until it is on
+    // the board.
     private IEnumerable<TabStop> RenderedStops() =>
         PendingCopies is { } copies
-            ? OrderedTabStops()
-                .Concat(
-                    copies.Components.Select(copy => new TabStop(
-                        Instance: copy,
-                        Group: null,
-                        Edge: null,
-                        Bounds: Live.BoundsOf(copy)
-                    ))
-                )
+            ? OrderedTabStops().Concat(CopyStops(copies))
             : OrderedTabStops();
 
-    private bool IsPendingCopy(Guid instanceId) =>
-        PendingCopies?.GetComponent(instanceId) is not null;
+    private IEnumerable<TabStop> CopyStops(Board copies)
+    {
+        var live = Live;
+        var nestedIds = copies.Groups.SelectMany(group => group.MemberIds).ToHashSet();
+        var groupStops = copies
+            .Groups.Where(group => !nestedIds.Contains(group.Id))
+            .Select(group =>
+                copies.GetBounds(group, live.BoundsOf) is { } bounds
+                    ? new TabStop(Instance: null, Group: group, Edge: null, Bounds: bounds)
+                    : (TabStop?)null
+            )
+            .OfType<TabStop>();
+        return copies
+            .Components.Select(copy => new TabStop(
+                Instance: copy,
+                Group: null,
+                Edge: null,
+                Bounds: live.BoundsOf(copy)
+            ))
+            .Concat(groupStops);
+    }
+
+    private bool IsPendingCopy(Guid id) =>
+        PendingCopies is { } copies
+        && (copies.GetComponent(id) is not null || copies.GetGroup(id) is not null);
 }

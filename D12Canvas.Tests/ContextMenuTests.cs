@@ -431,7 +431,7 @@ public class ContextMenuTests : ComponentTestBase
     {
         var css = StyleBlockText(RenderMenu(SingleInstance));
 
-        var root = ExtractBlock(css, ".d12-context-menu {");
+        var root = ExtractEveryBlock(css, ".d12-context-menu {");
         var item = ExtractBlock(css, ".d12-context-menu-item {");
         var separator = ExtractBlock(css, ".d12-context-menu-separator {");
         Assert.Contains($"width: {ContextMenuPlacement.Width}px;", root);

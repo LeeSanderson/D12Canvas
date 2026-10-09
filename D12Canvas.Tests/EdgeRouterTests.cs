@@ -318,19 +318,55 @@ public class EdgeRouterTests
         Assert.Equal((110 - EdgeRouter.Stub, 50.0), route.Points[2]);
     }
 
+    // The control points crowd the far end, so the curve's parametric middle sits well past
+    // halfway along it.
     [Fact]
-    public void ACurvedEdgesLabelSitsAtTheMiddleOfTheCurve()
+    public void ACurvedEdgesLabelSitsHalfwayAlongTheDrawnCurve()
+    {
+        var route = new EdgeRoute(
+            new RouteRequest(
+                EdgeRouting.Curved,
+                new RouteEnd(0, 0, PortId.Right, null),
+                new RouteEnd(100, 0, PortId.Left, null)
+            ),
+            [(0, 0), (60, 0), (100, 0), (100, 0)]
+        );
+
+        Assert.Equal(50, route.LabelAnchor.X, 0.5);
+        Assert.Equal(0, route.LabelAnchor.Y, 6);
+    }
+
+    [Fact]
+    public void ACurvedEdgesLabelLiesOnTheCurve()
     {
         var route = Curved(
             PortEnd(new Bounds(0, 0, 100, 100), PortId.Right),
-            PortEnd(new Bounds(400, 200, 100, 100), PortId.Left)
+            PortEnd(new Bounds(400, 200, 100, 100), PortId.Bottom)
         );
 
         var (p0, p1, p2, p3) = (route.Points[0], route.Points[1], route.Points[2], route.Points[3]);
-        Assert.Equal(
-            ((p0.X + 3 * p1.X + 3 * p2.X + p3.X) / 8, (p0.Y + 3 * p1.Y + 3 * p2.Y + p3.Y) / 8),
-            route.LabelAnchor
-        );
+        var nearest = Enumerable
+            .Range(0, 1001)
+            .Select(step => step / 1000.0)
+            .Select(t =>
+            {
+                var u = 1 - t;
+                var x =
+                    u * u * u * p0.X
+                    + 3 * u * u * t * p1.X
+                    + 3 * u * t * t * p2.X
+                    + t * t * t * p3.X;
+                var y =
+                    u * u * u * p0.Y
+                    + 3 * u * u * t * p1.Y
+                    + 3 * u * t * t * p2.Y
+                    + t * t * t * p3.Y;
+                return Math.Sqrt(
+                    Math.Pow(x - route.LabelAnchor.X, 2) + Math.Pow(y - route.LabelAnchor.Y, 2)
+                );
+            })
+            .Min();
+        Assert.True(nearest < 1, $"The label sits {nearest} away from the curve.");
     }
 
     [Theory]

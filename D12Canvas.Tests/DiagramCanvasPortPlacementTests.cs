@@ -467,6 +467,24 @@ public class DiagramCanvasPortPlacementTests : ComponentTestBase
         Assert.Null(ProvisionalDot(canvas));
     }
 
+    // Below the LOD cutoff the shape is a placeholder with no stop, so focus could never reach it
+    // and nothing would ever end placement. Add port… is not offered there.
+    [Fact]
+    public async Task AddPortStartsNoPlacementWhenTheShapeHasNoStopToHoldFocus()
+    {
+        var canvas = RenderCanvas(snapToGrid: false);
+        canvas.ClickOn(canvas.ContainerOf(_shape.Id));
+        await canvas.InvokeAsync(() => canvas.Instance.ZoomPanTracker.Scale = 0.1);
+        await canvas.InvokeAsync(() => canvas.Instance.OnContextMenuKeyPressed());
+
+        Assert.DoesNotContain(AddPortByKeyboard, MenuLabels(canvas));
+        await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
+        var before = _shape.Bounds;
+        await Arrow(canvas, "ArrowRight");
+
+        Assert.NotEqual(before, _shape.Bounds);
+    }
+
     public static TheoryData<string> IgnoredKeys =>
         new()
         {
@@ -580,6 +598,18 @@ public class DiagramCanvasPortPlacementTests : ComponentTestBase
         Assert.NotNull(ProvisionalDot(canvas));
         await Enter(canvas);
         Assert.Single(_shape.CustomPorts);
+    }
+
+    [Fact]
+    public async Task TheSnapChordDoesNothingWhilePlacing()
+    {
+        var canvas = RenderCanvas();
+        await StartPlacement(canvas);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnSnapToGridChordPressed());
+
+        Assert.True(canvas.Instance.SnapToGrid);
+        Assert.NotNull(ProvisionalDot(canvas));
     }
 
     [Fact]

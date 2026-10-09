@@ -316,6 +316,21 @@ public class DiagramCanvasFramingTests : ComponentTestBase
         AssertNotInFlight(canvas);
     }
 
+    // The container reporting the size it already had moves nothing, so the flight carries on.
+    [Fact]
+    public async Task AContainerResizeThatLeavesTheViewWhereItIsKeepsTheFlight()
+    {
+        var board = new Board();
+        AddInstance(board, new Bounds(3000, 0, 100, 100));
+        var canvas = RenderCanvas(board);
+        canvas.ReturnToOrigin();
+        Run(canvas, canvas.Instance.ZoomToFit);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnContainerResized(800, 600));
+
+        AssertInFlight(canvas);
+    }
+
     [Fact]
     public void AFlightStartedMidDragKeepsTheDragGoingAndTheShapeUnderThePointer()
     {

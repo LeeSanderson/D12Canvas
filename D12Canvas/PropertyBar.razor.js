@@ -4,10 +4,16 @@
 // wrapping at either end; Up and Down are left to the control itself. Delete or Backspace on a
 // colour that can follow the theme returns it to the theme. Escape hands focus back to
 // the one selected shape when there is one, otherwise to whatever held focus before the bar.
+// A visible bar that the canvas moves, outside a framing flight, hides until it has stood still
+// for SETTLE_MS, so a wheel pan or a burst of nudges does not drag it jittering across the board.
+const SETTLE_MS = 150;
+
 export function registerPropertyBar(bar) {
     if (!bar?.isConnected) {
         return { dispose: () => {} };
     }
+
+    const stopSettling = settleAfterMoves(bar);
 
     const container = bar.closest(".diagram-container");
     let focusedBeforeBar = null;
@@ -52,9 +58,39 @@ export function registerPropertyBar(bar) {
 
     return {
         dispose: () => {
+            stopSettling();
             bar.removeEventListener("focusin", handleFocusIn);
             bar.removeEventListener("keydown", handleKeyDown);
         }
+    };
+}
+
+function settleAfterMoves(bar) {
+    const placeOf = () => ({
+        left: bar.style.left,
+        top: bar.style.top,
+        visible: bar.style.visibility !== "hidden",
+        flying: bar.style.transitionProperty !== ""
+    });
+    let last = placeOf();
+    let timer = null;
+
+    const observer = new MutationObserver(() => {
+        const current = placeOf();
+        const moved = current.left !== last.left || current.top !== last.top;
+        if (moved && last.visible && current.visible && !current.flying) {
+            bar.classList.add("d12-property-bar-settling");
+            clearTimeout(timer);
+            timer = setTimeout(() => bar.classList.remove("d12-property-bar-settling"), SETTLE_MS);
+        }
+
+        last = current;
+    });
+    observer.observe(bar, { attributes: true, attributeFilter: ["style"] });
+
+    return () => {
+        observer.disconnect();
+        clearTimeout(timer);
     };
 }
 

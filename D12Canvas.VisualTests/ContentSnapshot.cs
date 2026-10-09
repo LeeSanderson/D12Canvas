@@ -25,9 +25,13 @@ public static class ContentSnapshot
     // after it mounts.
     private const string UnmeasuredPropertyBar = ".d12-property-bar[style*='visibility: hidden']";
 
+    // A bar the canvas has just moved stays hidden until it has stood still for a moment.
+    private const string SettlingPropertyBar = ".d12-property-bar-settling";
+
     public static async Task Verify(IPage page, [CallerFilePath] string sourceFile = "")
     {
         await Assertions.Expect(page.Locator(UnmeasuredPropertyBar)).ToHaveCountAsync(0);
+        await Assertions.Expect(page.Locator(SettlingPropertyBar)).ToHaveCountAsync(0);
         var content = page.Locator(ContentSelector);
         var html = await content.InnerHTMLAsync();
         var extent = await content.EvaluateAsync<Clip>(ContentExtentScript);

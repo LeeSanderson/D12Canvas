@@ -62,9 +62,7 @@ public partial class DiagramCanvas
 
     // The several-edge counterpart to CommitEdgeStyleChange: one history entry for every edge the
     // change reaches, skipping locked ones.
-    public void CommitEdgeStyleChangeBatch(
-        IReadOnlyList<(Guid EdgeId, EdgeStyle Before, EdgeStyle After)> changes
-    )
+    public void CommitEdgeStyleChangeBatch(IReadOnlyList<EdgeStyleChange> changes)
     {
         var commands = new List<ICommand>();
         foreach (var (edgeId, before, after) in changes)

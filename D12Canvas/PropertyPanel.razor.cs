@@ -345,29 +345,15 @@ public partial class PropertyPanel : IAsyncDisposable
     private void Commit(PanelField field, object? newValue)
     {
         _edits++;
-        if (field.Kind == EditorKind.Color && field.CanHoldNull && newValue is "")
+        var changes = TargetedEdit.ChangesFor(
+            field.Targets,
+            field.Kind,
+            TargetedEdit.Normalise(field.Kind, field.CanHoldNull, newValue)
+        );
+        if (changes.Count > 0)
         {
-            newValue = null;
+            Canvas?.CommitPropsChangeBatch(changes);
         }
-
-        var changes = new List<(Guid InstanceId, object Before, object After)>();
-        foreach (var (instance, property) in field.Targets)
-        {
-            var before = instance.Props;
-            if (MixedValue.AreEqual(field.Kind, property.GetValue(before), newValue))
-            {
-                continue;
-            }
-
-            changes.Add((instance.Id, before, PropsCopy.With(before, property, newValue)));
-        }
-
-        if (changes.Count == 0)
-        {
-            return;
-        }
-
-        Canvas?.CommitPropsChangeBatch(changes);
     }
 
     // A checkbox's ChangeEventArgs.Value arrives as a bool (Blazor reads the DOM element's

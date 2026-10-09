@@ -25,6 +25,28 @@ internal static class PropertyBarPlacement
             Clamp(anchor.Top - Gap - Height, containerHeight - Height)
         );
 
+    // A bar already showing stays where it is while its new place is less than this far away and
+    // where it stands is still inside the margins, so a nudge or a small viewport change does not
+    // make it twitch after the selection.
+    public const double MinimumMove = 16;
+
+    public static (double Left, double Top) Settle(
+        (double Left, double Top) shown,
+        (double Left, double Top) target,
+        double barWidth,
+        double containerWidth,
+        double containerHeight
+    )
+    {
+        var distance = Math.Sqrt(
+            Math.Pow(target.Left - shown.Left, 2) + Math.Pow(target.Top - shown.Top, 2)
+        );
+        var insideMargins =
+            shown.Left == Clamp(shown.Left, containerWidth - barWidth)
+            && shown.Top == Clamp(shown.Top, containerHeight - Height);
+        return distance < MinimumMove && insideMargins ? shown : target;
+    }
+
     private static double Clamp(double position, double room) =>
         Math.Max(Margin, Math.Min(position, room - Margin));
 }

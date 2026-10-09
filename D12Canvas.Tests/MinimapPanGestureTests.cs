@@ -7,18 +7,23 @@ namespace D12Canvas.Tests;
 // The minimap's points reach the gesture as minimap pixels, mapped here at a tenth of board scale
 // with the board origin 50 pixels in from the minimap's corner, so minimap (60, 70) is board
 // (100, 200). The canvas container is 800 by 600, so a centred board point (x, y) at scale 1 is pan
-// (400 - x, 300 - y).
+// (400 - x, 300 - y), and the viewport at pan zero is board (0, 0) to (800, 600), which minimap
+// (50, 50) to (130, 110) shows. A press at minimap (10, 10) lands outside that rect.
 public class MinimapPanGestureTests
 {
     private static (double X, double Y) ToBoardPoint(double x, double y) =>
         ((x - 50) * 10, (y - 50) * 10);
 
-    private static MinimapPanGesture PressAt(FakeGestureContext context, double x, double y) =>
-        new(
+    private static MinimapPanGesture PressAt(FakeGestureContext context, double x, double y)
+    {
+        var gesture = new MinimapPanGesture(
             PointerEvents.Press(HitRole.Canvas, PointerPress.PrimaryButton, x, y),
             context,
             ToBoardPoint
         );
+        gesture.Begin();
+        return gesture;
+    }
 
     [Fact]
     public void AClickFliesTheViewportCentreToThePressedPointAndKeepsTheScale()
@@ -35,10 +40,23 @@ public class MinimapPanGestureTests
     }
 
     [Fact]
-    public void ADragCentresTheViewportOnTheBoardPointUnderThePointerWithoutAnimating()
+    public void ADragFromInsideTheViewportRectKeepsTheRectWhereItWasGrabbed()
     {
         var context = new FakeGestureContext(new Board());
         var gesture = PressAt(context, 60, 70);
+
+        gesture.Move(PointerEvents.Move(65, 70));
+        gesture.Move(PointerEvents.Move(80, 90));
+
+        Assert.Equal([false, false], context.ViewportCentrings);
+        Assert.Equal((-200, -200), (context.ZoomPan.PanX, context.ZoomPan.PanY));
+    }
+
+    [Fact]
+    public void ADragFromOutsideTheViewportRectCentresTheViewportOnThePointerWithoutAnimating()
+    {
+        var context = new FakeGestureContext(new Board());
+        var gesture = PressAt(context, 10, 10);
 
         gesture.Move(PointerEvents.Move(65, 70));
         gesture.Move(PointerEvents.Move(80, 90));
@@ -51,7 +69,7 @@ public class MinimapPanGestureTests
     public void ReleasingFromADragMovesNothingFurther()
     {
         var context = new FakeGestureContext(new Board());
-        var gesture = PressAt(context, 60, 70);
+        var gesture = PressAt(context, 10, 10);
         gesture.Move(PointerEvents.Move(80, 90));
 
         gesture.Release(PointerEvents.Release(PointerPress.PrimaryButton, 90, 95));
@@ -64,7 +82,7 @@ public class MinimapPanGestureTests
     public void AViewportChangeUnderTheDragReanchorsSoTheTwoMovementsAdd()
     {
         var context = new FakeGestureContext(new Board());
-        var gesture = PressAt(context, 60, 70);
+        var gesture = PressAt(context, 10, 10);
         gesture.Move(PointerEvents.Move(80, 90));
 
         context.ZoomPan.Pan(-30, 0);
@@ -93,7 +111,7 @@ public class MinimapPanGestureTests
     public void ACancelledDragIgnoresFurtherMovesAndItsReleaseAndLeavesTheViewportWhereItIs()
     {
         var context = new FakeGestureContext(new Board());
-        var gesture = PressAt(context, 60, 70);
+        var gesture = PressAt(context, 10, 10);
         gesture.Move(PointerEvents.Move(80, 90));
 
         gesture.MarkCancelled();

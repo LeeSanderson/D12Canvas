@@ -68,8 +68,6 @@
 <style>
     .component-container {
         position: absolute;
-        min-width: 100px;
-        min-height: 100px;
         box-sizing: border-box;
         border: 1px solid transparent;
         cursor: move;
@@ -83,6 +81,10 @@
         height: 100%;
         position: relative;
         overflow: hidden;
+    }
+
+    .component-container:not([data-d12-unaddressable]):not([data-d12-locked]) .container-content :is(input, textarea, button, select, a[href], [tabindex], [contenteditable]:not([contenteditable="false"]), [data-d12-author-content]) {
+        cursor: auto;
     }
 
     .component-container:focus {

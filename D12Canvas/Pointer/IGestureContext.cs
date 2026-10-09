@@ -5,7 +5,9 @@ namespace D12Canvas.Pointer;
 // What a pointer gesture may reach: the board, the viewport, the selection it is allowed to drive
 // for the duration of the press, the gesture preview it publishes and commits, and the few
 // canvas-level effects a gesture produces. Deliberately not a back-reference to the canvas, so a
-// gesture needing more is a visible decision here.
+// gesture needing more is a visible decision here. Every Publish member, ShowMarquee and
+// CopyOfSelection leave Board untouched; only CommitPreview and the members marked as history
+// entries write it.
 internal interface IGestureContext
 {
     Board? Board { get; }
@@ -56,17 +58,15 @@ internal interface IGestureContext
 
     IReadOnlyList<Edge> SelectedEdges();
 
-    // Replaces both selection sets.
     void ReplaceSelection(IEnumerable<Guid> effectiveIds, IEnumerable<Guid> edgeIds);
 
     // Both leave the selected edges as they are.
     void AddToSelection(Guid effectiveId);
     void RemoveFromSelection(Guid effectiveId);
 
-    // Replaces the whole selection with the one edge.
     void SelectEdge(Guid edgeId);
 
-    // Adds the edge or takes it out, leaving the rest of the selection as it is.
+    // Leaves the rest of the selection as it is.
     void ToggleEdge(Guid edgeId);
     void ClearSelection();
 
@@ -80,25 +80,22 @@ internal interface IGestureContext
     // candidates.
     IReadOnlyList<Bounds> SnapCandidates(IReadOnlyCollection<Guid> excluded);
 
-    // Replaces the gesture preview's guides. Board is not touched.
     void PublishGuides(IReadOnlyList<SnapGuide> guides);
 
     void ShowMarquee(Bounds? boardBounds);
 
-    // Replaces the gesture preview's bounds overrides. Board is not touched.
     void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides);
 
-    // Replaces the gesture preview's moved floating endpoints. Board is not touched.
     void PublishMovedEndpoints(IReadOnlyDictionary<EdgeEnd, FloatingEndpoint> movedEndpoints);
 
     // A copy of the selection exactly as duplicate would build it, every id fresh and stacked
-    // above the board, or null when nothing copyable is selected. Board is not touched.
+    // above the board, or null when nothing copyable is selected.
     Board? CopyOfSelection();
 
-    // Replaces the gesture preview's pending fragment; null drops it. Board is not touched.
+    // Null drops the pending fragment.
     void PublishPendingFragment(Board? pendingFragment);
 
-    // Draws the selection's box at the frame rather than around its members. Board is not touched.
+    // Draws the selection's box at the frame rather than around its members.
     void PublishSelectionFrame(Bounds frame);
 
     // Writes the last published preview back to Board as one history entry, leaving out every
@@ -107,7 +104,6 @@ internal interface IGestureContext
     // instead, makes it the selection and starts a duplicate run from it.
     void CommitPreview();
 
-    // Replaces the gesture preview's pending edge line. Board is not touched.
     void PublishPendingEdge(PendingEdge pendingEdge);
 
     // Each of these is one history entry.

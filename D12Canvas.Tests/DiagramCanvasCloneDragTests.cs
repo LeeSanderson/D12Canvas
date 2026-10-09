@@ -107,6 +107,37 @@ public class DiagramCanvasCloneDragTests : ComponentTestBase
         Assert.Equal([edge], board.Edges);
     }
 
+    // A copied group shows selected through its own stop as a copied shape does through its
+    // container, and like that container it takes no focus until it is on the board.
+    [Fact]
+    public void MidCloneACopiedGroupHasItsOwnStopShownSelectedAndOutOfTheTabOrder()
+    {
+        var board = new Board();
+        var (left, right, _) = ConnectedPair(board);
+        var group = new Group([left.Id, right.Id]);
+        board.AddGroup(group);
+        var canvas = RenderCanvas(board);
+        canvas.ClickOn(canvas.ContainerOf(left.Id));
+
+        canvas.PressOn(canvas.ContainerOf(left.Id), (30, 30));
+        canvas.MoveTo((30, 130), alt: true);
+
+        var stops = canvas.FindAll(".group-tab-stop");
+        Assert.Equal(2, stops.Count);
+        var original = Assert.Single(stops, stop => stop.GetAttribute("tabindex") == "0");
+        Assert.Null(original.GetAttribute("aria-selected"));
+        var copy = Assert.Single(stops, stop => stop.GetAttribute("tabindex") is null);
+        Assert.Equal("true", copy.GetAttribute("aria-selected"));
+        Assert.Contains("top: 100px", copy.GetAttribute("style"));
+
+        canvas.ReleaseAt((30, 130));
+
+        Assert.All(
+            canvas.FindAll(".group-tab-stop"),
+            stop => Assert.Equal("0", stop.GetAttribute("tabindex"))
+        );
+    }
+
     [Fact]
     public void MidCloneTheOriginalsStayPutAndTheCopiesShowSelectedUnderThePointer()
     {

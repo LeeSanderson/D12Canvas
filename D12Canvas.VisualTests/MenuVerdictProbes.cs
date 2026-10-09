@@ -201,6 +201,31 @@ public sealed class MenuVerdictProbes(PlaywrightFixture playwright, DemoAppFixtu
         await Expect(Instance(SourceId)).ToHaveAttributeAsync("aria-selected", "true");
     }
 
+    // Focus can move between the keydown and the menu's first render. What the menu hands focus back
+    // to is what held it at the keydown, not what holds it once the menu is drawn.
+    [Fact]
+    public async Task ClosingAKeyboardMenuReturnsFocusToWhatHeldItAtTheKeydown()
+    {
+        await Instance(SourceId).FocusAsync();
+        await Expect(Instance(SourceId)).ToHaveAttributeAsync("aria-selected", "true");
+        await Page.EvaluateAsync(
+            """
+            () => window.addEventListener("keydown", (event) => {
+                if (event.code === "F10") {
+                    document.querySelector(".diagram-canvas").focus({ preventScroll: true });
+                }
+            })
+            """
+        );
+
+        await Page.Keyboard.PressAsync("Shift+F10");
+        await Expect(Menu.Locator(".d12-context-menu-item").First).ToBeFocusedAsync();
+        await Page.Keyboard.PressAsync("Escape");
+
+        await Expect(Menu).ToHaveCountAsync(0);
+        await Expect(Instance(SourceId)).ToBeFocusedAsync();
+    }
+
     [Fact]
     public async Task ShiftF10WithNothingSelectedOpensTheCanvasMenu()
     {

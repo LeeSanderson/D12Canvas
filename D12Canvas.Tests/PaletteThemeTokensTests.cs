@@ -11,7 +11,7 @@ public class PaletteThemeTokensTests : ComponentTestBase
         var palette = Render<Palette>();
         var css = StyleBlockText(palette);
 
-        var rootRule = ExtractBlock(css, ".d12-palette {");
+        var rootRule = ExtractEveryBlock(css, ".d12-palette {");
         foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, rootRule);
@@ -41,8 +41,8 @@ public class PaletteThemeTokensTests : ComponentTestBase
         var palette = Render<Palette>();
         var css = StyleBlockText(palette);
 
-        var overrideBlock = ExtractBlock(css, $"[data-d12-theme=\"{theme}\"] .d12-palette {{");
-        Assert.Contains($".d12-palette[data-d12-theme=\"{theme}\"]", css);
+        var overrideBlock = ExtractBlock(css, $"[data-d12-theme={theme}] .d12-palette {{");
+        Assert.Contains($".d12-palette[data-d12-theme={theme}]", css);
         foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, overrideBlock);
@@ -84,7 +84,7 @@ public class PaletteThemeTokensTests : ComponentTestBase
         var palette = Render<Palette>();
         var css = StyleBlockText(palette);
 
-        var rootRule = ExtractBlock(css, ".d12-palette {");
+        var rootRule = ExtractEveryBlock(css, ".d12-palette {");
         Assert.Contains("color: var(--d12-text)", rootRule);
     }
 }

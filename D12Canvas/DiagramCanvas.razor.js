@@ -21,8 +21,34 @@ export async function initialFacts(element) {
         asyncClipboard:
             window.isSecureContext &&
             typeof navigator.clipboard?.writeText === "function" &&
-            typeof navigator.clipboard?.read === "function"
+            typeof navigator.clipboard?.read === "function",
+        keyLabels: await keyLabels()
     };
+}
+
+// The keydown table matches physical keys, so a hint names what the user's layout prints on the
+// key. Only Chromium can say; elsewhere the hints keep their US names.
+const HINTED_KEY_CODES = ["KeyA", "KeyD", "KeyG", "KeyL", "BracketLeft", "BracketRight", "Quote"];
+
+async function keyLabels() {
+    try {
+        const layout = await navigator.keyboard?.getLayoutMap?.();
+        if (!layout) {
+            return null;
+        }
+
+        const labels = {};
+        for (const code of HINTED_KEY_CODES) {
+            const label = layout.get(code);
+            if (label) {
+                labels[code] = label;
+            }
+        }
+
+        return labels;
+    } catch {
+        return null;
+    }
 }
 
 // Returns a disposable handle object rather than a bare function - a JS function isn't
@@ -60,9 +86,7 @@ export async function getElementDimensions(element) {
     };
 }
 
-// Moves DOM focus to a just-created Group's own tab stop, scoped to this canvas's own
-// container. Grouping always clears any prior selection down to just the new group, so right
-// after it commits exactly one group-tab-stop is aria-selected - no need to identify it by id.
+// Grouping leaves exactly one group tab stop aria-selected, so no id is needed.
 export function focusGroupTabStop(container) {
     const stop = container.querySelector('.group-tab-stop[aria-selected="true"]');
     if (stop) {
@@ -70,11 +94,7 @@ export function focusGroupTabStop(container) {
     }
 }
 
-// A command's focus handoff - targets the Nth currently-focusable tab stop by position, in
-// the same document order DiagramCanvas.FocusableTabStopIds computes its own index against
-// (every rendered tab stop carries tabindex="0" and lives in the instance layer; a grouped
-// member's container carries none, so it's naturally excluded here the same way it's excluded
-// there).
+// The index counts the same document order DiagramCanvas.FocusableTabStopIds does.
 export function focusTabStopAt(container, index) {
     const stops = container.querySelectorAll('.instance-layer [tabindex="0"]');
     if (index >= 0 && index < stops.length) {
@@ -177,7 +197,6 @@ function lockedPrimaryCell(button, hit) {
     return button === PRIMARY_BUTTON && hit.locked ? CANVAS_HIT : hit;
 }
 
-// Every marked element under a point, topmost first, each classified as a press on it would be.
 // The browser's own hit test answers, so pointer-events and paint order are respected. A locked
 // entity is left out, as a primary press passes it by.
 function hitStackAt(canvas, clientX, clientY) {
@@ -295,11 +314,17 @@ const menuVerdictSlots = new WeakMap();
 function menuVerdictSlotOf(container) {
     let slot = menuVerdictSlots.get(container);
     if (slot === undefined) {
-        slot = { verdict: null };
+        slot = { verdict: null, focusedAtMenuKey: null };
         menuVerdictSlots.set(container, slot);
     }
 
     return slot;
+}
+
+// The element that held focus when the last menu key reached this container's canvas, which a
+// keyboard-opened menu hands focus back to when it closes.
+export function focusedAtMenuKey(container) {
+    return menuVerdictSlots.get(container)?.focusedAtMenuKey ?? null;
 }
 
 function isMenuKey(event) {
@@ -1150,10 +1175,9 @@ export async function addKeyboardListener(element, dotnetRef) {
             return;
         }
 
-        menuVerdictSlot.verdict =
-            isMenuKey(event) && keyReachesCanvas(element)
-                ? keyboardMenuVerdict(event.target, element)
-                : null;
+        const menuKey = isMenuKey(event) && keyReachesCanvas(element);
+        menuVerdictSlot.verdict = menuKey ? keyboardMenuVerdict(event.target, element) : null;
+        menuVerdictSlot.focusedAtMenuKey = menuKey ? document.activeElement : null;
     };
 
     const handleKeyDown = (event) => {
@@ -1177,10 +1201,8 @@ export async function addKeyboardListener(element, dotnetRef) {
             return;
         }
 
-        // preventDefault is called only from inside a branch that actually invokes a
-        // dotnetRef method - never unconditionally after the switch. Tab (native browser focus
-        // navigation) and every other unhandled key must reach the browser's own default
-        // handling.
+        // preventDefault only inside a branch that invokes .NET: Tab and every unhandled key
+        // must keep the browser's default.
 
         switch (event.code) {
             case "PageUp":
@@ -1199,15 +1221,10 @@ export async function addKeyboardListener(element, dotnetRef) {
             case "ArrowRight":
             case "ArrowUp":
             case "ArrowDown":
-                // Doubles as the text cursor's own movement key during inline WYSIWYG editing
-                // (a contenteditable host element), so this must not hijack it - same guard as
-                // Delete/Ctrl+Z/Ctrl+G below.
                 if (!isEditableTarget(event.target)) {
-                    // preventDefault unconditionally, even for Alt+Arrow combos the C# side ends up
-                    // treating as a no-op (nothing/multiple selected) - Alt+Left/Right is the
-                    // browser's own back/forward navigation shortcut, which must never fire here,
-                    // and for a Ctrl+Shift+Arrow that finds no stop, which Firefox would otherwise
-                    // turn into a text selection and a page scroll.
+                    // Prevented even when C# treats the key as a no-op: Alt+Left/Right is the
+                    // browser's back/forward, and Firefox turns a Ctrl+Shift+Arrow that finds no
+                    // stop into a text selection and a page scroll.
                     event.preventDefault();
                     if ((event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey) {
                         dotnetRef.invokeMethodAsync("OnDirectionalFocusPressed", event.code);
@@ -1221,9 +1238,6 @@ export async function addKeyboardListener(element, dotnetRef) {
                 }
                 break;
             case "Space":
-                // Doubles as the browser's own default "scroll the page" action on a focused
-                // non-form-control element, and as a literal space character while typing during
-                // inline WYSIWYG editing - guarded the same way Delete/Backspace are above.
                 if (!isEditableTarget(event.target)) {
                     event.preventDefault();
                     dotnetRef.invokeMethodAsync("OnSpacePressed");
@@ -1267,9 +1281,6 @@ export async function addKeyboardListener(element, dotnetRef) {
                 }
                 break;
             case "KeyZ":
-                // Ctrl+Z (undo) doubles as the OS/browser's own text-editing undo, so this
-                // guards against hijacking it while focus is on an editable host-page element -
-                // same reasoning as Delete/Backspace above.
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
                     event.preventDefault();
                     if (event.shiftKey) {
@@ -1312,9 +1323,6 @@ export async function addKeyboardListener(element, dotnetRef) {
                 }
                 break;
             case "KeyG":
-                // Ctrl+G (group) / Ctrl+Shift+G (ungroup). Guarded the same way as
-                // Ctrl+Z above: while focus is on an editable host-page element (e.g. mid inline
-                // WYSIWYG text edit), this must not hijack the keystroke.
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
                     event.preventDefault();
                     if (event.shiftKey) {
@@ -1371,9 +1379,7 @@ export async function addKeyboardListener(element, dotnetRef) {
         }
     };
 
-    // Ends an arrow-key nudge burst (see OnArrowKeyReleased) - a held key fires many rapid
-    // repeat keydowns before this fires once on release, so the whole press-to-release span
-    // reads as one undoable gesture rather than one entry per repeat.
+    // A held arrow's repeat keydowns end here, so the whole hold is one undo entry.
     const handleKeyUp = (event) => {
         switch (event.code) {
             case "ArrowLeft":
@@ -1412,7 +1418,6 @@ export async function addKeyboardListener(element, dotnetRef) {
     window.addEventListener('keyup', handleKeyUp);
     element.addEventListener('focusout', handleFocusOut);
 
-    // See addResizeListener above - a disposable handle object, not a bare function.
     return {
         dispose: () => {
             window.removeEventListener('keydown', recordMenuVerdict, true);

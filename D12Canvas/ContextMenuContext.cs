@@ -68,6 +68,7 @@ public sealed record ContextMenuContext(
     bool SnapToGridChordLive = true,
     bool ObjectSnapping = false,
     bool ApplePlatform = false,
+    IReadOnlyDictionary<string, string>? KeyLabels = null,
     bool CanCopy = false,
     bool CanCut = false,
     bool AsyncClipboard = false,

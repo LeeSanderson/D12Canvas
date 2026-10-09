@@ -39,8 +39,8 @@ public class PropertyBarThemeTokensTests : ComponentTestBase
     [Theory]
     [InlineData(".d12-property-bar {", "light")]
     [InlineData("@media (prefers-color-scheme: dark)", "dark")]
-    [InlineData("[data-d12-theme=\"light\"] .d12-property-bar {", "light")]
-    [InlineData("[data-d12-theme=\"dark\"] .d12-property-bar {", "dark")]
+    [InlineData("[data-d12-theme=light] .d12-property-bar {", "light")]
+    [InlineData("[data-d12-theme=dark] .d12-property-bar {", "dark")]
     public void EveryRaisedBlockDeclaresEveryTokenAndItsColorScheme(string marker, string scheme)
     {
         var block = ExtractBlock(BarCss(), marker);
@@ -60,7 +60,7 @@ public class PropertyBarThemeTokensTests : ComponentTestBase
 
         Assert.Contains(
             $"height: {PropertyBarPlacement.Height}px",
-            ExtractBlock(css, ".d12-property-bar {")
+            ExtractEveryBlock(css, ".d12-property-bar {")
         );
         Assert.Contains("flex: 0 0 26px", ExtractBlock(css, ".d12-property-bar-cell {"));
     }

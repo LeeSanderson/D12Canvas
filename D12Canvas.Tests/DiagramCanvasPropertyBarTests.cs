@@ -143,6 +143,44 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task ABarKeepsItsPlaceThroughAMoveSmallerThanTheMinimumAndFollowsALargerOne()
+    {
+        var board = new Board();
+        var rectangle = AddRectangle(board, x: 200, y: 200);
+        var canvas = RenderCanvas(board);
+        Select(canvas, rectangle.Id);
+
+        await canvas.InvokeAsync(() => canvas.Instance.ZoomPanTracker.SetPanPosition(-10, 0));
+
+        Assert.Equal("left: 190px; top: 158px;", Bar(canvas)!.GetAttribute("style"));
+
+        await canvas.InvokeAsync(() => canvas.Instance.ZoomPanTracker.SetPanPosition(-40, 0));
+
+        Assert.Equal("left: 150px; top: 158px;", Bar(canvas)!.GetAttribute("style"));
+    }
+
+    [Fact]
+    public async Task DuringAFramingFlightTheBarTravelsWithTheContent()
+    {
+        var board = new Board();
+        var rectangle = AddRectangle(board, x: 200, y: 200);
+        AddRectangle(board, x: 1400, y: 1000);
+        var canvas = RenderCanvas(board);
+        Select(canvas, rectangle.Id);
+
+        await canvas.InvokeAsync(() => canvas.Instance.ZoomToSelection());
+
+        Assert.Contains(
+            "transition: left 250ms ease-out, top 250ms ease-out;",
+            Bar(canvas)!.GetAttribute("style")
+        );
+
+        await canvas.InvokeAsync(() => canvas.Instance.ZoomPanTracker.SetPanPosition(0, 0));
+
+        Assert.DoesNotContain("transition", Bar(canvas)!.GetAttribute("style"));
+    }
+
+    [Fact]
     public void ASelectionNearTheTopEdgeSlidesTheBarAlongTheEdgeRatherThanBelow()
     {
         var board = new Board();

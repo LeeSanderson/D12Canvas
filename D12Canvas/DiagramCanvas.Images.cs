@@ -220,7 +220,11 @@ public partial class DiagramCanvas
         CommitPropsChangeBatch(
             SelectedImages()
                 .Where(image => ((ImageProps)image.Props).Url != url)
-                .Select(image => (image.Id, image.Props, ImagePicture.WithUrl(image.Props, url)))
+                .Select(image => new PropsChange(
+                    image.Id,
+                    image.Props,
+                    ImagePicture.WithUrl(image.Props, url)
+                ))
                 .ToList()
         );
     }

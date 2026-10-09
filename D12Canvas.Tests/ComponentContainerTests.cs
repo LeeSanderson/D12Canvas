@@ -262,4 +262,46 @@ public class ComponentContainerTests : ComponentTestBase
 
         Assert.Empty(container.FindAll(".resize-handle"));
     }
+
+    [Fact]
+    public void AContainerTakesExactlyItsBoundsWithNoMinimumSize()
+    {
+        var container = Render<ComponentContainer>(parameters =>
+            parameters.Add(p => p.Width, 40).Add(p => p.Height, 30)
+        );
+
+        var rule = ExtractBlock(StyleBlockText(container), ".component-container {");
+        Assert.DoesNotContain("min-width", rule);
+        Assert.DoesNotContain("min-height", rule);
+    }
+
+    [Fact]
+    public void AuthorContentOfAnAddressableUnlockedInstanceTakesTheBrowsersOwnCursor()
+    {
+        var container = Render<ComponentContainer>();
+
+        var css = StyleBlockText(container);
+        var selector =
+            ".component-container:not([data-d12-unaddressable]):not([data-d12-locked]) .container-content :is(";
+        Assert.Contains("cursor: auto;", ExtractBlock(css, selector));
+        var authorContent = css[
+            (css.IndexOf(selector, StringComparison.Ordinal) + selector.Length)..
+        ];
+        foreach (
+            var match in new[]
+            {
+                "input",
+                "textarea",
+                "button",
+                "select",
+                "a[href]",
+                "[tabindex]",
+                "[contenteditable]",
+                "[data-d12-author-content]",
+            }
+        )
+        {
+            Assert.Contains(match, authorContent[..authorContent.IndexOf('{')]);
+        }
+    }
 }

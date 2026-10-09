@@ -26,6 +26,13 @@ public partial class DiagramCanvas
             ? instance
             : null;
 
+    // Placement ends when focus leaves the instance's stop, so it starts only on an instance whose
+    // stop can take focus; a placeholder below the LOD cutoff has none.
+    private ComponentInstance? PlaceablePortTarget() =>
+        SinglePortTarget() is { } instance && FocusableTabStopIds().Contains(instance.Id)
+            ? instance
+            : null;
+
     private (double FractionX, double FractionY)? ProvisionalPortFor(Guid instanceId) =>
         _portPlacement is { } placement && placement.InstanceId == instanceId
             ? placement.Port.Fractions
@@ -85,7 +92,7 @@ public partial class DiagramCanvas
     // otherwise leave the keys that place the port somewhere Enter does not reach.
     private void BeginPortPlacement()
     {
-        if (Board is null || PressOwnsBoard || SinglePortTarget() is not { } instance)
+        if (Board is null || PressOwnsBoard || PlaceablePortTarget() is not { } instance)
         {
             return;
         }

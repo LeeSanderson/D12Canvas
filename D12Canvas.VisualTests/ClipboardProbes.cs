@@ -138,6 +138,54 @@ public sealed class ClipboardProbes(PlaywrightFixture playwright, DemoAppFixture
         await Expect(Instance(SourceId)).ToHaveCountAsync(0);
     }
 
+    // A Blazor Server host cannot answer the copy event's synchronous call, so the listener falls
+    // back to the async clipboard. The probe makes every synchronous call throw, as such a host does.
+    private Task RefuseSynchronousInteropAsync() =>
+        Page.EvaluateAsync(
+            """
+            () => {
+                window.DotNet.DotNetObject.prototype.invokeMethod = function () {
+                    throw new Error("Synchronous calls are not supported on this host.");
+                };
+            }
+            """
+        );
+
+    [Fact]
+    public async Task OnAHostWithoutSynchronousInteropCtrlCWritesThroughTheAsyncClipboard()
+    {
+        await GrantClipboardAsync();
+        await Instance(SourceId).ClickAsync();
+        await Page.EvaluateAsync("() => navigator.clipboard.writeText('before')");
+        await RefuseSynchronousInteropAsync();
+
+        await PressChordAsync(Page, "c");
+        await SettleAsync();
+
+        var clipboard = "";
+        for (var attempt = 0; attempt < 50 && !clipboard.Contains(SourceId); attempt++)
+        {
+            await Task.Delay(100, TestContext.Current.CancellationToken);
+            clipboard = await ClipboardTextAsync(Page);
+        }
+
+        Assert.Contains(SourceId, clipboard);
+        await Expect(Instance(SourceId)).ToHaveCountAsync(1);
+    }
+
+    [Fact]
+    public async Task OnAHostWithoutSynchronousInteropCtrlXWritesThenRemoves()
+    {
+        await GrantClipboardAsync();
+        await Instance(SourceId).ClickAsync();
+        await RefuseSynchronousInteropAsync();
+
+        await PressChordAsync(Page, "x");
+
+        await Expect(Instance(SourceId)).ToHaveCountAsync(0);
+        Assert.Contains(SourceId, await ClipboardTextAsync(Page));
+    }
+
     [Fact]
     public async Task PastingPlainText_CreatesATextShapeHoldingIt()
     {

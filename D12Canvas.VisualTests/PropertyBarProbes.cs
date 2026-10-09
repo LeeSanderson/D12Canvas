@@ -206,4 +206,42 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         await Expect(line)
             .ToHaveAttributeAsync("style", new System.Text.RegularExpressions.Regex("#e5246b"));
     }
+
+    // A wheel moves the viewport under a visible bar. The bar hides while it is being moved and
+    // shows again where the selection now is once the wheel has stopped.
+    [Fact]
+    public async Task AWheelHidesTheBarWhileTheViewMovesAndShowsItAgainWhenItStops()
+    {
+        await SelectAsync(_page, Theme, BlueRectangleId);
+        await Expect(Bar).ToBeVisibleAsync();
+        await Bar.EvaluateAsync(
+            """
+            bar => {
+                window.__d12BarSettled = [];
+                new MutationObserver(() =>
+                    window.__d12BarSettled.push(bar.classList.contains("d12-property-bar-settling"))
+                ).observe(bar, { attributes: true, attributeFilter: ["class"] });
+            }
+            """
+        );
+        var before = await Bar.GetAttributeAsync("style");
+        var container = (
+            await Pane(_page, Theme).Locator(".diagram-container").BoundingBoxAsync()
+        )!;
+
+        await _page.Mouse.MoveAsync(container.X + 20, container.Y + container.Height - 20);
+        await _page.Mouse.WheelAsync(0, 300);
+        await _page.Mouse.WheelAsync(0, 300);
+
+        await Expect(Bar)
+            .Not.ToHaveClassAsync(
+                new System.Text.RegularExpressions.Regex("d12-property-bar-settling")
+            );
+        await Expect(Bar).ToBeVisibleAsync();
+        Assert.NotEqual(before, await Bar.GetAttributeAsync("style"));
+        Assert.Equal(
+            [true, false],
+            (await _page.EvaluateAsync<bool[]>("() => window.__d12BarSettled")).Distinct()
+        );
+    }
 }

@@ -66,4 +66,40 @@ public class PropertyBarPlacementTests
 
         Assert.Equal(PropertyBarPlacement.Margin, left);
     }
+
+    private static (double Left, double Top) Settle(
+        (double Left, double Top) shown,
+        (double Left, double Top) target
+    ) => PropertyBarPlacement.Settle(shown, target, 120, ContainerWidth, ContainerHeight);
+
+    [Fact]
+    public void ABarStaysPutWhenItsNewPlaceIsCloserThanTheMinimumMove()
+    {
+        var shown = (300.0, 200.0);
+
+        Assert.Equal(shown, Settle(shown, (310, 205)));
+    }
+
+    [Fact]
+    public void ABarMovesOnceItsNewPlaceIsTheMinimumMoveAwayOrMore()
+    {
+        var target = (300.0 + PropertyBarPlacement.MinimumMove, 200.0);
+
+        Assert.Equal(target, Settle((300, 200), target));
+    }
+
+    [Fact]
+    public void ABarThatWouldStayOutsideTheMarginsMovesHoweverSmallTheMove()
+    {
+        var target = (PropertyBarPlacement.Margin, 200.0);
+
+        Assert.Equal(target, Settle((PropertyBarPlacement.Margin - 4, 200), target));
+    }
+
+    [Fact]
+    public void TheMinimumMoveIsAboveTheGapButSmallerThanACell()
+    {
+        Assert.True(PropertyBarPlacement.Gap < PropertyBarPlacement.MinimumMove);
+        Assert.True(PropertyBarPlacement.MinimumMove < PropertyBarPlacement.Height);
+    }
 }

@@ -168,10 +168,10 @@
                         <div @key="group.Id"
                              class="group-tab-stop"
                              style="@BoxStyle(stop.Bounds)"
-                             tabindex="0"
+                             tabindex="@(IsPendingCopy(group.Id) ? null : "0")"
                              role="group"
                              aria-label="@GroupAccessibleLabel(group)"
-                             aria-selected="@(IsGroupSelected(group.Id) ? "true" : null)"
+                             aria-selected="@(IsGroupSelected(group.Id) || IsPendingCopy(group.Id) ? "true" : null)"
                              @onfocus="@(() => FocusEntity(group.Id))"></div>
                     }
                     else if (stop.Edge is { } edge)
@@ -281,7 +281,8 @@
         <PropertyBar Rows="propertyBar.Rows"
                      Anchor="propertyBar.Anchor"
                      ContainerWidth="_zoomPanTracker.ContainerWidth"
-                     ContainerHeight="_zoomPanTracker.ContainerHeight" />
+                     ContainerHeight="_zoomPanTracker.ContainerHeight"
+                     FlightDuration="@(_inFlight ? _ambientTransition : TimeSpan.Zero)" />
     }
 </div>
 

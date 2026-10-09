@@ -1,3 +1,5 @@
+import { focusedAtMenuKey } from "./DiagramCanvas.razor.js";
+
 // While a menu is open, the next press anywhere outside it closes it. Inside the canvas container
 // that press does nothing else: it is stopped in the capture phase on document, before the canvas
 // listener sees it, and the click or contextmenu it would go on to fire is swallowed too. A press
@@ -12,7 +14,9 @@ export function registerMenu(menuElement, dotNetHelper, options) {
 
     const container = menuElement.closest(".diagram-container");
     const openedFromKeyboard = options?.openedFromKeyboard === true;
-    const focusedAtOpen = document.activeElement;
+    const focusedAtOpen =
+        (openedFromKeyboard && container !== null ? focusedAtMenuKey(container) : null) ??
+        document.activeElement;
 
     const handlePointerDown = (event) => {
         if (menuElement.contains(event.target)) {

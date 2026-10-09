@@ -121,13 +121,8 @@
 </div>
 
 <style>
+    @(RaisedSurface.TokenRules(".d12-property-panel"))
     .d12-property-panel {
-        --d12-surface: #fff;
-        --d12-border: #ccc;
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #666;
-        --d12-text: #212529;
-        color-scheme: light;
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -142,37 +137,6 @@
         padding: 12px;
         box-sizing: border-box;
         color: var(--d12-text);
-    }
-
-    @@media (prefers-color-scheme: dark) {
-        .d12-property-panel {
-            --d12-surface: #2a2a2a;
-            --d12-border: rgba(255, 255, 255, 0.12);
-            --d12-accent: #2f80ed;
-            --d12-muted-text: #a0a0a0;
-            --d12-text: #e8e8e8;
-            color-scheme: dark;
-        }
-    }
-
-    .d12-property-panel[data-d12-theme="light"],
-    [data-d12-theme="light"] .d12-property-panel {
-        --d12-surface: #fff;
-        --d12-border: #ccc;
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #666;
-        --d12-text: #212529;
-        color-scheme: light;
-    }
-
-    .d12-property-panel[data-d12-theme="dark"],
-    [data-d12-theme="dark"] .d12-property-panel {
-        --d12-surface: #2a2a2a;
-        --d12-border: rgba(255, 255, 255, 0.12);
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #a0a0a0;
-        --d12-text: #e8e8e8;
-        color-scheme: dark;
     }
 
     .d12-property-panel-empty {

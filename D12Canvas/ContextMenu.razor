@@ -53,13 +53,8 @@
 </div>
 
 <style>
+    @(RaisedSurface.TokenRules(".d12-context-menu"))
     .d12-context-menu {
-        --d12-surface: #fff;
-        --d12-border: #ccc;
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #666;
-        --d12-text: #212529;
-        --d12-shadow: rgba(0, 0, 0, 0.15);
         position: absolute;
         z-index: 1000;
         display: flex;
@@ -77,37 +72,6 @@
         box-sizing: border-box;
         box-shadow: 0 2px 8px var(--d12-shadow);
         color: var(--d12-text);
-    }
-
-    @@media (prefers-color-scheme: dark) {
-        .d12-context-menu {
-            --d12-surface: #2a2a2a;
-            --d12-border: rgba(255, 255, 255, 0.12);
-            --d12-accent: #2f80ed;
-            --d12-muted-text: #a0a0a0;
-            --d12-text: #e8e8e8;
-            --d12-shadow: rgba(0, 0, 0, 0.5);
-        }
-    }
-
-    .d12-context-menu[data-d12-theme="light"],
-    [data-d12-theme="light"] .d12-context-menu {
-        --d12-surface: #fff;
-        --d12-border: #ccc;
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #666;
-        --d12-text: #212529;
-        --d12-shadow: rgba(0, 0, 0, 0.15);
-    }
-
-    .d12-context-menu[data-d12-theme="dark"],
-    [data-d12-theme="dark"] .d12-context-menu {
-        --d12-surface: #2a2a2a;
-        --d12-border: rgba(255, 255, 255, 0.12);
-        --d12-accent: #2f80ed;
-        --d12-muted-text: #a0a0a0;
-        --d12-text: #e8e8e8;
-        --d12-shadow: rgba(0, 0, 0, 0.5);
     }
 
     .d12-context-menu:focus {

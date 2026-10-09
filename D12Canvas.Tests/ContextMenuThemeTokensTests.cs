@@ -34,7 +34,7 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
         var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
-        var rootRule = ExtractBlock(css, ".d12-context-menu {");
+        var rootRule = ExtractEveryBlock(css, ".d12-context-menu {");
         foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, rootRule);
@@ -64,8 +64,8 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
         var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
-        var overrideBlock = ExtractBlock(css, $"[data-d12-theme=\"{theme}\"] .d12-context-menu {{");
-        Assert.Contains($".d12-context-menu[data-d12-theme=\"{theme}\"]", css);
+        var overrideBlock = ExtractBlock(css, $"[data-d12-theme={theme}] .d12-context-menu {{");
+        Assert.Contains($".d12-context-menu[data-d12-theme={theme}]", css);
         foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, overrideBlock);
@@ -107,7 +107,7 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
         var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
-        var rootRule = ExtractBlock(css, ".d12-context-menu {");
+        var rootRule = ExtractEveryBlock(css, ".d12-context-menu {");
         Assert.Contains("color: var(--d12-text)", rootRule);
     }
 
@@ -117,7 +117,7 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
         var menu = RenderMenu();
         var css = StyleBlockText(menu);
 
-        var rootRule = ExtractBlock(css, ".d12-context-menu {");
+        var rootRule = ExtractEveryBlock(css, ".d12-context-menu {");
         Assert.Contains("--d12-shadow", rootRule);
         Assert.Contains("box-shadow: 0 2px 8px var(--d12-shadow)", rootRule);
     }
@@ -125,8 +125,8 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
     [Theory]
     [InlineData(".d12-context-menu {", "rgba(0, 0, 0, 0.15)")]
     [InlineData("@media (prefers-color-scheme: dark)", "rgba(0, 0, 0, 0.5)")]
-    [InlineData("[data-d12-theme=\"light\"] .d12-context-menu {", "rgba(0, 0, 0, 0.15)")]
-    [InlineData("[data-d12-theme=\"dark\"] .d12-context-menu {", "rgba(0, 0, 0, 0.5)")]
+    [InlineData("[data-d12-theme=light] .d12-context-menu {", "rgba(0, 0, 0, 0.15)")]
+    [InlineData("[data-d12-theme=dark] .d12-context-menu {", "rgba(0, 0, 0, 0.5)")]
     public void TheDropShadowDeepensOnDark(string marker, string shadow)
     {
         var menu = RenderMenu();

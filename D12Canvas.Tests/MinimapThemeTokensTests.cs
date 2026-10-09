@@ -19,7 +19,7 @@ public class MinimapThemeTokensTests : ComponentTestBase
     {
         var css = Css();
 
-        var rootRule = ExtractBlock(css, ".d12-minimap {");
+        var rootRule = ExtractEveryBlock(css, ".d12-minimap {");
         foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, rootRule);
@@ -31,7 +31,7 @@ public class MinimapThemeTokensTests : ComponentTestBase
     [Fact]
     public void TheRootTakesThePaletteRaisedValues()
     {
-        var rootRule = ExtractBlock(Css(), ".d12-minimap {");
+        var rootRule = ExtractEveryBlock(Css(), ".d12-minimap {");
 
         Assert.Contains("--d12-surface: #fff", rootRule);
         Assert.Contains("--d12-border: #ccc", rootRule);
@@ -58,8 +58,8 @@ public class MinimapThemeTokensTests : ComponentTestBase
     {
         var css = Css();
 
-        var overrideBlock = ExtractBlock(css, $"[data-d12-theme=\"{theme}\"] .d12-minimap {{");
-        Assert.Contains($".d12-minimap[data-d12-theme=\"{theme}\"]", css);
+        var overrideBlock = ExtractBlock(css, $"[data-d12-theme={theme}] .d12-minimap {{");
+        Assert.Contains($".d12-minimap[data-d12-theme={theme}]", css);
         foreach (var token in ThemeTokens)
         {
             Assert.Contains(token, overrideBlock);
@@ -71,18 +71,18 @@ public class MinimapThemeTokensTests : ComponentTestBase
     {
         var css = Css();
 
-        Assert.Contains("color-scheme: light", ExtractBlock(css, ".d12-minimap {"));
+        Assert.Contains("color-scheme: light", ExtractEveryBlock(css, ".d12-minimap {"));
         Assert.Contains(
             "color-scheme: dark",
             ExtractBlock(css, "@media (prefers-color-scheme: dark)")
         );
         Assert.Contains(
             "color-scheme: light",
-            ExtractBlock(css, "[data-d12-theme=\"light\"] .d12-minimap {")
+            ExtractBlock(css, "[data-d12-theme=light] .d12-minimap {")
         );
         Assert.Contains(
             "color-scheme: dark",
-            ExtractBlock(css, "[data-d12-theme=\"dark\"] .d12-minimap {")
+            ExtractBlock(css, "[data-d12-theme=dark] .d12-minimap {")
         );
     }
 

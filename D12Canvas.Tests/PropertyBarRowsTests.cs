@@ -10,12 +10,8 @@ namespace D12Canvas.Tests;
 public class PropertyBarRowsTests
 {
     private readonly IComponentRegistry _registry;
-    private readonly List<
-        IReadOnlyList<(Guid InstanceId, object Before, object After)>
-    > _propsCommits = [];
-    private readonly List<
-        IReadOnlyList<(Guid EdgeId, EdgeStyle Before, EdgeStyle After)>
-    > _edgeCommits = [];
+    private readonly List<IReadOnlyList<PropsChange>> _propsCommits = [];
+    private readonly List<IReadOnlyList<EdgeStyleChange>> _edgeCommits = [];
 
     public PropertyBarRowsTests()
     {

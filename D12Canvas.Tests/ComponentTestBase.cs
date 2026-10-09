@@ -60,6 +60,23 @@ public abstract class ComponentTestBase : BunitContext
         throw new Xunit.Sdk.XunitException($"Unbalanced braces after `{marker}`.");
     }
 
+    // Every block following each occurrence of `marker`, joined - for a selector whose
+    // declarations are split across rules, such as a raised surface's root, whose shared token
+    // rules come before its own layout rule.
+    protected static string ExtractEveryBlock(string css, string marker)
+    {
+        var blocks = new List<string>();
+        var rest = css;
+        while (rest.Contains(marker, StringComparison.Ordinal))
+        {
+            blocks.Add(ExtractBlock(rest, marker));
+            rest = rest[(rest.IndexOf(marker, StringComparison.Ordinal) + marker.Length)..];
+        }
+
+        Assert.NotEmpty(blocks);
+        return string.Join("\n", blocks);
+    }
+
     protected void SetupDiagramCanvasJsModule()
     {
         var module = JSInterop.SetupModule("./_content/D12Canvas/DiagramCanvas.razor.js");

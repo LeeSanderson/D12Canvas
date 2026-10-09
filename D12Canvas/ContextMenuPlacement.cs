@@ -20,14 +20,33 @@ internal static class ContextMenuPlacement
     // Opens right and down from the anchor by default, and on each axis flips to the other side
     // of the anchor when that is the side it fits on, so the anchor is never covered. Only when it
     // fits on neither side is it clamped inside the container. An unmeasured container places it
-    // at the anchor.
-    public static (double Left, double Top) Place(
+    // at the anchor. A container narrower or shorter than the menu would clip whatever spills over
+    // its edge, so the menu shrinks to the container on that axis, scrolling its rows when it is
+    // cut short, and is placed at the size it takes. A size it keeps is reported as null.
+    public static MenuBox Fit(
         double anchorX,
         double anchorY,
         double height,
         double containerWidth,
         double containerHeight
-    ) => (PlaceAlong(anchorX, Width, containerWidth), PlaceAlong(anchorY, height, containerHeight));
+    )
+    {
+        var width = containerWidth > 0 ? Math.Min(Width, containerWidth) : Width;
+        var shownHeight = containerHeight > 0 ? Math.Min(height, containerHeight) : height;
+        return new MenuBox(
+            PlaceAlong(anchorX, width, containerWidth),
+            PlaceAlong(anchorY, shownHeight, containerHeight),
+            width < Width ? width : null,
+            shownHeight < height ? shownHeight : null
+        );
+    }
+
+    public readonly record struct MenuBox(
+        double Left,
+        double Top,
+        double? Width,
+        double? MaxHeight
+    );
 
     private static double PlaceAlong(double anchor, double size, double extent)
     {

@@ -66,6 +66,50 @@ public sealed class AuthorContentProbes(PlaywrightFixture playwright, DemoAppFix
         await ExpectSelectedAsync(LooseEndId, TargetId);
     }
 
+    [Fact]
+    public async Task AnAltPressOnMarkedContentIsAPressOnItsInstance()
+    {
+        await InjectIntoTargetAsync(
+            "<div class='probe-author-content' data-d12-author-content>marked</div>"
+        );
+        await SettleAsync();
+        await ClearCallsAsync();
+
+        await Page.Keyboard.DownAsync("Alt");
+        await Page.Locator(".probe-author-content").ClickAsync();
+        await Page.Keyboard.UpAsync("Alt");
+        await SettleAsync();
+
+        var press = await SinglePressAsync();
+        Assert.Equal("instance", press.GetProperty("role").GetString());
+        Assert.Equal(TargetId, press.GetProperty("entityId").GetString());
+        Assert.Single(await CallsToAsync("OnPointerReleased"));
+    }
+
+    [Fact]
+    public async Task AnAltPressInsideAnOpenEditorStaysWithTheEditor()
+    {
+        await Page.Locator($".component-container[data-d12-entity='{NoteId}']").DblClickAsync();
+        var editor = Page.Locator("textarea.d12-sticky-note-editor");
+        await Expect(editor).ToBeFocusedAsync();
+        await SettleAsync();
+        await ClearCallsAsync();
+
+        await Page.Keyboard.DownAsync("Alt");
+        await editor.ClickAsync(
+            new()
+            {
+                Position = new() { X = 8, Y = 8 },
+            }
+        );
+        await Page.Keyboard.UpAsync("Alt");
+        await SettleAsync();
+
+        Assert.Equal("author-content", (await SinglePressAsync()).GetProperty("role").GetString());
+        Assert.Empty(await CallsToAsync("OnPointerReleased"));
+        await Expect(editor).ToBeFocusedAsync();
+    }
+
     private async Task SelectLooseEndAsync()
     {
         var looseEnd = Page.Locator($".component-container[data-d12-entity='{LooseEndId}']");

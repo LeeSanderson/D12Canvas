@@ -16,8 +16,8 @@ internal static class PropertyBarRows
         IReadOnlyList<ComponentInstance> instances,
         IReadOnlyList<Edge> edges,
         IComponentRegistry registry,
-        Action<IReadOnlyList<(Guid InstanceId, object Before, object After)>> commitProps,
-        Action<IReadOnlyList<(Guid EdgeId, EdgeStyle Before, EdgeStyle After)>> commitEdgeStyles
+        Action<IReadOnlyList<PropsChange>> commitProps,
+        Action<IReadOnlyList<EdgeStyleChange>> commitEdgeStyles
     ) =>
         (instances.Count > 0, edges.Count > 0) switch
         {
@@ -29,7 +29,7 @@ internal static class PropertyBarRows
     public static IReadOnlyList<PropertyBarRow> ForInstances(
         IReadOnlyList<ComponentInstance> instances,
         IComponentRegistry registry,
-        Action<IReadOnlyList<(Guid InstanceId, object Before, object After)>> commit
+        Action<IReadOnlyList<PropsChange>> commit
     )
     {
         var schemas = instances
@@ -77,7 +77,7 @@ internal static class PropertyBarRows
         IReadOnlyList<string>? options,
         IReadOnlyList<(ComponentInstance Instance, PropertyInfo Property)> targets,
         bool canHoldNull,
-        Action<IReadOnlyList<(Guid InstanceId, object Before, object After)>> commit
+        Action<IReadOnlyList<PropsChange>> commit
     )
     {
         var declaration = PropertyRoleDeclarations.For(role);
@@ -93,22 +93,7 @@ internal static class PropertyBarRows
                 return;
             }
 
-            var changes = targets
-                .Where(target =>
-                    !MixedValue.AreEqual(
-                        declaration.Kind,
-                        target.Property.GetValue(target.Instance.Props),
-                        value
-                    )
-                )
-                .Select(target =>
-                    (
-                        target.Instance.Id,
-                        target.Instance.Props,
-                        PropsCopy.With(target.Instance.Props, target.Property, value)
-                    )
-                )
-                .ToList();
+            var changes = TargetedEdit.ChangesFor(targets, declaration.Kind, value);
             if (changes.Count > 0)
             {
                 commit(changes);
@@ -169,13 +154,13 @@ internal static class PropertyBarRows
 
     public static IReadOnlyList<PropertyBarRow> ForEdges(
         IReadOnlyList<Edge> edges,
-        Action<IReadOnlyList<(Guid EdgeId, EdgeStyle Before, EdgeStyle After)>> commit
+        Action<IReadOnlyList<EdgeStyleChange>> commit
     ) => EdgeRoles.Select(edgeRole => EdgeRow(edgeRole, edges, commit)).ToList();
 
     private static PropertyBarRow EdgeRow(
         EdgeRole edgeRole,
         IReadOnlyList<Edge> edges,
-        Action<IReadOnlyList<(Guid EdgeId, EdgeStyle Before, EdgeStyle After)>> commit
+        Action<IReadOnlyList<EdgeStyleChange>> commit
     )
     {
         var declaration = PropertyRoleDeclarations.For(edgeRole.Role);
@@ -194,7 +179,7 @@ internal static class PropertyBarRows
                 .Select(edge =>
                 {
                     var before = StyleOf(edge);
-                    return (edge.Id, before, edgeRole.Write(before, value));
+                    return new EdgeStyleChange(edge.Id, before, edgeRole.Write(before, value));
                 })
                 .ToList();
             if (changes.Count > 0)
@@ -221,7 +206,6 @@ internal static class PropertyBarRows
     private static string RowId(PropertyRole role) => $"d12-property-bar-{role}";
 
     // A control reports a string; a value that does not parse as the role's type commits nothing.
-    // An empty colour on a row that can hold null is the themed state.
     private static bool TryConvert(
         object? raw,
         PropertyRoleDeclaration declaration,
@@ -233,12 +217,7 @@ internal static class PropertyBarRows
         var text = raw as string ?? Convert.ToString(raw, CultureInfo.InvariantCulture);
         if (declaration.ClrType == typeof(string))
         {
-            if (string.IsNullOrEmpty(text) && declaration.Kind == EditorKind.Color && canHoldNull)
-            {
-                return true;
-            }
-
-            value = text ?? "";
+            value = TargetedEdit.Normalise(declaration.Kind, canHoldNull, text ?? "");
             return true;
         }
 

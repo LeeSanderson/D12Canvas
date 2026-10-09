@@ -48,13 +48,36 @@ internal sealed class EdgeRoute
     private static (double X, double Y) LabelAnchorOf(
         EdgeRouting style,
         IReadOnlyList<(double X, double Y)> points
-    ) =>
-        style == EdgeRouting.Curved
-            ? (
-                (points[0].X + 3 * points[1].X + 3 * points[2].X + points[3].X) / 8,
-                (points[0].Y + 3 * points[1].Y + 3 * points[2].Y + points[3].Y) / 8
-            )
-            : HalfwayAlong(points);
+    ) => HalfwayAlong(style == EdgeRouting.Curved ? Flattened(points) : points);
+
+    // Enough chords that halfway along them is within a fraction of a board unit of halfway along
+    // the curve for any edge a board holds.
+    private const int CurveChords = 64;
+
+    private static IReadOnlyList<(double X, double Y)> Flattened(
+        IReadOnlyList<(double X, double Y)> controlPoints
+    )
+    {
+        var (p0, p1, p2, p3) = (
+            controlPoints[0],
+            controlPoints[1],
+            controlPoints[2],
+            controlPoints[3]
+        );
+        return Enumerable
+            .Range(0, CurveChords + 1)
+            .Select(step =>
+            {
+                var t = (double)step / CurveChords;
+                var u = 1 - t;
+                var (a, b, c, d) = (u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t);
+                return (
+                    a * p0.X + b * p1.X + c * p2.X + d * p3.X,
+                    a * p0.Y + b * p1.Y + c * p2.Y + d * p3.Y
+                );
+            })
+            .ToList();
+    }
 
     private static (double X, double Y) HalfwayAlong(IReadOnlyList<(double X, double Y)> points)
     {
@@ -84,7 +107,7 @@ internal sealed class EdgeRoute
 // the cheapest path that ignores them; Curved puts each control point on its end's normal.
 internal static class EdgeRouter
 {
-    public const double Stub = 20;
+    public const double Stub = DiagramCanvas.GridBaseSpacing;
 
     public const double BendPenalty = 2 * Stub;
 

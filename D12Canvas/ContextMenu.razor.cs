@@ -56,14 +56,27 @@ public partial class ContextMenu : IAsyncDisposable
     {
         get
         {
-            var (left, top) = ContextMenuPlacement.Place(
+            var box = ContextMenuPlacement.Fit(
                 X,
                 Y,
                 ContextMenuPlacement.HeightOf(Sections),
                 ContainerWidth,
                 ContainerHeight
             );
-            return FormattableString.Invariant($"left: {left}px; top: {top}px;");
+            var style = FormattableString.Invariant($"left: {box.Left}px; top: {box.Top}px;");
+            if (box.Width is { } width)
+            {
+                style += FormattableString.Invariant($" width: {width}px;");
+            }
+
+            if (box.MaxHeight is { } maxHeight)
+            {
+                style += FormattableString.Invariant(
+                    $" max-height: {maxHeight}px; overflow-y: auto;"
+                );
+            }
+
+            return style;
         }
     }
 

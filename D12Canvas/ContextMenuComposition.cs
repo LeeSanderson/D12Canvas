@@ -25,20 +25,30 @@ internal static class ContextMenuComposition
     );
 
     private static readonly Chord DeleteChord = new("Delete", AppleKey: "⌫");
-    private static readonly Chord GroupChord = new("G", Primary: true);
-    private static readonly Chord UngroupChord = new("G", Primary: true, Shift: true);
-    private static readonly Chord BringToFrontChord = new("]", Primary: true, Shift: true);
-    private static readonly Chord BringForwardChord = new("]", Primary: true);
-    private static readonly Chord SendBackwardChord = new("[", Primary: true);
-    private static readonly Chord SendToBackChord = new("[", Primary: true, Shift: true);
-    private static readonly Chord SelectAllChord = new("A", Primary: true);
-    private static readonly Chord SnapToGridChord = new("'", Primary: true);
+    private static readonly Chord GroupChord = new("G", Primary: true, Code: "KeyG");
+    private static readonly Chord UngroupChord = new("G", Primary: true, Shift: true, Code: "KeyG");
+    private static readonly Chord BringToFrontChord = new(
+        "]",
+        Primary: true,
+        Shift: true,
+        Code: "BracketRight"
+    );
+    private static readonly Chord BringForwardChord = new("]", Primary: true, Code: "BracketRight");
+    private static readonly Chord SendBackwardChord = new("[", Primary: true, Code: "BracketLeft");
+    private static readonly Chord SendToBackChord = new(
+        "[",
+        Primary: true,
+        Shift: true,
+        Code: "BracketLeft"
+    );
+    private static readonly Chord SelectAllChord = new("A", Primary: true, Code: "KeyA");
+    private static readonly Chord SnapToGridChord = new("'", Primary: true, Code: "Quote");
 
     private static readonly Chord CutChord = new("X", Primary: true);
     private static readonly Chord CopyChord = new("C", Primary: true);
     private static readonly Chord PasteChord = new("V", Primary: true);
-    private static readonly Chord DuplicateChord = new("D", Primary: true);
-    private static readonly Chord LockChord = new("L", Primary: true, Shift: true);
+    private static readonly Chord DuplicateChord = new("D", Primary: true, Code: "KeyD");
+    private static readonly Chord LockChord = new("L", Primary: true, Shift: true, Code: "KeyL");
     private static readonly Chord ZoomToSelectionChord = new("2", Shift: true);
     private static readonly Chord ZoomToFitChord = new("1", Shift: true);
     private static readonly Chord ZoomTo100PercentChord = new("0", Shift: true);
@@ -181,7 +191,7 @@ internal static class ContextMenuComposition
             row.Command,
             row.Label,
             row.Chord(context) is { } chord
-                ? ShortcutHint.Render(chord, context.ApplePlatform)
+                ? ShortcutHint.Render(chord, context.ApplePlatform, context.KeyLabels)
                 : null,
             row.Checked(context),
             row.Glyph
