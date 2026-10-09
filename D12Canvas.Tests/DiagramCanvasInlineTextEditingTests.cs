@@ -253,6 +253,28 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         Assert.Contains("Original", canvas.Find("p.d12-sticky-note-text").TextContent);
     }
 
+    // The press that blurs the editor can reach the canvas before the blur does, so the edit ends
+    // while that press owns the board. It lands once the press ends rather than being lost.
+    [Fact]
+    public async Task ABlurThatArrivesWhileAPressIsHeldCommitsWhenThePressEnds()
+    {
+        var note = AddStickyNote("Original", x: 0);
+        var canvas = RenderCanvas();
+        DoublePress(canvas, note.Id);
+        StickyEditor(canvas).Input("Edited");
+
+        await canvas.Press(600, 500);
+        StickyEditor(canvas).Blur();
+        await canvas.Move(650, 550);
+        await canvas.Release(650, 550);
+
+        Assert.Equal("Edited", TextOf(note));
+
+        await Undo(canvas);
+
+        Assert.Equal("Original", TextOf(note));
+    }
+
     [Fact]
     public async Task RedoAfterUndoingAnEditReappliesIt()
     {

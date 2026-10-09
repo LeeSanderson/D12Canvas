@@ -47,6 +47,14 @@ public partial class DiagramCanvas
     // The component calls this once at every edit end, whether or not anything changed.
     public void CommitInlineEdit(Guid instanceId, object before, object after, bool returnFocus)
     {
+        if (PressOwnsBoard)
+        {
+            _editsEndedDuringPress.Add(
+                () => CommitInlineEdit(instanceId, before, after, returnFocus)
+            );
+            return;
+        }
+
         var labelledEdge = EdgeLabelled(instanceId);
         var entity = ResolvePropsEntity(instanceId);
         var removed = entity is not null && EndsEmpty(entity, before, after);
@@ -67,6 +75,20 @@ public partial class DiagramCanvas
         }
 
         StateHasChanged();
+    }
+
+    // The press that blurs an editor can reach the canvas before the blur does, and while it owns
+    // the board nothing else may write it, so an edit ending then is held until the press ends.
+    private readonly List<Action> _editsEndedDuringPress = [];
+
+    private void CommitEditsEndedDuringPress()
+    {
+        var edits = _editsEndedDuringPress.ToList();
+        _editsEndedDuringPress.Clear();
+        foreach (var commit in edits)
+        {
+            commit();
+        }
     }
 
     private bool EndsEmpty(ComponentInstance instance, object before, object after) =>

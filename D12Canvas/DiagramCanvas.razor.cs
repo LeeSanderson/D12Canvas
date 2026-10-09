@@ -312,6 +312,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             _enteredGroupIds.Clear();
             _duplicateRun.End();
             _clicksAwaitingMeasurement.Clear();
+            _editsEndedDuringPress.Clear();
             _initialFitPending = true;
             FitNewBoard();
         }
@@ -660,6 +661,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         _preview.Clear();
         _stickyParticipants.Clear();
         _history.Unlock();
+        CommitEditsEndedDuringPress();
     }
 
     // A participant enters the sticky set the first time its live bounds are inside the viewport
