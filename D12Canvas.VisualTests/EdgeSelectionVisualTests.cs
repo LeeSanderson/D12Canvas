@@ -71,13 +71,14 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
     {
         var midpoint = await ConnectRectangleToStickyNoteAsync();
 
+        // The edge first: a selected note's property bar sits over the short gap the edge crosses.
+        await _page.Mouse.ClickAsync(midpoint.X, midpoint.Y);
+        await Expect(_page.Locator(".edge-line")).ToHaveAttributeAsync("aria-selected", "true");
+
         var box = await StickyNote.BoundingBoxAsync();
         Assert.NotNull(box);
-        await _page.Mouse.ClickAsync(box!.X + box.Width / 2, box.Y + box.Height / 2);
-        await Expect(StickyNote).ToHaveAttributeAsync("aria-selected", "true");
-
         await _page.Keyboard.DownAsync("Shift");
-        await _page.Mouse.ClickAsync(midpoint.X, midpoint.Y);
+        await _page.Mouse.ClickAsync(box!.X + box.Width / 2, box.Y + box.Height / 2);
         await _page.Keyboard.UpAsync("Shift");
 
         await Expect(_page.Locator(".edge-line")).ToHaveAttributeAsync("aria-selected", "true");

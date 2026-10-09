@@ -1,0 +1,293 @@
+@namespace D12Canvas
+@using D12Canvas.Model
+@using D12Canvas.Panel
+
+<div class="d12-property-bar" role="toolbar" aria-label="Selection properties" style="@BarStyle" @ref="_barRef">
+    <svg class="d12-property-bar-defs" width="0" height="0" aria-hidden="true" focusable="false">
+        <defs>
+            <pattern id="d12-property-bar-hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect class="d12-property-bar-hatch-ground" width="3" height="3" />
+                <rect class="d12-property-bar-hatch-line" width="1.2" height="3" />
+            </pattern>
+        </defs>
+    </svg>
+    @foreach (var row in Rows)
+    {
+        <div class="@CellClass(row)" title="@Title(row)" @key="RowKey(row)">
+            <svg class="d12-property-bar-glyph" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+                @switch (row.Role)
+                {
+                    case PropertyRole.Fill:
+                        <circle cx="8" cy="8" r="5.5" class="@SwatchClass(row, "fill")" fill="@Ink(row)" />
+                        break;
+                    case PropertyRole.Stroke:
+                        <circle cx="8" cy="8" r="5" class="@SwatchClass(row, "stroke")" fill="none" stroke="@Ink(row)" stroke-width="2.6" />
+                        break;
+                    case PropertyRole.TextColour:
+                        <path d="M3.4 10.6 L8 2.6 L12.6 10.6 M5.2 7.8 H10.8" fill="none" stroke="currentColor" stroke-width="1.4" />
+                        <rect x="2.6" y="12.4" width="10.8" height="2.6" rx="0.6" class="@SwatchClass(row, "fill")" fill="@Ink(row)" />
+                        break;
+                    case PropertyRole.EdgeColour:
+                        <line x1="2.5" y1="12.5" x2="13.5" y2="3.5" class="@SwatchClass(row, "stroke")" stroke="@Ink(row)" stroke-width="2.6" stroke-linecap="round" />
+                        break;
+                    case PropertyRole.StrokeWidth:
+                        <path d="M2 4 H14" stroke="currentColor" stroke-width="1" />
+                        <path d="M2 8 H14" stroke="currentColor" stroke-width="2" />
+                        <path d="M2 12.5 H14" stroke="currentColor" stroke-width="3.2" />
+                        break;
+                    case PropertyRole.FontSize:
+                        <path d="M2 10.5 L4.8 5 L7.6 10.5 M3 9 H6.6 M8.8 13 L12 4.2 L15.2 13 M10.1 10.4 H13.9" fill="none" stroke="currentColor" stroke-width="1.3" />
+                        break;
+                    case PropertyRole.FontWeight:
+                        <path d="M5 3.2 H9.2 a2.4 2.4 0 0 1 0 4.8 H5 Z M5 8 H9.8 a2.4 2.4 0 0 1 0 4.8 H5 Z" fill="none" stroke="currentColor" stroke-width="1.6" />
+                        break;
+                    case PropertyRole.TextAlign:
+                        <path d="@TextAlignPath(row)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                        break;
+                    case PropertyRole.EdgeRouting:
+                        <path d="@RoutingPath(row)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                        break;
+                    case PropertyRole.EdgeSourceArrow:
+                        <path d="M2 8 H14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                        if (!Equals(row.Value, ArrowStyle.None))
+                        {
+                            <path d="M2 8 L6.5 5 V11 Z" fill="currentColor" />
+                        }
+                        break;
+                    case PropertyRole.EdgeTargetArrow:
+                        <path d="M2 8 H14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                        if (!Equals(row.Value, ArrowStyle.None))
+                        {
+                            <path d="M14 8 L9.5 5 V11 Z" fill="currentColor" />
+                        }
+                        break;
+                }
+            </svg>
+            @switch (row.Kind)
+            {
+                case EditorKind.Color:
+                    <input class="d12-property-bar-control d12-property-bar-overlay"
+                           type="color"
+                           tabindex="-1"
+                           aria-label="@row.Label"
+                           value="@ColorValue(row)"
+                           @onchange="@(e => Commit(row, e))" />
+                    if (row.CanHoldNull && !row.IsThemed)
+                    {
+                        <button type="button"
+                                class="d12-property-bar-use-theme"
+                                hidden
+                                tabindex="-1"
+                                @onclick="@(() => UseThemeColour(row))"></button>
+                    }
+                    break;
+                case EditorKind.Dropdown:
+                    <select class="d12-property-bar-control d12-property-bar-overlay"
+                            tabindex="-1"
+                            aria-label="@row.Label"
+                            value="@TextValue(row)"
+                            @onchange="@(e => Commit(row, e))">
+                        @if (row.IsMixed)
+                        {
+                            <option value="" disabled selected>@MixedValue.Label</option>
+                        }
+                        @foreach (var option in row.Options ?? [])
+                        {
+                            <option value="@option">@option</option>
+                        }
+                    </select>
+                    break;
+                case EditorKind.Number:
+                    <input class="d12-property-bar-control d12-property-bar-number"
+                           type="number"
+                           min="0"
+                           tabindex="-1"
+                           aria-label="@row.Label"
+                           value="@TextValue(row)"
+                           placeholder="@(row.IsMixed ? MixedValue.Label : null)"
+                           @onchange="@(e => Commit(row, e))" />
+                    break;
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .d12-property-bar {
+        --d12-surface: #fff;
+        --d12-border: #ccc;
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #666;
+        --d12-text: #212529;
+        --d12-shadow: rgba(0, 0, 0, 0.15);
+        color-scheme: light;
+        position: absolute;
+        z-index: 900;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        height: 34px;
+        padding: 3px;
+        box-sizing: border-box;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        font-size: 12px;
+        background: var(--d12-surface);
+        border: 1px solid var(--d12-border);
+        border-radius: 6px;
+        box-shadow: 0 2px 8px var(--d12-shadow);
+        color: var(--d12-text);
+        white-space: nowrap;
+    }
+
+    @@media (prefers-color-scheme: dark) {
+        .d12-property-bar {
+            --d12-surface: #2a2a2a;
+            --d12-border: rgba(255, 255, 255, 0.12);
+            --d12-accent: #2f80ed;
+            --d12-muted-text: #a0a0a0;
+            --d12-text: #e8e8e8;
+            --d12-shadow: rgba(0, 0, 0, 0.5);
+            color-scheme: dark;
+        }
+    }
+
+    .d12-property-bar[data-d12-theme="light"],
+    [data-d12-theme="light"] .d12-property-bar {
+        --d12-surface: #fff;
+        --d12-border: #ccc;
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #666;
+        --d12-text: #212529;
+        --d12-shadow: rgba(0, 0, 0, 0.15);
+        color-scheme: light;
+    }
+
+    .d12-property-bar[data-d12-theme="dark"],
+    [data-d12-theme="dark"] .d12-property-bar {
+        --d12-surface: #2a2a2a;
+        --d12-border: rgba(255, 255, 255, 0.12);
+        --d12-accent: #2f80ed;
+        --d12-muted-text: #a0a0a0;
+        --d12-text: #e8e8e8;
+        --d12-shadow: rgba(0, 0, 0, 0.5);
+        color-scheme: dark;
+    }
+
+    .diagram-container:has(.d12-property-bar:hover, .d12-property-bar:focus-within) {
+        & .selection-bounding-box,
+        & .resize-handle,
+        & .resize-span,
+        & .port-span,
+        & .port,
+        & .custom-port,
+        & .edge-halo {
+            visibility: hidden;
+        }
+
+        & .component-container.selected {
+            outline-color: transparent;
+        }
+    }
+
+    .d12-property-bar-defs {
+        position: absolute;
+        width: 0;
+        height: 0;
+    }
+
+    .d12-property-bar-hatch-ground {
+        fill: var(--d12-surface);
+    }
+
+    .d12-property-bar-hatch-line {
+        fill: var(--d12-muted-text);
+    }
+
+    .d12-property-bar-cell {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 26px;
+        height: 26px;
+        box-sizing: border-box;
+        border-radius: 4px;
+        color: var(--d12-text);
+    }
+
+    .d12-property-bar-cell:hover {
+        background: color-mix(in srgb, var(--d12-border) 25%, var(--d12-surface));
+    }
+
+    .d12-property-bar-cell:focus-within {
+        outline: 2px solid var(--d12-accent);
+        outline-offset: -2px;
+    }
+
+    .d12-property-bar-cell-number {
+        flex: 0 0 auto;
+        gap: 2px;
+        padding-left: 5px;
+    }
+
+    .d12-property-bar-glyph {
+        display: block;
+        flex: none;
+        pointer-events: none;
+    }
+
+    .d12-property-bar-swatch-themed-fill {
+        fill: none;
+        stroke: var(--d12-muted-text);
+        stroke-width: 1;
+        stroke-dasharray: 2 1.5;
+    }
+
+    .d12-property-bar-swatch-themed-stroke {
+        stroke: var(--d12-muted-text);
+        stroke-width: 1.2;
+        stroke-dasharray: 2 1.5;
+    }
+
+    .d12-property-bar-swatch-mixed-fill {
+        fill: url(#d12-property-bar-hatch);
+        stroke: var(--d12-muted-text);
+        stroke-width: 0.6;
+    }
+
+    .d12-property-bar-swatch-mixed-stroke {
+        stroke: url(#d12-property-bar-hatch);
+    }
+
+    .d12-property-bar-overlay {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .d12-property-bar-number {
+        width: 40px;
+        height: 22px;
+        box-sizing: border-box;
+        padding: 0 2px;
+        font: inherit;
+        border: 1px solid var(--d12-border);
+        border-radius: 3px;
+        background: var(--d12-surface);
+        color: inherit;
+    }
+
+    .d12-property-bar-number:focus {
+        outline: none;
+    }
+</style>

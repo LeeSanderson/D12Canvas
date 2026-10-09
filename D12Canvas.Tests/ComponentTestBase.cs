@@ -93,7 +93,17 @@ public abstract class ComponentTestBase : BunitContext
 
         var menuModule = JSInterop.SetupModule("./_content/D12Canvas/ContextMenu.razor.js");
         SetupDisposableCleanupHandle(menuModule, "registerMenu");
+
+        PropertyBarModule = JSInterop.SetupModule(PropertyBar.ModulePath);
+        SetupDisposableCleanupHandle(PropertyBarModule, "registerPropertyBar");
+        ReportPropertyBarWidth(120);
     }
+
+    protected BunitJSModuleInterop PropertyBarModule { get; private set; } = null!;
+
+    // The latest setup wins.
+    protected void ReportPropertyBarWidth(double width) =>
+        PropertyBarModule.Setup<double>("measurePropertyBar", _ => true).SetResult(width);
 
     protected BunitJSModuleInterop SetupInlineEditorJsModule()
     {

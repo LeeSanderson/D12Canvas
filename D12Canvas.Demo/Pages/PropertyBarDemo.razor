@@ -1,0 +1,64 @@
+@page "/property-bar-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Property Bar Demo</PageTitle>
+
+<div class="property-bar-layout">
+    <div class="theme-pane" data-d12-theme="light">
+        <DiagramCanvas Board="_lightBoard" />
+    </div>
+    <div class="theme-pane" data-d12-theme="dark">
+        <DiagramCanvas Board="_darkBoard" />
+    </div>
+</div>
+
+<style>
+    .property-bar-layout {
+        display: flex;
+        gap: 16px;
+    }
+
+    .theme-pane {
+        flex: 1;
+        height: 520px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    // The same board on a light and a dark pane: a rectangle along the content's top, which the
+    // initial fit puts close enough to the container's top that its bar has to slide, two
+    // rectangles in different fills that select to a mixed fill, and an edge in an authored colour.
+    private readonly Board _lightBoard = SeedBoard();
+    private readonly Board _darkBoard = SeedBoard();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        AddRectangle(board, "b0a00000-0000-0000-0000-000000000001", 40, 0, "#d4f5d0");
+        AddRectangle(board, "b0a00000-0000-0000-0000-000000000002", 40, 220, "#cfe3ff");
+        AddRectangle(board, "b0a00000-0000-0000-0000-000000000003", 240, 220, "#ffe0b3");
+        board.AddEdge(
+            new Edge(
+                new FloatingEndpoint(60, 470),
+                new FloatingEndpoint(380, 560),
+                id: Guid.Parse("b0a00000-0000-0000-0000-0000000000e1"),
+                routingStyle: EdgeRouting.Orthogonal,
+                color: "#e5246b"
+            )
+        );
+        return board;
+    }
+
+    private static void AddRectangle(Board board, string id, double x, double y, string fill) =>
+        board.AddComponent(
+            new ComponentInstance(
+                "rectangle",
+                new RectangleProps(fill, null, 2),
+                new Bounds(x, y, 140, 80),
+                id: Guid.Parse(id)
+            )
+        );
+}

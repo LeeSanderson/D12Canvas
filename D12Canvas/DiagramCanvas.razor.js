@@ -1248,12 +1248,23 @@ export async function addKeyboardListener(element, dotnetRef) {
                     dotnetRef.invokeMethodAsync("OnBeginEditPressed");
                 }
                 break;
-            case "Enter":
-                if (isCanvasTabStopTarget(event.target)) {
+            case "Enter": {
+                const propertyBarControl =
+                    (event.ctrlKey || event.metaKey) &&
+                    !event.shiftKey &&
+                    !event.altKey &&
+                    !isEditableTarget(event.target)
+                        ? element.querySelector(".d12-property-bar .d12-property-bar-control")
+                        : null;
+                if (propertyBarControl !== null) {
+                    event.preventDefault();
+                    propertyBarControl.focus({ preventScroll: true });
+                } else if (isCanvasTabStopTarget(event.target)) {
                     event.preventDefault();
                     dotnetRef.invokeMethodAsync("OnEnterPressed");
                 }
                 break;
+            }
             case "Delete":
             case "Backspace":
                 if (!isEditableTarget(event.target)) {

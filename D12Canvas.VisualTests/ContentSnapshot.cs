@@ -21,8 +21,13 @@ public static class ContentSnapshot
         }
         """;
 
+    // A property bar is drawn hidden until it has measured its own width, one interop round trip
+    // after it mounts.
+    private const string UnmeasuredPropertyBar = ".d12-property-bar[style*='visibility: hidden']";
+
     public static async Task Verify(IPage page, [CallerFilePath] string sourceFile = "")
     {
+        await Assertions.Expect(page.Locator(UnmeasuredPropertyBar)).ToHaveCountAsync(0);
         var content = page.Locator(ContentSelector);
         var html = await content.InnerHTMLAsync();
         var extent = await content.EvaluateAsync<Clip>(ContentExtentScript);
