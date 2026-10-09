@@ -177,6 +177,12 @@ public sealed class MenuVerdictProbes(PlaywrightFixture playwright, DemoAppFixtu
     [Fact]
     public async Task ShiftF10OpensTheMenuAtTheShapesBoxAndClosingReturnsFocusToItsStop()
     {
+        // The board is panned up first so the whole menu fits below the shape.
+        var empty = await EmptyCanvasPointAsync();
+        await Page.Mouse.ClickAsync(empty.X, empty.Y);
+        await Page.Keyboard.PressAsync("ArrowDown");
+        await Page.Keyboard.PressAsync("ArrowDown");
+        await SettleAsync();
         await Instance(SourceId).FocusAsync();
         var shape = await Instance(SourceId).BoundingBoxAsync();
         Assert.NotNull(shape);

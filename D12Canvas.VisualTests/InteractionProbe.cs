@@ -89,6 +89,10 @@ public abstract class InteractionProbe : IAsyncLifetime
     // Appended to the probe page's path, for a probe that needs the canvas configured otherwise.
     protected virtual string ProbePageQuery => "";
 
+    // The suite runs with reduced motion, so a framing flight lands at once; a probe of the flight
+    // itself opts back in.
+    protected virtual ReducedMotion Motion => ReducedMotion.Reduce;
+
     // Run before any page script, for a probe that needs the browser to report itself otherwise.
     protected virtual string? BrowserInitScript => null;
 
@@ -100,6 +104,7 @@ public abstract class InteractionProbe : IAsyncLifetime
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
+                ReducedMotion = Motion,
                 ViewportSize = new ViewportSize { Width = 1400, Height = 900 },
             }
         );
@@ -171,6 +176,24 @@ public abstract class InteractionProbe : IAsyncLifetime
     }
 
     protected Task<(float X, float Y)> EmptyCanvasPointAsync() => PagePointOnCanvasAsync(560, 420);
+
+    // A board point on the page under the view the canvas shows now, which the initial fit has
+    // already moved off scale 1.0 at pan origin. The content element has no box of its own, so its
+    // client rect is where the board's origin is drawn.
+    protected async Task<(float X, float Y)> PagePointOnBoardAsync(double boardX, double boardY)
+    {
+        var origin = await Page.EvaluateAsync<double[]>(
+            """
+            () => {
+                const content = document.querySelector('.canvas-content');
+                const box = content.getBoundingClientRect();
+                const scale = parseFloat(getComputedStyle(content).getPropertyValue('--d12-scale'));
+                return [box.left, box.top, scale];
+            }
+            """
+        );
+        return ((float)(origin[0] + boardX * origin[2]), (float)(origin[1] + boardY * origin[2]));
+    }
 
     // Holds the middle button on empty canvas and drags far enough to pan, so a gesture is live.
     protected async Task<int> StartMiddlePanAsync()

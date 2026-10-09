@@ -22,3 +22,5 @@ Shipped with three choices the ADR did not spell out. A new edge label pans into
 Still open: the pan into view is a plain pan write with no transition, because no framing transition exists until ticket 106. `Quick create` (103) does not exist yet, so its edit-on-create waits for it. What an edit that ends empty does is ticket 102.
 
 `Quick create` shipped with ticket 103 and opens an editable copy through `RequestInlineEdit`.
+
+The pan into view shipped as a framing flight with ticket 106: it moves the viewport the same way the viewport commands do, so it animates over 250ms and pointer events are off on the container until it lands.

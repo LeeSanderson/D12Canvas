@@ -80,7 +80,7 @@ public class DiagramCanvasWheelTests : ComponentTestBase
     public void OnAMouseAWheelNotchZoomsAboutThePointer(double deltaY, bool zoomsIn)
     {
         var canvas = RenderCanvas(WheelDeviceProfile.Mouse);
-        canvas.Instance.ZoomPanTracker.SetPanPosition(-35, 20);
+        canvas.InvokeAsync(() => canvas.Instance.ZoomPanTracker.SetPanPosition(-35, 20));
         var underPointer = BoardPointUnder(canvas, Pointer);
 
         canvas.WheelAt(Pointer, deltaY);

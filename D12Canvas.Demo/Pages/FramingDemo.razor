@@ -1,0 +1,51 @@
+@page "/framing-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Framing Demo</PageTitle>
+
+<div class="framing-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .framing-canvas {
+        width: 700px;
+        height: 400px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid LeftId = Guid.Parse("f4000000-0000-0000-0000-000000000001");
+    private static readonly Guid RightId = Guid.Parse("f4000000-0000-0000-0000-000000000002");
+    private static readonly Guid NoteId = Guid.Parse("f4000000-0000-0000-0000-000000000003");
+    private static readonly Guid FloatingEdgeId = Guid.Parse("f4e00000-0000-0000-0000-000000000001");
+
+    private readonly Board _board = SeedBoard();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#cfe3ff", null, 2), new Bounds(50000, 50000, 160, 100), id: LeftId)
+        );
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#ffe3cf", null, 2), new Bounds(50300, 50000, 160, 100), id: RightId)
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "sticky-note",
+                new StickyNoteProps("Authored far from the origin", "#FFEB3B", "#000000", 14),
+                new Bounds(50100, 50160, 160, 100),
+                id: NoteId
+            )
+        );
+        board.AddEdge(new Edge(new PortEndpoint(LeftId, PortId.Right), new PortEndpoint(RightId, PortId.Left)));
+        board.AddEdge(
+            new Edge(new FloatingEndpoint(50300, 50230), new FloatingEndpoint(50440, 50230), id: FloatingEdgeId)
+        );
+        return board;
+    }
+}

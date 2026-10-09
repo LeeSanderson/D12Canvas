@@ -28,6 +28,7 @@ public sealed class AdaptiveGridVisualTests : IAsyncLifetime
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
+                ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
             }
         );

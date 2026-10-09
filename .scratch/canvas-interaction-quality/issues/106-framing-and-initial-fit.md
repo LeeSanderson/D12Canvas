@@ -4,14 +4,20 @@
 
 **Blocked by:** 77 (Wheel device profile and the viewport under a live gesture), 89 (Composed context menu with shortcut hints)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Shift+1 frames all content with a margin; Shift+2 frames the selection; Shift+0 returns to 100% keeping the centre; each is one short flight
-- [ ] A board authored far from the origin opens with its content visible, with no animation
-- [ ] A press during a flight is ignored and a press after it lands; a flight started mid-drag does not interrupt the drag
-- [ ] The three methods exist on the canvas and framing exists on the tracker; the host can call `SetPanPosition` after a fit to compensate for floated chrome
-- [ ] Framing a board containing only a floating edge frames that edge
-- [ ] Pure C# tests for framing and extent; bUnit for the chords and rows
-- [ ] The visual suite sets reduced motion in its browser context; one test opts back in and asserts suppression during and after the flight
-- [ ] The initial fit changes the opening view of every board-mounting baseline, which is planned churn; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Framing` and `Content extent` terms describe what shipped
+- [x] Shift+1 frames all content with a margin; Shift+2 frames the selection; Shift+0 returns to 100% keeping the centre; each is one short flight
+- [x] A board authored far from the origin opens with its content visible, with no animation
+- [x] A press during a flight is ignored and a press after it lands; a flight started mid-drag does not interrupt the drag
+- [x] The three methods exist on the canvas and framing exists on the tracker; the host can call `SetPanPosition` after a fit to compensate for floated chrome
+- [x] Framing a board containing only a floating edge frames that edge
+- [x] Pure C# tests for framing and extent; bUnit for the chords and rows
+- [x] The visual suite sets reduced motion in its browser context; one test opts back in and asserts suppression during and after the flight
+- [x] The initial fit changes the opening view of every board-mounting baseline, which is planned churn; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Framing` and `Content extent` terms describe what shipped
+
+Shipped with four choices the ticket did not spell out. The canvas draws no board content until the container has been measured, which is also when the initial fit lands, so a board never shows first at the view the fit replaces; a container first measured at 0 by 0 is fitted on its first resize to a real size. The canvas re-renders on every tracker change, so a host's `SetPanPosition` or `Pan` after the fit shows at once. The three commands do nothing during `Port placement`, which owns the keyboard. `ZoomPanTracker` gains `Frame(bounds)` as its public framing entry, with the centre-preserving scale write internal.
+
+The pan that brings a new inline edit into view now flies too, which closes ticket 101's carry-over. The flight is a 250ms inline transition plus a `data-d12-flight` marker on the content element; the pointer listener adds `d12-in-flight` to the container from the marked transition's `transitionrun` to its end or cancel, unless a press is held. The library's own stylesheet zeroes the content's transition under `prefers-reduced-motion`, and every browser context in the visual suite now sets reduced motion; `FramingFlightProbes` opts back in and pauses the transition to press during it.
+
+A new `/framing-demo` page, a board authored around (50000, 50000), backs a baseline of the opening view and the probes for the real `Shift+1`, `Shift+2` and `Shift+0` key paths, the focus guard, an inline editor typing `!`, the guard during a flight and its absence under a held press.

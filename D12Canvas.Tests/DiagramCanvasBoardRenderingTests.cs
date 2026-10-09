@@ -152,6 +152,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
         );
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         await canvas.Pan(from: (100, 100), to: (50, 40));
 
@@ -182,6 +183,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
         );
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         Assert.Single(canvas.FindAll(".component-container"));
     }
@@ -200,6 +202,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
         );
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         Assert.Empty(canvas.FindAll(".component-container"));
 
@@ -225,6 +228,7 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
         );
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         Assert.Empty(canvas.FindAll(".component-container"));
 

@@ -115,6 +115,11 @@ public sealed class InlineEditProbes(PlaywrightFixture playwright, DemoAppFixtur
     [Fact]
     public async Task ADoublePressOnANoteHalfOffScreen_PansItFullyIntoViewBeforeEditing()
     {
+        // The board opens fitted, so the note is first pushed off the right edge by a pan.
+        var above = await PagePointOnCanvasAsync(300, 10);
+        await Page.Mouse.ClickAsync(above.X, above.Y);
+        await Page.Keyboard.PressAsync("ArrowLeft");
+        await SettleAsync();
         var container = await Page.Locator(".diagram-container").BoundingBoxAsync();
         var before = await Instance(EdgeNoteId).BoundingBoxAsync();
         Assert.True(before!.X + before.Width > container!.X + container.Width);

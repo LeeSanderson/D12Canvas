@@ -27,13 +27,8 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
             "() => parseFloat(getComputedStyle(document.querySelector('.canvas-content')).getPropertyValue('--d12-scale'))"
         );
 
-    // A board point on the page, at the zoom the canvas is showing. Every zoom key keeps the
-    // board's origin at the container's corner.
-    private async Task<(float X, float Y)> PageAtAsync(double boardX, double boardY)
-    {
-        var scale = await ScaleAsync();
-        return await PagePointOnCanvasAsync(boardX * scale, boardY * scale);
-    }
+    private Task<(float X, float Y)> PageAtAsync(double boardX, double boardY) =>
+        PagePointOnBoardAsync(boardX, boardY);
 
     private async Task<string> CursorAtAsync((float X, float Y) point) =>
         await Page.EvaluateAsync<string>(
@@ -73,6 +68,18 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
             Instance(watchedId),
             box => Math.Abs(box.Width - watchedWidth * scale) < 1,
             $"the shape settling at scale {scale}"
+        );
+    }
+
+    // The board opens fitted just below 100%, so the zoom steps start from 100% to land where
+    // these probes measure.
+    private async Task ToHundredPercentAsync()
+    {
+        await Page.Keyboard.PressAsync("Shift+Digit0");
+        await GestureWaits.UntilBoxAsync(
+            Instance(LargeId),
+            box => Math.Abs(box.Width - 340) < 1,
+            "the large shape at 100%"
         );
     }
 
@@ -162,6 +169,7 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
     public async Task ACornerHandleIsGrabbableZoomedOutToATenth()
     {
         await FocusTheCanvasAsync();
+        await ToHundredPercentAsync();
         await ZoomByKeysAsync("PageDown", 9);
         await SelectAsync(LargeId, 690, 190);
         var before = await BoxOfAsync(Instance(LargeId));
@@ -180,6 +188,10 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
     public async Task ACornerHandleIsGrabbableZoomedInFourTimes()
     {
         await FocusTheCanvasAsync();
+        // The zoom keys scale about the container's corner, so the small shape is panned up
+        // toward it first and stays on screen at four times.
+        await Page.Keyboard.PressAsync("ArrowDown");
+        await Page.Keyboard.PressAsync("ArrowDown");
         await ZoomByKeysAsync("PageUp", 30, SmallId, 100);
         await SelectAsync(SmallId, 70, 70);
         var before = await BoxOfAsync(Instance(SmallId));
@@ -210,6 +222,7 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
     {
         await SelectAsync(LargeId, 690, 190);
         await Expect(Instance(LargeId).Locator(".resize-span")).ToHaveCountAsync(8);
+        await ToHundredPercentAsync();
 
         await ZoomByKeysAsync("PageDown", 8);
 

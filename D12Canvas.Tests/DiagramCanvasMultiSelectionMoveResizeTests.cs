@@ -157,6 +157,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
 
         SelectBoth(canvas);
 

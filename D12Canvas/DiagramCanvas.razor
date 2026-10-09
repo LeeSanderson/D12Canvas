@@ -25,11 +25,11 @@
          @ondragover="@HandleDragEnterOrOver" @ondragover:preventDefault="true"
          @ondragleave="@HandleDragLeave"
          @ondrop="@HandleDrop" @ondrop:preventDefault="true">
-        <div class="canvas-content" style="@ContentStyle">
+        <div class="canvas-content" style="@ContentStyle" data-d12-flight="@(_inFlight ? "true" : null)">
             <CascadingValue Value="this" Name="ParentCanvas">
             <div class="edge-band">
             <svg class="edges-layer">
-                @if (Board is not null)
+                @if (BoardShown)
                 {
                     @* One arrowhead marker shared by every edge, filled from the referencing
                        line's own stroke through context-stroke so it always matches the line -
@@ -68,7 +68,7 @@
                     }
                 }
             </svg>
-            @if (Board is not null)
+            @if (BoardShown)
             {
                 @* A label is embedded on its Edge, not a Board.Components
                    entry, so it's rendered here directly rather than via VisibleComponents/
@@ -92,7 +92,7 @@
             }
             </div>
             <div class="instance-layer">
-            @if (Board is not null)
+            @if (BoardShown)
             {
                 @foreach (var stop in RenderedStops())
                 {
@@ -209,7 +209,7 @@
             </div>
             <div class="selection-chrome">
             <svg class="chrome-strokes">
-                @if (Board is not null)
+                @if (BoardShown)
                 {
                     @* A draggable marker for each unattached edge endpoint. *@
                     @foreach (var floating in FloatingEndpoints())
@@ -569,6 +569,17 @@
         top: 0;
         left: 0;
         transform-origin: top left;
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .canvas-content {
+            transition-duration: 0s !important;
+        }
+    }
+
+    .diagram-container.d12-in-flight,
+    .diagram-container.d12-in-flight * {
+        pointer-events: none !important;
     }
 
     .grid-backdrop {

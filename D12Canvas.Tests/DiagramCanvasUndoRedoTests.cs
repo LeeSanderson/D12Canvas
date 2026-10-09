@@ -610,6 +610,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
         canvas.DragConnector(canvas.SelectedPortSpan(source.Id, "Right"), (200, 150), (190, 400));
         var edgeId = Assert.Single(board.Edges).Id;
 

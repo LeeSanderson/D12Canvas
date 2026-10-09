@@ -75,7 +75,7 @@ public class ContextMenuTests : ComponentTestBase
     }
 
     [Fact]
-    public void ASingleInstanceShowsDeleteThenTheFourLayeringRowsThenLockEachInItsOwnSection()
+    public void ASingleInstanceShowsDeleteThenTheFourLayeringRowsThenLockThenZoomToSelectionEachInItsOwnSection()
     {
         var menu = RenderMenu(SingleInstance);
 
@@ -89,6 +89,8 @@ public class ContextMenuTests : ComponentTestBase
                 "Send to Back",
                 "|",
                 "Lock",
+                "|",
+                "Zoom to Selection",
             ],
             Layout(menu)
         );
@@ -112,6 +114,8 @@ public class ContextMenuTests : ComponentTestBase
                 "Send to Back",
                 "|",
                 "Lock",
+                "|",
+                "Zoom to Selection",
             ],
             Layout(menu)
         );
@@ -123,23 +127,34 @@ public class ContextMenuTests : ComponentTestBase
         var menu = RenderMenu(SingleInstance);
 
         Assert.DoesNotContain("Ungroup", Layout(menu));
-        Assert.Equal(2, menu.FindAll(".d12-context-menu-separator").Count);
+        Assert.Equal(3, menu.FindAll(".d12-context-menu-separator").Count);
     }
 
     [Fact]
-    public void AnEdgeOnlySelectionShowsDeleteThenLock()
+    public void AnEdgeOnlySelectionShowsDeleteThenLockThenZoomToSelection()
     {
         var menu = RenderMenu(new ContextMenuContext(ContextMenuSet.Object));
 
-        Assert.Equal(["Delete", "|", "Lock"], Layout(menu));
+        Assert.Equal(["Delete", "|", "Lock", "|", "Zoom to Selection"], Layout(menu));
     }
 
     [Fact]
-    public void TheCanvasSetShowsSelectAllThenTheTwoSnapToggles()
+    public void TheCanvasSetShowsSelectAllThenTheViewRowsThenTheTwoSnapToggles()
     {
         var menu = RenderMenu(EmptyBoardCanvas with { CanSelectAll = true });
 
-        Assert.Equal(["Select All", "|", "Snap to Grid", "Object Snapping"], Layout(menu));
+        Assert.Equal(
+            [
+                "Select All",
+                "|",
+                "Zoom to Fit",
+                "Zoom to 100%",
+                "|",
+                "Snap to Grid",
+                "Object Snapping",
+            ],
+            Layout(menu)
+        );
     }
 
     [Fact]
@@ -147,7 +162,10 @@ public class ContextMenuTests : ComponentTestBase
     {
         var menu = RenderMenu(EmptyBoardCanvas);
 
-        Assert.Equal(["Snap to Grid", "Object Snapping"], Layout(menu));
+        Assert.Equal(
+            ["Zoom to Fit", "Zoom to 100%", "|", "Snap to Grid", "Object Snapping"],
+            Layout(menu)
+        );
     }
 
     [Fact]
@@ -162,7 +180,10 @@ public class ContextMenuTests : ComponentTestBase
             )
         );
 
-        Assert.Equal(["Snap to Grid", "Object Snapping"], Layout(menu));
+        Assert.Equal(
+            ["Zoom to Fit", "Zoom to 100%", "|", "Snap to Grid", "Object Snapping"],
+            Layout(menu)
+        );
     }
 
     [Fact]
@@ -316,6 +337,7 @@ public class ContextMenuTests : ComponentTestBase
         Assert.Equal("Ctrl+]", HintOf(menu, "Bring Forward"));
         Assert.Equal("Ctrl+[", HintOf(menu, "Send Backward"));
         Assert.Equal("Ctrl+Shift+[", HintOf(menu, "Send to Back"));
+        Assert.Equal("Shift+2", HintOf(menu, "Zoom to Selection"));
     }
 
     [Fact]
@@ -335,6 +357,7 @@ public class ContextMenuTests : ComponentTestBase
         Assert.Equal("⇧⌘G", HintOf(menu, "Ungroup"));
         Assert.Equal("⇧⌘]", HintOf(menu, "Bring to Front"));
         Assert.Equal("⌘[", HintOf(menu, "Send Backward"));
+        Assert.Equal("⇧2", HintOf(menu, "Zoom to Selection"));
     }
 
     [Fact]
@@ -345,6 +368,18 @@ public class ContextMenuTests : ComponentTestBase
         Assert.Equal("Ctrl+A", HintOf(menu, "Select All"));
         Assert.Equal("Ctrl+'", HintOf(menu, "Snap to Grid"));
         Assert.Null(HintOf(menu, "Object Snapping"));
+    }
+
+    [Fact]
+    public void TheViewRowsHintTheirShiftDigitChords()
+    {
+        var words = RenderMenu(EmptyBoardCanvas);
+        Assert.Equal("Shift+1", HintOf(words, "Zoom to Fit"));
+        Assert.Equal("Shift+0", HintOf(words, "Zoom to 100%"));
+
+        var symbols = RenderMenu(EmptyBoardCanvas with { ApplePlatform = true });
+        Assert.Equal("⇧1", HintOf(symbols, "Zoom to Fit"));
+        Assert.Equal("⇧0", HintOf(symbols, "Zoom to 100%"));
     }
 
     [Fact]

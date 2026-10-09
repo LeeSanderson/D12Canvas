@@ -356,6 +356,8 @@ function isApplePlatform() {
     return applePlatform;
 }
 
+const FLIGHT_CLASS = "d12-in-flight";
+
 export async function addPointerListener(canvas, container, dotnetRef, options) {
     const classifyPresses = options?.classify !== false;
     const dragThreshold = options.dragThreshold;
@@ -694,8 +696,38 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
         }
     };
 
+    // A framing flight moves C#'s state at once while the pixels are still in transit, so a press
+    // during it would land on what is about to be under the pointer. Pointer events are off on the
+    // container from the flight's transitionrun to its end or cancel, which a zero duration never
+    // starts. A held press keeps them, since every other button is already dropped.
+    const isContentTransform = (event) =>
+        event.target instanceof Element &&
+        event.target.classList.contains("canvas-content") &&
+        event.propertyName === "transform";
+
+    const handleTransitionRun = (event) => {
+        if (isContentTransform(event) && event.target.hasAttribute("data-d12-flight") && press === null) {
+            container.classList.add(FLIGHT_CLASS);
+        }
+    };
+
+    const handleTransitionStop = (event) => {
+        if (!isContentTransform(event)) {
+            return;
+        }
+
+        const stillFlying =
+            event.target.hasAttribute("data-d12-flight") && event.target.getAnimations().length > 0;
+        if (!stillFlying) {
+            container.classList.remove(FLIGHT_CLASS);
+        }
+    };
+
     canvas.addEventListener("pointerdown", handlePointerDown);
     canvas.addEventListener("pointermove", handlePointerMove);
+    canvas.addEventListener("transitionrun", handleTransitionRun);
+    canvas.addEventListener("transitionend", handleTransitionStop);
+    canvas.addEventListener("transitioncancel", handleTransitionStop);
     canvas.addEventListener("pointerup", handlePointerUp);
     canvas.addEventListener("pointercancel", handlePointerCancel);
     canvas.addEventListener("lostpointercapture", handleLostPointerCapture);
@@ -720,6 +752,10 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             canvas.removeEventListener("pointerup", handlePointerUp);
             canvas.removeEventListener("pointercancel", handlePointerCancel);
             canvas.removeEventListener("lostpointercapture", handleLostPointerCapture);
+            canvas.removeEventListener("transitionrun", handleTransitionRun);
+            canvas.removeEventListener("transitionend", handleTransitionStop);
+            canvas.removeEventListener("transitioncancel", handleTransitionStop);
+            container.classList.remove(FLIGHT_CLASS);
             window.removeEventListener("pointerdown", clearMenuVerdict, true);
             window.removeEventListener("contextmenu", handleContextMenu, true);
             window.removeEventListener("blur", handleWindowBlur);
@@ -1075,6 +1111,12 @@ export async function readClipboardText() {
     return null;
 }
 
+const FRAMING_COMMANDS = {
+    Digit1: "ZoomToFit",
+    Digit2: "ZoomToSelection",
+    Digit0: "ZoomTo100Percent"
+};
+
 export async function addKeyboardListener(element, dotnetRef) {
     const menuVerdictSlot = menuVerdictSlotOf(element);
 
@@ -1274,6 +1316,24 @@ export async function addKeyboardListener(element, dotnetRef) {
                 if ((event.ctrlKey || event.metaKey) && !isEditableTarget(event.target)) {
                     event.preventDefault();
                     dotnetRef.invokeMethodAsync("OnSnapToGridChordPressed");
+                }
+                break;
+            case "Digit1":
+            case "Digit2":
+            case "Digit0":
+                // Matched on the physical key, so the chord holds on any layout. Stricter than the
+                // table's guard: an embedded canvas that does not hold focus leaves the page its
+                // Shift+1.
+                if (
+                    event.shiftKey &&
+                    !event.ctrlKey &&
+                    !event.metaKey &&
+                    !event.altKey &&
+                    element.contains(document.activeElement) &&
+                    !isEditableTarget(event.target)
+                ) {
+                    event.preventDefault();
+                    dotnetRef.invokeMethodAsync(FRAMING_COMMANDS[event.code]);
                 }
                 break;
         }

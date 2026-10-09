@@ -41,14 +41,14 @@ public sealed class ImageRoutesProbes(PlaywrightFixture playwright, DemoAppFixtu
     private async Task<string> SourceOfAsync(ILocator picture) =>
         await picture.GetAttributeAsync("src") ?? "";
 
-    // Dispatches a real drop carrying files built in the page, at a point in container pixels.
+    // Dispatches a real drop carrying files built in the page, at a board point.
     private async Task DropFilesAsync(
         double x,
         double y,
         params (string Type, byte[] Bytes)[] files
     )
     {
-        var box = await Page.Locator(".diagram-container").BoundingBoxAsync();
+        var point = await PagePointOnBoardAsync(x, y);
         await Page.EvaluateAsync(
             """
             ([clientX, clientY, files]) => {
@@ -67,8 +67,8 @@ public sealed class ImageRoutesProbes(PlaywrightFixture playwright, DemoAppFixtu
             """,
             new object[]
             {
-                (double)(box!.X + x),
-                (double)(box.Y + y),
+                (double)point.X,
+                (double)point.Y,
                 files
                     .Select(file => new
                     {

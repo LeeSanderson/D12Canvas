@@ -249,7 +249,8 @@ public partial class DiagramCanvas : IAsyncDisposable
     private IJSObjectReference? _pointerListener;
 
     // How long the content's transform eases toward the viewport's last write: the wheel device's
-    // ambient duration when a wheel made that write, and nothing for any other input.
+    // ambient duration when a wheel made that write, the framing flight's for a viewport command,
+    // and nothing for any other input.
     private TimeSpan _ambientTransition = TimeSpan.Zero;
     private bool _applyingWheel;
     private (double Scale, double PanX, double PanY) _lastTransform = (1, 0, 0);
@@ -295,6 +296,8 @@ public partial class DiagramCanvas : IAsyncDisposable
             CancelActiveGesture(restoreSelection: false);
             _enteredGroupIds.Clear();
             _duplicateRun.End();
+            _initialFitPending = true;
+            FitNewBoard();
         }
     }
 
@@ -315,6 +318,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             var facts = await _jsModule.InvokeAsync<InitialFacts>("initialFacts", ContainerElement);
 
             _zoomPanTracker.SetContainerSize((int)facts.Width, (int)facts.Height);
+            FitNewBoard();
             _applePlatform = facts.ApplePlatform;
             _asyncClipboard = facts.AsyncClipboard;
 
@@ -404,6 +408,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void OnContainerResized(double width, double height)
     {
         _zoomPanTracker.SetContainerSize((int)width, (int)height);
+        FitNewBoard();
         StateHasChanged();
     }
 
@@ -1885,6 +1890,9 @@ public partial class DiagramCanvas : IAsyncDisposable
             ContextMenuCommand.Lock => OnLockPressed,
             ContextMenuCommand.Unlock => OnUnlockPressed,
             ContextMenuCommand.UnlockAll => OnUnlockAllPressed,
+            ContextMenuCommand.ZoomToSelection => ZoomToSelection,
+            ContextMenuCommand.ZoomToFit => ZoomToFit,
+            ContextMenuCommand.ZoomTo100Percent => ZoomTo100Percent,
             _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
         };
         action();
@@ -3171,7 +3179,12 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void OnZoomPanChanged(object? sender, ZoomPanChangedEventArgs e)
     {
-        if (!_applyingWheel)
+        if (!_applyingFlight)
+        {
+            _inFlight = false;
+        }
+
+        if (!_applyingWheel && !_applyingFlight)
         {
             _ambientTransition = TimeSpan.Zero;
         }
@@ -3181,6 +3194,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         {
             _lastTransform = transform;
             RunGestureUnderMovedViewport();
+            StateHasChanged();
         }
 
         OnZoomOrPanChanged.InvokeAsync(e);

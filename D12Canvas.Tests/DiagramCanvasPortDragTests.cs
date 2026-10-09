@@ -49,8 +49,9 @@ public class DiagramCanvasPortDragTests : ComponentTestBase
 
     private IRenderedComponent<DiagramCanvas> RenderBoard(Board board) =>
         Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
-        );
+                parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+            )
+            .ReturnToOrigin();
 
     // From the source's right port at (200, 150) to the target's left port at (300, 150).
     private static void ConnectRightToLeft(

@@ -52,11 +52,12 @@ public class DiagramCanvasLiveViewportTests : ComponentTestBase
         WheelDeviceProfile profile = WheelDeviceProfile.Mouse
     ) =>
         Render<DiagramCanvas>(parameters =>
-            parameters
-                .Add(p => p.Board, board)
-                .Add(p => p.SnapToGrid, false)
-                .Add(p => p.WheelDeviceProfile, profile)
-        );
+                parameters
+                    .Add(p => p.Board, board)
+                    .Add(p => p.SnapToGrid, false)
+                    .Add(p => p.WheelDeviceProfile, profile)
+            )
+            .ReturnToOrigin();
 
     private static (double X, double Y) BoardPointUnder(
         IRenderedComponent<DiagramCanvas> canvas,

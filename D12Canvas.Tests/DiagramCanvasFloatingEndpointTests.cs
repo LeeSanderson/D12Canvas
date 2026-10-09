@@ -70,6 +70,7 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         var board = new Board();
         var source = AddInstance(board, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.DragConnector(canvas.SelectedPortSpan(source.Id, "Right"), (200, 150), (190, 400));
 
@@ -136,6 +137,7 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
             new Edge(new PortEndpoint(source.Id, PortId.Right), new FloatingEndpoint(190, 400))
         );
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.PressElement(canvas.Find(".floating-endpoint"), (190, 400));
         canvas.MoveTo((300, 350));
@@ -187,6 +189,7 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         var board = new Board();
         AddConnectedPair(board, out var source, out var target);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.DragConnector(canvas.SelectedPortSpan(target.Id, "Left"), (300, 150), (400, 400));
 
@@ -204,6 +207,7 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         var board = new Board();
         var edge = AddConnectedPair(board, out _, out var target);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.DragConnector(canvas.SelectedPortSpan(target.Id, "Left"), (300, 150), (400, 400));
         Assert.Equal(new FloatingEndpoint(400, 400), edge.Target);

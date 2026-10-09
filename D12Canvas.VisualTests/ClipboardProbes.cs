@@ -213,7 +213,7 @@ public sealed class ClipboardProbes(PlaywrightFixture playwright, DemoAppFixture
     {
         await GrantClipboardAsync();
         await Page.EvaluateAsync("() => navigator.clipboard.writeText('Menu paste')");
-        var pressPoint = await PagePointOnCanvasAsync(300, 440);
+        var pressPoint = await PagePointOnBoardAsync(300, 440);
         await Page.Mouse.ClickAsync(
             pressPoint.X,
             pressPoint.Y,

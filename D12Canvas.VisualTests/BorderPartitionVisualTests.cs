@@ -30,6 +30,7 @@ public sealed class BorderPartitionVisualTests : IAsyncLifetime
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
+                ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
             }
         );
@@ -61,25 +62,33 @@ public sealed class BorderPartitionVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    // Eight zoom-out steps from the origin land at a fifth; the large shape's centre is then at
-    // (138, 38) on the canvas.
+    // The board opens fitted just below 100%; from 100%, eight zoom-out steps land at a fifth.
     [Fact]
     public async Task SelectedShapeBelowAQuarterZoom_MatchesBaseline()
     {
         var corner = await CanvasPointAsync(5, 550);
         await _page.Mouse.ClickAsync(corner.X, corner.Y);
+        await _page.Keyboard.PressAsync("Shift+Digit0");
+        await GestureWaits.UntilBoxAsync(
+            Instance(LargeId),
+            box => Math.Abs(box.Width - 340) < 1,
+            "the large shape at 100%"
+        );
         for (var i = 0; i < 8; i++)
         {
             await _page.Keyboard.PressAsync("PageDown");
         }
 
+        var scale = await _page.EvaluateAsync<double>(
+            "() => parseFloat(getComputedStyle(document.querySelector('.canvas-content')).getPropertyValue('--d12-scale'))"
+        );
+        Assert.True(scale < 0.25, $"Scale is {scale}.");
         await GestureWaits.UntilBoxAsync(
             Instance(LargeId),
-            box => Math.Abs(box.Width - 68) < 1,
-            "the large shape settling at a fifth of its size"
+            box => Math.Abs(box.Width - 340 * scale) < 1,
+            "the large shape settling below a quarter of its size"
         );
-        var centre = await CanvasPointAsync(138, 38);
-        await _page.Mouse.ClickAsync(centre.X, centre.Y);
+        await Instance(LargeId).ClickAsync();
 
         await Expect(Instance(LargeId)).ToHaveAttributeAsync("aria-selected", "true");
         await Expect(Instance(LargeId).Locator(".port")).ToHaveCountAsync(4);

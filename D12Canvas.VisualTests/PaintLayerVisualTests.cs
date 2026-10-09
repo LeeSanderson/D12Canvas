@@ -6,7 +6,8 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The paint layers demo board, at its untouched pan and zoom, so a board point is a canvas point.
+// The paint layers demo board, at the view its initial fit chose, with board points placed on the
+// page through the content element's transform.
 // What the browser hit-tests at a point is the topmost painted element there, so each hit check
 // asserts paint order and hit order at once.
 public sealed class PaintLayerVisualTests : IAsyncLifetime
@@ -31,6 +32,7 @@ public sealed class PaintLayerVisualTests : IAsyncLifetime
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
+                ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 1000, Height = 700 },
             }
         );
@@ -142,9 +144,17 @@ public sealed class PaintLayerVisualTests : IAsyncLifetime
 
     private async Task<(float X, float Y)> PagePointAsync(double x, double y)
     {
-        var box = await _page.Locator(".diagram-canvas").BoundingBoxAsync();
-        Assert.NotNull(box);
-        return ((float)(box!.X + x), (float)(box.Y + y));
+        var origin = await _page.EvaluateAsync<double[]>(
+            """
+            () => {
+                const content = document.querySelector('.canvas-content');
+                const box = content.getBoundingClientRect();
+                const scale = parseFloat(getComputedStyle(content).getPropertyValue('--d12-scale'));
+                return [box.left, box.top, scale];
+            }
+            """
+        );
+        return ((float)(origin[0] + x * origin[2]), (float)(origin[1] + y * origin[2]));
     }
 
     private static async Task<(float X, float Y)> CentreOfAsync(ILocator locator)

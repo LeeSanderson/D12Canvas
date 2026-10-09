@@ -279,6 +279,25 @@ public sealed class Board
     public Group? FindParentGroup(Guid memberId) =>
         _groups.Values.FirstOrDefault(group => group.MemberIds.Contains(memberId));
 
+    // The content extent: every instance's committed bounds unioned with every edge end that
+    // resolves, so a board holding only floating connectors still has something to frame. An end
+    // that no longer resolves is skipped rather than read as the origin. Null for an empty board.
+    internal Bounds? ContentExtent() => ExtentOf(_components.Values, _edges.Values);
+
+    internal Bounds? ExtentOf(IEnumerable<ComponentInstance> instances, IEnumerable<Edge> edges) =>
+        Bounds.Union(
+            instances
+                .Select(instance => instance.Bounds)
+                .Concat(
+                    edges
+                        .SelectMany(edge =>
+                            new[] { ResolveEnd(edge, true), ResolveEnd(edge, false) }
+                        )
+                        .OfType<(double X, double Y)>()
+                        .Select(point => new Bounds(point.X, point.Y, 0, 0))
+                )
+        );
+
     public IReadOnlyCollection<ComponentInstance> GetVisible(Bounds viewport, double overscan = 0)
     {
         var expandedViewport = viewport.ExpandedBy(overscan);

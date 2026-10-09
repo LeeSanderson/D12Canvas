@@ -158,6 +158,7 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         var board = new Board();
         var target = AddInstance(board, 500, 400); // left port at (500, 425)
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.Instance.BeginPaletteDrag(DiagramCanvas.ConnectorPaletteKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });

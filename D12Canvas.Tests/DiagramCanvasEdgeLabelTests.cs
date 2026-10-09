@@ -163,6 +163,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var target = AddInstance(board, 250, 100); // left port at (250, 125)
         AddEdgeBetween(board, source, target);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
         canvas.DoubleClickElement(canvas.Find(".edge-hit"));
         var styleBeforeDrag = canvas.Find(".edge-label").GetAttribute("style");
         Assert.Equal("left: 160px; top: 113px; width: 80px; height: 24px;", styleBeforeDrag);
@@ -216,6 +217,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
             )
         );
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.PressPort(source.Id, "Right", (150, 125));
         canvas.MoveTo((150, 400));
@@ -273,6 +275,7 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var board = new Board();
         AddEdgeBetween(board, AddInstance(board, 0, 0), AddInstance(board, 2000, 0));
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.DoubleClickElement(canvas.Find(".edge-hit"));
 

@@ -49,6 +49,7 @@ public sealed class ContextMenuProbes(PlaywrightFixture playwright, DemoAppFixtu
                     "Ctrl+[",
                     "Ctrl+Shift+[",
                     "Ctrl+Shift+L",
+                    "Shift+2",
                 ]
             );
     }

@@ -36,4 +36,22 @@ internal static class CanvasViewport
 
     public static void ZoomOut(this IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.InvokeAsync(canvas.Instance.OnZoomOut).GetAwaiter().GetResult();
+
+    // Puts the viewport back at scale 1.0 and pan origin, undoing the initial fit for a test whose
+    // container coordinates are laid out against board coordinates, the way a host would through
+    // the public tracker.
+    public static IRenderedComponent<DiagramCanvas> ReturnToOrigin(
+        this IRenderedComponent<DiagramCanvas> canvas
+    )
+    {
+        canvas
+            .InvokeAsync(() =>
+            {
+                canvas.Instance.ZoomPanTracker.Scale = 1.0;
+                canvas.Instance.ZoomPanTracker.SetPanPosition(0, 0);
+            })
+            .GetAwaiter()
+            .GetResult();
+        return canvas;
+    }
 }

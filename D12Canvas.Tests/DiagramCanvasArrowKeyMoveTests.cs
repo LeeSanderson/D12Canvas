@@ -245,6 +245,7 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
 
@@ -403,6 +404,7 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
         canvas.PressPort(source.Id, "Right", (150, 125));
         canvas.MoveTo((250, 125));
         canvas.ReleaseOverPort((250, 125), target.Id, "Left");

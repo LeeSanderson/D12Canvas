@@ -39,6 +39,9 @@ internal static class ContextMenuComposition
     private static readonly Chord PasteChord = new("V", Primary: true);
     private static readonly Chord DuplicateChord = new("D", Primary: true);
     private static readonly Chord LockChord = new("L", Primary: true, Shift: true);
+    private static readonly Chord ZoomToSelectionChord = new("2", Shift: true);
+    private static readonly Chord ZoomToFitChord = new("1", Shift: true);
+    private static readonly Chord ZoomTo100PercentChord = new("0", Shift: true);
 
     private static readonly IReadOnlyList<IReadOnlyList<RowDefinition>> Sections =
     [
@@ -106,6 +109,21 @@ internal static class ContextMenuComposition
                 "Unlock",
                 c => OnObject(c) && c.SelectionLocked,
                 LockChord
+            ),
+        ],
+        [
+            Row(
+                ContextMenuCommand.ZoomToSelection,
+                "Zoom to Selection",
+                OnObject,
+                ZoomToSelectionChord
+            ),
+            Row(ContextMenuCommand.ZoomToFit, "Zoom to Fit", OnCanvas, ZoomToFitChord),
+            Row(
+                ContextMenuCommand.ZoomTo100Percent,
+                "Zoom to 100%",
+                OnCanvas,
+                ZoomTo100PercentChord
             ),
         ],
         [

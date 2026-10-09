@@ -24,6 +24,7 @@ public sealed class DragMoveVisualTests : IAsyncLifetime
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
+                ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 1000, Height = 700 },
             }
         );

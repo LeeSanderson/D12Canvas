@@ -178,6 +178,7 @@ public class DiagramCanvasEdgeTabStopTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, _board).Add(p => p.Overscan, 0)
         );
+        canvas.ReturnToOrigin();
         await canvas.InvokeAsync(() => canvas.Instance.OnContainerResized(800, 600));
 
         Assert.Equal(["A"], Ring(canvas));

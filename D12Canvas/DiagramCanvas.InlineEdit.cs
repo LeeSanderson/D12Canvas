@@ -206,9 +206,12 @@ public partial class DiagramCanvas
 
         var (shiftX, shiftY) = ViewportReveal.ShiftToReveal(_zoomPanTracker.Viewport, bounds);
         var scale = _zoomPanTracker.Scale;
-        _zoomPanTracker.SetPanPosition(
-            _zoomPanTracker.PanX - shiftX * scale,
-            _zoomPanTracker.PanY - shiftY * scale
+        Fly(
+            () =>
+                _zoomPanTracker.SetPanPosition(
+                    _zoomPanTracker.PanX - shiftX * scale,
+                    _zoomPanTracker.PanY - shiftY * scale
+                )
         );
     }
 

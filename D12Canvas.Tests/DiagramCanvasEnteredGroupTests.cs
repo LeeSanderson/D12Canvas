@@ -66,7 +66,7 @@ public class DiagramCanvasEnteredGroupTests : ComponentTestBase
     }
 
     private IRenderedComponent<DiagramCanvas> RenderCanvas() =>
-        Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, _board));
+        Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, _board)).ReturnToOrigin();
 
     private static IElement ContainerOf(IRenderedComponent<DiagramCanvas> canvas, Guid id) =>
         canvas.Find($".component-container[data-d12-entity='{id}']");

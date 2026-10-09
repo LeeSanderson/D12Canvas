@@ -50,7 +50,7 @@ public class DiagramCanvasKeyboardMenuTests : ComponentTestBase
     }
 
     private IRenderedComponent<DiagramCanvas> RenderCanvas(Board board) =>
-        Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board)).ReturnToOrigin();
 
     private static Task PressMenuKey(IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.InvokeAsync(() => canvas.Instance.OnContextMenuKeyPressed());

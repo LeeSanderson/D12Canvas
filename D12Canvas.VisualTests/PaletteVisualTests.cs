@@ -28,6 +28,7 @@ public sealed class PaletteVisualTests : IAsyncLifetime
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
+                ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 400, Height = 400 },
                 ColorScheme = colorScheme,
             }

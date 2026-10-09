@@ -133,6 +133,7 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
 
         await canvas.Marquee((90, 90), (310, 160));
 
@@ -171,6 +172,7 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
 
         await canvas.Marquee((90, 90), (250, 250));
 
@@ -194,6 +196,7 @@ public class DiagramCanvasMixedSelectionTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
 
         await canvas.Marquee((90, 90), (160, 160));
 

@@ -47,8 +47,9 @@ public class DiagramCanvasQuickCreateTests : ComponentTestBase
 
     private IRenderedComponent<DiagramCanvas> RenderCanvas(bool snapToGrid = false) =>
         Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, _board).Add(p => p.SnapToGrid, snapToGrid)
-        );
+                parameters.Add(p => p.Board, _board).Add(p => p.SnapToGrid, snapToGrid)
+            )
+            .ReturnToOrigin();
 
     private static Task CtrlArrow(IRenderedComponent<DiagramCanvas> canvas, string code) =>
         canvas.InvokeAsync(() => canvas.Instance.OnQuickCreatePressed(code));

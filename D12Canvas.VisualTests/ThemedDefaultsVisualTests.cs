@@ -26,6 +26,7 @@ public sealed class ThemedDefaultsVisualTests : IAsyncLifetime
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
+                ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 1200, Height = 500 },
             }
         );

@@ -26,6 +26,7 @@ public sealed class PortDragVisualTests : IAsyncLifetime
             new BrowserNewContextOptions
             {
                 BaseURL = DemoAppFixture.BaseUrl,
+                ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
                 ColorScheme = colorScheme,
             }

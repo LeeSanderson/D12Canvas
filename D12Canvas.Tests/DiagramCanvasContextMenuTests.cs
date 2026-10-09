@@ -156,7 +156,10 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
 
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
-        Assert.Equal(["Select All", "Snap to Grid", "Object Snapping"], Labels(canvas));
+        Assert.Equal(
+            ["Select All", "Zoom to Fit", "Zoom to 100%", "Snap to Grid", "Object Snapping"],
+            Labels(canvas)
+        );
         Assert.Equal("Canvas actions", canvas.Find(".d12-context-menu").GetAttribute("aria-label"));
     }
 
@@ -166,6 +169,7 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 0);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.Press(
@@ -381,7 +385,10 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
 
         await canvas.ClickCanvas(400, 400, PointerPress.SecondaryButton);
 
-        Assert.Equal(["Snap to Grid", "Object Snapping"], Labels(canvas));
+        Assert.Equal(
+            ["Zoom to Fit", "Zoom to 100%", "Snap to Grid", "Object Snapping"],
+            Labels(canvas)
+        );
     }
 
     [Fact]
@@ -503,8 +510,8 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
 
         await RightClickEdge(canvas, edge);
 
-        Assert.Equal(["Duplicate", "Delete", "Lock"], Labels(canvas));
-        Assert.Equal(2, canvas.FindAll(".d12-context-menu-separator").Count);
+        Assert.Equal(["Duplicate", "Delete", "Lock", "Zoom to Selection"], Labels(canvas));
+        Assert.Equal(3, canvas.FindAll(".d12-context-menu-separator").Count);
     }
 
     [Fact]

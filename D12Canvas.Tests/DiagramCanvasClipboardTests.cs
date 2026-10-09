@@ -48,8 +48,9 @@ public class DiagramCanvasClipboardTests : ComponentTestBase
 
     private IRenderedComponent<DiagramCanvas> RenderCanvas(Board board, bool snapToGrid = false) =>
         Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, snapToGrid)
-        );
+                parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, snapToGrid)
+            )
+            .ReturnToOrigin();
 
     private static Task<string?> Copy(IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.InvokeAsync(() => canvas.Instance.OnCopyRequested());

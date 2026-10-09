@@ -293,6 +293,7 @@ public class DiagramCanvasDragMoveTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.Overscan, 0)
         );
+        canvas.ReturnToOrigin();
         await canvas.InvokeAsync(() => canvas.Instance.OnContainerResized(800, 600));
         canvas.ClickOn(Container(canvas, onScreen.Id));
         await canvas.Pan(from: (600, 300), to: (100, 300));

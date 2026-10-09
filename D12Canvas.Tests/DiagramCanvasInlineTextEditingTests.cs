@@ -64,8 +64,9 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
 
     private IRenderedComponent<DiagramCanvas> RenderCanvas() =>
         Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, _board).Add(p => p.SnapToGrid, false)
-        );
+                parameters.Add(p => p.Board, _board).Add(p => p.SnapToGrid, false)
+            )
+            .ReturnToOrigin();
 
     private static IElement ContainerOf(IRenderedComponent<DiagramCanvas> canvas, Guid id) =>
         canvas.Find($".component-container[data-d12-entity='{id}']");

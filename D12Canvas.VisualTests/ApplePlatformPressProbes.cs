@@ -37,7 +37,7 @@ public sealed class ApplePlatformPressProbes(PlaywrightFixture playwright, DemoA
             .First.ClickAsync(new() { Button = Microsoft.Playwright.MouseButton.Right });
 
         await Expect(Page.Locator(".d12-context-menu-hint"))
-            .ToHaveTextAsync(["⌘X", "⌘C", "⌘V", "⌘D", "⌫", "⇧⌘]", "⌘]", "⌘[", "⇧⌘[", "⇧⌘L"]);
+            .ToHaveTextAsync(["⌘X", "⌘C", "⌘V", "⌘D", "⌫", "⇧⌘]", "⌘]", "⌘[", "⇧⌘[", "⇧⌘L", "⇧2"]);
     }
 
     [Fact]

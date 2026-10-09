@@ -57,8 +57,9 @@ public class DiagramCanvasPortPlacementTests : ComponentTestBase
 
     private IRenderedComponent<DiagramCanvas> RenderCanvas(bool snapToGrid = true) =>
         Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, _board).Add(p => p.SnapToGrid, snapToGrid)
-        );
+                parameters.Add(p => p.Board, _board).Add(p => p.SnapToGrid, snapToGrid)
+            )
+            .ReturnToOrigin();
 
     private static string[] MenuLabels(IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.FindAll(".d12-context-menu-label").Select(label => label.TextContent).ToArray();
@@ -579,6 +580,23 @@ public class DiagramCanvasPortPlacementTests : ComponentTestBase
         Assert.NotNull(ProvisionalDot(canvas));
         await Enter(canvas);
         Assert.Single(_shape.CustomPorts);
+    }
+
+    [Fact]
+    public async Task TheFramingCommandsLeaveTheViewportAloneWhilePlacing()
+    {
+        var canvas = RenderCanvas();
+        await StartPlacement(canvas);
+        var tracker = canvas.Instance.ZoomPanTracker;
+        await canvas.InvokeAsync(() => tracker.SetScaleAbout(0, 0, 0.5));
+        var before = (tracker.Scale, tracker.PanX, tracker.PanY);
+
+        await canvas.InvokeAsync(canvas.Instance.ZoomToFit);
+        await canvas.InvokeAsync(canvas.Instance.ZoomToSelection);
+        await canvas.InvokeAsync(canvas.Instance.ZoomTo100Percent);
+
+        Assert.Equal(before, (tracker.Scale, tracker.PanX, tracker.PanY));
+        Assert.NotNull(ProvisionalDot(canvas));
     }
 
     [Fact]

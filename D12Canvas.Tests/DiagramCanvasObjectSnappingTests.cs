@@ -50,6 +50,7 @@ public class DiagramCanvasObjectSnappingTests : ComponentTestBase
                 .Add(p => p.SnapToGrid, false)
                 .Add(p => p.ObjectSnapping, objectSnapping)
         );
+        canvas.ReturnToOrigin();
         canvas
             .InvokeAsync(() => canvas.Instance.OnContainerResized(800, 600))
             .GetAwaiter()

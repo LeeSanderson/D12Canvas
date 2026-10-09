@@ -263,6 +263,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         AddInstance(board, new Bounds(100, 0, 10, 10)); // below threshold
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
         await canvas.Marquee(from: (0, 0), to: (200, 200));
 
         Assert.Equal(2, canvas.Instance.SelectedComponents.Count);

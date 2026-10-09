@@ -160,6 +160,7 @@ public class DiagramCanvasPaintLayerTests : ComponentTestBase
         AddInstance(board, 100, 100, zIndex: 5000);
         AddInstance(board, 200, 100, zIndex: 5001);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         await canvas.Marquee((10, 10), (400, 300));
 

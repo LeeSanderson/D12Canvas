@@ -53,8 +53,9 @@ public class DiagramCanvasImageTests : ComponentTestBase
 
     private IRenderedComponent<DiagramCanvas> RenderCanvas(Board board) =>
         Render<DiagramCanvas>(parameters =>
-            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
-        );
+                parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+            )
+            .ReturnToOrigin();
 
     private static Task Undo(IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());

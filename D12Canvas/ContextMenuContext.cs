@@ -40,6 +40,9 @@ public enum ContextMenuCommand
     AddPortHere,
     PlacePort,
     RemovePort,
+    ZoomToSelection,
+    ZoomToFit,
+    ZoomTo100Percent,
 }
 
 // What DiagramCanvas resolved at the moment a menu opened: everything a row needs to decide

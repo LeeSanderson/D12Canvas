@@ -97,9 +97,14 @@ public class ZoomPanTracker
 
     // Multiplies the scale by factor, clamped to the zoom limits, and moves the pan so the board
     // point under the container point (x, y) stays under it. One change is raised for both.
-    public bool ZoomAbout(double x, double y, double factor)
+    public bool ZoomAbout(double x, double y, double factor) =>
+        SetScaleAbout(x, y, _scale * factor);
+
+    // Sets the scale, clamped to the zoom limits, keeping the board point under the container
+    // point (x, y) where it is. One change is raised for both.
+    internal bool SetScaleAbout(double x, double y, double scale)
     {
-        var newScale = Clamped(_scale * factor);
+        var newScale = Clamped(scale);
         if (newScale == _scale)
         {
             return false;
@@ -113,6 +118,41 @@ public class ZoomPanTracker
         OnChanged();
         return true;
     }
+
+    // The fraction of the container a framed rect may fill, and the scale framing never passes.
+    internal const double FramingFill = 0.9;
+    internal const double FramingScaleCap = 1.0;
+
+    // The inverse of Viewport. The cap applies before the zoom limits, so a host's limits always
+    // win, and the pan is computed against the scale the clamp left, in one change.
+    public bool Frame(Bounds target)
+    {
+        if (!HasKnownContainerSize)
+        {
+            return false;
+        }
+
+        var fit = Math.Min(
+            FitAlong(_containerWidth, target.Width),
+            FitAlong(_containerHeight, target.Height)
+        );
+        var newScale = Clamped(Math.Min(fit, FramingScaleCap));
+        var newPanX = _containerWidth / 2.0 - (target.X + target.Width / 2) * newScale;
+        var newPanY = _containerHeight / 2.0 - (target.Y + target.Height / 2) * newScale;
+        if (newScale == _scale && newPanX == _panX && newPanY == _panY)
+        {
+            return false;
+        }
+
+        _scale = newScale;
+        _panX = newPanX;
+        _panY = newPanY;
+        OnChanged();
+        return true;
+    }
+
+    private static double FitAlong(double container, double target) =>
+        target > 0 ? container * FramingFill / target : double.PositiveInfinity;
 
     private double Clamped(double scale)
     {

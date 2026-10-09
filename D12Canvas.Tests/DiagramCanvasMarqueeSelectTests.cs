@@ -97,6 +97,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 190, 190); // only its top-left corner overlaps the rectangle
         AddInstance(board, 400, 400); // untouched
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         await canvas.Marquee(from: (0, 0), to: (200, 200));
 
@@ -112,6 +113,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 60, 60);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         // Dragged from bottom-right up to top-left (negative deltas), not the usual direction.
         await canvas.Marquee(from: (200, 200), to: (0, 0));
@@ -126,6 +128,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 0, 0);
         AddInstance(board, 300, 300);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         Assert.Equal(
@@ -148,6 +151,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 300, 300);
         AddInstance(board, 600, 600);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
@@ -203,6 +207,7 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         var board = new Board();
         AddInstance(board, 60, 60);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ReturnToOrigin();
 
         await canvas.Pan(from: (0, 0), to: (200, 200));
 

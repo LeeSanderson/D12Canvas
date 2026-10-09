@@ -301,23 +301,7 @@ internal static class BoardFragment
 
     // Every instance's bounds unioned with every end that resolves, so a fragment holding only
     // edges still has a box to place by.
-    public static Bounds? Extent(Board fragment) =>
-        Bounds.Union(
-            fragment
-                .Components.Select(instance => instance.Bounds)
-                .Concat(
-                    fragment
-                        .Edges.SelectMany(edge =>
-                            new[]
-                            {
-                                fragment.ResolveEnd(edge, true),
-                                fragment.ResolveEnd(edge, false),
-                            }
-                        )
-                        .OfType<(double X, double Y)>()
-                        .Select(point => new Bounds(point.X, point.Y, 0, 0))
-                )
-        );
+    public static Bounds? Extent(Board fragment) => fragment.ContentExtent();
 
     // Moves the fragment as one rigid body. A label is placed from its edge's route, so only its
     // size is ever read and it needs no move of its own.

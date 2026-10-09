@@ -83,6 +83,7 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, seeded).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         board = seeded;
         return canvas;
@@ -530,6 +531,7 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
+        canvas.ReturnToOrigin();
         canvas.FindAll(".component-container")[0].Focus();
 
         await canvas.Press(0, 0, PointerPress.MiddleButton);
