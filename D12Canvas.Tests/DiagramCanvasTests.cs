@@ -5,14 +5,6 @@ namespace D12Canvas.Tests;
 
 public class DiagramCanvasTests : ComponentTestBase
 {
-    [Fact(Skip = "Not implemented yet")]
-    public void DiagramCanvas_ShouldRender()
-    {
-        var canvas = Render<DiagramCanvas>();
-
-        canvas.MarkupMatches("<div class=\"diagram-canvas\">Canvas</div>");
-    }
-
     [Fact]
     public void DiagramCanvas_ImportsColocatedJsModule()
     {
