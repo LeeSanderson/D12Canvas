@@ -11,8 +11,7 @@ namespace D12Canvas.Tests;
 // Delete removes every currently selected instance from Board and clears the selection - single
 // and multi-selection are the same code path (unlike move/resize, deletion has no "as one unit"
 // delta to apply). Undo-wrapping is covered by DiagramCanvasUndoRedoTests.
-// Delete also removes a selected edge - its own exclusive branch, since an edge selection is
-// never mixed into the instance-selection set.
+// Delete also removes every selected edge and every edge between two deleted instances.
 public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -144,5 +143,39 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
         Assert.Empty(canvas.FindAll(".edge-line"));
         Assert.NotNull(board.GetComponent(source.Id));
         Assert.NotNull(board.GetComponent(target.Id));
+    }
+
+    // Delete removes what Cut would carry: the edges between the deleted shapes go with them, and
+    // an edge with only one end on a deleted shape stays.
+    [Fact]
+    public async Task DeleteTakesTheEdgesBetweenTheDeletedShapesAsCutDoes()
+    {
+        var board = new Board();
+        var first = AddInstance(board, 0);
+        var second = AddInstance(board, 100);
+        var outside = AddInstance(board, 200);
+        var between = new Edge(
+            new PortEndpoint(first.Id, PortId.Right),
+            new PortEndpoint(second.Id, PortId.Left)
+        );
+        var leaving = new Edge(
+            new PortEndpoint(second.Id, PortId.Right),
+            new PortEndpoint(outside.Id, PortId.Left)
+        );
+        board.AddEdge(between);
+        board.AddEdge(leaving);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ClickOn(canvas.ContainerOf(first.Id));
+        canvas.ClickOn(canvas.ContainerOf(second.Id), shift: true);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
+
+        Assert.Null(board.GetEdge(between.Id));
+        Assert.NotNull(board.GetEdge(leaving.Id));
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.NotNull(board.GetComponent(first.Id));
+        Assert.NotNull(board.GetEdge(between.Id));
     }
 }

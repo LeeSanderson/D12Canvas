@@ -1460,10 +1460,11 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Reads through ExpandedSelection so a selected Group's members are what actually get
     // deleted; the group membership edits those removals force (a group dissolving at one
     // member, disappearing at none) ride in the same CompositeCommand, so one undo restores
-    // every deleted instance and every group exactly as they were. Every selected edge is removed
-    // in that same entry; an edge attached to a deleted instance but not itself selected stays.
-    // Nothing locked is removed, and whatever is left of the selection stays selected. While port
-    // picking it acts on the highlighted port instead.
+    // every deleted instance and every group exactly as they were. It removes exactly what Cut
+    // would carry: every selected edge and every edge between two deleted instances, in that same
+    // entry, while an edge with only one end on a deleted instance stays. Nothing locked is
+    // removed, and whatever is left of the selection stays selected. While port picking it acts on
+    // the highlighted port instead.
     [JSInvokable]
     public void OnDeletePressed()
     {
@@ -1485,13 +1486,10 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        var commands = InstanceRemoval
-            .Compose(Board, UnlockedSelection().Select(instance => instance.Id))
-            .Concat(UnlockedSelectedEdges().Select(edge => new RemoveEdgeCommand(Board, edge)))
-            .ToList();
-        if (commands.Count > 0)
+        if (CopiedFragment(forCut: true) is { } removable)
         {
-            _history.Do(new CompositeCommand(commands));
+            Remove(removable);
+            return;
         }
 
         KeepSurvivingSelection();
