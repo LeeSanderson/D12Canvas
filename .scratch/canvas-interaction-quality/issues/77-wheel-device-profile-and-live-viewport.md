@@ -10,13 +10,13 @@
 
 **Status:** resolved
 
-- [ ] With `Mouse`, a wheel notch zooms about the pointer multiplicatively and Shift+wheel pans horizontally; with `Trackpad`, a plain wheel pans with no easing and Ctrl+wheel zooms
-- [ ] `Auto` holds one classification for a run and re-classifies after the idle boundary
-- [ ] Ctrl+Z after a wheel zoom undoes the last board edit, never the zoom
-- [ ] Wheel-zooming mid-drag keeps the dragged shape under the pointer and the drag continues; PageUp mid-drag does the same
-- [ ] A press still `pointing` is promoted to `active` by a viewport change
-- [ ] Constants are asserted by relationship (zoom factor is multiplicative, trackpad transition shorter than mouse), never by value; a probe proves a wheel with a button held reaches the canvas and that the listener prevents default
-- [ ] The wheel handler on the canvas element is gone and `ZoomPanTracker` gains a zoom-about-a-point operation
-- [ ] The App exposes the profile control; the demo gains a page or parameter for the visual suite
-- [ ] Full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Wheel gesture` and `Wheel device profile` terms describe what shipped
+- [x] With `Mouse`, a wheel notch zooms about the pointer multiplicatively and Shift+wheel pans horizontally; with `Trackpad`, a plain wheel pans with no easing and Ctrl+wheel zooms
+- [x] `Auto` holds one classification for a run and re-classifies after the idle boundary
+- [x] Ctrl+Z after a wheel zoom undoes the last board edit, never the zoom
+- [x] Wheel-zooming mid-drag keeps the dragged shape under the pointer and the drag continues; PageUp mid-drag does the same
+- [x] A press still `pointing` is promoted to `active` by a viewport change
+- [x] Constants are asserted by relationship (zoom factor is multiplicative, trackpad transition shorter than mouse), never by value; a probe proves a wheel with a button held reaches the canvas and that the listener prevents default
+- [x] The wheel handler on the canvas element is gone and `ZoomPanTracker` gains a zoom-about-a-point operation
+- [x] The App exposes the profile control; the demo gains a page or parameter for the visual suite
+- [x] Full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Wheel gesture` and `Wheel device profile` terms describe what shipped

@@ -12,7 +12,7 @@
 - [x] A fast pointer sees no snapping; slowing down brings it back
 - [x] The guide reads its own token, not the accent, in both themes
 - [x] The host-facing toggle pair exists and the canvas menu row for it is added when ticket 89 lands (or here if 89 has already landed)
-- [ ] Constants are asserted by ordering (threshold 4 < tolerance 8 < affordance floor < edge band 20), never by value
+- [x] Constants are asserted by ordering (threshold 4 < tolerance 8 < affordance floor < edge band 20), never by value
 - [x] Pure C# tests for the anchor search and equal-spacing candidates; gesture-object tests for per-axis resolution
 - [x] A demo page shows a guide mid-drag for the visual suite; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
 - [x] `CONTEXT.md`'s `Object snapping`, `Alignment guide` and `Equal-spacing snap` terms describe what shipped

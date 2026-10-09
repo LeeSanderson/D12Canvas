@@ -4,12 +4,16 @@
 
 **Blocked by:** 92 (Border partition and ports on selection), 109 (Property bar and chrome suppression while judging)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The inline editor's outline is visible on a dark board; the container border is overridable through its own token
-- [ ] Selection box, handles, marquee and drag-over affordance all read the accent in both themes
-- [ ] The port and floating-endpoint signal colours are unchanged
-- [ ] The guard test enumerates every colour literal in the two style blocks and fails on one that is neither a token declaration nor on the fixed list
-- [ ] The README's token table lists every new token from this feature
-- [ ] About twenty-six light baselines move by the accent sweep and no others; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
-- [ ] `CONTEXT.md`'s `Theme token` term describes what shipped
+- [x] The inline editor's outline is visible on a dark board; the container border is overridable through its own token
+- [x] Selection box, handles, marquee and drag-over affordance all read the accent in both themes
+- [x] The port and floating-endpoint signal colours are unchanged
+- [x] The guard test enumerates every colour literal in the two style blocks and fails on one that is neither a token declaration nor on the fixed list
+- [x] The README's token table lists every new token from this feature
+- [x] About twenty-six light baselines move by the accent sweep and no others; full visual suite run in the pinned image with `-parallel none`; baselines folded into the commit
+- [x] `CONTEXT.md`'s `Theme token` term describes what shipped
+
+## Comments
+
+Shipped in 939c6a3. No light baseline moved there: the accent sweep's light pixels stayed under PixelMatch's per-pixel threshold. The final-review pass (66e7df1) regenerated the 36 PNGs that still held the old blues, so the committed baselines now show the accent.
