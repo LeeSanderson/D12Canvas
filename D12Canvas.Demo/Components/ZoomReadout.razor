@@ -1,0 +1,54 @@
+@namespace D12Canvas.Demo.Components
+@implements IDisposable
+
+<span>@ZoomPercent%</span>
+
+@code {
+    // Its own component so a pan or zoom re-renders this one span rather than the page that holds
+    // the canvas.
+    [Parameter]
+    public DiagramCanvas? Canvas { get; set; }
+
+    private DiagramCanvas? _subscribedCanvas;
+    private double _scale = 1;
+
+    private int ZoomPercent => (int)Math.Round(_scale * 100);
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_subscribedCanvas, Canvas))
+        {
+            return;
+        }
+
+        Unsubscribe();
+        _subscribedCanvas = Canvas;
+
+        if (_subscribedCanvas is not null)
+        {
+            _subscribedCanvas.ZoomOrPanChanged += HandleZoomOrPanChanged;
+            _scale = _subscribedCanvas.ZoomPanTracker.Scale;
+        }
+    }
+
+    private void HandleZoomOrPanChanged(object? sender, ZoomPanChangedEventArgs args)
+    {
+        if (args.Scale == _scale)
+        {
+            return;
+        }
+
+        _scale = args.Scale;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Unsubscribe()
+    {
+        if (_subscribedCanvas is not null)
+        {
+            _subscribedCanvas.ZoomOrPanChanged -= HandleZoomOrPanChanged;
+        }
+    }
+
+    public void Dispose() => Unsubscribe();
+}
