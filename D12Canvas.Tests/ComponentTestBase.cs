@@ -88,11 +88,13 @@ public abstract class ComponentTestBase : BunitContext
         module.SetupVoid("focusGroupTabStop", _ => true).SetVoidResult();
         module.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();
         module.SetupVoid("focusCanvas", _ => true).SetVoidResult();
-        module.SetupVoid("setIndeterminate", _ => true).SetVoidResult();
         SetupInlineEditorJsModule();
 
         var menuModule = JSInterop.SetupModule("./_content/D12Canvas/ContextMenu.razor.js");
         SetupDisposableCleanupHandle(menuModule, "registerMenu");
+
+        PropertyPanelModule = JSInterop.SetupModule(PropertyPanel.ModulePath);
+        PropertyPanelModule.SetupVoid("setIndeterminate", _ => true).SetVoidResult();
 
         PropertyBarModule = JSInterop.SetupModule(PropertyBar.ModulePath);
         SetupDisposableCleanupHandle(PropertyBarModule, "registerPropertyBar");
@@ -100,6 +102,8 @@ public abstract class ComponentTestBase : BunitContext
     }
 
     protected BunitJSModuleInterop PropertyBarModule { get; private set; } = null!;
+
+    protected BunitJSModuleInterop PropertyPanelModule { get; private set; } = null!;
 
     // The latest setup wins.
     protected void ReportPropertyBarWidth(double width) =>

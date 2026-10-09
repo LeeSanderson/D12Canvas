@@ -49,6 +49,7 @@ public partial class Minimap : IAsyncDisposable
             {
                 Canvas.ZoomOrPanChanged += OnCanvasViewportChanged;
                 Canvas.Changed += OnCanvasBoardChanged;
+                Canvas.BoardReplaced += OnCanvasBoardChanged;
             }
 
             _subscribedCanvas = Canvas;
@@ -254,6 +255,7 @@ public partial class Minimap : IAsyncDisposable
         {
             _subscribedCanvas.ZoomOrPanChanged -= OnCanvasViewportChanged;
             _subscribedCanvas.Changed -= OnCanvasBoardChanged;
+            _subscribedCanvas.BoardReplaced -= OnCanvasBoardChanged;
         }
     }
 

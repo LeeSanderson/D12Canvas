@@ -84,6 +84,29 @@ public partial class PropertyBar : IAsyncDisposable
         }
     }
 
+    // The picker opens on the swatch's own value and the browser fires no change when a pick ends
+    // on that value, so the last colour the picker reported is held and lands when the swatch is
+    // left. A change commits it at once and drops the hold.
+    private (string RowId, object? Value)? _heldPick;
+
+    private void HoldPick(PropertyBarRow row, ChangeEventArgs args) =>
+        _heldPick = (row.Id, args.Value);
+
+    private void CommitPick(PropertyBarRow row, ChangeEventArgs args)
+    {
+        _heldPick = null;
+        Commit(row, args);
+    }
+
+    private void CommitHeldPick(PropertyBarRow row)
+    {
+        if (_heldPick is { } held && held.RowId == row.Id)
+        {
+            _heldPick = null;
+            Commit(row, new ChangeEventArgs { Value = held.Value });
+        }
+    }
+
     private void Commit(PropertyBarRow row, ChangeEventArgs args)
     {
         _edits++;

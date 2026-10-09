@@ -71,7 +71,9 @@
                            tabindex="-1"
                            aria-label="@row.Label"
                            value="@ColorValue(row)"
-                           @onchange="@(e => Commit(row, e))" />
+                           @oninput="@(e => HoldPick(row, e))"
+                           @onchange="@(e => CommitPick(row, e))"
+                           @onblur="@(() => CommitHeldPick(row))" />
                     if (row.CanHoldNull && !row.IsThemed)
                     {
                         <button type="button"

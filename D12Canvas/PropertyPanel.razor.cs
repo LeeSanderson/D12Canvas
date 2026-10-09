@@ -244,7 +244,7 @@ public partial class PropertyPanel : IAsyncDisposable
             field.IsMixed
         );
 
-    private const string IndeterminateModulePath = "./_content/D12Canvas/DiagramCanvas.razor.js";
+    internal const string ModulePath = "./_content/D12Canvas/PropertyPanel.razor.js";
 
     private readonly Dictionary<string, ElementReference> _checkboxes = new();
     private HashSet<string> _indeterminateCheckboxes = new();
@@ -270,7 +270,7 @@ public partial class PropertyPanel : IAsyncDisposable
             return;
         }
 
-        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", IndeterminateModulePath);
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath);
         foreach (var field in toWrite)
         {
             await _module.InvokeVoidAsync(
@@ -292,6 +292,29 @@ public partial class PropertyPanel : IAsyncDisposable
 
     // An edit that fails to parse commits nothing - Commit's own no-op-if-unchanged guard covers
     // the "same value again" case once parsing succeeds.
+    // The picker opens on the swatch's own value and the browser fires no change when a pick ends
+    // on that value, so the last colour the picker reported is held and lands when the swatch is
+    // left. A change commits it at once and drops the hold.
+    private (string FieldId, object? Value)? _heldPick;
+
+    private void HoldPick(PanelField field, ChangeEventArgs args) =>
+        _heldPick = (field.FieldId, args.Value);
+
+    private void CommitPick(PanelField field, ChangeEventArgs args)
+    {
+        _heldPick = null;
+        CommitEdit(field, args);
+    }
+
+    private void CommitHeldPick(PanelField field)
+    {
+        if (_heldPick is { } held && held.FieldId == field.FieldId)
+        {
+            _heldPick = null;
+            CommitEdit(field, new ChangeEventArgs { Value = held.Value });
+        }
+    }
+
     private void CommitEdit(PanelField field, ChangeEventArgs args)
     {
         _edits++;

@@ -50,7 +50,9 @@
                                     type="color"
                                     value="@ColorValue(field)"
                                     disabled="@AllLocked"
-                                    @onchange="@(e => CommitEdit(field, e))"
+                                    @oninput="@(e => HoldPick(field, e))"
+                                    @onchange="@(e => CommitPick(field, e))"
+                                    @onblur="@(() => CommitHeldPick(field))"
                                 />
                                 @if (field.IsMixed)
                                 {

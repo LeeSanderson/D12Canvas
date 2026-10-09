@@ -53,6 +53,38 @@ public partial class PropertyPanelTests
         Assert.Equal("#00ff00", PropsOf(second).Tint);
     }
 
+    // The swatch opens on the colour it holds, and the browser fires no change when the pick ends
+    // on that same colour, so the last colour the picker reported lands when the swatch is left.
+    [Fact]
+    public void PickingTheColourAMixedSwatchHoldsStillWritesEveryTarget()
+    {
+        var board = new Board();
+        var first = AddInstance(board, tint: "#ff0000");
+        var second = AddInstance(board, tint: "#00ff00");
+        var (_, panel) = RenderWithBothSelected(board);
+        var swatchValue = panel.Find("#d12-property-panel-field-Tint").GetAttribute("value")!;
+
+        panel.Find("#d12-property-panel-field-Tint").Input("#123456");
+        panel.Find("#d12-property-panel-field-Tint").Input(swatchValue);
+        panel.Find("#d12-property-panel-field-Tint").Blur();
+
+        Assert.Equal(swatchValue, PropsOf(first).Tint);
+        Assert.Equal(swatchValue, PropsOf(second).Tint);
+    }
+
+    [Fact]
+    public void LeavingAMixedSwatchWithoutPickingWritesNothing()
+    {
+        var board = new Board();
+        var first = AddInstance(board, tint: "#ff0000");
+        AddInstance(board, tint: "#00ff00");
+        var (_, panel) = RenderWithBothSelected(board);
+
+        panel.Find("#d12-property-panel-field-Tint").Blur();
+
+        Assert.Equal("#ff0000", PropsOf(first).Tint);
+    }
+
     [Fact]
     public void ColoursDifferingOnlyInCaseAreNotMixed()
     {
@@ -347,7 +379,7 @@ public partial class PropertyPanelTests
     }
 
     private IEnumerable<bool> IndeterminateWrites() =>
-        CanvasModule
+        PropertyPanelModule
             .Invocations["setIndeterminate"]
             .Select(invocation => (bool)invocation.Arguments[1]!);
 }

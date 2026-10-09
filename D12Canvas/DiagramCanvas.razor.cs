@@ -315,8 +315,13 @@ public partial class DiagramCanvas : IAsyncDisposable
             _editsEndedDuringPress.Clear();
             _initialFitPending = true;
             FitNewBoard();
+            BoardReplaced?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    // Chrome wired to this canvas by reference, such as the minimap, hears of a new Board here,
+    // since a swap that leaves the viewport where it was raises no other event.
+    internal event EventHandler? BoardReplaced;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

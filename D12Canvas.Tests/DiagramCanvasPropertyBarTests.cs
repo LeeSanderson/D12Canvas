@@ -224,6 +224,24 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         Assert.NotEmpty(canvas.FindAll(".edge-halo"));
     }
 
+    // A themed swatch opens on the colour it holds, and the browser fires no change when the pick
+    // ends on that colour, so the last colour the picker reported lands when the swatch is left.
+    [Fact]
+    public void PickingTheColourAThemedSwatchHoldsStillRecolours()
+    {
+        var board = new Board();
+        var edge = AddEdge(board);
+        var canvas = RenderCanvas(board);
+        canvas.ClickElement(canvas.Find(".edge-hit"));
+        var swatchValue = Control(canvas, "Colour").GetAttribute("value")!;
+
+        Control(canvas, "Colour").Input("#123456");
+        Control(canvas, "Colour").Input(swatchValue);
+        Control(canvas, "Colour").Blur();
+
+        Assert.Equal(swatchValue, edge.Color);
+    }
+
     [Fact]
     public async Task AnEdgeRoutingChangeFromTheBarIsOneUndoableEntryThatKeepsItsColour()
     {

@@ -229,6 +229,24 @@ public class MinimapTests : ComponentTestBase
         );
     }
 
+    // The new board frames to the same view as the old, so no viewport change tells the minimap.
+    [Fact]
+    public async Task ANewBoardThatLeavesTheViewWhereItWasStillRedrawsTheBoxes()
+    {
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, SeededBoard()).Add(p => p.SnapToGrid, false)
+        );
+        var minimap = await RenderMinimap(canvas);
+        var next = SeededBoard();
+        next.AddComponent(
+            new ComponentInstance(ComponentTypeKey, new TestProps(), new Bounds(250, 250, 50, 50))
+        );
+
+        canvas.Render(parameters => parameters.Add(p => p.Board, next));
+
+        Assert.Equal(3, minimap.FindAll(".d12-minimap-box").Count);
+    }
+
     [Fact]
     public async Task FarFromTheContentTheMapStillHoldsBothTheContentAndTheViewport()
     {
