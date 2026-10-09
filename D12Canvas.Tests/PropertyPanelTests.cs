@@ -15,7 +15,7 @@ namespace D12Canvas.Tests;
 // registered TProps declares. Exercised through the real DiagramCanvas/ComponentContainer stack
 // (not a bare Board) since selection itself is DiagramCanvas's own transient view state - there's
 // no other way to select an instance.
-public class PropertyPanelTests : ComponentTestBase
+public partial class PropertyPanelTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "panel-test-component";
 

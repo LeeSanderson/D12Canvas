@@ -1,0 +1,80 @@
+@page "/mixed-values-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Mixed Values Demo</PageTitle>
+
+<div class="mixed-values-layout">
+    <div class="mixed-values-canvas">
+        <DiagramCanvas @ref="_canvas" Board="_board" />
+    </div>
+    <div class="mixed-values-panel">
+        <PropertyPanel Canvas="_canvas" />
+    </div>
+</div>
+
+<style>
+    .mixed-values-layout {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .mixed-values-canvas {
+        width: 620px;
+        height: 480px;
+    }
+
+    .mixed-values-panel {
+        width: 260px;
+    }
+</style>
+
+@code {
+    private static readonly Guid BlueRectangleId = Guid.Parse("10800000-0000-0000-0000-000000000001");
+    private static readonly Guid OrangeRectangleId = Guid.Parse("10800000-0000-0000-0000-000000000002");
+    private static readonly Guid NormalTextId = Guid.Parse("10800000-0000-0000-0000-000000000003");
+    private static readonly Guid BoldTextId = Guid.Parse("10800000-0000-0000-0000-000000000004");
+
+    private readonly Board _board = SeedBoard();
+    private DiagramCanvas? _canvas;
+
+    [SupplyParameterFromQuery(Name = "locked")]
+    public bool GroupRectanglesWithOneLocked { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (GroupRectanglesWithOneLocked)
+        {
+            _board.GetComponent(OrangeRectangleId)!.Locked = true;
+            _board.AddGroup(new Group([BlueRectangleId, OrangeRectangleId]));
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#cfe3ff", null, 2), new Bounds(60, 60, 160, 100), id: BlueRectangleId)
+        );
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#ffe0b3", null, 4), new Bounds(300, 60, 160, 100), id: OrangeRectangleId)
+        );
+        board.AddComponent(
+            new ComponentInstance("text", new TextProps("Normal", null, 18, "normal", "left"), new Bounds(60, 240, 160, 40), id: NormalTextId)
+        );
+        board.AddComponent(
+            new ComponentInstance("text", new TextProps("Bold", null, 18, "bold", "left"), new Bounds(300, 240, 160, 40), id: BoldTextId)
+        );
+        return board;
+    }
+}

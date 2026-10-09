@@ -86,6 +86,12 @@ export function focusCanvas(canvas) {
     canvas.focus({ preventScroll: true });
 }
 
+export function setIndeterminate(checkbox, indeterminate) {
+    if (checkbox) {
+        checkbox.indeterminate = indeterminate;
+    }
+}
+
 // Every press on the board is classified once, here, by walking up from the event target to the
 // nearest marked element, and exactly one owner on the C# side then holds it until its claiming
 // button comes up. The decisions that cannot wait for an interop hop are taken synchronously in

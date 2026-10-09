@@ -70,6 +70,47 @@ public class PropertyPanelImageTests : ComponentTestBase
     }
 
     [Fact]
+    public void ImagesHoldingDifferentPicturesShowTheUrlRowAsMixed()
+    {
+        var board = new Board();
+        var first = AddImage(board, "https://example.com/a.png");
+        var second = new ComponentInstance(
+            "image",
+            new ImageProps("https://example.com/b.png", "", "cover"),
+            new Bounds(400, 40, 240, 180)
+        );
+        board.AddComponent(second);
+
+        var (canvas, panel) = RenderSelected(board, first);
+        Assert.Empty(panel.FindAll(".d12-image-picture-mixed"));
+
+        canvas.ClickOn(canvas.ContainerOf(second.Id), shift: true);
+
+        Assert.Equal("Mixed", panel.Find(".d12-image-picture-mixed").TextContent);
+    }
+
+    [Fact]
+    public async Task RemoveImageOnAMixedRowEmptiesEveryImageInOneEntry()
+    {
+        var board = new Board();
+        var first = AddImage(board, "https://example.com/a.png");
+        var second = new ComponentInstance(
+            "image",
+            new ImageProps("", "", "cover"),
+            new Bounds(400, 40, 240, 180)
+        );
+        board.AddComponent(second);
+        var (canvas, panel) = RenderSelected(board, first);
+        canvas.ClickOn(canvas.ContainerOf(second.Id), shift: true);
+
+        await Click(panel, "Remove image");
+
+        Assert.Equal("", UrlOf(first));
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+        Assert.Equal("https://example.com/a.png", UrlOf(first));
+    }
+
+    [Fact]
     public void ALockedImagesUrlRowOffersBothButtonsDisabled()
     {
         var board = new Board();

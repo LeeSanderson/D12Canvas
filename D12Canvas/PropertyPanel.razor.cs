@@ -5,6 +5,7 @@ using D12Canvas.Panel;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
@@ -12,10 +13,13 @@ namespace D12Canvas;
 // Palette is (chrome isn't nested inside the canvas, so no cascading parameter reaches
 // it). Unlike Palette, the panel's content depends on transient selection state living inside
 // DiagramCanvas, so it also subscribes to DiagramCanvas.SelectionChanged to know when to re-render.
-public partial class PropertyPanel : IDisposable
+public partial class PropertyPanel : IAsyncDisposable
 {
     [Inject]
     private IComponentRegistry Registry { get; set; } = null!;
+
+    [Inject]
+    private IJSRuntime JS { get; set; } = null!;
 
     [Parameter]
     public DiagramCanvas? Canvas { get; set; }
@@ -44,11 +48,20 @@ public partial class PropertyPanel : IDisposable
 
     private void HandleSelectionChanged(object? sender, EventArgs e) => StateHasChanged();
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         if (_subscribedCanvas is not null)
         {
             _subscribedCanvas.SelectionChanged -= HandleSelectionChanged;
+        }
+
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
         }
     }
 
@@ -80,14 +93,50 @@ public partial class PropertyPanel : IDisposable
         RenderFragment<CustomEditorContext>? CustomEditor,
         IReadOnlyList<(ComponentInstance Instance, PropertyInfo Property)> Targets,
         bool CanHoldNull
-    );
+    )
+    {
+        public bool IsMixed { get; } =
+            MixedValue.IsMixed(
+                Kind,
+                Targets.Select(target => target.Property.GetValue(target.Instance.Props)).ToList()
+            );
 
-    private bool IsThemed(PanelField field) => field.CanHoldNull && FirstTargetValue(field) is null;
+        // Null on a mixed row, so no one target's value is shown as though it were the selection's.
+        public object? Value =>
+            IsMixed || Targets.Count == 0
+                ? null
+                : Targets[0].Property.GetValue(Targets[0].Instance.Props);
+    }
 
-    private string ColorInputClass(PanelField field) =>
-        IsThemed(field)
-            ? "d12-property-panel-input d12-property-panel-color d12-property-panel-color-themed"
-            : "d12-property-panel-input d12-property-panel-color";
+    private static bool IsThemed(PanelField field) =>
+        field.CanHoldNull && !field.IsMixed && field.Value is null;
+
+    private static string ColorInputClass(PanelField field) =>
+        "d12-property-panel-input d12-property-panel-color"
+        + (
+            IsThemed(field) ? " d12-property-panel-color-themed"
+            : field.IsMixed ? " d12-property-panel-color-mixed"
+            : ""
+        );
+
+    // The native picker opens on the input's value, and confirming that same value fires no
+    // change. A mixed swatch hides its value under the hatch, so it holds a colour nobody is likely
+    // to pick rather than #000000, which would make black impossible to apply to a mixed row.
+    private const string MixedSwatchValue = "#010203";
+
+    private static string ColorValue(PanelField field) =>
+        field.IsMixed ? MixedSwatchValue : CurrentValue(field);
+
+    private static string? MixedPlaceholder(PanelField field) =>
+        field.IsMixed ? MixedValue.Label : null;
+
+    // A row that is still mixed after an edit renders the same empty value as before, so Blazor
+    // would leave whatever was typed in the field. Keying a mixed row on the edit count rebuilds
+    // its element after every edit.
+    private int _edits;
+
+    private object RowKey(PanelField field) =>
+        field.IsMixed ? $"{field.FieldId}#{_edits}" : field.FieldId;
 
     private IReadOnlyList<PanelField> Fields
     {
@@ -178,30 +227,59 @@ public partial class PropertyPanel : IDisposable
             .ToList();
     }
 
-    // A multi-target field displays whichever target happens to be first as its
-    // representative current value - there's no "mixed values" indicator, matching how a same-type
-    // multi-selection already has no per-instance display distinction.
-    private static object? FirstTargetValue(PanelField field) =>
-        field.Targets.Count == 0
-            ? null
-            : field.Targets[0].Property.GetValue(field.Targets[0].Instance.Props);
-
-    private string CurrentValue(PanelField field) => FormatValue(FirstTargetValue(field));
+    private static string CurrentValue(PanelField field) => FormatValue(field.Value);
 
     // Checkbox binds via the "checked" DOM property, not "value" - a separate accessor rather than
     // routing bool through FormatValue/CurrentValue's string-shaped path.
-    private bool CurrentBoolValue(PanelField field) => FirstTargetValue(field) is true;
+    private static bool CurrentBoolValue(PanelField field) => field.Value is true;
 
-    // A Custom editor gets the current value of the field's first target plus a commit callback
-    // closed over this same field - Commit directly, not via CommitEdit, since a Custom editor's
-    // value is already CLR-typed and needs no ChangeEventArgs/ConvertValue parsing.
+    // Commit directly, not via CommitEdit, since a Custom editor's value is already CLR-typed and
+    // needs no ChangeEventArgs/ConvertValue parsing.
     private CustomEditorContext CustomContext(PanelField field) =>
         new(
-            FirstTargetValue(field),
+            field.Value,
             newValue => Commit(field, newValue),
             Canvas?.Board is { } board ? board.AddAsset : null,
-            AllLocked
+            AllLocked,
+            field.IsMixed
         );
+
+    private const string IndeterminateModulePath = "./_content/D12Canvas/DiagramCanvas.razor.js";
+
+    private readonly Dictionary<string, ElementReference> _checkboxes = new();
+    private HashSet<string> _indeterminateCheckboxes = new();
+    private IJSObjectReference? _module;
+
+    // Indeterminate is a DOM property with no attribute, so markup cannot set it. A mixed checkbox
+    // is set on every render, and one that was mixed is cleared once, since Blazor reuses the
+    // element and the property would otherwise outlive the mixed row.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var checkboxes = Fields.Where(field => field.Kind == EditorKind.Checkbox).ToList();
+        var toWrite = checkboxes
+            .Where(field => field.IsMixed || _indeterminateCheckboxes.Contains(field.FieldId))
+            .Where(field => _checkboxes.ContainsKey(field.FieldId))
+            .ToList();
+        _indeterminateCheckboxes = checkboxes
+            .Where(field => field.IsMixed)
+            .Select(field => field.FieldId)
+            .ToHashSet();
+
+        if (toWrite.Count == 0)
+        {
+            return;
+        }
+
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", IndeterminateModulePath);
+        foreach (var field in toWrite)
+        {
+            await _module.InvokeVoidAsync(
+                "setIndeterminate",
+                _checkboxes[field.FieldId],
+                field.IsMixed
+            );
+        }
+    }
 
     private static string FormatValue(object? value) =>
         value switch
@@ -216,6 +294,7 @@ public partial class PropertyPanel : IDisposable
     // the "same value again" case once parsing succeeds.
     private void CommitEdit(PanelField field, ChangeEventArgs args)
     {
+        _edits++;
         if (field.Targets.Count == 0)
         {
             return;
@@ -242,6 +321,7 @@ public partial class PropertyPanel : IDisposable
     // whether or not every target ends up changing.
     private void Commit(PanelField field, object? newValue)
     {
+        _edits++;
         if (field.Kind == EditorKind.Color && field.CanHoldNull && newValue is "")
         {
             newValue = null;
@@ -251,8 +331,7 @@ public partial class PropertyPanel : IDisposable
         foreach (var (instance, property) in field.Targets)
         {
             var before = instance.Props;
-            var currentValue = property.GetValue(before);
-            if (Equals(currentValue, newValue))
+            if (MixedValue.AreEqual(field.Kind, property.GetValue(before), newValue))
             {
                 continue;
             }

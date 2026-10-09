@@ -88,6 +88,7 @@ public abstract class ComponentTestBase : BunitContext
         module.SetupVoid("focusGroupTabStop", _ => true).SetVoidResult();
         module.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();
         module.SetupVoid("focusCanvas", _ => true).SetVoidResult();
+        module.SetupVoid("setIndeterminate", _ => true).SetVoidResult();
         SetupInlineEditorJsModule();
 
         var menuModule = JSInterop.SetupModule("./_content/D12Canvas/ContextMenu.razor.js");

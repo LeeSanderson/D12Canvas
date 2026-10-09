@@ -16,7 +16,7 @@
         <ul class="d12-property-panel-fields">
             @foreach (var field in Fields)
             {
-                <li class="d12-property-panel-field">
+                <li class="d12-property-panel-field" @key="RowKey(field)">
                     <label class="d12-property-panel-label" for="@field.FieldId">@field.Label</label>
                     @switch (field.Kind)
                     {
@@ -26,6 +26,7 @@
                                 class="d12-property-panel-input"
                                 type="text"
                                 value="@CurrentValue(field)"
+                                placeholder="@MixedPlaceholder(field)"
                                 disabled="@AllLocked"
                                 @onchange="@(e => CommitEdit(field, e))"
                             />
@@ -36,6 +37,7 @@
                                 class="d12-property-panel-input"
                                 type="number"
                                 value="@CurrentValue(field)"
+                                placeholder="@MixedPlaceholder(field)"
                                 disabled="@AllLocked"
                                 @onchange="@(e => CommitEdit(field, e))"
                             />
@@ -46,10 +48,14 @@
                                     id="@field.FieldId"
                                     class="@ColorInputClass(field)"
                                     type="color"
-                                    value="@CurrentValue(field)"
+                                    value="@ColorValue(field)"
                                     disabled="@AllLocked"
                                     @onchange="@(e => CommitEdit(field, e))"
                                 />
+                                @if (field.IsMixed)
+                                {
+                                    <span class="d12-property-panel-mixed-label">@MixedValue.Label</span>
+                                }
                                 @if (field.CanHoldNull)
                                 {
                                     if (IsThemed(field))
@@ -78,6 +84,7 @@
                                 type="checkbox"
                                 checked="@CurrentBoolValue(field)"
                                 disabled="@AllLocked"
+                                @ref="_checkboxes[field.FieldId]"
                                 @onchange="@(e => CommitEdit(field, e))"
                             />
                             break;
@@ -89,6 +96,10 @@
                                 disabled="@AllLocked"
                                 @onchange="@(e => CommitEdit(field, e))"
                             >
+                                @if (field.IsMixed)
+                                {
+                                    <option value="" disabled selected>@MixedValue.Label</option>
+                                }
                                 @foreach (var option in field.Options!)
                                 {
                                     <option value="@option">@option</option>
@@ -220,7 +231,26 @@
         border: 1px dashed var(--d12-muted-text);
     }
 
-    .d12-property-panel-themed-label {
+    .d12-property-panel-color-mixed::-webkit-color-swatch {
+        background: repeating-linear-gradient(
+            45deg,
+            var(--d12-muted-text) 0 2px,
+            var(--d12-surface) 2px 6px
+        );
+        border: 1px solid var(--d12-muted-text);
+    }
+
+    .d12-property-panel-color-mixed::-moz-color-swatch {
+        background: repeating-linear-gradient(
+            45deg,
+            var(--d12-muted-text) 0 2px,
+            var(--d12-surface) 2px 6px
+        );
+        border: 1px solid var(--d12-muted-text);
+    }
+
+    .d12-property-panel-themed-label,
+    .d12-property-panel-mixed-label {
         font-size: 12px;
         color: var(--d12-muted-text);
     }

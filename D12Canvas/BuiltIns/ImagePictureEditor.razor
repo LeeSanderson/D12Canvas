@@ -5,6 +5,10 @@
 @inject IJSRuntime JS
 
 <div class="d12-image-picture-editor">
+    @if (Context.IsMixed)
+    {
+        <span class="d12-image-picture-mixed">@MixedValue.Label</span>
+    }
     <button type="button" class="d12-image-picture-button" disabled="@(Context.AddAsset is null || Context.Disabled)" @onclick="ChooseFile">Choose file…</button>
     <button type="button" class="d12-image-picture-button" disabled="@Context.Disabled" @onclick="RemoveImage">Remove image</button>
 </div>
@@ -14,6 +18,12 @@
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
+    }
+
+    .d12-image-picture-mixed {
+        flex-basis: 100%;
+        font-size: 12px;
+        color: var(--d12-muted-text);
     }
 
     .d12-image-picture-button {

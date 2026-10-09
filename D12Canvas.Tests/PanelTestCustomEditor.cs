@@ -19,8 +19,9 @@ internal static class PanelTestCustomEditor
                 builder.OpenElement(0, "button");
                 builder.AddAttribute(1, "type", "button");
                 builder.AddAttribute(2, "id", CommitButtonId);
+                builder.AddAttribute(3, "data-mixed", context.IsMixed ? "true" : "false");
                 builder.AddAttribute(
-                    3,
+                    4,
                     "onclick",
                     EventCallback.Factory.Create(context, () => context.Commit(CommittedValue))
                 );

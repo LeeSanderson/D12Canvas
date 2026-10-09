@@ -7,9 +7,13 @@ namespace D12Canvas.Panel;
 // AddAsset stores bytes on the canvas's board and returns the reference to commit, for an editor
 // whose value is a file; it is null while the panel has no board to store them on. Disabled is
 // true while every instance the field edits is locked, when the editor should offer no edit.
+// IsMixed is true when the field's targets disagree; Value is then null, which is also what a
+// themed colour holds, so IsMixed is how an editor tells the two apart. Commit still writes the
+// value to every target.
 public sealed record CustomEditorContext(
     object? Value,
     Action<object?> Commit,
     Func<byte[], string, string>? AddAsset = null,
-    bool Disabled = false
+    bool Disabled = false,
+    bool IsMixed = false
 );
