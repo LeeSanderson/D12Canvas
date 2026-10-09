@@ -254,7 +254,7 @@ public class EdgeRouterTests
     [Theory]
     [InlineData(0, 0, PortId.Top)]
     [InlineData(1, 0, PortId.Top)]
-    [InlineData(1, 1, PortId.Right)]
+    [InlineData(1, 1, PortId.Bottom)]
     [InlineData(0, 1, PortId.Bottom)]
     [InlineData(0, 0.3, PortId.Left)]
     [InlineData(1, 0.3, PortId.Right)]
@@ -264,6 +264,22 @@ public class EdgeRouterTests
         double fractionY,
         PortId expected
     ) => Assert.Equal(expected, EdgeRouter.SideOfFraction(fractionX, fractionY));
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 0)]
+    [InlineData(1, 1)]
+    [InlineData(0, 1)]
+    [InlineData(0.4, 0)]
+    [InlineData(1, 0.6)]
+    public void RoutingAndTheBorderPartitionPutACustomPortOnTheSameSide(
+        double fractionX,
+        double fractionY
+    ) =>
+        Assert.Equal(
+            BorderPartition.SideOf(new PortDef(fractionX, fractionY)),
+            EdgeRouter.SideOfFraction(fractionX, fractionY)
+        );
 
     [Theory]
     [MemberData(nameof(SidePairs))]

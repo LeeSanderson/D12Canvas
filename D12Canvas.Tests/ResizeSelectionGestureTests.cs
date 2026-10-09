@@ -364,7 +364,7 @@ public class ResizeSelectionGestureTests
     }
 
     [Fact]
-    public void AnEdgeMatchBelowTheMinimumSizeIsNotTaken()
+    public void AnEdgeMatchBelowTheMinimumSizeIsClampedToTheMinimum()
     {
         var board = new Board();
         var shape = AddInstance(board, new Bounds(0, 0, 100, 100));
@@ -377,6 +377,39 @@ public class ResizeSelectionGestureTests
 
         Assert.Equal(new Bounds(50, 0, 50, 100), context.Preview[shape.Id]);
         Assert.Empty(context.Guides);
+    }
+
+    [Fact]
+    public void UnderGridSnapAnEdgeMatchBelowTheMinimumClampsRatherThanFallingBackToTheGrid()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 100, 100));
+        AddInstance(board, new Bounds(52, 300, 0, 50));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "left", 0, 50);
+
+        resize.Move(PointerEvents.Move(48, 50));
+
+        Assert.Equal(new Bounds(50, 0, 50, 100), context.Preview[shape.Id]);
+        Assert.Empty(context.Guides);
+    }
+
+    [Fact]
+    public void UnderACentreResizeAnEdgeMatchBelowTheMinimumClampsAboutTheCentre()
+    {
+        var board = new Board();
+        var shape = AddInstance(board, new Bounds(0, 0, 100, 100));
+        AddInstance(board, new Bounds(73, 300, 0, 50));
+        var context = SelectedOn(board, shape);
+        context.GridSpacing = 20;
+        context.ObjectSnapping = true;
+        var resize = PressHandle(context, shape.Id, "right", 100, 50);
+
+        resize.Move(PointerEvents.Move(76, 50, alt: true));
+
+        Assert.Equal(new Bounds(25, 0, 50, 100), context.Preview[shape.Id]);
     }
 
     [Fact]

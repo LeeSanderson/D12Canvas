@@ -155,7 +155,8 @@ internal sealed class ResizeSelectionGesture : PointerGesture
     // The edges moving on this axis, matched from where the pointer put them before any grid
     // rounding, so object snapping replaces the grid on the axis where it fires. The nearest match
     // wins; under a centre resize the other edge moves the same amount the opposite way. A match
-    // that would take the box below its minimum size is not taken.
+    // that would take the box below its minimum size is clamped to the minimum after the snap,
+    // and draws no guide since the edge stops short of it.
     private (Bounds Box, AxisSnap? Held) SnapEdges(
         Bounds box,
         Bounds unsnapped,
@@ -191,9 +192,13 @@ internal sealed class ResizeSelectionGesture : PointerGesture
             start -= centred ? correction : 0;
         }
 
-        if (end - start < minimum)
+        var clamped = end - start < minimum;
+        if (clamped)
         {
-            return (box, null);
+            (start, end) =
+                centred ? ((start + end - minimum) / 2, (start + end + minimum) / 2)
+                : snap.Anchor == SnapAnchor.Start ? (end - minimum, end)
+                : (start, start + minimum);
         }
 
         var snapped =
@@ -208,7 +213,7 @@ internal sealed class ResizeSelectionGesture : PointerGesture
                     Y = start,
                     Height = end - start,
                 };
-        return (snapped, snap);
+        return (snapped, clamped ? null : snap);
     }
 
     private IReadOnlyList<SnapAnchor> MovingEdges(SnapAxis axis, bool centred) =>

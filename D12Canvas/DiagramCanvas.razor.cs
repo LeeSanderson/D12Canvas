@@ -191,12 +191,24 @@ public partial class DiagramCanvas : IAsyncDisposable
     // Every press the browser-side listener forwards resolves to exactly one pointer gesture,
     // chosen here once the interop hop lands because the choice needs the selection, and that
     // gesture owns the pointer until its claiming button comes up. Its identity never changes
-    // mid-press, only its phase. The selection as it stood at the press is kept so a cancel can
-    // put it back. The marquee band is drawn from its own field, and every other piece of
+    // mid-press, only its phase. The selection and the entered group as they stood before the
+    // press stepped out of anything are kept so a cancel can put both back. The marquee band is drawn from its own field, and every other piece of
     // in-flight geometry is in the gesture preview, read through live geometry.
     private PointerGesture? _activeGesture;
     private PointerMove? _lastPointer;
-    private SelectionSnapshot? _pressSelection;
+    private PressScope? _pressScope;
+
+    private sealed record PressScope(
+        IReadOnlyList<Guid> EnteredGroupIds,
+        SelectionSnapshot Selection
+    );
+
+    private PressScope CurrentScope() =>
+        new(
+            _enteredGroupIds.ToList(),
+            new SelectionSnapshot(_selectedInstanceIds, _selectedEdgeIds)
+        );
+
     private Bounds? _marqueeBounds;
     private Board? _previousBoard;
     private readonly GesturePreview _preview = new();
@@ -299,6 +311,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             CancelActiveGesture(restoreSelection: false);
             _enteredGroupIds.Clear();
             _duplicateRun.End();
+            _clicksAwaitingMeasurement.Clear();
             _initialFitPending = true;
             FitNewBoard();
         }
@@ -322,6 +335,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
             _zoomPanTracker.SetContainerSize((int)facts.Width, (int)facts.Height);
             FitNewBoard();
+            PlaceClicksAwaitingMeasurement();
             _applePlatform = facts.ApplePlatform;
             _asyncClipboard = facts.AsyncClipboard;
 
@@ -412,6 +426,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     {
         _zoomPanTracker.SetContainerSize((int)width, (int)height);
         FitNewBoard();
+        PlaceClicksAwaitingMeasurement();
         StateHasChanged();
     }
 
@@ -434,6 +449,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         _additiveTraversal = false;
+        var scopeBeforePress = CurrentScope();
         if (press.Button == PointerPress.PrimaryButton)
         {
             StepOutForPress(press);
@@ -456,7 +472,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         if (gesture.HoldsPress)
         {
-            Hold(gesture, snapshot, _pointerListener);
+            Hold(gesture, scopeBeforePress, _pointerListener);
         }
 
         StateHasChanged();
@@ -464,7 +480,7 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private void Hold(
         PointerGesture gesture,
-        SelectionSnapshot snapshot,
+        PressScope scopeBeforePress,
         IJSObjectReference? listener
     )
     {
@@ -481,7 +497,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             press.AltKey,
             press.MetaKey
         );
-        _pressSelection = snapshot;
+        _pressScope = scopeBeforePress;
         _history.Lock();
     }
 
@@ -611,9 +627,11 @@ public partial class DiagramCanvas : IAsyncDisposable
         _marqueeBounds = null;
         _preview.Clear();
 
-        if (restoreSelection && _pressSelection is { } snapshot)
+        if (restoreSelection && _pressScope is { } scope)
         {
-            SetSelection(snapshot.InstanceIds, snapshot.EdgeIds);
+            _enteredGroupIds.Clear();
+            _enteredGroupIds.AddRange(scope.EnteredGroupIds);
+            SetSelection(scope.Selection.InstanceIds, scope.Selection.EdgeIds);
         }
 
         _activeGesture.MarkCancelled();
@@ -637,7 +655,7 @@ public partial class DiagramCanvas : IAsyncDisposable
         _activeGesture = null;
         _pressListener = null;
         _lastPointer = null;
-        _pressSelection = null;
+        _pressScope = null;
         _marqueeBounds = null;
         _preview.Clear();
         _stickyParticipants.Clear();
@@ -898,10 +916,10 @@ public partial class DiagramCanvas : IAsyncDisposable
     }
 
     // With snap-to-grid off a nudge unit is one screen pixel (1 / Scale board units); with it on
-    // a unit is one dominant grid line. With no instance selected there's nothing to nudge, so this
-    // falls back to the arrow-key pan instead, which an edge-only selection takes too: a nudge
-    // moves instances only. PanStep is in screen pixels, because ZoomPanTracker's pan is, so a
-    // pan press covers the same screen distance at any zoom.
+    // a unit is one dominant grid line. Only an empty selection falls back to the arrow-key pan; a
+    // selection with nothing to move (an edge whose ends are all attached) makes the key a no-op.
+    // PanStep is in screen pixels, because ZoomPanTracker's pan is, so a pan press covers the same
+    // screen distance at any zoom.
     private const double NudgeStep = 1;
     private const double NudgeStepCoarse = 10;
     private const double PanStep = 50;
@@ -939,7 +957,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        if (_selectedInstanceIds.Count > 0)
+        if (_selectedInstanceIds.Count > 0 || _selectedEdgeIds.Count > 0)
         {
             if (!PressOwnsBoard)
             {
@@ -983,13 +1001,14 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         var targets = UnlockedSelection();
-        if (targets.Count == 0)
+        var edges = UnlockedSelectedEdges();
+        if (NudgeAnchor(targets, edges) is not { } anchor)
         {
             return;
         }
 
         var (deltaX, deltaY) = SnapToGrid
-            ? GridNudgeDelta(targets, dirX, dirY, shiftKey ? NudgeStepCoarse : NudgeStep)
+            ? GridNudgeDelta(anchor, dirX, dirY, shiftKey ? NudgeStepCoarse : NudgeStep)
             : ScreenNudgeDelta(dirX, dirY, shiftKey);
 
         // Extending in place only when this is still the top of the undo stack (nothing else was
@@ -998,14 +1017,14 @@ public partial class DiagramCanvas : IAsyncDisposable
         if (
             _activeNudgeCommand is not null
             && ReferenceEquals(_history.PeekUndo, _activeNudgeCommand)
-            && _activeNudgeCommand.Matches(targets)
+            && _activeNudgeCommand.Matches(targets, edges)
         )
         {
             _activeNudgeCommand.Extend(deltaX, deltaY);
         }
         else
         {
-            _activeNudgeCommand = new NudgeCommand(targets, deltaX, deltaY);
+            _activeNudgeCommand = new NudgeCommand(targets, deltaX, deltaY, edges);
             _history.Do(_activeNudgeCommand);
         }
 
@@ -1033,17 +1052,34 @@ public partial class DiagramCanvas : IAsyncDisposable
             )
             : coordinate + direction * ScreenNudgeStep(coarse);
 
-    // Measured from the top-left of the selection's bounding box, the point snap-to-grid anchors,
-    // and read off the current bounds so each press in a held burst steps from where the last
-    // one landed.
-    private (double X, double Y) GridNudgeDelta(
+    // The top-left of the selection's bounding box, the point snap-to-grid anchors, read off the
+    // current geometry so each press in a held burst steps from where the last one landed. An
+    // edge-only selection anchors on its floating ends; null when nothing would move.
+    private static Bounds? NudgeAnchor(
         IReadOnlyList<ComponentInstance> targets,
+        IReadOnlyList<Edge> edges
+    )
+    {
+        if (targets.Count > 0)
+        {
+            return Bounds.Union(targets.Select(target => target.Bounds));
+        }
+
+        return Bounds.Union(
+            edges
+                .SelectMany(edge => new[] { edge.Source, edge.Target })
+                .OfType<FloatingEndpoint>()
+                .Select(end => new Bounds(end.X, end.Y, 0, 0))
+        );
+    }
+
+    private (double X, double Y) GridNudgeDelta(
+        Bounds anchor,
         double dirX,
         double dirY,
         double lines
     )
     {
-        var anchor = Bounds.Union(targets.Select(target => target.Bounds))!.Value;
         var spacing = DominantGridSpacing();
         var deltaX = dirX == 0 ? 0 : NextGridLine(anchor.X, dirX, spacing, lines) - anchor.X;
         var deltaY = dirY == 0 ? 0 : NextGridLine(anchor.Y, dirY, spacing, lines) - anchor.Y;
@@ -3096,12 +3132,18 @@ public partial class DiagramCanvas : IAsyncDisposable
     // it the way a mouse click leaves one.
     public void ClickToAdd(string componentTypeKey)
     {
-        // Also a no-op before the first-render container-size JS round trip has resolved, which
-        // would otherwise center the new instance on the board origin instead of the viewport,
-        // and while a pointer gesture owns the board, since the add would be refused and the
+        // A no-op while a pointer gesture owns the board, since the add would be refused and the
         // selection must not move to an instance that was never placed.
-        if (Board is null || PressOwnsBoard || !_zoomPanTracker.HasKnownContainerSize)
+        if (Board is null || PressOwnsBoard)
         {
+            return;
+        }
+
+        // Before the container is measured the viewport centre is unknown, so the click waits for
+        // the measurement rather than landing on the board origin or being lost.
+        if (!_zoomPanTracker.HasKnownContainerSize)
+        {
+            _clicksAwaitingMeasurement.Add(componentTypeKey);
             return;
         }
 
@@ -3123,6 +3165,23 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
 
         StateHasChanged();
+    }
+
+    private readonly List<string> _clicksAwaitingMeasurement = [];
+
+    private void PlaceClicksAwaitingMeasurement()
+    {
+        if (!_zoomPanTracker.HasKnownContainerSize)
+        {
+            return;
+        }
+
+        var keys = _clicksAwaitingMeasurement.ToList();
+        _clicksAwaitingMeasurement.Clear();
+        foreach (var key in keys)
+        {
+            ClickToAdd(key);
+        }
     }
 
     // Shared by HandleDrop and ClickToAdd - both place a new instance centered on a board-space

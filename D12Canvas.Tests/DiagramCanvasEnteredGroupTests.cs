@@ -276,6 +276,38 @@ public class DiagramCanvasEnteredGroupTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task EscapeMidPressRestoresTheGroupThePressSteppedOutOf()
+    {
+        var canvas = RenderCanvas();
+        DoubleClick(canvas, _nestedSecond.Id);
+        DoubleClick(canvas, _nestedSecond.Id);
+
+        canvas.PressOn(ContainerOf(canvas, _outsider.Id), (410, 10));
+        canvas.MoveTo((430, 30));
+        await PressEscape(canvas);
+        canvas.ReleaseAt((430, 30));
+
+        Assert.Equal([_nestedSecond.Id], canvas.Instance.SelectedComponents.Select(i => i.Id));
+        Assert.Single(canvas.FindAll(".entered-group-outline"));
+        Assert.False(IsUnaddressable(canvas, _nestedFirst.Id));
+        Assert.Equal(new Bounds(400, 0, 50, 50), _outsider.Bounds);
+    }
+
+    [Fact]
+    public async Task APointerCancelRestoresTheGroupThePressSteppedOutOf()
+    {
+        var canvas = RenderCanvas();
+        DoubleClick(canvas, _outerMember.Id);
+
+        await canvas.Press(600, 300);
+        await canvas.Move(650, 350);
+        await canvas.Cancel("pointercancel");
+
+        Assert.Equal([_outerMember.Id], canvas.Instance.SelectedComponents.Select(i => i.Id));
+        Assert.Single(canvas.FindAll(".entered-group-outline"));
+    }
+
+    [Fact]
     public void FocusLandingOnAStopOutsideTheEnteredGroupStepsOutToIt()
     {
         var canvas = RenderCanvas();

@@ -393,10 +393,80 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         Assert.Equal(new Bounds(226, 40, 50, 50), second.Bounds);
     }
 
-    // A nudge moves instances only, so a selection holding nothing but an edge has nothing for it
-    // to move and takes the pan fallback, the same as an empty selection.
+    private IRenderedComponent<DiagramCanvas> RenderFree(Board board)
+    {
+        var canvas = Render<DiagramCanvas>(parameters =>
+            parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
+        );
+        canvas.ReturnToOrigin();
+        return canvas;
+    }
+
     [Fact]
-    public async Task WithOnlyAnEdgeSelectedArrowKeysPanTheCanvasInsteadOfNudging()
+    public async Task ASelectedEdgesFloatingEndsMoveWithTheNudge()
+    {
+        var board = new Board();
+        var edge = new Edge(new FloatingEndpoint(100, 300), new FloatingEndpoint(200, 300));
+        board.AddEdge(edge);
+        var canvas = RenderFree(board);
+        canvas.ClickElement(canvas.Find(".edge-hit"));
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", true));
+
+        Assert.Equal(new FloatingEndpoint(110, 300), edge.Source);
+        Assert.Equal(new FloatingEndpoint(210, 300), edge.Target);
+        Assert.Equal(0, canvas.Instance.ZoomPanTracker.PanX);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+        Assert.Equal(new FloatingEndpoint(100, 300), edge.Source);
+        Assert.Equal(new FloatingEndpoint(200, 300), edge.Target);
+    }
+
+    [Fact]
+    public async Task AMixedSelectionNudgesItsInstancesAndFloatingEndsAsOneEntry()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 100, 100);
+        var edge = new Edge(
+            new PortEndpoint(instance.Id, PortId.Right),
+            new FloatingEndpoint(300, 125)
+        );
+        board.AddEdge(edge);
+        var canvas = RenderFree(board);
+        canvas.ClickOn(canvas.Find(".component-container"));
+        canvas.ClickElement(canvas.Find(".edge-hit"), shift: true);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowDown", false));
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowDown", false));
+
+        Assert.Equal(new Bounds(100, 102, 50, 50), instance.Bounds);
+        Assert.Equal(new PortEndpoint(instance.Id, PortId.Right), edge.Source);
+        Assert.Equal(new FloatingEndpoint(300, 127), edge.Target);
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+        Assert.Equal(new Bounds(100, 100, 50, 50), instance.Bounds);
+        Assert.Equal(new FloatingEndpoint(300, 125), edge.Target);
+    }
+
+    [Fact]
+    public async Task WithSnapAnEdgeOnlySelectionNudgesFromItsFloatingEndsToTheNextGridLine()
+    {
+        var board = new Board();
+        var edge = new Edge(new FloatingEndpoint(107, 300), new FloatingEndpoint(213, 290));
+        board.AddEdge(edge);
+        var canvas = RenderWithSnap(board);
+        canvas.ClickElement(canvas.Find(".edge-hit"));
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
+
+        Assert.Equal(new FloatingEndpoint(120, 300), edge.Source);
+        Assert.Equal(new FloatingEndpoint(226, 290), edge.Target);
+    }
+
+    // An edge-only selection takes the nudge even when it has nothing to move, so one key never
+    // means "nudge" for one edge and "pan" for another.
+    [Fact]
+    public async Task WithOnlyAnAttachedEdgeSelectedArrowKeysNeitherPanNorWrite()
     {
         var board = new Board();
         var source = AddInstance(board, 100, 100); // right port at (150, 125)
@@ -410,8 +480,13 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         canvas.ReleaseOverPort((250, 125), target.Id, "Left");
         canvas.ClickElement(canvas.Find(".edge-hit"));
 
+        var panX = canvas.Instance.ZoomPanTracker.PanX;
+
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
 
-        Assert.Equal(-50, canvas.Instance.ZoomPanTracker.PanX);
+        Assert.Equal(panX, canvas.Instance.ZoomPanTracker.PanX);
+        Assert.Equal(new Bounds(100, 100, 50, 50), source.Bounds);
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+        Assert.Empty(board.Edges);
     }
 }

@@ -152,11 +152,15 @@ internal static class BorderPartition
     // The side a custom port lies on. Adding a port pins its cross fraction to the side's own 0 or
     // 1, so every port the product creates is on exactly one side, a corner port counting as on
     // its top or bottom side. A port inside the bounds is on none.
-    public static PortId? SideOf(PortDef port) =>
-        port.FractionY == 0 ? PortId.Top
-        : port.FractionY == 1 ? PortId.Bottom
-        : port.FractionX == 0 ? PortId.Left
-        : port.FractionX == 1 ? PortId.Right
+    public static PortId? SideOf(PortDef port) => SideOf(port.FractionX, port.FractionY);
+
+    // The one rule for which side a border point lies on: a corner belongs to the top or bottom
+    // side, and a point off the border has none.
+    public static PortId? SideOf(double fractionX, double fractionY) =>
+        fractionY <= 0 ? PortId.Top
+        : fractionY >= 1 ? PortId.Bottom
+        : fractionX <= 0 ? PortId.Left
+        : fractionX >= 1 ? PortId.Right
         : null;
 
     private static double AlongSide(PortDef port, PortId side) =>

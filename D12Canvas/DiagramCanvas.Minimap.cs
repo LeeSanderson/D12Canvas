@@ -31,14 +31,14 @@ public partial class DiagramCanvas
         }
 
         _additiveTraversal = false;
-        var snapshot = new SelectionSnapshot(_selectedInstanceIds, _selectedEdgeIds);
+        var scope = CurrentScope();
         var gesture = new MinimapPanGesture(
             press,
-            new CanvasGestureContext(this, snapshot),
+            new CanvasGestureContext(this, scope.Selection),
             toBoardPoint
         );
         gesture.Begin();
-        Hold(gesture, snapshot, listener);
+        Hold(gesture, scope, listener);
         StateHasChanged();
         return true;
     }

@@ -119,27 +119,11 @@ internal static class EdgeRouter
         return dy >= 0 ? PortId.Bottom : PortId.Top;
     }
 
-    // The border a custom port's fraction lies on, a corner taking the first matching side in
-    // StandardPorts.All, or the nearest border for a fraction inside the shape.
-    public static PortId SideOfFraction(double fractionX, double fractionY)
-    {
-        foreach (var side in StandardPorts.All)
-        {
-            var onSide = side switch
-            {
-                PortId.Top => fractionY <= 0,
-                PortId.Right => fractionX >= 1,
-                PortId.Bottom => fractionY >= 1,
-                _ => fractionX <= 0,
-            };
-            if (onSide)
-            {
-                return side;
-            }
-        }
-
-        return AutoPortSide.Facing(new Bounds(0, 0, 1, 1), (fractionX, fractionY));
-    }
+    // The border a custom port's fraction lies on, by the border partition's rule, or the nearest
+    // border for a fraction inside the shape.
+    public static PortId SideOfFraction(double fractionX, double fractionY) =>
+        BorderPartition.SideOf(fractionX, fractionY)
+        ?? AutoPortSide.Facing(new Bounds(0, 0, 1, 1), (fractionX, fractionY));
 
     public static (double X, double Y) Normal(PortId side) =>
         side switch
