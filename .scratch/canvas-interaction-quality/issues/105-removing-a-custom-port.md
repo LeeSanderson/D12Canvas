@@ -4,11 +4,15 @@
 
 **Blocked by:** 104 (Keyboard port placement and the add-port rows)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Right-click on a custom port's span shows Remove port; choosing it removes the port and the edge pinned to it now auto-attaches to the same shape
-- [ ] Ctrl+Z restores the port at its original index and re-pins the edge
-- [ ] Delete while picking a custom port removes it; Delete while picking Top or auto does nothing and the shape survives
-- [ ] The row is absent on a locked shape and when a pinned edge is locked
-- [ ] Command tests for the new command and the composite; bUnit for the two routes
-- [ ] `CONTEXT.md`'s `Command` and `Port` terms describe what shipped, with the full command list
+- [x] Right-click on a custom port's span shows Remove port; choosing it removes the port and the edge pinned to it now auto-attaches to the same shape
+- [x] Ctrl+Z restores the port at its original index and re-pins the edge
+- [x] Delete while picking a custom port removes it; Delete while picking Top or auto does nothing and the shape survives
+- [x] The row is absent on a locked shape and when a pinned edge is locked
+- [x] Command tests for the new command and the composite; bUnit for the two routes
+- [x] `CONTEXT.md`'s `Command` and `Port` terms describe what shipped, with the full command list
+
+Shipped with two choices the ticket did not spell out. Remove port needs the same target as Add port here: one selected, unlocked instance with no edge selected. The menu route also resets port picking's highlight to the auto stage and disarms a source armed on the removed port, the same as the keyboard route.
+
+`CONTEXT.md`'s command list now names every `ICommand` in the code, so its note that the list was short of the code is gone. A new `/port-removal-demo` page backs a baseline of the Remove port menu and the probes for the real `Enter`, `Space`, `Delete` path, `Delete` and `Backspace` on auto and Top, and the real right-click on the custom port's span.

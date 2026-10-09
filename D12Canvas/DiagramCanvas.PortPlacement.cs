@@ -5,8 +5,9 @@ using D12Canvas.Pointer;
 namespace D12Canvas;
 
 // Two routes add a custom port. The pointer's Add port here row adds one where the menu's press
-// landed on a border span. The keyboard's Add port… row starts placement: a provisional port that
-// only the arrows, Enter and Escape act on, held here and never written to the board until Enter.
+// landed on a side's resize span or a standard port's span. The keyboard's Add port… row starts
+// placement: a provisional port that only the arrows, Enter and Escape act on, held here and never
+// written to the board until Enter.
 // Placement ends when focus leaves the instance's stop, so it is only ever live on the focused one.
 public partial class DiagramCanvas
 {
@@ -36,7 +37,7 @@ public partial class DiagramCanvas
             press.EntityId is not { } instanceId
             || SinglePortTarget() is not { } instance
             || instance.Id != instanceId
-            || PressedSide(press, instance) is not { } side
+            || PressedSide(press) is not { } side
         )
         {
             return null;
@@ -51,7 +52,8 @@ public partial class DiagramCanvas
         return new PortAtPress(instance.Id, new PortDef(fractionX, fractionY));
     }
 
-    private static PortId? PressedSide(PointerPress press, ComponentInstance instance) =>
+    // A custom port's span gives no side, so Add port here never shows there; Remove port does.
+    private static PortId? PressedSide(PointerPress press) =>
         press.Role switch
         {
             HitRole.ResizeHandle => press.Part switch
@@ -63,10 +65,6 @@ public partial class DiagramCanvas
                 _ => null,
             },
             HitRole.Port when Enum.TryParse<PortId>(press.Part, out var standard) => standard,
-            HitRole.Port when Guid.TryParse(press.Part, out var customId) => instance
-                .CustomPorts.Where(port => port.Id == customId)
-                .Select(BorderPartition.SideOf)
-                .FirstOrDefault(),
             _ => null,
         };
 

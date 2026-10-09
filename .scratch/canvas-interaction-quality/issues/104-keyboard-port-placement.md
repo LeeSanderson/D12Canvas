@@ -21,3 +21,5 @@ Shipped with four choices the ADR did not spell out. At a corner, an arrow along
 The guard covers every key that writes `Board` or the selection, plus image drop and paste, which are not keys but write the board. `Ctrl`+`'` still toggles snap during placement, so the next step follows the new state.
 
 Carry-overs closed: Escape's placement stage (84), the directional focus guard (85), the menu row as the pointer route to a custom port (92) and the quick create guard (103).
+
+Remove port shipped with ticket 105. A custom port's span now offers Remove port in place of Add port here, and offers neither while removal is unavailable; a standard port's span and a side's resize span keep Add port here.

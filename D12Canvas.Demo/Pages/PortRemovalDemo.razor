@@ -1,0 +1,47 @@
+@page "/port-removal-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Port Removal Demo</PageTitle>
+
+<div class="port-removal-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .port-removal-canvas {
+        width: 700px;
+        height: 400px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+@code {
+    private static readonly Guid ShapeId = Guid.Parse("9e000000-0000-0000-0000-000000000001");
+    private static readonly Guid NeighbourId = Guid.Parse("9e000000-0000-0000-0000-000000000002");
+    private static readonly Guid CustomPortId = Guid.Parse("9e000000-0000-0000-0000-0000000000c1");
+
+    private readonly Board _board = SeedBoard();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance(
+                "rectangle",
+                new RectangleProps("#cfe3ff", null, 2),
+                new Bounds(120, 120, 240, 120),
+                id: ShapeId,
+                customPorts: [new PortDef(CustomPortId, 1, 0.25)]
+            )
+        );
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#ffe3cf", null, 2), new Bounds(460, 120, 160, 120), id: NeighbourId)
+        );
+        board.AddEdge(
+            new Edge(new CustomPortEndpoint(ShapeId, CustomPortId), new PortEndpoint(NeighbourId, PortId.Left))
+        );
+        return board;
+    }
+}

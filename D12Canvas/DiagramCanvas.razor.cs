@@ -171,7 +171,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         double Y,
         ContextMenuSet Set,
         bool OpenedFromKeyboard = false,
-        PortAtPress? PortAtPress = null
+        PortAtPress? PortAtPress = null,
+        CustomPortEndpoint? PortToRemove = null
     );
 
     // Read once when the listeners start, for the pointer path's Ctrl+click and for shortcut hints.
@@ -851,7 +852,10 @@ public partial class DiagramCanvas : IAsyncDisposable
                 press.X,
                 press.Y,
                 set,
-                PortAtPress: set == ContextMenuSet.Object ? canvas.PortAtBorderPress(press) : null
+                PortAtPress: set == ContextMenuSet.Object ? canvas.PortAtBorderPress(press) : null,
+                PortToRemove: set == ContextMenuSet.Object
+                    ? canvas.RemovablePortAtPress(press)
+                    : null
             );
         }
     }
@@ -1399,12 +1403,19 @@ public partial class DiagramCanvas : IAsyncDisposable
     // member, disappearing at none) ride in the same CompositeCommand, so one undo restores
     // every deleted instance and every group exactly as they were. Every selected edge is removed
     // in that same entry; an edge attached to a deleted instance but not itself selected stays.
-    // Nothing locked is removed, and whatever is left of the selection stays selected.
+    // Nothing locked is removed, and whatever is left of the selection stays selected. While port
+    // picking it acts on the highlighted port instead.
     [JSInvokable]
     public void OnDeletePressed()
     {
         if (PressOwnsBoard || PlacingPort)
         {
+            return;
+        }
+
+        if (_portFocusInstanceId is not null)
+        {
+            DeleteDuringPortPicking();
             return;
         }
 
@@ -1714,6 +1725,7 @@ public partial class DiagramCanvas : IAsyncDisposable
             SelectionLocked: SelectionIsLocked,
             CanUnlockAll: HasAnythingLocked,
             CanAddPortHere: menu.PortAtPress is not null,
+            CanRemovePort: menu.PortToRemove is not null,
             CanPlacePort: menu.OpenedFromKeyboard && SinglePortTarget() is not null
         );
     }
@@ -1838,6 +1850,14 @@ public partial class DiagramCanvas : IAsyncDisposable
                 return;
             case ContextMenuCommand.PlacePort:
                 BeginPortPlacement();
+                return;
+            case ContextMenuCommand.RemovePort:
+                if (menu?.PortToRemove is { } portToRemove)
+                {
+                    RemoveCustomPort(portToRemove);
+                }
+
+                StateHasChanged();
                 return;
         }
 

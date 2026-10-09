@@ -14,8 +14,8 @@ public sealed class ComponentInstance
 
     // An end user's own runtime-added ports on this specific instance - nothing a component
     // type's developer declares at registration. A plain mutable list (rather than a dedicated
-    // Add/Remove method) since AddCustomPortCommand already owns the undo/redo discipline around
-    // mutating it.
+    // Add/Remove method) since AddCustomPortCommand and RemoveCustomPortCommand own the undo/redo
+    // discipline around mutating it.
     public List<PortDef> CustomPorts { get; }
 
     public ComponentInstance(

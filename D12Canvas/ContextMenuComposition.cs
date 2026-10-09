@@ -132,6 +132,11 @@ internal static class ContextMenuComposition
                 c => OnObject(c) && c.CanAddPortHere
             ),
             Unhinted(ContextMenuCommand.PlacePort, "Add port…", c => OnObject(c) && c.CanPlacePort),
+            Unhinted(
+                ContextMenuCommand.RemovePort,
+                "Remove port",
+                c => OnObject(c) && c.CanRemovePort
+            ),
         ],
         [
             Unhinted(ContextMenuCommand.ChooseImage, "Choose image…", CanChangePicture),
