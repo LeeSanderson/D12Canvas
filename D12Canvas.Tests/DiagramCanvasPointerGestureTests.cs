@@ -43,6 +43,22 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
     public static IEnumerable<object[]> EveryGestureKind() =>
         Enum.GetNames<GestureKind>().Select(name => new object[] { name });
 
+    [Fact]
+    public void TheGestureSetIsClosedAtEight() =>
+        Assert.Equal(
+            [
+                "Pan",
+                "MarqueeSelect",
+                "MoveSelection",
+                "ResizeSelection",
+                "DragEdgeEnd",
+                "SelectEdge",
+                "Native",
+                "MinimapPan",
+            ],
+            Enum.GetNames<GestureKind>()
+        );
+
     private static ComponentInstance AddInstance(Board board, double x, double y)
     {
         var instance = new ComponentInstance(
@@ -59,6 +75,59 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
 
     private static string ContentStyle(IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.Find(".canvas-content").GetAttribute("style")!;
+
+    private static (double X, double Y) PanOf(IRenderedComponent<DiagramCanvas> canvas) =>
+        (canvas.Instance.ZoomPanTracker.PanX, canvas.Instance.ZoomPanTracker.PanY);
+
+    private static void AssertPanNear(
+        (double X, double Y) expected,
+        IRenderedComponent<DiagramCanvas> canvas
+    )
+    {
+        var (x, y) = PanOf(canvas);
+        Assert.Equal(expected.X, x, 6);
+        Assert.Equal(expected.Y, y, 6);
+    }
+
+    // The minimap beside the seeded board, 200 by 150, maps the union of the content and the
+    // viewport at the origin, (0, 0, 800, 600), at 0.225 with its origin at (10, 7.5), so minimap
+    // (55, 41.25) is board (200, 150) and centring the canvas there pans it to (200, 150).
+    private IRenderedComponent<Minimap>? _minimap;
+
+    private async Task<IRenderedComponent<Minimap>> RenderMinimap(
+        IRenderedComponent<DiagramCanvas> canvas
+    )
+    {
+        var minimap = Render<Minimap>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
+        await minimap.Resize(200, 150);
+        _minimap = minimap;
+        return minimap;
+    }
+
+    // The minimap's own listener reports every move, release and interruption of a press that
+    // began on it.
+    private Task Move(
+        IRenderedComponent<DiagramCanvas> canvas,
+        GestureKind kind,
+        double x,
+        double y
+    ) => kind == GestureKind.MinimapPan ? _minimap!.Move(x, y) : canvas.Move(x, y);
+
+    private Task Release(
+        IRenderedComponent<DiagramCanvas> canvas,
+        GestureKind kind,
+        double x,
+        double y
+    ) =>
+        kind == GestureKind.MinimapPan
+            ? _minimap!.Release(x, y)
+            : canvas.Release(x, y, ClaimingButton(kind));
+
+    private Task Cancel(
+        IRenderedComponent<DiagramCanvas> canvas,
+        GestureKind kind,
+        string reason
+    ) => kind == GestureKind.MinimapPan ? _minimap!.Cancel(reason) : canvas.Cancel(reason);
 
     // Every case starts on the same board: one instance at (100, 100), another at (400, 400),
     // the first selected before the press. A pan starts with the middle button at (0, 0) and
@@ -89,10 +158,7 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         return canvas;
     }
 
-    private static async Task StartAndDrag(
-        IRenderedComponent<DiagramCanvas> canvas,
-        GestureKind kind
-    )
+    private async Task StartAndDrag(IRenderedComponent<DiagramCanvas> canvas, GestureKind kind)
     {
         switch (kind)
         {
@@ -140,6 +206,11 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                     entityId: SecondId(canvas)
                 );
                 break;
+            case GestureKind.MinimapPan:
+                var minimap = await RenderMinimap(canvas);
+                await minimap.Press(100, 75);
+                await minimap.Move(55, 41.25);
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "No case for this kind.");
         }
@@ -170,6 +241,7 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
             GestureKind.DragEdgeEnd => PointerPress.PrimaryButton,
             GestureKind.SelectEdge => PointerPress.PrimaryButton,
             GestureKind.Native => PointerPress.PrimaryButton,
+            GestureKind.MinimapPan => PointerPress.PrimaryButton,
             _ => throw new ArgumentOutOfRangeException(
                 nameof(kind),
                 kind,
@@ -214,6 +286,11 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 Assert.Equal("true", AriaSelected(canvas, 1));
                 break;
+            case GestureKind.MinimapPan:
+                AssertPanNear((200, 150), canvas);
+                Assert.Equal("true", AriaSelected(canvas, 0));
+                Assert.Null(AriaSelected(canvas, 1));
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "No case for this kind.");
         }
@@ -254,6 +331,11 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 Assert.Null(canvas.Find(".edge-line").GetAttribute("aria-selected"));
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 break;
+            case GestureKind.MinimapPan:
+                // The viewport is never restored.
+                AssertPanNear((200, 150), canvas);
+                Assert.Equal("true", AriaSelected(canvas, 0));
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "No case for this kind.");
         }
@@ -280,12 +362,13 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         await StartAndDrag(canvas, kind);
         AssertDragTookEffect(canvas, kind);
 
-        // Released outside the canvas: capture delivers it wherever the pointer ends up.
-        await canvas.Release(-20, -20, ClaimingButton(kind));
+        // Released outside the surface it was pressed on: capture delivers it wherever the
+        // pointer ends up.
+        await Release(canvas, kind, -20, -20);
         var styleAfterRelease = ContentStyle(canvas);
         var selectionAfterRelease = (AriaSelected(canvas, 0), AriaSelected(canvas, 1));
 
-        await canvas.Move(300, 300);
+        await Move(canvas, kind, 300, 300);
 
         Assert.Equal(styleAfterRelease, ContentStyle(canvas));
         Assert.Equal(selectionAfterRelease, (AriaSelected(canvas, 0), AriaSelected(canvas, 1)));
@@ -318,8 +401,8 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         AssertDragWasCancelled(canvas, kind);
         Assert.Equal(2, board.Components.Count);
 
-        await canvas.Move(10, 10);
-        await canvas.Release(10, 10, ClaimingButton(kind));
+        await Move(canvas, kind, 10, 10);
+        await Release(canvas, kind, 10, 10);
         AssertDragWasCancelled(canvas, kind);
 
         // The press has ended: the keyboard works again.
@@ -343,10 +426,10 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
             return;
         }
 
-        await canvas.Cancel("blur");
+        await Cancel(canvas, kind, "blur");
         AssertDragWasCancelled(canvas, kind);
 
-        await canvas.Move(300, 300);
+        await Move(canvas, kind, 300, 300);
         AssertDragWasCancelled(canvas, kind);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());

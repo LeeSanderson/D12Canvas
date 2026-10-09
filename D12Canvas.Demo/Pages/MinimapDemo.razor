@@ -1,0 +1,75 @@
+@page "/minimap-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Minimap Demo</PageTitle>
+
+<div class="minimap-demo" data-d12-theme="@Theme">
+    <DiagramCanvas @ref="_canvas" Board="_board" />
+    <div class="minimap-demo-corner">
+        <Minimap Canvas="_canvas" />
+    </div>
+</div>
+
+<style>
+    .minimap-demo {
+        position: relative;
+        width: 900px;
+        height: 520px;
+    }
+
+    .minimap-demo-corner {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        width: 180px;
+        height: 120px;
+        z-index: 10;
+    }
+</style>
+
+@code {
+    private static readonly Guid NorthWestId = Guid.Parse("a1000000-0000-0000-0000-000000000001");
+    private static readonly Guid NorthEastId = Guid.Parse("a1000000-0000-0000-0000-000000000002");
+    private static readonly Guid SouthWestId = Guid.Parse("a1000000-0000-0000-0000-000000000003");
+    private static readonly Guid NoteId = Guid.Parse("a1000000-0000-0000-0000-000000000004");
+
+    private readonly Board _board = SeedBoard();
+    private DiagramCanvas? _canvas;
+
+    [SupplyParameterFromQuery(Name = "theme")]
+    public string? Theme { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#cfe3ff", null, 2), new Bounds(0, 0, 200, 120), id: NorthWestId)
+        );
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#ffe3cf", null, 2), new Bounds(1000, 80, 160, 100), id: NorthEastId)
+        );
+        board.AddComponent(
+            new ComponentInstance("rectangle", new RectangleProps("#d7f5d0", null, 2), new Bounds(240, 560, 240, 140), id: SouthWestId)
+        );
+        board.AddComponent(
+            new ComponentInstance(
+                "sticky-note",
+                new StickyNoteProps("Bottom edge", "#FFEB3B", "#000000", 14),
+                new Bounds(560, 620, 160, 120),
+                id: NoteId
+            )
+        );
+        board.AddEdge(new Edge(new PortEndpoint(NorthWestId, PortId.Right), new PortEndpoint(NorthEastId, PortId.Left)));
+        return board;
+    }
+}

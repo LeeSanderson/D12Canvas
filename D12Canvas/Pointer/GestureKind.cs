@@ -12,6 +12,7 @@ internal enum GestureKind
     DragEdgeEnd,
     SelectEdge,
     Native,
+    MinimapPan,
 }
 
 internal enum GesturePhase

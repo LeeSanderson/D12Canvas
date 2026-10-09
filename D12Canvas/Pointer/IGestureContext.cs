@@ -14,6 +14,9 @@ internal interface IGestureContext
 
     (double X, double Y) ToBoardPoint(double containerX, double containerY);
 
+    // Animated, this is a framing flight. The scale is left alone.
+    void CentreViewportOn(double boardX, double boardY, bool animated);
+
     // The ancestor of the entity, or the entity itself, that is a direct member of the entered
     // group, or the outermost one when no group is entered.
     Guid EffectiveSelectionId(Guid entityId);

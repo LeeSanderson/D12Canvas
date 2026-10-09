@@ -46,6 +46,17 @@ internal sealed class FakeGestureContext : IGestureContext
     public (double X, double Y) ToBoardPoint(double containerX, double containerY) =>
         ((containerX - ZoomPan.PanX) / ZoomPan.Scale, (containerY - ZoomPan.PanY) / ZoomPan.Scale);
 
+    public List<bool> ViewportCentrings { get; } = new();
+
+    public void CentreViewportOn(double boardX, double boardY, bool animated)
+    {
+        ViewportCentrings.Add(animated);
+        ZoomPan.SetPanPosition(
+            ZoomPan.ContainerWidth / 2 - boardX * ZoomPan.Scale,
+            ZoomPan.ContainerHeight / 2 - boardY * ZoomPan.Scale
+        );
+    }
+
     public Guid EffectiveSelectionId(Guid entityId) => EffectiveId(entityId);
 
     public Func<Guid, bool> InScope { get; set; } = _ => true;

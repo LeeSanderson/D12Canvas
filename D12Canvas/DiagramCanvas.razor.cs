@@ -248,6 +248,9 @@ public partial class DiagramCanvas : IAsyncDisposable
     private IJSObjectReference? _jsModule;
     private IJSObjectReference? _pointerListener;
 
+    // The listener that holds the live press, which is the minimap's for a MinimapPan.
+    private IJSObjectReference? _pressListener;
+
     // How long the content's transform eases toward the viewport's last write: the wheel device's
     // ambient duration when a wheel made that write, the framing flight's for a viewport command,
     // and nothing for any other input.
@@ -453,22 +456,33 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         if (gesture.HoldsPress)
         {
-            _activeGesture = gesture;
-            _lastPointer = new PointerMove(
-                press.PointerId,
-                press.X,
-                press.Y,
-                press.Buttons,
-                press.ShiftKey,
-                press.CtrlKey,
-                press.AltKey,
-                press.MetaKey
-            );
-            _pressSelection = snapshot;
-            _history.Lock();
+            Hold(gesture, snapshot, _pointerListener);
         }
 
         StateHasChanged();
+    }
+
+    private void Hold(
+        PointerGesture gesture,
+        SelectionSnapshot snapshot,
+        IJSObjectReference? listener
+    )
+    {
+        var press = gesture.Press;
+        _activeGesture = gesture;
+        _pressListener = listener;
+        _lastPointer = new PointerMove(
+            press.PointerId,
+            press.X,
+            press.Y,
+            press.Buttons,
+            press.ShiftKey,
+            press.CtrlKey,
+            press.AltKey,
+            press.MetaKey
+        );
+        _pressSelection = snapshot;
+        _history.Lock();
     }
 
     // The board has the last word on the lock the listener read from the markup. A primary press
@@ -542,10 +556,10 @@ public partial class DiagramCanvas : IAsyncDisposable
             _activeGesture is { } gesture
             && _lastPointer is { } pointer
             && gesture.ViewportMoved(pointer with { Velocity = 0 })
-            && _pointerListener is not null
+            && _pressListener is not null
         )
         {
-            _ = _pointerListener.InvokeVoidAsync("promote").AsTask();
+            _ = _pressListener.InvokeVoidAsync("promote").AsTask();
         }
     }
 
@@ -621,6 +635,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private void EndPress()
     {
         _activeGesture = null;
+        _pressListener = null;
         _lastPointer = null;
         _pressSelection = null;
         _marqueeBounds = null;
@@ -747,6 +762,9 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         public (double X, double Y) ToBoardPoint(double containerX, double containerY) =>
             canvas.ToBoardPoint((containerX, containerY), (0, 0));
+
+        public void CentreViewportOn(double boardX, double boardY, bool animated) =>
+            canvas.CentreViewportOn(boardX, boardY, animated);
 
         public Guid EffectiveSelectionId(Guid entityId) => canvas.EffectiveSelectionId(entityId);
 

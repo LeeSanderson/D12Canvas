@@ -358,9 +358,17 @@ function isApplePlatform() {
 
 const FLIGHT_CLASS = "d12-in-flight";
 
+function preventDefaultOf(event) {
+    event.preventDefault();
+}
+
+// With classify off, as on the minimap, only the primary button presses and the others are
+// swallowed along with the browser's menu, nothing is classified, no flight is watched, and the
+// one focus write goes to options.focusTarget, the canvas the press pans, so Escape reaches it.
 export async function addPointerListener(canvas, container, dotnetRef, options) {
     const classifyPresses = options?.classify !== false;
     const dragThreshold = options.dragThreshold;
+    const focusTarget = options.focusTarget ?? canvas;
     const applePlatform = isApplePlatform();
     let press = null;
     let lastPress = null;
@@ -505,6 +513,11 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             return;
         }
 
+        if (!classifyPresses && button !== PRIMARY_BUTTON) {
+            event.preventDefault();
+            return;
+        }
+
         const hit = classifyPresses
             ? lockedPrimaryCell(button, altPrimaryCell(event, button, classify(event.target, canvas)))
             : CANVAS_HIT;
@@ -540,7 +553,7 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
 
         event.preventDefault();
         canvas.setPointerCapture(event.pointerId);
-        canvas.focus({ preventScroll: true });
+        focusTarget.focus({ preventScroll: true });
 
         const pressed = pressFor(event, button, hit, verdict);
         press = {
@@ -725,14 +738,18 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
 
     canvas.addEventListener("pointerdown", handlePointerDown);
     canvas.addEventListener("pointermove", handlePointerMove);
-    canvas.addEventListener("transitionrun", handleTransitionRun);
-    canvas.addEventListener("transitionend", handleTransitionStop);
-    canvas.addEventListener("transitioncancel", handleTransitionStop);
     canvas.addEventListener("pointerup", handlePointerUp);
     canvas.addEventListener("pointercancel", handlePointerCancel);
     canvas.addEventListener("lostpointercapture", handleLostPointerCapture);
-    window.addEventListener("pointerdown", clearMenuVerdict, true);
-    window.addEventListener("contextmenu", handleContextMenu, true);
+    if (classifyPresses) {
+        canvas.addEventListener("transitionrun", handleTransitionRun);
+        canvas.addEventListener("transitionend", handleTransitionStop);
+        canvas.addEventListener("transitioncancel", handleTransitionStop);
+        window.addEventListener("pointerdown", clearMenuVerdict, true);
+        window.addEventListener("contextmenu", handleContextMenu, true);
+    } else {
+        canvas.addEventListener("contextmenu", preventDefaultOf);
+    }
     window.addEventListener("blur", handleWindowBlur);
     window.addEventListener("keydown", handleModifierKey, true);
     window.addEventListener("keyup", handleModifierKey, true);
@@ -752,12 +769,16 @@ export async function addPointerListener(canvas, container, dotnetRef, options) 
             canvas.removeEventListener("pointerup", handlePointerUp);
             canvas.removeEventListener("pointercancel", handlePointerCancel);
             canvas.removeEventListener("lostpointercapture", handleLostPointerCapture);
-            canvas.removeEventListener("transitionrun", handleTransitionRun);
-            canvas.removeEventListener("transitionend", handleTransitionStop);
-            canvas.removeEventListener("transitioncancel", handleTransitionStop);
-            container.classList.remove(FLIGHT_CLASS);
-            window.removeEventListener("pointerdown", clearMenuVerdict, true);
-            window.removeEventListener("contextmenu", handleContextMenu, true);
+            if (classifyPresses) {
+                canvas.removeEventListener("transitionrun", handleTransitionRun);
+                canvas.removeEventListener("transitionend", handleTransitionStop);
+                canvas.removeEventListener("transitioncancel", handleTransitionStop);
+                container.classList.remove(FLIGHT_CLASS);
+                window.removeEventListener("pointerdown", clearMenuVerdict, true);
+                window.removeEventListener("contextmenu", handleContextMenu, true);
+            } else {
+                canvas.removeEventListener("contextmenu", preventDefaultOf);
+            }
             window.removeEventListener("blur", handleWindowBlur);
             window.removeEventListener("keydown", handleModifierKey, true);
             window.removeEventListener("keyup", handleModifierKey, true);

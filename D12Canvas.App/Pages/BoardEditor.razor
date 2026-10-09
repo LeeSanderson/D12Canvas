@@ -48,6 +48,9 @@
                     <PropertyPanel Canvas="_canvas" />
                 </div>
             }
+            <div class="board-editor-overlay board-editor-minimap">
+                <Minimap Canvas="_canvas" />
+            </div>
             <div class="board-editor-overlay board-editor-settings">
                 <label>
                     Wheel
@@ -155,8 +158,19 @@
         margin-left: 6px;
     }
 
+    .board-editor-minimap {
+        top: auto;
+        bottom: 12px;
+        right: 12px;
+        width: 200px;
+        height: 140px;
+        overflow: hidden;
+        border-radius: 6px;
+    }
+
     .board-editor-properties {
         right: 12px;
+        max-height: calc(100% - 176px);
         width: 260px;
         box-sizing: border-box;
         padding: 12px;
