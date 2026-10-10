@@ -1,0 +1,284 @@
+@namespace D12Canvas.Demo.Components
+@implements IAsyncDisposable
+@using System.Net
+@using System.Net.Http.Json
+@using D12Canvas.Demo.Suggestions
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<dialog class="suggestion-box" @ref="_dialog" aria-labelledby="suggestion-box-heading">
+    <h2 id="suggestion-box-heading">Suggest a feature or change</h2>
+
+    <label class="suggestion-box-field">
+        Title
+        <input
+            type="text"
+            maxlength="@MaxTitleLength"
+            placeholder="What should change?"
+            @bind="_title"
+            @bind:event="oninput"
+        />
+    </label>
+
+    <label class="suggestion-box-field">
+        Details
+        <textarea
+            rows="5"
+            placeholder="Optional: what you expected, what happened, why it matters"
+            @bind="_details"
+            @bind:event="oninput"
+        ></textarea>
+    </label>
+
+    <div class="suggestion-box-screenshot">
+        @if (_screenshot is null)
+        {
+            <span>Paste a screenshot with Ctrl+V while this box is open.</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="PasteFromClipboard">
+                Paste from clipboard
+            </button>
+        }
+        else
+        {
+            <img src="@_screenshot" alt="Pasted screenshot" />
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="RemoveScreenshot">
+                Remove screenshot
+            </button>
+        }
+    </div>
+
+    @if (_message is not null)
+    {
+        <p class="suggestion-box-message" role="alert">@_message</p>
+    }
+
+    <div class="suggestion-box-actions">
+        <span class="suggestion-box-hint">Ctrl+Enter saves</span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CloseAsync">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" disabled="@(!CanSave)" @onclick="SaveAsync">
+            @(_saving ? "Saving…" : "Save")
+        </button>
+    </div>
+</dialog>
+
+<style>
+    .suggestion-box {
+        width: min(520px, calc(100vw - 32px));
+        padding: 20px;
+        border: 1px solid #d0d0d0;
+        border-radius: 8px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .suggestion-box::backdrop {
+        background: rgba(0, 0, 0, 0.35);
+    }
+
+    .suggestion-box h2 {
+        margin: 0 0 16px;
+        font-size: 1.15rem;
+    }
+
+    .suggestion-box-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .suggestion-box-field input,
+    .suggestion-box-field textarea {
+        font: inherit;
+        font-weight: normal;
+        padding: 6px 8px;
+        border: 1px solid #c0c0c0;
+        border-radius: 4px;
+    }
+
+    .suggestion-box-field textarea {
+        resize: vertical;
+    }
+
+    .suggestion-box-screenshot {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px;
+        border: 1px dashed #b0b0b0;
+        border-radius: 4px;
+        color: #666666;
+        font-size: 0.9rem;
+    }
+
+    .suggestion-box-screenshot img {
+        max-width: 100%;
+        max-height: 240px;
+        border: 1px solid #d0d0d0;
+    }
+
+    .suggestion-box-message {
+        margin: 12px 0 0;
+        color: #b00020;
+        font-size: 0.9rem;
+    }
+
+    .suggestion-box-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .suggestion-box-hint {
+        margin-right: auto;
+        color: #666666;
+        font-size: 0.8rem;
+    }
+</style>
+
+@code {
+    private const int MaxTitleLength = 120;
+
+    [Parameter]
+    public EventCallback<SavedSuggestion> OnSaved { get; set; }
+
+    private ElementReference _dialog;
+    private DotNetObjectReference<SuggestionBox>? _selfReference;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _listener;
+    private string _title = "";
+    private string _details = "";
+    private string? _screenshot;
+    private string? _message;
+    private bool _saving;
+
+    private bool CanSave => !_saving && !string.IsNullOrWhiteSpace(_title);
+
+    // A closed box keeps its draft, so an accidental Escape loses nothing; only a save clears it.
+    public async Task OpenAsync()
+    {
+        _message = null;
+        _listener ??= await AttachAsync();
+        await _listener.InvokeVoidAsync("open");
+    }
+
+    private async Task<IJSObjectReference> AttachAsync()
+    {
+        _module = await JS.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./Components/SuggestionBox.razor.js"
+        );
+        _selfReference = DotNetObjectReference.Create(this);
+        return await _module.InvokeAsync<IJSObjectReference>("attach", _dialog, _selfReference);
+    }
+
+    [JSInvokable]
+    public void OnScreenshotPasted(string dataUrl)
+    {
+        _screenshot = dataUrl;
+        _message = null;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnSaveShortcut() => SaveAsync();
+
+    [JSInvokable]
+    public void OnDialogClosed() => StateHasChanged();
+
+    private async Task PasteFromClipboard()
+    {
+        var dataUrl = _module is null ? null : await _module.InvokeAsync<string?>("readClipboardImage");
+        if (dataUrl is null)
+        {
+            _message = "No image on the clipboard, or the browser didn't allow reading it. Try Ctrl+V.";
+            return;
+        }
+
+        OnScreenshotPasted(dataUrl);
+    }
+
+    private void RemoveScreenshot() => _screenshot = null;
+
+    private async Task CloseAsync()
+    {
+        if (_listener is not null)
+        {
+            await _listener.InvokeVoidAsync("close");
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!CanSave)
+        {
+            return;
+        }
+
+        _saving = true;
+        _message = null;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync(
+                "api/suggestions",
+                new SuggestionSubmission(_title, _details, _screenshot, "/" + Navigation.ToBaseRelativePath(Navigation.Uri))
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                var saved = await response.Content.ReadFromJsonAsync<SavedSuggestion>();
+                _title = "";
+                _details = "";
+                _screenshot = null;
+                await CloseAsync();
+                await OnSaved.InvokeAsync(saved);
+            }
+            else if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                _message = await response.Content.ReadFromJsonAsync<string>();
+            }
+            else
+            {
+                _message = ServerMissingMessage;
+            }
+        }
+        catch (HttpRequestException)
+        {
+            _message = ServerMissingMessage;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private const string ServerMissingMessage =
+        "Couldn't save. Suggestions are written by the demo server: run `dotnet run --project D12Canvas.Demo.Server` and open the page it serves.";
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_listener is not null)
+            {
+                await _listener.InvokeVoidAsync("dispose");
+                await _listener.DisposeAsync();
+            }
+
+            if (_module is not null)
+            {
+                await _module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException) { }
+
+        _selfReference?.Dispose();
+    }
+}

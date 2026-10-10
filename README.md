@@ -4,6 +4,16 @@ To use Hot Reload with this Blazor WebAssembly project:
 
 1. Run the app using Visual Studio 2022+ or `dotnet watch`:
 
+# Demo app and suggestions
+
+`dotnet run --project D12Canvas.Demo.Server` serves the demo at http://localhost:5126. Its default
+page is a feature tour. The tour's **Suggest…** button saves a suggestion, with an optional pasted
+screenshot, to `.scratch/backlog/` as `NNN-title.md` (plus `NNN-title.png`), creating the folder
+when it is missing. Set `Backlog:Directory` to save elsewhere.
+
+Running `D12Canvas.Demo` on its own (port 5124) still works for everything except saving
+suggestions, which needs the server.
+
 # Theming
 
 Everything the library paints itself (the grid, selection chrome, LOD placeholder, connector

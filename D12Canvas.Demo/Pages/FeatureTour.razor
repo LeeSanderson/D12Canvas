@@ -4,6 +4,7 @@
 @using D12Canvas
 @using D12Canvas.BuiltIns
 @using D12Canvas.Demo.Components
+@using D12Canvas.Demo.Suggestions
 @using D12Canvas.Model
 
 <PageTitle>D12Canvas feature tour</PageTitle>
@@ -54,8 +55,18 @@
             <button class="btn btn-outline-danger btn-sm" @onclick="ResetBoard">Reset board</button>
         </div>
 
+        <div class="feature-tour-group">
+            <button class="btn btn-primary btn-sm" @onclick="OpenSuggestionBox">Suggest…</button>
+            @if (_savedSuggestion is not null)
+            {
+                <span class="feature-tour-saved" role="status">Saved @_savedSuggestion</span>
+            }
+        </div>
+
         <span class="feature-tour-status">@_selectedCount selected · <ZoomReadout Canvas="_canvas" /></span>
     </div>
+
+    <SuggestionBox @ref="_suggestionBox" OnSaved="HandleSuggestionSaved" />
 
     <div class="feature-tour-stage" data-d12-theme="@ThemeAttribute">
         <DiagramCanvas
@@ -130,6 +141,11 @@
         display: flex;
         align-items: center;
         gap: 4px;
+        font-size: 0.9rem;
+    }
+
+    .feature-tour-saved {
+        color: #2e7d32;
         font-size: 0.9rem;
     }
 
@@ -306,6 +322,8 @@
     private string _theme = "system";
     private bool _showShortcuts;
     private int _selectedCount;
+    private SuggestionBox? _suggestionBox;
+    private string? _savedSuggestion;
 
     private string? ThemeAttribute => _theme == "system" ? null : _theme;
 
@@ -350,6 +368,17 @@
     private void ZoomTo100Percent() => _canvas?.ZoomTo100Percent();
 
     private void ToggleShortcuts() => _showShortcuts = !_showShortcuts;
+
+    private async Task OpenSuggestionBox()
+    {
+        _savedSuggestion = null;
+        if (_suggestionBox is not null)
+        {
+            await _suggestionBox.OpenAsync();
+        }
+    }
+
+    private void HandleSuggestionSaved(SavedSuggestion saved) => _savedSuggestion = saved.Markdown;
 
     private void ResetBoard()
     {
