@@ -2,13 +2,14 @@
 @implements IDisposable
 @using D12Canvas
 @using D12Canvas.App.Storage
+@using D12Canvas.App.Suggestions
 @using D12Canvas.Model
 @inject IBoardStore BoardStore
 @inject NavigationManager Navigation
 
 <PageTitle>@(_name ?? "Board")</PageTitle>
 
-<div class="board-editor-page">
+<div class="board-editor-page" data-d12-theme="@ThemeAttribute">
     <div class="board-editor-header">
         <button class="btn btn-secondary btn-sm" @onclick="GoBack">&larr; Boards</button>
 
@@ -35,14 +36,72 @@
         <button class="btn btn-primary btn-sm" @onclick="Save" disabled="@(!_isDirty)">Save</button>
     </div>
 
+    <div class="board-editor-toolbar">
+        <div class="board-editor-group">
+            <button class="btn btn-secondary btn-sm" title="Ctrl+Z" @onclick="Undo">Undo</button>
+            <button class="btn btn-secondary btn-sm" title="Ctrl+Shift+Z" @onclick="Redo">Redo</button>
+        </div>
+
+        <div class="board-editor-group">
+            <button class="btn btn-secondary btn-sm" title="Shift+1" @onclick="ZoomToFit">Fit</button>
+            <button class="btn btn-secondary btn-sm" title="Shift+2" @onclick="ZoomToSelection">Selection</button>
+            <button class="btn btn-secondary btn-sm" title="Shift+0" @onclick="ZoomTo100Percent">100%</button>
+        </div>
+
+        <div class="board-editor-group">
+            <label title="Ctrl+'"><input type="checkbox" @bind="_snapToGrid" /> Snap to grid</label>
+            <label><input type="checkbox" @bind="_objectSnapping" /> Object snapping</label>
+        </div>
+
+        <div class="board-editor-group">
+            <label>
+                Wheel
+                <select @bind="_wheelProfile">
+                    <option value="@WheelDeviceProfile.Auto">Auto</option>
+                    <option value="@WheelDeviceProfile.Mouse">Mouse</option>
+                    <option value="@WheelDeviceProfile.Trackpad">Trackpad</option>
+                </select>
+            </label>
+            <label>
+                Theme
+                <select @bind="_theme">
+                    <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="board-editor-group">
+            <button class="btn btn-secondary btn-sm" @onclick="ToggleShortcuts" aria-expanded="@_showShortcuts">
+                Shortcuts
+            </button>
+            <button class="btn btn-primary btn-sm" @onclick="OpenSuggestionBox">Suggest…</button>
+            @if (_savedSuggestion is not null)
+            {
+                <span class="board-editor-saved" role="status">Saved @_savedSuggestion</span>
+            }
+        </div>
+
+        <span class="board-editor-status">@_selectedCount selected · <ZoomReadout Canvas="_canvas" /></span>
+    </div>
+
+    <SuggestionBox @ref="_suggestionBox" OnSaved="HandleSuggestionSaved" />
+
     @if (_board is not null)
     {
         <div class="board-editor-body">
-            <DiagramCanvas @ref="_canvas" Board="_board" WheelDeviceProfile="_wheelProfile" />
+            <DiagramCanvas
+                @ref="_canvas"
+                Board="_board"
+                @bind-SnapToGrid="_snapToGrid"
+                @bind-ObjectSnapping="_objectSnapping"
+                WheelDeviceProfile="_wheelProfile"
+            />
             <div class="board-editor-overlay board-editor-palette">
                 <Palette Canvas="_canvas" />
             </div>
-            @if (_hasSelection)
+            @if (_selectedCount > 0)
             {
                 <div class="board-editor-overlay board-editor-properties">
                     <PropertyPanel Canvas="_canvas" />
@@ -51,16 +110,22 @@
             <div class="board-editor-overlay board-editor-minimap">
                 <Minimap Canvas="_canvas" />
             </div>
-            <div class="board-editor-overlay board-editor-settings">
-                <label>
-                    Wheel
-                    <select @bind="_wheelProfile">
-                        <option value="@WheelDeviceProfile.Auto">Auto</option>
-                        <option value="@WheelDeviceProfile.Mouse">Mouse</option>
-                        <option value="@WheelDeviceProfile.Trackpad">Trackpad</option>
-                    </select>
-                </label>
-            </div>
+            @if (_showShortcuts)
+            {
+                <div class="board-editor-overlay board-editor-shortcuts">
+                    @foreach (var (heading, rows) in Shortcuts)
+                    {
+                        <h2>@heading</h2>
+                        <dl>
+                            @foreach (var (keys, action) in rows)
+                            {
+                                <dt>@keys</dt>
+                                <dd>@action</dd>
+                            }
+                        </dl>
+                    }
+                </div>
+            }
         </div>
     }
     else if (_notFound)
@@ -74,6 +139,8 @@
         height: 100%;
         display: flex;
         flex-direction: column;
+        background: var(--app-bg);
+        color: var(--app-text);
     }
 
     .board-editor-header {
@@ -121,6 +188,39 @@
         font-size: 0.9rem;
     }
 
+    .board-editor-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 20px;
+        padding: 6px 16px;
+        background: var(--app-surface);
+        border-bottom: 1px solid var(--app-border);
+        color: var(--app-muted-text);
+        font-size: 0.9rem;
+    }
+
+    .board-editor-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .board-editor-group label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .board-editor-saved {
+        color: var(--app-success);
+    }
+
+    .board-editor-status {
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+    }
+
     .board-editor-body {
         flex: 1;
         min-height: 0;
@@ -140,22 +240,6 @@
         left: 12px;
         width: 180px;
         border-radius: 6px;
-    }
-
-    .board-editor-settings {
-        top: auto;
-        bottom: 12px;
-        left: 12px;
-        padding: 6px 10px;
-        background: var(--app-surface);
-        border: 1px solid var(--app-border);
-        border-radius: var(--app-radius-sm);
-        color: var(--app-muted-text);
-        font-size: 0.9rem;
-    }
-
-    .board-editor-settings select {
-        margin-left: 6px;
     }
 
     .board-editor-minimap {
@@ -178,10 +262,89 @@
         border: 1px solid var(--app-border);
         border-radius: var(--app-radius-sm);
     }
+    .board-editor-shortcuts {
+        left: 204px;
+        width: 340px;
+        box-sizing: border-box;
+        padding: 12px 16px;
+        background: var(--app-surface);
+        border: 1px solid var(--app-border);
+        border-radius: var(--app-radius-sm);
+        font-size: 0.85rem;
+    }
+
+    .board-editor-shortcuts h2 {
+        margin: 10px 0 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--app-muted-text);
+    }
+
+    .board-editor-shortcuts h2:first-child {
+        margin-top: 0;
+    }
+
+    .board-editor-shortcuts dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 2px 12px;
+        margin: 0;
+    }
+
+    .board-editor-shortcuts dt {
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .board-editor-shortcuts dd {
+        margin: 0;
+    }
 </style>
 
 @code {
     private static readonly TimeSpan AutosaveDebounce = TimeSpan.FromSeconds(1);
+
+    private static readonly (string Heading, (string Keys, string Action)[] Rows)[] Shortcuts =
+    [
+        ("Pointer", [
+            ("Drag on empty canvas", "Marquee select"),
+            ("Double-click", "Enter a group, then edit"),
+            ("Alt+drag", "Clone the selection"),
+            ("Alt+resize", "Resize from the centre"),
+            ("Shift+drag", "Move in a straight line"),
+            ("Click a port", "Duplicate and connect"),
+            ("Right- or middle-drag", "Pan"),
+            ("Right-click", "Context menu"),
+            ("Wheel", "Zoom, or pan on a trackpad"),
+        ]),
+        ("Keyboard", [
+            ("Tab", "Move between shapes"),
+            ("Space", "Add the focused shape to the selection"),
+            ("Enter / Escape", "Enter / leave a group"),
+            ("F2", "Edit text"),
+            ("Arrows", "Nudge"),
+            ("Ctrl+Arrow", "Duplicate and connect"),
+            ("Ctrl+Shift+Arrow", "Focus the nearest shape"),
+            ("Shift+F10", "Context menu"),
+            ("Ctrl+Enter", "Focus the property bar"),
+        ]),
+        ("Commands", [
+            ("Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"),
+            ("Ctrl+C / X / V", "Copy / cut / paste"),
+            ("Ctrl+D", "Duplicate"),
+            ("Ctrl+A", "Select all"),
+            ("Delete", "Delete"),
+            ("Ctrl+G / Ctrl+Shift+G", "Group / ungroup"),
+            ("Ctrl+Shift+L", "Lock or unlock"),
+            ("Ctrl+] / Ctrl+[", "Forward / backward"),
+            ("Ctrl+Shift+] / [", "To front / to back"),
+            ("Ctrl+'", "Snap to grid"),
+            ("PageUp / PageDown", "Zoom in / out"),
+            ("Shift+1 / 2 / 0", "Fit / selection / 100%"),
+        ]),
+    ];
 
     [Parameter]
     public Guid Id { get; set; }
@@ -192,7 +355,13 @@
     private DiagramCanvas? _canvas;
     private DiagramCanvas? _subscribedCanvas;
     private bool _isDirty;
-    private bool _hasSelection;
+    private int _selectedCount;
+    private bool _snapToGrid = true;
+    private bool _objectSnapping = true;
+    private string _theme = "system";
+    private bool _showShortcuts;
+    private SuggestionBox? _suggestionBox;
+    private string? _savedSuggestion;
     private bool _autosaveEnabled;
     private WheelDeviceProfile _wheelProfile = WheelDeviceProfile.Auto;
     private CancellationTokenSource? _autosaveCts;
@@ -253,11 +422,36 @@
         StateHasChanged();
     }
 
+    private string? ThemeAttribute => _theme == "system" ? null : _theme;
+
     private void HandleSelectionChanged(object? sender, EventArgs e)
     {
-        _hasSelection = _canvas?.SelectedComponents.Count > 0;
+        _selectedCount = (_canvas?.SelectedComponents.Count ?? 0) + (_canvas?.SelectedEdges.Count ?? 0);
         StateHasChanged();
     }
+
+    private void Undo() => _canvas?.OnUndoPressed();
+
+    private void Redo() => _canvas?.OnRedoPressed();
+
+    private void ZoomToFit() => _canvas?.ZoomToFit();
+
+    private void ZoomToSelection() => _canvas?.ZoomToSelection();
+
+    private void ZoomTo100Percent() => _canvas?.ZoomTo100Percent();
+
+    private void ToggleShortcuts() => _showShortcuts = !_showShortcuts;
+
+    private async Task OpenSuggestionBox()
+    {
+        _savedSuggestion = null;
+        if (_suggestionBox is not null)
+        {
+            await _suggestionBox.OpenAsync();
+        }
+    }
+
+    private void HandleSuggestionSaved(SavedSuggestion saved) => _savedSuggestion = saved.Markdown;
 
     private void HandleBoardChanged(object? sender, EventArgs e)
     {

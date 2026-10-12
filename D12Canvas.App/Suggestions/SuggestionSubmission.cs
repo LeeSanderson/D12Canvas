@@ -1,4 +1,4 @@
-namespace D12Canvas.Demo.Suggestions;
+namespace D12Canvas.App.Suggestions;
 
 // Screenshot is a data URL as the browser's FileReader produces it, or null when none was pasted.
 public sealed record SuggestionSubmission(

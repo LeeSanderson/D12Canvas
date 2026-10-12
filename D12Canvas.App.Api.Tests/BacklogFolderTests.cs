@@ -1,7 +1,7 @@
-using D12Canvas.Demo.Server.Backlog;
-using D12Canvas.Demo.Suggestions;
+using D12Canvas.App.Api.Backlog;
+using D12Canvas.App.Suggestions;
 
-namespace D12Canvas.Demo.Server.Tests;
+namespace D12Canvas.App.Api.Tests;
 
 public sealed class BacklogFolderTests : IDisposable
 {

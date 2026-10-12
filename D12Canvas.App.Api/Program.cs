@@ -1,9 +1,9 @@
-using D12Canvas.Demo.Server.Backlog;
-using D12Canvas.Demo.Suggestions;
+using D12Canvas.App.Api.Backlog;
+using D12Canvas.App.Suggestions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serves the demo straight from its build output in every environment, not only Development, so
+// Serves the app straight from its build output in every environment, not only Development, so
 // the server works however it is launched.
 builder.WebHost.UseStaticWebAssets();
 

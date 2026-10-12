@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using D12Canvas.Demo.Suggestions;
+using D12Canvas.App.Suggestions;
 
-namespace D12Canvas.Demo.Server.Backlog;
+namespace D12Canvas.App.Api.Backlog;
 
 // Each suggestion is NNN-slug.md, plus NNN-slug.<ext> beside it when a screenshot came with it.
 // NNN is one past the highest number any entry in the folder already starts with, so numbers keep
