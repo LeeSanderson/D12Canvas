@@ -6,14 +6,19 @@ To use Hot Reload with this Blazor WebAssembly project:
 
 # App and suggestions
 
-`dotnet run --project D12Canvas.App.Api` serves `D12Canvas.App` at http://localhost:5126. The
-board editor's toolbar has undo and redo, the framing commands, snapping, the wheel profile, a
-theme choice, a shortcuts card and a **Suggest…** button. Suggest saves a suggestion, with an
-optional pasted screenshot, to `.scratch/backlog/` as `NNN-title.md` (plus `NNN-title.png`),
-creating the folder when it is missing. Set `Backlog:Directory` to save elsewhere.
+`dotnet run --project D12Canvas.AppHost` starts the App at http://localhost:5171 and its API at
+http://localhost:5126 together, with the Aspire dashboard at http://localhost:15004. The App finds
+the API through `ApiBaseAddress` in `D12Canvas.App/wwwroot/appsettings.json`, and the API accepts
+calls from the origins in its `AppOrigins` setting, which the AppHost sets to the App's address.
 
-Running `D12Canvas.App` on its own (port 5171) still works for everything except saving
-suggestions, which needs the server.
+The board editor's toolbar has undo and redo, the framing commands, snapping, the wheel profile,
+a theme choice, a shortcuts card and a **Suggest…** button. Suggest posts to the API, which saves
+the suggestion, with an optional pasted screenshot, to `.scratch/backlog/` as `NNN-title.md`
+(plus `NNN-title.png`), creating the folder when it is missing. Set `Backlog:Directory` on the API
+to save elsewhere.
+
+Either project still runs on its own with `dotnet run --project`; without the API, everything in
+the App works except saving suggestions.
 
 # Theming
 

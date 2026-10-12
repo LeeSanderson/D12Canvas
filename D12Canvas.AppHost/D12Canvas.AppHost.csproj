@@ -1,0 +1,15 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\D12Canvas.App\D12Canvas.App.csproj" />
+    <ProjectReference Include="..\D12Canvas.App.Api\D12Canvas.App.Api.csproj" />
+  </ItemGroup>
+
+</Project>

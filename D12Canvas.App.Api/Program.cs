@@ -1,12 +1,20 @@
 using D12Canvas.App.Api.Backlog;
-using D12Canvas.App.Suggestions;
+using D12Canvas.App.Shared.Suggestions;
+
+const string AppCorsPolicy = "app";
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serves the app straight from its build output in every environment, not only Development, so
-// the server works however it is launched.
-builder.WebHost.UseStaticWebAssets();
-
+builder.Services.AddCors(cors =>
+    cors.AddPolicy(
+        AppCorsPolicy,
+        policy =>
+            policy
+                .WithOrigins(builder.Configuration.GetSection("AppOrigins").Get<string[]>() ?? [])
+                .WithMethods("POST")
+                .WithHeaders("Content-Type")
+    )
+);
 builder.Services.AddSingleton(
     new BacklogFolder(
         builder.Configuration["Backlog:Directory"]
@@ -21,13 +29,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-}
-
-app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
+app.UseCors(AppCorsPolicy);
 
 app.MapPost(
     "/api/suggestions",
@@ -43,8 +45,6 @@ app.MapPost(
         }
     }
 );
-
-app.MapFallbackToFile("index.html");
 
 app.Run();
 

@@ -10,7 +10,12 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(_ => new HttpClient
 {
-    BaseAddress = new Uri(builder.HostEnvironment.BaseAddress),
+    BaseAddress = new Uri(
+        builder.Configuration["ApiBaseAddress"]
+            ?? throw new InvalidOperationException(
+                "ApiBaseAddress is missing from wwwroot/appsettings.json."
+            )
+    ),
 });
 builder.Services.AddD12Canvas(_ => { });
 builder.Services.AddSingleton<IBoardStore, IndexedDbBoardStore>();

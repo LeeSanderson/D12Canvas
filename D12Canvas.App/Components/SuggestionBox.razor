@@ -1,7 +1,7 @@
 @implements IAsyncDisposable
 @using System.Net
 @using System.Net.Http.Json
-@using D12Canvas.App.Suggestions
+@using D12Canvas.App.Shared.Suggestions
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
@@ -263,7 +263,7 @@
     }
 
     private const string ServerMissingMessage =
-        "Couldn't save. Suggestions are written by the app server: run `dotnet run --project D12Canvas.App.Api` and open the page it serves.";
+        "Couldn't save. Suggestions are written by D12Canvas.App.Api: start the App and the API together with `dotnet run --project D12Canvas.AppHost`.";
 
     public async ValueTask DisposeAsync()
     {

@@ -1,6 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using D12Canvas.App.Suggestions;
+using D12Canvas.App.Shared.Suggestions;
 
 namespace D12Canvas.App.Api.Backlog;
 
