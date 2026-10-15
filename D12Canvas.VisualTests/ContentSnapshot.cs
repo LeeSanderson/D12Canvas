@@ -28,6 +28,28 @@ public static class ContentSnapshot
     // A bar the canvas has just moved stays hidden until it has stood still for a moment.
     private const string SettlingPropertyBar = ".d12-property-bar-settling";
 
+    // A full-page capture resizes the viewport, sometimes briefly to 1x1, and the canvas answers by
+    // moving the bar, which then hides while it settles. A capture that saw the bar start settling
+    // is taken again once it has.
+    private const string WatchForSettlingScript = """
+        () => {
+            let settled = false;
+            const observer = new MutationObserver(records => {
+                settled ||= records.some(record => record.target.classList.contains("d12-property-bar-settling"));
+            });
+            observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class"] });
+            window.__d12StopWatchingForSettling = () => {
+                observer.disconnect();
+                return settled;
+            };
+        }
+        """;
+
+    private const string StopWatchingForSettlingScript =
+        "() => window.__d12StopWatchingForSettling()";
+
+    private const int MaxCaptureAttempts = 3;
+
     public static async Task Verify(IPage page, [CallerFilePath] string sourceFile = "")
     {
         await Assertions.Expect(page.Locator(UnmeasuredPropertyBar)).ToHaveCountAsync(0);
@@ -35,19 +57,37 @@ public static class ContentSnapshot
         var content = page.Locator(ContentSelector);
         var html = await content.InnerHTMLAsync();
         var extent = await content.EvaluateAsync<Clip>(ContentExtentScript);
-        var png = await page.ScreenshotAsync(
-            new PageScreenshotOptions
-            {
-                FullPage = true,
-                Clip = extent,
-                Type = ScreenshotType.Png,
-                Animations = ScreenshotAnimations.Disabled,
-            }
-        );
+        var png = await CaptureAsync(page, extent);
 
         await Verifier.Verify(
             [new Target("html", html), new Target("png", new MemoryStream(png))],
             sourceFile: sourceFile
         );
+    }
+
+    private static async Task<byte[]> CaptureAsync(IPage page, Clip extent)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            await page.EvaluateAsync(WatchForSettlingScript);
+            var png = await page.ScreenshotAsync(
+                new PageScreenshotOptions
+                {
+                    FullPage = true,
+                    Clip = extent,
+                    Type = ScreenshotType.Png,
+                    Animations = ScreenshotAnimations.Disabled,
+                }
+            );
+            var barSettledDuringCapture = await page.EvaluateAsync<bool>(
+                StopWatchingForSettlingScript
+            );
+            if (!barSettledDuringCapture || attempt == MaxCaptureAttempts)
+            {
+                return png;
+            }
+
+            await Assertions.Expect(page.Locator(SettlingPropertyBar)).ToHaveCountAsync(0);
+        }
     }
 }
