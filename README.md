@@ -10,6 +10,7 @@ To use Hot Reload with this Blazor WebAssembly project:
 http://localhost:5126 together, with the Aspire dashboard at http://localhost:15004. The App finds
 the API through `ApiBaseAddress` in `app/D12Canvas.App/wwwroot/appsettings.json`, and the API accepts
 calls from the origins in its `AppOrigins` setting, which the AppHost sets to the App's address.
+`app/runApp.ps1` runs the same command from any folder and passes its arguments on to `dotnet run`.
 
 The board editor's toolbar has undo and redo, the framing commands, snapping, the wheel profile,
 a theme choice, a shortcuts card and a **Suggest…** button. Suggest posts to the API, which saves
