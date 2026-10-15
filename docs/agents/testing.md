@@ -10,12 +10,12 @@ Two layers, per the [layered testing strategy](../../.scratch/d12canvas-next/iss
 
 Full suite:
 
-    dotnet test D12Canvas.Tests/D12Canvas.Tests.csproj
+    dotnet test test/D12Canvas.Tests/D12Canvas.Tests.csproj
 
 For a single class, or to pass other MTP runner flags (e.g. `-parallel none`): `dotnet test -- <args>` is unreliable for this project's xunit v3 MTP setup. Build once, then invoke the built exe directly:
 
-    dotnet build D12Canvas.Tests/D12Canvas.Tests.csproj
-    ./D12Canvas.Tests/bin/Debug/net10.0/D12Canvas.Tests.exe -class D12Canvas.Tests.SomeTestClass
+    dotnet build test/D12Canvas.Tests/D12Canvas.Tests.csproj
+    ./test/D12Canvas.Tests/bin/Debug/net10.0/D12Canvas.Tests.exe -class D12Canvas.Tests.SomeTestClass
 
 Pointer gestures are driven through the canvas's four public entry points (`CanvasPointer` in the test project wraps them), never by dispatching mouse events at the canvas. `DiagramCanvasPointerGestureTests` enumerates the closed `GestureKind` set with one release-reliability case and one cancel case per member; adding a gesture fails that theory until its cases exist.
 
@@ -37,7 +37,7 @@ From the repository root, wipe stale build artifacts first (a stale local `obj`/
 Then build and run. On Git Bash for Windows, `-v $PWD:/workspace`-style volume arguments get mangled - use `pwd -W` for the host side and a double leading slash on the container-side workdir instead:
 
     docker run --rm -v "$(pwd -W):/workspace" -w //workspace mcr.microsoft.com/playwright/dotnet:v1.61.0-noble \
-      bash -c "dotnet tool restore && dotnet build D12Canvas.VisualTests/D12Canvas.VisualTests.csproj && ./D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none"
+      bash -c "dotnet tool restore && dotnet build test/D12Canvas.VisualTests/D12Canvas.VisualTests.csproj && ./test/D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none"
 
 **Always pass `-parallel none`** (on the exe directly - `dotnet test -- -parallel none` doesn't forward reliably here either). The suite opens many Playwright browser contexts against one shared `D12Canvas.Demo` process; under default parallelism, tests fail with symptoms that look like real regressions - large pixel/HTML diffs, a Locator timing out at 0 elements, a click intercepted by an overlapping element - but aren't. Before trusting any visual-test failure (or spending time updating baselines over it), reproduce it under `-parallel none` first.
 
@@ -45,7 +45,7 @@ Then build and run. On Git Bash for Windows, `-v $PWD:/workspace`-style volume a
 
 An interaction probe drives the browser and asserts DOM or interop state, never pixels, so it has no baseline. Probes live in `D12Canvas.VisualTests` beside the screenshot tests, run in the same container with the same `-parallel none` command, and share the demo-app and Playwright assembly fixtures. To run only the probes, build as above and pass one `-class` per probe class:
 
-    ./D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none -class D12Canvas.VisualTests.ReleaseChannelProbes
+    ./test/D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none -class D12Canvas.VisualTests.ReleaseChannelProbes
 
 To add one, derive from `InteractionProbe`. It opens `/interaction-probe-demo`, a board seeded with fixed entity ids, and gives the probe four things:
 

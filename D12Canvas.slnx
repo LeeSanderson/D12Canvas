@@ -4,13 +4,19 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="D12Canvas.App/D12Canvas.App.csproj" />
-  <Project Path="D12Canvas.App.Api/D12Canvas.App.Api.csproj" />
-  <Project Path="D12Canvas.App.Api.Tests/D12Canvas.App.Api.Tests.csproj" />
-  <Project Path="D12Canvas.App.Shared/D12Canvas.App.Shared.csproj" />
-  <Project Path="D12Canvas.AppHost/D12Canvas.AppHost.csproj" />
-  <Project Path="D12Canvas.Demo/D12Canvas.Demo.csproj" />
-  <Project Path="D12Canvas.Tests/D12Canvas.Tests.csproj" />
-  <Project Path="D12Canvas.VisualTests/D12Canvas.VisualTests.csproj" />
-  <Project Path="D12Canvas/D12Canvas.csproj" />
+  <Folder Name="/app/">
+    <Project Path="app/D12Canvas.App/D12Canvas.App.csproj" />
+    <Project Path="app/D12Canvas.App.Api/D12Canvas.App.Api.csproj" />
+    <Project Path="app/D12Canvas.App.Shared/D12Canvas.App.Shared.csproj" />
+    <Project Path="app/D12Canvas.AppHost/D12Canvas.AppHost.csproj" />
+  </Folder>
+  <Folder Name="/lib/">
+    <Project Path="lib/D12Canvas/D12Canvas.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/D12Canvas.App.Api.Tests/D12Canvas.App.Api.Tests.csproj" />
+    <Project Path="test/D12Canvas.Demo/D12Canvas.Demo.csproj" />
+    <Project Path="test/D12Canvas.Tests/D12Canvas.Tests.csproj" />
+    <Project Path="test/D12Canvas.VisualTests/D12Canvas.VisualTests.csproj" />
+  </Folder>
 </Solution>

@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\D12Canvas.App.Api\D12Canvas.App.Api.csproj" />
+    <ProjectReference Include="..\..\app\D12Canvas.App.Api\D12Canvas.App.Api.csproj" />
   </ItemGroup>
 
 </Project>

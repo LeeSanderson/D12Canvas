@@ -54,7 +54,7 @@ public static partial class ColourLiterals
 
     public static Dictionary<string, string> LibraryStyleBlocks()
     {
-        var libraryDirectory = Path.Combine(RepositoryRoot(), "D12Canvas");
+        var libraryDirectory = Path.Combine(RepositoryRoot(), "lib", "D12Canvas");
         return Directory
             .EnumerateFiles(libraryDirectory, "*.razor", SearchOption.AllDirectories)
             .Where(path => !IsBuildOutput(libraryDirectory, path))

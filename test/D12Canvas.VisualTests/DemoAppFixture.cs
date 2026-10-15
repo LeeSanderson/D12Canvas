@@ -69,7 +69,7 @@ public sealed class DemoAppFixture : IAsyncLifetime
             );
         }
 
-        return Path.Combine(directory.FullName, "D12Canvas.Demo", "D12Canvas.Demo.csproj");
+        return Path.Combine(directory.FullName, "test", "D12Canvas.Demo", "D12Canvas.Demo.csproj");
     }
 
     private static async Task WaitUntilRespondingAsync(string baseUrl, TimeSpan timeout)

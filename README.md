@@ -6,9 +6,9 @@ To use Hot Reload with this Blazor WebAssembly project:
 
 # App and suggestions
 
-`dotnet run --project D12Canvas.AppHost` starts the App at http://localhost:5171 and its API at
+`dotnet run --project app/D12Canvas.AppHost` starts the App at http://localhost:5171 and its API at
 http://localhost:5126 together, with the Aspire dashboard at http://localhost:15004. The App finds
-the API through `ApiBaseAddress` in `D12Canvas.App/wwwroot/appsettings.json`, and the API accepts
+the API through `ApiBaseAddress` in `app/D12Canvas.App/wwwroot/appsettings.json`, and the API accepts
 calls from the origins in its `AppOrigins` setting, which the AppHost sets to the App's address.
 
 The board editor's toolbar has undo and redo, the framing commands, snapping, the wheel profile,
@@ -83,7 +83,7 @@ standalone, and independent instances on the same page can carry different theme
 Two layers, per the project's [layered testing strategy](.scratch/d12canvas-next/issues/04-layered-testing-strategy.md):
 
 - **bUnit** (`D12Canvas.Tests`) — the default for component logic, markup, event wiring, and state
-  transitions. Run with `dotnet test --project D12Canvas.Tests/D12Canvas.Tests.csproj`.
+  transitions. Run with `dotnet test --project test/D12Canvas.Tests/D12Canvas.Tests.csproj`.
 - **Playwright for .NET** (`D12Canvas.VisualTests`) — screenshot-diff coverage of rendered visual
   states (layout, CSS positioning, zoom/pan) that bUnit can't see, driven against the real
   `D12Canvas.Demo` app. Baselines are the committed `*.verified.png`/`*.verified.html` files
@@ -116,7 +116,7 @@ build artifacts first:
 ```bash
 find . -type d \( -name obj -o -name bin \) -exec rm -rf {} +
 docker run --rm -v "$PWD:/workspace" -w /workspace mcr.microsoft.com/playwright/dotnet:v1.61.0-noble \
-  bash -c "dotnet tool restore && dotnet build D12Canvas.VisualTests/D12Canvas.VisualTests.csproj && ./D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none"
+  bash -c "dotnet tool restore && dotnet build test/D12Canvas.VisualTests/D12Canvas.VisualTests.csproj && ./test/D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none"
 ```
 
 Always pass `-parallel none`: the suite opens many Playwright browser contexts against one shared

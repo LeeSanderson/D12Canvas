@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\D12Canvas\D12Canvas.csproj" />
+    <ProjectReference Include="..\..\lib\D12Canvas\D12Canvas.csproj" />
   </ItemGroup>
 
 </Project>

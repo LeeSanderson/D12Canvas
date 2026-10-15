@@ -12,8 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\D12Canvas\D12Canvas.csproj" />
-    <ProjectReference Include="..\D12Canvas.App.Shared\D12Canvas.App.Shared.csproj" />
+    <ProjectReference Include="..\..\lib\D12Canvas\D12Canvas.csproj" />
   </ItemGroup>
 
 </Project>

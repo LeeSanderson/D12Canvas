@@ -22,7 +22,7 @@ jobs:
       - name: Check formatting
         run: dotnet csharpier --check .
       - name: Run bUnit tests
-        run: dotnet test --project D12Canvas.Tests/D12Canvas.Tests.csproj
+        run: dotnet test --project test/D12Canvas.Tests/D12Canvas.Tests.csproj
 
   visual-tests:
     name: Playwright visual tests
@@ -36,16 +36,16 @@ jobs:
       - name: Restore dotnet tools
         run: dotnet tool restore
       - name: Build Playwright visual tests
-        run: dotnet build D12Canvas.VisualTests/D12Canvas.VisualTests.csproj
+        run: dotnet build test/D12Canvas.VisualTests/D12Canvas.VisualTests.csproj
       # Invoked directly rather than through `dotnet test` because runner flags don't forward
       # reliably through it here, and the suite shares one Demo process across every browser
       # context, so anything but `-parallel none` fails with diffs that look like regressions.
       - name: Run Playwright visual tests
-        run: ./D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none
+        run: ./test/D12Canvas.VisualTests/bin/Debug/net10.0/D12Canvas.VisualTests -parallel none
       - name: Upload screenshot diffs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: visual-test-diffs
-          path: D12Canvas.VisualTests/**/*.received.*
+          path: test/D12Canvas.VisualTests/**/*.received.*
           retention-days: 7
