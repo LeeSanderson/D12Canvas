@@ -9,3 +9,5 @@ Blocked by:
 What is the App called in its nav bar, page titles and favicon, and what is its logo mark?
 
 Today the page title is `D12Canvas.App` and `wwwroot/favicon.png` is the template icon. Settle the display name, the `<PageTitle>` pattern for each route (for example "Boards · Name" and "<board name> · Name"), and where the logo comes from: a Bootstrap Icon, a small hand-made SVG, or an existing asset.
+
+Also settle whether the App has a brand colour. Without one, the accent becomes Bootstrap's `#0d6efd` (see [App and canvas theme](05-app-and-canvas-theme.md)). A brand colour overrides `--bs-primary` and needs a light and a dark value.
