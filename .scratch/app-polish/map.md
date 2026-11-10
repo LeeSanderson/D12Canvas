@@ -1,0 +1,33 @@
+# App polish
+
+Label: wayfinder:map
+
+## Destination
+
+A spec at `.scratch/app-polish/spec.md` plus implementation issues under `.scratch/app-polish/issues/`, ready for `/implement`. The spec covers: D12Canvas.App restyled with the latest Bootstrap and Bootstrap Icons, one nav bar shared by the board list (`/`) and the board editor (`/board/{id}`), App dark mode, narrow-screen layouts, branding, and both items from `.scratch/backlog/`.
+
+## Notes
+
+- Planning only. Tickets resolve decisions; no App or library code changes until the spec is handed to `/implement`.
+- Bootstrap reaches the App chrome only. `lib/D12Canvas` takes no Bootstrap dependency and keeps its `--d12-*` tokens.
+- Sticky-note alignment is a library change and is in scope.
+- Skills: `/grilling` and `/domain-modeling` for grilling tickets, `/prototype` for prototype tickets (throwaway routes in the App are fine), `/research` for research tickets. Write the destination with `/to-spec` then `/to-tickets`.
+- Apply `/unslop` to everything written here.
+- App visual tests are out of scope, but a library change (sticky note) still needs the full visual suite run per `docs/agents/testing.md`.
+
+## Decisions so far
+
+- [Latest Bootstrap and Bootstrap Icons in a Blazor WebAssembly app](issues/01-latest-bootstrap-in-blazor-wasm.md): stable is Bootstrap 5.3.8 and Icons 1.13.2. 6.0 is alpha with large renames. 5.3's JS clashes with Blazor-owned DOM, and Reboot reaches into the canvas.
+- [Bootstrap delivery and JS](issues/02-bootstrap-delivery-and-js.md): 5.3.8 CSS vendored in `wwwroot/lib`, imported into a cascade layer so library styles win. No Bootstrap JS: modals are native `<dialog>`, dropdowns and the offcanvas nav render from Blazor state. Icons are inline SVG via an `Icon` component. App rules that reuse Bootstrap class names are deleted. A library issue sets properties the library now leaves to browser defaults. This also settles modals and forms: both dialogs move to the `<dialog>` pattern with `.form-control` inputs.
+
+## Not yet specified
+
+- App test coverage. No test project covers D12Canvas.App today. Decide whether the spec adds bUnit tests for the nav bar and pages, once the nav bar's shape is known.
+- Shortcuts panel and status bits in the editor (zoom readout, saved-suggestion notice). Where they sit once the toolbar is redesigned.
+- Loading and error UI in `index.html` (the spinner and `#blazor-error-ui`), restyled to match.
+- Spec and ticket slicing. Order of implementation issues, for example Bootstrap setup first, then nav bar, then pages.
+
+## Out of scope
+
+- App visual tests. Playwright baselines for the App's pages stay out of this effort (user decision while charting).
+- Bootstrap in the library. `lib/D12Canvas` chrome (property panel, palette, menus) keeps its own styling (user decision while charting).
