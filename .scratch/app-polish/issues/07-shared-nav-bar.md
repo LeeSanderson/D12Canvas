@@ -11,3 +11,5 @@ What does the nav bar shared by `/` and `/board/{id}` hold on each route, and ho
 Today each page draws its own header: BoardList has a title and "New board"; BoardEditor has "← Boards", a click-to-rename `h1`, an Autosave checkbox and Save. Prototype the shared bar in MainLayout with Bootstrap, then react to it. Candidates for the bar: brand, link to Boards, the current board's name and rename, save state and Save, the theme switch, Suggest. Decide how a page puts its own items into the bar (sections, cascading values, a nav service).
 
 The prototype loads no Bootstrap JS (see [Bootstrap delivery and JS](02-bootstrap-delivery-and-js.md)). The narrow-screen collapse and any dropdown render `.show` from Blazor state, and icons come from inline SVG.
+
+The rename pattern is settled (see [Heading tab stop](03-heading-tab-stop.md)): the board name is a plain `h1` with a separate Rename button beside it. This ticket only places them.

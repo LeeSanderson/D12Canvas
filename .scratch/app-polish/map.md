@@ -19,6 +19,7 @@ A spec at `.scratch/app-polish/spec.md` plus implementation issues under `.scrat
 
 - [Latest Bootstrap and Bootstrap Icons in a Blazor WebAssembly app](issues/01-latest-bootstrap-in-blazor-wasm.md): stable is Bootstrap 5.3.8 and Icons 1.13.2. 6.0 is alpha with large renames. 5.3's JS clashes with Blazor-owned DOM, and Reboot reaches into the canvas.
 - [Bootstrap delivery and JS](issues/02-bootstrap-delivery-and-js.md): 5.3.8 CSS vendored in `wwwroot/lib`, imported into a cascade layer so library styles win. No Bootstrap JS: modals are native `<dialog>`, dropdowns and the offcanvas nav render from Blazor state. Icons are inline SVG via an `Icon` component. App rules that reuse Bootstrap class names are deleted. A library issue sets properties the library now leaves to browser defaults. This also settles modals and forms: both dialogs move to the `<dialog>` pattern with `.form-control` inputs.
+- [Heading tab stop](issues/03-heading-tab-stop.md): keep `FocusOnNavigate` on `h1` and hide the ring with `h1:focus { outline: none; }`. The board name stays an `h1`, with a separate Rename button beside it. Enter and Escape return focus to that button, and the rename input gets a label.
 
 ## Not yet specified
 
