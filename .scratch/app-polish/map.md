@@ -22,6 +22,7 @@ A spec at `.scratch/app-polish/spec.md` plus implementation issues under `.scrat
 - [Heading tab stop](issues/03-heading-tab-stop.md): keep `FocusOnNavigate` on `h1` and hide the ring with `h1:focus { outline: none; }`. The board name stays an `h1`, with a separate Rename button beside it. Enter and Escape return focus to that button, and the rename input gets a label.
 - [Sticky note text alignment](issues/04-sticky-note-text-alignment.md): `TextAlign` (left/center/right, existing role) and `VerticalAlign` (top/middle/bottom, new role) as string dropdowns. New and old notes alike default to center/middle. Text doesn't move when inline editing starts, and overflow starts at the top. Sticky note only.
 - [App and canvas theme](issues/05-app-and-canvas-theme.md): one switch for chrome and canvas, an icon dropdown (Light/Dark/System) in the nav bar, saved in `localStorage` as `d12canvas.theme` with `system` as the default. A `<head>` script writes the resolved mode to both `data-bs-theme` and `data-d12-theme` on `<html>`. The `--app-*` tokens give way to Bootstrap's variables.
+- [App name and logo](issues/06-app-name-and-logo.md): D12Canvas everywhere, titles as `<page> · D12Canvas`. The mark is one hand-drawn d12 SVG with the "12" face forward. The favicon is an SVG with a dark-mode block plus a checked-in PNG fallback. No brand colour, so the accent stays Bootstrap blue.
 
 ## Not yet specified
 

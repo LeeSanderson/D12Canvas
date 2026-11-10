@@ -15,3 +15,5 @@ The prototype loads no Bootstrap JS (see [Bootstrap delivery and JS](02-bootstra
 The rename pattern is settled (see [Heading tab stop](03-heading-tab-stop.md)): the board name is a plain `h1` with a separate Rename button beside it. This ticket only places them.
 
 The theme switch is settled too (see [App and canvas theme](05-app-and-canvas-theme.md)): an icon dropdown with Light, Dark and System, in the bar on both routes. This ticket only places it.
+
+The brand is settled (see [App name and logo](06-app-name-and-logo.md)): the d12 mark through the `Icon` component plus the wordmark "D12Canvas". This ticket places them and decides whether the brand links to `/`.
