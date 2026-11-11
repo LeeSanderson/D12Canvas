@@ -23,11 +23,12 @@ A spec at `.scratch/app-polish/spec.md` plus implementation issues under `.scrat
 - [Sticky note text alignment](issues/04-sticky-note-text-alignment.md): `TextAlign` (left/center/right, existing role) and `VerticalAlign` (top/middle/bottom, new role) as string dropdowns. New and old notes alike default to center/middle. Text doesn't move when inline editing starts, and overflow starts at the top. Sticky note only.
 - [App and canvas theme](issues/05-app-and-canvas-theme.md): one switch for chrome and canvas, an icon dropdown (Light/Dark/System) in the nav bar, saved in `localStorage` as `d12canvas.theme` with `system` as the default. A `<head>` script writes the resolved mode to both `data-bs-theme` and `data-d12-theme` on `<html>`. The `--app-*` tokens give way to Bootstrap's variables.
 - [App name and logo](issues/06-app-name-and-logo.md): D12Canvas everywhere, titles as `<page> · D12Canvas`. The mark is one hand-drawn d12 SVG with the "12" face forward. The favicon is an SVG with a dark-mode block plus a checked-in PNG fallback. No brand colour, so the accent stays Bootstrap blue.
+- [Shared nav bar](issues/07-shared-nav-bar.md): two tiers. An app bar holds the brand (links to `/`), a Boards link, Suggest and the theme, and moves into an offcanvas below `md`. A page header holds the title and the page's controls, which pages fill through Blazor sections. Autosave is on by default and remembered in `localStorage`. While it is on, Save is hidden and a brief "Saving…"/"Saved" shows instead.
 
 ## Not yet specified
 
 - App test coverage. No test project covers D12Canvas.App today. Decide whether the spec adds bUnit tests for the nav bar and pages, once the nav bar's shape is known.
-- Shortcuts panel and status bits in the editor (zoom readout, saved-suggestion notice). Where they sit once the toolbar is redesigned.
+- Shortcuts panel and status bits in the editor (selection count, zoom readout). Where they sit once the toolbar is redesigned. The saved-suggestion notice now sits in the nav bar.
 - Loading and error UI in `index.html` (the spinner and `#blazor-error-ui`), restyled to match.
 - Spec and ticket slicing. Order of implementation issues, for example Bootstrap setup first, then nav bar, then pages.
 
