@@ -69,6 +69,52 @@ public class StickyNoteTests : ComponentTestBase
     }
 
     [Fact]
+    public void DefaultPropsCentreTheTextBothWays()
+    {
+        var stickyNote = Render<StickyNote>();
+
+        Assert.Contains(
+            "justify-content: safe center",
+            stickyNote.Find(".d12-sticky-note").GetAttribute("style")
+        );
+        Assert.Contains(
+            "text-align: center",
+            stickyNote.Find(".d12-sticky-note-text").GetAttribute("style")
+        );
+    }
+
+    [Theory]
+    [InlineData("left", "top", "text-align: left", "justify-content: flex-start")]
+    [InlineData("center", "middle", "text-align: center", "justify-content: safe center")]
+    [InlineData("right", "bottom", "text-align: right", "justify-content: safe flex-end")]
+    public void TheEditorTakesTheTextsAlignmentStyles(
+        string textAlign,
+        string verticalAlign,
+        string textDeclaration,
+        string noteDeclaration
+    )
+    {
+        var stickyNote = Render<StickyNote>(parameters =>
+            parameters.Add(
+                p => p.Props,
+                new StickyNoteProps("Note", "#FFEB3B", "#000000", 14, textAlign, verticalAlign)
+            )
+        );
+        var note = stickyNote.Find(".d12-sticky-note");
+        Assert.Contains(noteDeclaration, note.GetAttribute("style"));
+        var renderedTextStyle = stickyNote.Find("p.d12-sticky-note-text").GetAttribute("style");
+        Assert.Contains(textDeclaration, renderedTextStyle);
+
+        stickyNote.InvokeAsync(stickyNote.Instance.BeginEdit);
+
+        Assert.Contains(noteDeclaration, stickyNote.Find(".d12-sticky-note").GetAttribute("style"));
+        Assert.Equal(
+            renderedTextStyle,
+            stickyNote.Find("textarea.d12-sticky-note-editor").GetAttribute("style")
+        );
+    }
+
+    [Fact]
     public void BeginEditRendersATextEditorInPlaceOfTheParagraph()
     {
         var stickyNote = Render<StickyNote>(parameters =>

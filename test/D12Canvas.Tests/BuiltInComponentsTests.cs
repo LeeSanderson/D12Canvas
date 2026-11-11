@@ -47,7 +47,10 @@ public class BuiltInComponentsTests
         Assert.Equal("Sticky Note", registration.AccessibleName);
         Assert.Equal("Basic Shapes", registration.Category);
         Assert.Equal(new ComponentSize(200, 200), registration.DefaultSize);
-        Assert.Equal(new StickyNoteProps("", "#FFEB3B", "#000000", 14), registration.DefaultProps);
+        Assert.Equal(
+            new StickyNoteProps("", "#FFEB3B", "#000000", 14, "center", "middle"),
+            registration.DefaultProps
+        );
         Assert.False(string.IsNullOrEmpty(registration.Icon));
     }
 
@@ -115,7 +118,7 @@ public class BuiltInComponentsTests
     }
 
     [Fact]
-    public void StickyNoteEditablePropertiesCoverColorTextColorAndFontSizeButNotText()
+    public void StickyNoteEditablePropertiesCoverColoursFontSizeAndBothAlignmentsButNotText()
     {
         var registration = RegisterAndResolve("sticky-note");
 
@@ -125,8 +128,18 @@ public class BuiltInComponentsTests
                 ("Color", EditorKind.Color, PropertyRole.Fill),
                 ("TextColor", EditorKind.Color, PropertyRole.TextColour),
                 ("FontSize", EditorKind.Number, PropertyRole.FontSize),
+                ("TextAlign", EditorKind.Dropdown, PropertyRole.TextAlign),
+                ("VerticalAlign", EditorKind.Dropdown, PropertyRole.VerticalAlign),
             },
             registration.EditableProperties!.Select(p => (p.Property.Name, p.Kind, p.Role))
+        );
+        Assert.Equal(
+            ["left", "center", "right"],
+            registration.EditableProperties!.Single(p => p.Property.Name == "TextAlign").Options
+        );
+        Assert.Equal(
+            ["top", "middle", "bottom"],
+            registration.EditableProperties!.Single(p => p.Property.Name == "VerticalAlign").Options
         );
     }
 

@@ -397,6 +397,59 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task AStickyNotesAlignmentsChangeFromTheBarAndUndo()
+    {
+        var board = new Board();
+        var note = AddStickyNote(board, 200, 200);
+        var canvas = RenderCanvas(board);
+        Select(canvas, note.Id);
+
+        Assert.Equal(
+            ["Fill", "Text colour", "Font size", "Text align", "Vertical align"],
+            ControlLabels(canvas)
+        );
+
+        Control(canvas, "Vertical align").Change("bottom");
+        Control(canvas, "Text align").Change("right");
+
+        Assert.Equal("bottom", ((StickyNoteProps)note.Props).VerticalAlign);
+        Assert.Equal("right", ((StickyNoteProps)note.Props).TextAlign);
+        Assert.Contains(
+            "justify-content: safe flex-end",
+            canvas.Find(".d12-sticky-note").GetAttribute("style")
+        );
+
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+        await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
+
+        Assert.Equal("middle", ((StickyNoteProps)note.Props).VerticalAlign);
+        Assert.Equal("center", ((StickyNoteProps)note.Props).TextAlign);
+    }
+
+    [Fact]
+    public void ATextBoxAndAStickyNoteShareOneTextAlignRowAndNoVerticalAlign()
+    {
+        var board = new Board();
+        var note = AddStickyNote(board, 200, 200);
+        var text = new ComponentInstance(
+            "text",
+            new TextProps("Label", null, 16, "normal", "left"),
+            new Bounds(400, 200, 200, 40)
+        );
+        board.AddComponent(text);
+        var canvas = RenderCanvas(board);
+
+        Select(canvas, note.Id);
+        Select(canvas, text.Id, shift: true);
+
+        Assert.Equal(["Text colour", "Font size", "Text align"], ControlLabels(canvas));
+        Assert.StartsWith(
+            "Text align: Mixed",
+            Control(canvas, "Text align").Closest(".d12-property-bar-cell")!.GetAttribute("title")
+        );
+    }
+
+    [Fact]
     public void AColourThatCannotHoldNullOffersNoWayToTheTheme()
     {
         var board = new Board();

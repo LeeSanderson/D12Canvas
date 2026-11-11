@@ -16,6 +16,11 @@ public static class PropertyRoleDeclarations
             PropertyRole.FontSize => new(EditorKind.Number, typeof(double), "Font size"),
             PropertyRole.FontWeight => new(EditorKind.Dropdown, typeof(string), "Font weight"),
             PropertyRole.TextAlign => new(EditorKind.Dropdown, typeof(string), "Text align"),
+            PropertyRole.VerticalAlign => new(
+                EditorKind.Dropdown,
+                typeof(string),
+                "Vertical align"
+            ),
             PropertyRole.EdgeRouting => new(EditorKind.Dropdown, typeof(EdgeRouting), "Routing"),
             PropertyRole.EdgeSourceArrow => new(
                 EditorKind.Dropdown,

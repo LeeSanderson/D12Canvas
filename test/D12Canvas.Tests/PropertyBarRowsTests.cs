@@ -23,12 +23,19 @@ public class PropertyBarRowsTests
     private static ComponentInstance Rectangle(string? fill = "#ff0000", double strokeWidth = 2) =>
         new("rectangle", new RectangleProps(fill, null, strokeWidth), new Bounds(0, 0, 100, 60));
 
-    private static ComponentInstance StickyNote(string color = "#FFEB3B") =>
+    private static ComponentInstance StickyNote(
+        string color = "#FFEB3B",
+        string textAlign = "center",
+        string verticalAlign = "middle"
+    ) =>
         new(
             "sticky-note",
-            new StickyNoteProps("", color, "#000000", 14),
+            new StickyNoteProps("", color, "#000000", 14, textAlign, verticalAlign),
             new Bounds(0, 0, 100, 60)
         );
+
+    private static ComponentInstance TextBox(string textAlign = "left") =>
+        new("text", new TextProps("", null, 16, "normal", textAlign), new Bounds(0, 0, 200, 40));
 
     private static Edge Edge(
         EdgeRouting routing = EdgeRouting.Orthogonal,
@@ -69,6 +76,62 @@ public class PropertyBarRowsTests
         var rows = RowsFor([Rectangle(), StickyNote()], []);
 
         Assert.Equal([PropertyRole.Fill], rows.Select(row => row.Role));
+    }
+
+    [Fact]
+    public void StickyNotesAloneOfferBothAlignmentsWithTheirOptions()
+    {
+        var rows = RowsFor([StickyNote(), StickyNote()], []);
+
+        Assert.Equal(
+            [
+                PropertyRole.Fill,
+                PropertyRole.TextColour,
+                PropertyRole.FontSize,
+                PropertyRole.TextAlign,
+                PropertyRole.VerticalAlign,
+            ],
+            rows.Select(row => row.Role)
+        );
+        Assert.Equal("center", RowOf(rows, PropertyRole.TextAlign).Value);
+        Assert.Equal("middle", RowOf(rows, PropertyRole.VerticalAlign).Value);
+        Assert.Equal(["top", "middle", "bottom"], RowOf(rows, PropertyRole.VerticalAlign).Options);
+    }
+
+    [Fact]
+    public void ATextBoxBesideAStickyNoteMergesTextAlignAndDropsVerticalAlign()
+    {
+        var agreeing = RowsFor([TextBox("center"), StickyNote(textAlign: "center")], []);
+        var differing = RowsFor([TextBox("left"), StickyNote(textAlign: "center")], []);
+
+        Assert.Equal(
+            [PropertyRole.TextColour, PropertyRole.FontSize, PropertyRole.TextAlign],
+            agreeing.Select(row => row.Role)
+        );
+        Assert.Equal("center", RowOf(agreeing, PropertyRole.TextAlign).Value);
+        Assert.False(RowOf(agreeing, PropertyRole.TextAlign).IsMixed);
+        Assert.True(RowOf(differing, PropertyRole.TextAlign).IsMixed);
+    }
+
+    [Fact]
+    public void AMergedTextAlignCommitWritesBothTypes()
+    {
+        var text = TextBox("left");
+        var note = StickyNote(textAlign: "center");
+        var rows = RowsFor([text, note], []);
+
+        RowOf(rows, PropertyRole.TextAlign).Commit("right");
+
+        var batch = Assert.Single(_propsCommits);
+        Assert.Equal(2, batch.Count);
+        Assert.Equal(
+            "right",
+            ((TextProps)batch.Single(c => c.InstanceId == text.Id).After).TextAlign
+        );
+        Assert.Equal(
+            "right",
+            ((StickyNoteProps)batch.Single(c => c.InstanceId == note.Id).After).TextAlign
+        );
     }
 
     [Fact]

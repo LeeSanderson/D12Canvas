@@ -1,6 +1,6 @@
 # Sticky-note text alignment
 
-Status: ready-for-agent
+Status: resolved
 Blocked by:
 
 Spec: [App polish](../spec.md), "Sticky note text alignment (library)". Decision record: [Sticky note text alignment](04-sticky-note-text-alignment.md). Closes `.scratch/backlog/001-skicky-notes.md`.
@@ -26,3 +26,13 @@ Text stays in the same place when inline editing starts and ends: the editor siz
 - [ ] `CONTEXT.md`'s Property role entry lists `VerticalAlign` in its closed set.
 - [ ] bUnit tests in `D12Canvas.Tests` cover the defaults, loading old JSON, the property bar rows and the cross-type merge, following the existing `TextProps`, property role and Mixed tests.
 - [ ] The full Playwright visual suite runs in the pinned Docker image with `-parallel none`. The changed sticky-note baselines are reviewed and folded in, per `docs/agents/testing.md`.
+
+## Comments
+
+Resolved 2026-11-11. `StickyNoteProps` gained `TextAlign` and `VerticalAlign` with `center` / `middle` defaults in both the record and the registration. `PropertyRole.VerticalAlign` was added with its own property bar glyph. The note is now a flex column placed by `justify-content` (`flex-start`, `safe center`, `safe flex-end`). The editor uses `field-sizing: content`, so it is as tall as its text. The `<p>` now has `white-space: pre-wrap` and `overflow-wrap: break-word` to match the textarea, which means line breaks in a note now show outside editing too.
+
+A new demo page, `/sticky-note-alignment-demo`, backs `StickyNoteAlignmentVisualTests`. It has a screenshot of all nine pairings plus an overflowing note, and a check that the text box doesn't move when an edit starts or ends for each pairing. 19 existing baselines moved, all because built-in sticky notes now centre their text. The two editing baselines also show the new Text align and Vertical align cells.
+
+Known gaps:
+- `field-sizing: content` is Chromium and recent Safari only. In Firefox the editor falls back to its default height, so a middle or bottom note's text shifts during editing. Growing the textarea to its `scrollHeight` would fix that.
+- Text ending in a newline is one line taller in the textarea than in the `<p>`, so it shifts by half a line on a middle note.

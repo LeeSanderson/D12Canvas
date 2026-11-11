@@ -205,6 +205,14 @@ public partial class PropertyBar : IAsyncDisposable
             _ => "M2.5 4 H13.5 M2.5 8 H9.5 M2.5 12 H13.5",
         };
 
+    private static string VerticalAlignPath(PropertyBarRow row) =>
+        row.Value switch
+        {
+            "top" => "M4.5 5 H11.5 M4.5 7.5 H11.5",
+            "bottom" => "M4.5 8.5 H11.5 M4.5 11 H11.5",
+            _ => "M4.5 6.75 H11.5 M4.5 9.25 H11.5",
+        };
+
     private static string RoutingPath(PropertyBarRow row) =>
         row.Value switch
         {

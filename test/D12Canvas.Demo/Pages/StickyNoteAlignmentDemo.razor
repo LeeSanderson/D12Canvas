@@ -1,0 +1,58 @@
+@page "/sticky-note-alignment-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Sticky Note Alignment Demo</PageTitle>
+
+<div class="sticky-note-alignment-canvas">
+    <DiagramCanvas Board="_board" />
+</div>
+
+<style>
+    .sticky-note-alignment-canvas {
+        width: 640px;
+        height: 460px;
+    }
+</style>
+
+@code {
+    private static readonly string[] Horizontal = ["left", "center", "right"];
+    private static readonly string[] Vertical = ["top", "middle", "bottom"];
+
+    private readonly Board _board = SeedBoard();
+
+    public static Guid NoteId(int row, int column) =>
+        Guid.Parse($"a1170000-0000-0000-0000-0000000000{row}{column}");
+
+    public static readonly Guid OverflowNoteId = Guid.Parse("a1170000-0000-0000-0000-000000000099");
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        for (var row = 0; row < Vertical.Length; row++)
+        {
+            for (var column = 0; column < Horizontal.Length; column++)
+            {
+                board.AddComponent(
+                    new ComponentInstance(
+                        "sticky-note",
+                        new StickyNoteProps($"{Vertical[row]} {Horizontal[column]}", "#FFEB3B", "#000000", 14, Horizontal[column], Vertical[row]),
+                        new Bounds(20 + column * 140, 20 + row * 140, 120, 120),
+                        id: NoteId(row, column)
+                    )
+                );
+            }
+        }
+
+        board.AddComponent(
+            new ComponentInstance(
+                "sticky-note",
+                new StickyNoteProps("First line stays visible\nwhen the text runs\npast the bottom\nof a short note\nthat is centred", "#AED581", "#000000", 14),
+                new Bounds(460, 20, 140, 60),
+                id: OverflowNoteId
+            )
+        );
+        return board;
+    }
+}

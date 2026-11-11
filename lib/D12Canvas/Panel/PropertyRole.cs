@@ -14,6 +14,7 @@ public enum PropertyRole
     FontSize,
     FontWeight,
     TextAlign,
+    VerticalAlign,
     EdgeRouting,
     EdgeSourceArrow,
     EdgeTargetArrow,

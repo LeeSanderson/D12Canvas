@@ -30,7 +30,14 @@ internal static class BuiltInComponents
             {
                 builder.DisplayName = "Sticky Note";
                 builder.AccessibleName = "Sticky Note";
-                builder.DefaultProps = new StickyNoteProps("", "#FFEB3B", "#000000", 14);
+                builder.DefaultProps = new StickyNoteProps(
+                    "",
+                    "#FFEB3B",
+                    "#000000",
+                    14,
+                    "center",
+                    "middle"
+                );
                 builder.Icon = "🗒️";
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(200, 200);

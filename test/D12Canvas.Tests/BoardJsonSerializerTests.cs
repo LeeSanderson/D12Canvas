@@ -1076,6 +1076,37 @@ public class BoardJsonSerializerTests
     }
 
     [Fact]
+    public void AStickyNoteSavedWithoutAlignmentLoadsCentredThroughBothPaths()
+    {
+        var options = new D12CanvasOptions();
+        BuiltIns.BuiltInComponents.RegisterAll(options);
+        var serializer = new BoardJsonSerializer(options.Registry);
+        const string json = """
+            {
+              "SchemaVersion": 1,
+              "Components": [
+                {
+                  "Id": "11111111-1111-1111-1111-111111111111",
+                  "ComponentTypeKey": "sticky-note",
+                  "Props": { "Text": "Old", "Color": "#FFEB3B", "TextColor": "#000000", "FontSize": 14 },
+                  "Bounds": { "X": 0, "Y": 0, "Width": 200, "Height": 200 },
+                  "ZIndex": 0
+                }
+              ]
+            }
+            """;
+
+        var strict = (BuiltIns.StickyNoteProps)
+            serializer.Deserialize(json).Components.Single().Props;
+        var partial = (BuiltIns.StickyNoteProps)
+            serializer.DeserializePartial(json).Board.Components.Single().Props;
+
+        Assert.Equal(new BuiltIns.StickyNoteProps("Old", "#FFEB3B", "#000000", 14), strict);
+        Assert.Equal(("center", "middle"), (strict.TextAlign, strict.VerticalAlign));
+        Assert.Equal(strict, partial);
+    }
+
+    [Fact]
     public void ALockedInstanceAndEdgeRoundTripThroughBothLoadPaths()
     {
         var serializer = new BoardJsonSerializer(BuildRegistry());

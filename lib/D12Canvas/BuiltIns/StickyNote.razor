@@ -20,6 +20,8 @@
 
 <style>
     .d12-sticky-note {
+        display: flex;
+        flex-direction: column;
         width: 100%;
         height: 100%;
         box-sizing: border-box;
@@ -28,13 +30,17 @@
 
     .d12-sticky-note-text {
         display: block;
+        flex: none;
         width: 100%;
-        height: 100%;
         margin: 0;
         box-sizing: border-box;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
     }
 
     .d12-sticky-note-editor {
+        field-sizing: content;
+        overflow: hidden;
         font: inherit;
         border: none;
         outline: 1px dashed var(--d12-inline-edit-outline);
@@ -59,13 +65,27 @@
     private string _editBuffer = "";
     private ElementReference _editorRef;
 
-    private string Style => InlineStyleValue.Declaration("background-color", Props.Color);
+    private string Style =>
+        InlineStyleValue.Join(
+            InlineStyleValue.Declaration("background-color", Props.Color),
+            $"justify-content: {JustifyContent};"
+        );
 
     private string TextStyle =>
         InlineStyleValue.Join(
             InlineStyleValue.Declaration("color", Props.TextColor),
-            $"font-size: {Props.FontSize}px;"
+            $"font-size: {Props.FontSize}px;",
+            InlineStyleValue.Declaration("text-align", Props.TextAlign)
         );
+
+    // Safe alignment keeps the first line of text taller than the note at its top edge.
+    private string JustifyContent =>
+        Props.VerticalAlign switch
+        {
+            "top" => "flex-start",
+            "bottom" => "safe flex-end",
+            _ => "safe center",
+        };
 
     public void BeginEdit()
     {
