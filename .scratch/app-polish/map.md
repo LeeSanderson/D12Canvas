@@ -10,10 +10,10 @@ A spec at `.scratch/app-polish/spec.md` plus implementation issues under `.scrat
 
 - Planning only. Tickets resolve decisions; no App or library code changes until the spec is handed to `/implement`.
 - Bootstrap reaches the App chrome only. `lib/D12Canvas` takes no Bootstrap dependency and keeps its `--d12-*` tokens.
-- Sticky-note alignment is a library change and is in scope.
+- Sticky-note alignment and the board sketch component are library changes and are in scope.
 - Skills: `/grilling` and `/domain-modeling` for grilling tickets, `/prototype` for prototype tickets (throwaway routes in the App are fine), `/research` for research tickets. Write the destination with `/to-spec` then `/to-tickets`.
 - Apply `/unslop` to everything written here.
-- App visual tests are out of scope, but a library change (sticky note) still needs the full visual suite run per `docs/agents/testing.md`.
+- App visual tests are out of scope, but a library change (sticky note, board sketch) still needs the full visual suite run per `docs/agents/testing.md`.
 
 ## Decisions so far
 
@@ -25,15 +25,15 @@ A spec at `.scratch/app-polish/spec.md` plus implementation issues under `.scrat
 - [App name and logo](issues/06-app-name-and-logo.md): D12Canvas everywhere, titles as `<page> · D12Canvas`. The mark is one hand-drawn d12 SVG with the "12" face forward. The favicon is an SVG with a dark-mode block plus a checked-in PNG fallback. No brand colour, so the accent stays Bootstrap blue.
 - [Shared nav bar](issues/07-shared-nav-bar.md): two tiers. An app bar holds the brand (links to `/`), a Boards link, Suggest and the theme, and moves into an offcanvas below `md`. A page header holds the title and the page's controls, which pages fill through Blazor sections. Autosave is on by default and remembered in `localStorage`. While it is on, Save is hidden and a brief "Saving…"/"Saved" shows instead.
 - [Editor toolbar](issues/08-editor-toolbar.md): no toolbar row. The page header gets Undo/Redo, a View menu (zoom commands, snapping, wheel profile) and a Shortcuts toggle. A status bar under the canvas holds the selection count, Grid and Snapping toggles, and the zoom control. Tooltips stay native `title` attributes with the shortcut.
+- [Board list page](issues/09-board-list-page.md): a card grid (1 to 4 columns) with a dashed New board tile first. Each card has a board sketch, the name as a link, "Edited …" and a ⋮ menu with Rename and Delete. The empty state is one centred card. The subtitle goes. The sketch is a new library component: boxes for components and lines for edges, scaled to fit, loaded per board after the list renders.
 
 ## Not yet specified
 
-- App test coverage. No test project covers D12Canvas.App today. Decide whether the spec adds bUnit tests for the nav bar and pages, once the nav bar's shape is known.
-- Loading and error UI in `index.html` (the spinner and `#blazor-error-ui`), restyled to match.
 - Spec and ticket slicing. Order of implementation issues, for example Bootstrap setup first, then nav bar, then pages.
 
 ## Out of scope
 
 - App visual tests. Playwright baselines for the App's pages stay out of this effort (user decision while charting).
 - Bootstrap in the library. `lib/D12Canvas` chrome (property panel, palette, menus) keeps its own styling (user decision while charting).
+- Loading board sketches only as cards scroll into view. The list loads every sketch for now. The user wants this only if performance becomes a problem (decided in [Board list page](issues/09-board-list-page.md)).
 - Vertical alignment for `Text`. The backlog item asks for sticky notes only, so `Text` keeps `TextAlign` alone (decided in [Sticky note text alignment](issues/04-sticky-note-text-alignment.md)).
