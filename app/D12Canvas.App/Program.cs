@@ -1,4 +1,5 @@
 using D12Canvas.App;
+using D12Canvas.App.Preferences;
 using D12Canvas.App.Storage;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components.Web;
@@ -19,5 +20,6 @@ builder.Services.AddScoped(_ => new HttpClient
 });
 builder.Services.AddD12Canvas(_ => { });
 builder.Services.AddSingleton<IBoardStore, IndexedDbBoardStore>();
+builder.Services.AddSingleton<IPreferences, LocalStoragePreferences>();
 
 await builder.Build().RunAsync();

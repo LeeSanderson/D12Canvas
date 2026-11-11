@@ -1,6 +1,6 @@
 # App test project, page harness and preferences seam
 
-Status: ready-for-agent
+Status: resolved
 Blocked by:
 
 Spec: [App polish](../spec.md), "Preferences seam" and "Testing Decisions". Decision record: [App test coverage](10-app-test-coverage.md).
@@ -16,9 +16,13 @@ Prefactoring so every later App ticket can test the behaviour it builds through 
 
 ## Acceptance criteria
 
-- [ ] `D12Canvas.App.Tests` builds and runs in the solution.
-- [ ] A smoke test renders the board list inside `MainLayout` with one board in `InMemoryBoardStore` and finds that board's name on the page.
-- [ ] A second smoke test renders the board editor for a stored board inside `MainLayout` and finds the board name.
-- [ ] `IPreferences` and its `localStorage` implementation exist and are registered; the App still runs.
-- [ ] CI's unit-tests job runs both App test projects, and they pass.
-- [ ] Tests use descriptive variable names, not `cut` or `sut`.
+- [x] `D12Canvas.App.Tests` builds and runs in the solution.
+- [x] A smoke test renders the board list inside `MainLayout` with one board in `InMemoryBoardStore` and finds that board's name on the page.
+- [x] A second smoke test renders the board editor for a stored board inside `MainLayout` and finds the board name.
+- [x] `IPreferences` and its `localStorage` implementation exist and are registered; the App still runs.
+- [x] CI's unit-tests job runs both App test projects, and they pass.
+- [x] Tests use descriptive variable names, not `cut` or `sut`.
+
+## Comments
+
+Done. `AppTestContext` in `test/D12Canvas.App.Tests` is the base class every App test derives from. `RenderBoardList()` and `RenderBoardEditor(id)` navigate the fake `NavigationManager` and render the page as `MainLayout`'s body. `RenderPage<TPage>(uri, parameters)` does the same for any other page. The editor renders a real `DiagramCanvas`, so `CanvasJsInterop` sets up the library's JS modules in strict mode. That needs the library's internal `InitialFacts`, so `lib/D12Canvas` now has `InternalsVisibleTo D12Canvas.App.Tests`. `InMemoryBoardStore` stores `Board` objects by reference, with no serialisation round trip. `LocalStoragePreferences` calls `localStorage.getItem` and `setItem` directly, with no JS module.

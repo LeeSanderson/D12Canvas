@@ -15,6 +15,7 @@
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/D12Canvas.App.Api.Tests/D12Canvas.App.Api.Tests.csproj" />
+    <Project Path="test/D12Canvas.App.Tests/D12Canvas.App.Tests.csproj" />
     <Project Path="test/D12Canvas.Demo/D12Canvas.Demo.csproj" />
     <Project Path="test/D12Canvas.Tests/D12Canvas.Tests.csproj" />
     <Project Path="test/D12Canvas.VisualTests/D12Canvas.VisualTests.csproj" />

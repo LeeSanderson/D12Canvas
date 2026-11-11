@@ -23,6 +23,10 @@ jobs:
         run: dotnet csharpier --check .
       - name: Run bUnit tests
         run: dotnet test --project test/D12Canvas.Tests/D12Canvas.Tests.csproj
+      - name: Run App bUnit tests
+        run: dotnet test --project test/D12Canvas.App.Tests/D12Canvas.App.Tests.csproj
+      - name: Run App API tests
+        run: dotnet test --project test/D12Canvas.App.Api.Tests/D12Canvas.App.Api.Tests.csproj
 
   visual-tests:
     name: Playwright visual tests

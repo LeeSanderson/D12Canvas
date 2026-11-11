@@ -17,6 +17,8 @@ For a single class, or to pass other MTP runner flags (e.g. `-parallel none`): `
     dotnet build test/D12Canvas.Tests/D12Canvas.Tests.csproj
     ./test/D12Canvas.Tests/bin/Debug/net10.0/D12Canvas.Tests.exe -class D12Canvas.Tests.SomeTestClass
 
+The App has two more test projects, both on the same runner: `test/D12Canvas.App.Tests` (bUnit, App pages and components) and `test/D12Canvas.App.Api.Tests` (the suggestions API). Run them the same way, swapping the project path and exe name. App page tests derive from `AppTestContext`, which renders a page as `MainLayout`'s body against in-memory `IBoardStore` and `IPreferences` fakes with strict JS interop.
+
 Pointer gestures are driven through the canvas's four public entry points (`CanvasPointer` in the test project wraps them), never by dispatching mouse events at the canvas. `DiagramCanvasPointerGestureTests` enumerates the closed `GestureKind` set with one release-reliability case and one cancel case per member; adding a gesture fails that theory until its cases exist.
 
 ## Playwright visual tests (rendered visual states)

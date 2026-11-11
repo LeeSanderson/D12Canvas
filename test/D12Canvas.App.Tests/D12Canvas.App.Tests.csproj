@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Direct override: bunit 2.8.4-preview pins a vulnerable AngleSharp floor (GHSA-pgww-w46g-26qg). -->
+    <PackageReference Include="AngleSharp" Version="1.5.2" />
+    <PackageReference Include="bunit" Version="2.8.4-preview" />
+    <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\app\D12Canvas.App\D12Canvas.App.csproj" />
+  </ItemGroup>
+
+</Project>

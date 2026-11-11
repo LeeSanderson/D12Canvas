@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="D12Canvas.Tests" />
+    <InternalsVisibleTo Include="D12Canvas.App.Tests" />
   </ItemGroup>
   
   <ItemGroup>
