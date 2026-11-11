@@ -31,7 +31,7 @@ A spec at `.scratch/app-polish/spec.md` plus implementation issues under `.scrat
 
 ## Not yet specified
 
-- Spec and ticket slicing. Order of implementation issues, for example Bootstrap setup first, then nav bar, then pages.
+- Ticket slicing. The [spec](spec.md) is written; it still needs `/to-tickets` to split it into implementation issues. Its Further Notes suggest an order.
 
 ## Out of scope
 
