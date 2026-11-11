@@ -11,6 +11,7 @@
     <!-- Direct override: bunit 2.8.4-preview pins a vulnerable AngleSharp floor (GHSA-pgww-w46g-26qg). -->
     <PackageReference Include="AngleSharp" Version="1.5.2" />
     <PackageReference Include="bunit" Version="2.8.4-preview" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.0.0" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>
 

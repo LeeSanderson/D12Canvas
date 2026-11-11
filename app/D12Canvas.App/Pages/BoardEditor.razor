@@ -3,7 +3,10 @@
 @using D12Canvas
 @using D12Canvas.App.Storage
 @using D12Canvas.Model
+@using D12Canvas.App.Preferences
 @inject IBoardStore BoardStore
+@inject IPreferences Preferences
+@inject TimeProvider Clock
 
 <AppPageTitle Page="@(_name ?? "Board")" />
 
@@ -40,6 +43,34 @@
         >
             <Icon Name="pencil" />
         </button>
+    </SectionContent>
+    <SectionContent SectionName="@PageHeaderSections.Actions">
+        <div class="d-flex align-items-center gap-3">
+            <span class="save-status small text-body-secondary d-flex align-items-center gap-1" role="status">
+                @if (SaveStatus.Icon is { } statusIcon)
+                {
+                    <Icon Name="@statusIcon" />
+                }
+                <span class="save-status-text">@SaveStatus.Text</span>
+            </span>
+            @if (!_autosaveEnabled)
+            {
+                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" disabled="@(!_isDirty)" @onclick="Save">
+                    <Icon Name="floppy" /> Save
+                </button>
+            }
+            <div class="form-check form-switch mb-0">
+                <input
+                    class="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="autosave-switch"
+                    checked="@_autosaveEnabled"
+                    @onchange="SetAutosave"
+                />
+                <label class="form-check-label small" for="autosave-switch">Autosave</label>
+            </div>
+        </div>
     </SectionContent>
 }
 
@@ -82,14 +113,6 @@
             <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleShortcuts" aria-expanded="@_showShortcuts">
                 Shortcuts
             </button>
-        </div>
-
-        <div class="board-editor-group">
-            <div class="form-check mb-0">
-                <input class="form-check-input" type="checkbox" id="autosave-toggle" @bind="_autosaveEnabled" />
-                <label class="form-check-label" for="autosave-toggle">Autosave</label>
-            </div>
-            <button class="btn btn-primary btn-sm" @onclick="Save" disabled="@(!_isDirty)">Save</button>
         </div>
 
         <span class="board-editor-status">@_selectedCount selected · <ZoomReadout Canvas="_canvas" /></span>
@@ -154,6 +177,21 @@
 
     .board-title-form {
         flex: 0 1 24rem;
+    }
+
+    .save-status {
+        white-space: nowrap;
+    }
+
+    @@media (max-width: 575.98px) {
+        .save-status-text {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+        }
     }
 
     .board-editor-toolbar {
@@ -261,7 +299,9 @@
 </style>
 
 @code {
+    private const string AutosavePreferenceKey = "d12canvas.autosave";
     private static readonly TimeSpan AutosaveDebounce = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan SavedNoticeDuration = TimeSpan.FromSeconds(2);
 
     private static readonly (string Heading, (string Keys, string Action)[] Rows)[] Shortcuts =
     [
@@ -316,17 +356,32 @@
     private bool _snapToGrid = true;
     private bool _objectSnapping = true;
     private bool _showShortcuts;
-    private bool _autosaveEnabled;
+    private bool _autosaveEnabled = true;
+    private int _changeCount;
+    private bool _showSavedNotice;
     private WheelDeviceProfile _wheelProfile = WheelDeviceProfile.Auto;
     private CancellationTokenSource? _autosaveCts;
+    private CancellationTokenSource? _savedNoticeCts;
     private bool _isEditingName;
     private string _nameDraft = "";
     private Func<ElementReference>? _pendingFocus;
     private ElementReference _titleInputRef;
     private ElementReference _renameButtonRef;
 
+    private (string? Icon, string Text) SaveStatus =>
+        (_autosaveEnabled, _isDirty) switch
+        {
+            (true, true) => ("cloud-arrow-up", "Saving…"),
+            (true, false) when _showSavedNotice => ("cloud-check", "Saved"),
+            (true, false) => (null, ""),
+            (false, true) => ("cloud", "Unsaved changes"),
+            (false, false) => ("cloud-check", "Saved"),
+        };
+
     protected override async Task OnInitializedAsync()
     {
+        _autosaveEnabled = await Preferences.GetAsync(AutosavePreferenceKey) != "false";
+
         try
         {
             var saved = await BoardStore.LoadAsync(Id);
@@ -398,11 +453,30 @@
     private void HandleBoardChanged(object? sender, EventArgs e)
     {
         _isDirty = true;
-        StateHasChanged();
+        _changeCount++;
 
         if (_autosaveEnabled)
         {
+            HideSavedNotice();
             ScheduleAutosave();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SetAutosave(ChangeEventArgs e)
+    {
+        _autosaveEnabled = e.Value is true;
+        await Preferences.SetAsync(AutosavePreferenceKey, _autosaveEnabled ? "true" : "false");
+
+        if (!_autosaveEnabled)
+        {
+            CancelPendingAutosave();
+            HideSavedNotice();
+        }
+        else if (_isDirty)
+        {
+            await Save();
         }
     }
 
@@ -416,11 +490,13 @@
         _ = RunDebouncedAutosave(cts.Token);
     }
 
+    private void CancelPendingAutosave() => _autosaveCts?.Cancel();
+
     private async Task RunDebouncedAutosave(CancellationToken token)
     {
         try
         {
-            await Task.Delay(AutosaveDebounce, token);
+            await Task.Delay(AutosaveDebounce, Clock, token);
         }
         catch (TaskCanceledException)
         {
@@ -432,12 +508,59 @@
 
     private async Task Save()
     {
-        if (_board is not null)
+        if (_board is null)
         {
-            await BoardStore.SaveAsync(Id, _board);
-            _isDirty = false;
-            StateHasChanged();
+            return;
         }
+
+        var changeCountAtSave = _changeCount;
+        await BoardStore.SaveAsync(Id, _board);
+
+        if (_changeCount != changeCountAtSave)
+        {
+            return;
+        }
+
+        _isDirty = false;
+        if (_autosaveEnabled)
+        {
+            ShowSavedNotice();
+        }
+
+        StateHasChanged();
+    }
+
+    private void ShowSavedNotice()
+    {
+        _savedNoticeCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _savedNoticeCts = cts;
+        _showSavedNotice = true;
+        _ = HideSavedNoticeAfterDelay(cts.Token);
+    }
+
+    private void HideSavedNotice()
+    {
+        _savedNoticeCts?.Cancel();
+        _showSavedNotice = false;
+    }
+
+    private async Task HideSavedNoticeAfterDelay(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(SavedNoticeDuration, Clock, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        await InvokeAsync(() =>
+        {
+            _showSavedNotice = false;
+            StateHasChanged();
+        });
     }
 
     private void StartRenameTitle()
@@ -500,6 +623,7 @@
     public void Dispose()
     {
         _autosaveCts?.Cancel();
+        _savedNoticeCts?.Cancel();
         if (_subscribedCanvas is not null)
         {
             _subscribedCanvas.Changed -= HandleBoardChanged;

@@ -43,11 +43,16 @@ public sealed class InMemoryBoardStore : IBoardStore
     public Task<SavedBoard> LoadAsync(Guid id) =>
         Task.FromResult(new SavedBoard(id, Get(id).Name, Get(id).Board));
 
-    public Task SaveAsync(Guid id, Board board)
+    public TaskCompletionSource? SaveGate { get; set; }
+
+    public async Task SaveAsync(Guid id, Board board)
     {
         _boards[id] = Get(id) with { Board = board, UpdatedAt = Now };
         Saves.Add(new BoardSave(id, board, Now));
-        return Task.CompletedTask;
+        if (SaveGate is { } gate)
+        {
+            await gate.Task;
+        }
     }
 
     public Task RenameAsync(Guid id, string name)

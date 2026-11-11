@@ -21,5 +21,6 @@ builder.Services.AddScoped(_ => new HttpClient
 builder.Services.AddD12Canvas(_ => { });
 builder.Services.AddSingleton<IBoardStore, IndexedDbBoardStore>();
 builder.Services.AddSingleton<IPreferences, LocalStoragePreferences>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 await builder.Build().RunAsync();

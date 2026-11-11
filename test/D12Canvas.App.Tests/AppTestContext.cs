@@ -7,6 +7,7 @@ using D12Canvas.App.Storage;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace D12Canvas.App.Tests;
 
@@ -18,6 +19,7 @@ public abstract class AppTestContext : BunitContext
         Services.AddD12Canvas(_ => { });
         Services.AddSingleton<IBoardStore>(BoardStore);
         Services.AddSingleton<IPreferences>(Preferences);
+        Services.AddSingleton<TimeProvider>(Clock);
         Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri("http://localhost/") });
         CanvasJs = new CanvasJsInterop(JSInterop);
     }
@@ -25,6 +27,8 @@ public abstract class AppTestContext : BunitContext
     protected InMemoryBoardStore BoardStore { get; } = new();
 
     protected InMemoryPreferences Preferences { get; } = new();
+
+    protected FakeTimeProvider Clock { get; } = new();
 
     protected BunitNavigationManager Navigation =>
         Services.GetRequiredService<BunitNavigationManager>();
