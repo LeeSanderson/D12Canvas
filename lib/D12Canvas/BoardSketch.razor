@@ -1,0 +1,91 @@
+@namespace D12Canvas
+
+<div class="d12-board-sketch">
+    @if (_extent is { } extent)
+    {
+        <svg viewBox="@Invariant(extent.X, extent.Y, extent.Width, extent.Height)" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            @foreach (var line in _lines)
+            {
+                <line x1="@Invariant(line.From.X)" y1="@Invariant(line.From.Y)" x2="@Invariant(line.To.X)" y2="@Invariant(line.To.Y)" vector-effect="non-scaling-stroke" />
+            }
+            @foreach (var box in _boxes)
+            {
+                <rect class="@(box.IsStickyNote ? "d12-board-sketch-note" : "d12-board-sketch-box")" x="@Invariant(box.Bounds.X)" y="@Invariant(box.Bounds.Y)" width="@Invariant(box.Bounds.Width)" height="@Invariant(box.Bounds.Height)" vector-effect="non-scaling-stroke" />
+            }
+        </svg>
+    }
+    else
+    {
+        <span class="d12-board-sketch-empty">Empty board</span>
+    }
+</div>
+
+<style>
+    @(RaisedSurface.TokenRules(".d12-board-sketch"))
+    .d12-board-sketch {
+        --d12-sketch-note: #fff4a3;
+        --d12-sketch-note-border: #d4b800;
+    }
+
+    @@media (prefers-color-scheme: dark) {
+        .d12-board-sketch {
+            --d12-sketch-note: #4d4520;
+            --d12-sketch-note-border: #a38d2c;
+        }
+    }
+
+    .d12-board-sketch[data-d12-theme=light],
+    [data-d12-theme=light] .d12-board-sketch {
+        --d12-sketch-note: #fff4a3;
+        --d12-sketch-note-border: #d4b800;
+    }
+
+    .d12-board-sketch[data-d12-theme=dark],
+    [data-d12-theme=dark] .d12-board-sketch {
+        --d12-sketch-note: #4d4520;
+        --d12-sketch-note-border: #a38d2c;
+    }
+
+    .d12-board-sketch {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 8%;
+        background: transparent;
+        color: var(--d12-muted-text);
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .d12-board-sketch svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    .d12-board-sketch line {
+        stroke: var(--d12-muted-text);
+        stroke-width: 1;
+    }
+
+    .d12-board-sketch-box {
+        fill: var(--d12-surface);
+        stroke: var(--d12-muted-text);
+        stroke-width: 1.25;
+    }
+
+    .d12-board-sketch-note {
+        fill: var(--d12-sketch-note);
+        stroke: var(--d12-sketch-note-border);
+        stroke-width: 1.25;
+    }
+</style>

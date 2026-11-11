@@ -1,6 +1,6 @@
 # Board sketch component
 
-Status: ready-for-agent
+Status: resolved
 Blocked by:
 
 Spec: [App polish](../spec.md), "Board sketch (library)". Decision record: [Board list page](09-board-list-page.md), point 7.
@@ -21,12 +21,20 @@ Add the sketch to the Demo so it can be checked by eye and covered by a visual b
 
 ## Acceptance criteria
 
-- [ ] Given a board with components and edges, the sketch draws one rectangle per component and one line per edge.
-- [ ] Sticky notes draw with sticky-note styling and other components as outlines.
-- [ ] An edge with a floating end draws to that end's point.
-- [ ] Edge-label components draw nothing.
-- [ ] The `viewBox` covers exactly the union of the component bounds.
-- [ ] An empty board shows "Empty board".
-- [ ] The sketch uses only `--d12-*` tokens and changes with `data-d12-theme`.
-- [ ] bUnit tests in `D12Canvas.Tests` cover each of the above.
-- [ ] The full Playwright visual suite runs in the pinned Docker image with `-parallel none`, and the new baseline(s) for the Demo sketch are reviewed and folded in, per `docs/agents/testing.md`.
+- [x] Given a board with components and edges, the sketch draws one rectangle per component and one line per edge.
+- [x] Sticky notes draw with sticky-note styling and other components as outlines.
+- [x] An edge with a floating end draws to that end's point.
+- [x] Edge-label components draw nothing.
+- [x] The `viewBox` covers exactly the union of the component bounds.
+- [x] An empty board shows "Empty board".
+- [x] The sketch uses only `--d12-*` tokens and changes with `data-d12-theme`.
+- [x] bUnit tests in `D12Canvas.Tests` cover each of the above.
+- [x] The full Playwright visual suite runs in the pinned Docker image with `-parallel none`, and the new baseline(s) for the Demo sketch are reviewed and folded in, per `docs/agents/testing.md`.
+
+## Comments
+
+Resolved 2026-11-11. `BoardSketch` is a public library component with a required `Board` parameter. It finds sticky notes through `IComponentRegistry`: any key registered with `ComponentType == typeof(StickyNote)` draws in note colours, and an unknown key draws as an outline. Each attached edge end goes to its component's centre and a floating end to its own point. An edge whose component is missing is dropped. Boxes are drawn in `ZIndex` order on top of the lines and filled with `--d12-surface`, so a line stops at a box's edge. Edge labels are never drawn, because they live on `Edge.Label` and not in `Board.Components`.
+
+The root `.d12-board-sketch` declares the raised values through `RaisedSurface.TokenRules`, plus two new tokens, `--d12-sketch-note` and `--d12-sketch-note-border`, each with a dark value. The sketch has no background of its own, so the host's card shows through. It fills its container with 8% padding.
+
+A new demo page, `/board-sketch-demo`, backs `BoardSketchVisualTests`: one board and one empty board, each under a light and a dark `data-d12-theme`. The full visual suite ran in the pinned image with `-parallel none`: 317 tests, and the only failure was the new baseline, which was checked and folded in. No existing baseline moved.

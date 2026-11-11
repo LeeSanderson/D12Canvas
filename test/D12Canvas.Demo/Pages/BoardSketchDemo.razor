@@ -1,0 +1,85 @@
+@page "/board-sketch-demo"
+@using D12Canvas
+@using D12Canvas.BuiltIns
+@using D12Canvas.Model
+
+<PageTitle>Board Sketch Demo</PageTitle>
+
+<div class="board-sketch-demo">
+    @foreach (var theme in new[] { "light", "dark" })
+    {
+        <div class="board-sketch-demo-pane" data-d12-theme="@theme">
+            <div class="board-sketch-demo-frame">
+                <BoardSketch Board="_board" />
+            </div>
+            <div class="board-sketch-demo-frame">
+                <BoardSketch Board="_emptyBoard" />
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .board-sketch-demo {
+        display: flex;
+        gap: 16px;
+    }
+
+    .board-sketch-demo-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+    }
+
+    .board-sketch-demo-pane[data-d12-theme="light"] {
+        background: #f8f9fa;
+    }
+
+    .board-sketch-demo-pane[data-d12-theme="dark"] {
+        background: #2b3035;
+    }
+
+    .board-sketch-demo-frame {
+        width: 320px;
+        aspect-ratio: 16 / 9;
+        border: 1px solid #adb5bd;
+        border-radius: 6px;
+    }
+</style>
+
+@code {
+    private readonly Board _board = SeedBoard();
+    private readonly Board _emptyBoard = new();
+
+    private static Board SeedBoard()
+    {
+        var board = new Board();
+        var start = Shape(new Bounds(0, 120, 160, 100));
+        var middle = Shape(new Bounds(280, 40, 160, 100));
+        var end = Shape(new Bounds(280, 240, 160, 100));
+        var note = new ComponentInstance(
+            "sticky-note",
+            new StickyNoteProps("Idea", "#FFEB3B", "#000000", 14),
+            new Bounds(560, 0, 140, 140)
+        );
+        board.AddComponent(start);
+        board.AddComponent(middle);
+        board.AddComponent(end);
+        board.AddComponent(note);
+        board.AddEdge(new Edge(new AutoPortEndpoint(start.Id), new AutoPortEndpoint(middle.Id)));
+        board.AddEdge(new Edge(new AutoPortEndpoint(start.Id), new AutoPortEndpoint(end.Id)));
+        board.AddEdge(
+            new Edge(
+                new AutoPortEndpoint(middle.Id),
+                new AutoPortEndpoint(note.Id),
+                label: new ComponentInstance("text", new TextProps("label", null, 16, "normal", "left"), new Bounds(480, 60, 60, 20))
+            )
+        );
+        board.AddEdge(new Edge(new AutoPortEndpoint(end.Id), new FloatingEndpoint(640, 300)));
+        return board;
+    }
+
+    private static ComponentInstance Shape(Bounds bounds) =>
+        new("rectangle", new RectangleProps(null, null, 2), bounds);
+}

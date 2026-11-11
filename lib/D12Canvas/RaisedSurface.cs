@@ -1,7 +1,8 @@
 namespace D12Canvas;
 
 // The raised value set every surface floating over the board declares on its own root: the
-// palette, the context menu, the minimap, the property bar and the property panel. One source for
+// palette, the context menu, the minimap, the property bar and the property panel, and the board
+// sketch, which sits on a host's own surface rather than the board. One source for
 // the four blocks each root carries, light by default, dark under the dark colour scheme, and
 // either one forced by data-d12-theme on the root or an ancestor, so a retuned value reaches every
 // surface at once. The attribute selectors are unquoted, since this text is rendered inside a
