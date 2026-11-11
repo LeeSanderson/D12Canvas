@@ -1,8 +1,11 @@
 @page "/"
+@using System.Globalization
 @using D12Canvas.App.Storage
+@using D12Canvas.Model
+@implements IDisposable
 @inject IBoardStore BoardStore
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
+@inject TimeProvider Clock
 
 <AppPageTitle Page="Boards" />
 
@@ -21,96 +24,114 @@
     </button>
 </SectionContent>
 
-<div class="boards-page">
-    <div class="boards-content card shadow-sm overflow-hidden">
-        @if (_boards is null)
-        {
-            <div class="boards-skeleton" aria-hidden="true">
-                <div class="skeleton-row"></div>
-                <div class="skeleton-row"></div>
-                <div class="skeleton-row"></div>
-            </div>
-        }
-        else if (_boards.Count == 0)
-        {
-            <div class="empty-state">
-                <svg
-                    class="empty-state-icon"
-                    viewBox="0 0 48 48"
-                    width="48"
-                    height="48"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <rect x="6" y="10" width="36" height="28" rx="4" stroke="currentColor" stroke-width="2" />
-                    <path d="M6 18h36" stroke="currentColor" stroke-width="2" />
-                    <circle cx="16" cy="28" r="3" stroke="currentColor" stroke-width="2" />
-                    <path
-                        d="M24 30l4-4 6 6"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
-                </svg>
-                <h2>No boards yet</h2>
-                <p>Create your first board to start diagramming.</p>
+<div class="container-xl py-4">
+    @if (_boards is null)
+    {
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3 placeholder-glow" aria-hidden="true">
+            @for (var i = 0; i < 4; i++)
+            {
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="ratio ratio-16x9 placeholder card-img-top"></div>
+                        <div class="card-body py-2">
+                            <span class="placeholder col-7 d-block mb-2"></span>
+                            <span class="placeholder placeholder-sm col-4"></span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else if (_boards.Count == 0)
+    {
+        <div class="list-group shadow-sm mx-auto board-empty">
+            <div class="list-group-item text-center py-5">
+                <span class="d-block fs-1 text-body-tertiary mb-2"><Icon Name="easel" /></span>
+                <h2 class="h6 mb-1">No boards yet</h2>
+                <p class="text-body-secondary small mb-3">Create your first board to start diagramming.</p>
                 <button
-                    class="btn btn-primary d-inline-flex align-items-center gap-2"
+                    type="button"
+                    class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
                     @onclick="CreateBoard"
                     disabled="@_isCreating"
                 >
                     <Icon Name="plus-lg" /> New board
                 </button>
             </div>
-        }
-        else
-        {
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th class="ps-3" scope="col">Name</th>
-                        <th scope="col">Created</th>
-                        <th scope="col">Updated</th>
-                        <th class="pe-3" scope="col"><span class="visually-hidden">Actions</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var board in _boards)
-                    {
-                        <tr>
-                            <td class="ps-3">
-                                <button
-                                    class="btn btn-link p-0 text-start fw-medium"
-                                    @onclick="() => OpenBoard(board.Id)"
-                                >
-                                    @board.Name
-                                </button>
-                            </td>
-                            <td class="text-body-secondary small">@board.CreatedAt.LocalDateTime.ToString("g")</td>
-                            <td class="text-body-secondary small">@board.UpdatedAt.LocalDateTime.ToString("g")</td>
-                            <td class="pe-3 text-end">
-                                <div class="d-inline-flex gap-2">
+        </div>
+    }
+    else
+    {
+        var now = Clock.GetLocalNow();
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
+            <div class="col">
+                <button
+                    type="button"
+                    class="card h-100 w-100 board-new-tile text-body-secondary"
+                    @onclick="CreateBoard"
+                    disabled="@_isCreating"
+                >
+                    <span class="ratio ratio-16x9">
+                        <span class="d-flex flex-column align-items-center justify-content-center gap-2">
+                            <span class="fs-2"><Icon Name="plus-lg" /></span>
+                            <span class="fw-medium">New board</span>
+                        </span>
+                    </span>
+                </button>
+            </div>
+            @foreach (var board in _boards)
+            {
+                <div class="col" @key="board.Id">
+                    <div class="card h-100 shadow-sm board-card">
+                        <div class="ratio ratio-16x9 card-img-top bg-body-tertiary board-thumb">
+                            <div>
+                                @if (_loadedBoards.GetValueOrDefault(board.Id) is { } loadedBoard)
+                                {
+                                    <BoardSketch Board="loadedBoard" />
+                                }
+                            </div>
+                        </div>
+                        <div class="card-body d-flex align-items-start gap-2 py-2 pe-1">
+                            <div class="flex-grow-1 board-card-text">
+                                <a
+                                    href="board/@board.Id"
+                                    class="stretched-link link-body-emphasis fw-medium text-decoration-none d-block text-truncate"
+                                    title="@board.Name"
+                                >@board.Name</a>
+                                <small class="text-body-secondary" title="@FullDate(board.UpdatedAt, now)">Edited @RelativeTime.Describe(board.UpdatedAt, now)</small>
+                            </div>
+                            <Dropdown
+                                Class="board-card-menu"
+                                ToggleClass="btn btn-link btn-sm link-secondary"
+                                Label="@($"Actions for {board.Name}")"
+                                Title="Actions"
+                                Caret="false"
+                                AlignEnd="true"
+                            >
+                                <Toggle><Icon Name="three-dots-vertical" /></Toggle>
+                                <ChildContent Context="close">
                                     <button
-                                        class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
-                                        @onclick="() => StartRename(board)"
+                                        type="button"
+                                        class="dropdown-item d-flex align-items-center gap-2"
+                                        @onclick="() => { close(); StartRename(board); }"
                                     >
-                                        <Icon Name="pencil" /> Rename
+                                        <Icon Name="pencil" /> Rename…
                                     </button>
                                     <button
-                                        class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1"
-                                        @onclick="() => DeleteBoard(board.Id)"
+                                        type="button"
+                                        class="dropdown-item d-flex align-items-center gap-2 text-danger"
+                                        @onclick="() => { close(); StartDelete(board); }"
                                     >
-                                        <Icon Name="trash" /> Delete
+                                        <Icon Name="trash" /> Delete…
                                     </button>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-    </div>
+                                </ChildContent>
+                            </Dropdown>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 </div>
 
 @if (_renamingBoard is not null)
@@ -118,80 +139,112 @@
     <RenameBoardModal InitialName="@_renamingBoard.Name" OnSave="SaveRename" OnCancel="CancelRename" />
 }
 
+@if (_deletingBoard is not null)
+{
+    <DeleteBoardModal BoardName="@_deletingBoard.Name" OnConfirm="ConfirmDelete" OnCancel="CancelDelete" />
+}
+
 <style>
-    .boards-page {
-        max-width: 840px;
-        margin: 0 auto;
-        padding: 32px 24px;
+    .board-card {
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
     }
 
-    .boards-content {
-        min-height: 240px;
+    .board-card:hover {
+        border-color: var(--bs-primary-border-subtle);
+        box-shadow: var(--bs-box-shadow) !important;
     }
 
-    .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        padding: 64px 24px;
-        color: var(--bs-secondary-color);
+    .board-thumb {
+        background-image: radial-gradient(var(--bs-border-color) 1px, transparent 1px);
+        background-size: 12px 12px;
+        border-bottom: var(--bs-border-width) solid var(--bs-border-color-translucent);
     }
 
-    .empty-state-icon {
-        color: var(--bs-secondary-color);
-        margin-bottom: 16px;
+    .board-card-text {
+        min-width: 0;
     }
 
-    .empty-state h2 {
-        margin: 0 0 4px;
-        color: var(--bs-body-color);
-        font-size: 1.1rem;
+    .board-card-menu > .btn {
+        position: relative;
+        z-index: 2;
     }
 
-    .empty-state p {
-        margin: 0 0 20px;
+    .board-new-tile {
+        border: 2px dashed var(--bs-border-color);
+        background: transparent;
+        padding: 0;
     }
 
-    .boards-skeleton {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+    .board-new-tile:hover:not(:disabled) {
+        border-color: var(--bs-primary);
+        color: var(--bs-primary) !important;
     }
 
-    .skeleton-row {
-        height: 44px;
-        border-radius: var(--bs-border-radius);
-        background: linear-gradient(90deg, var(--bs-tertiary-bg) 25%, var(--bs-border-color) 37%, var(--bs-tertiary-bg) 63%);
-        background-size: 400% 100%;
-        animation: skeleton-shimmer 1.4s ease infinite;
-    }
-
-    @@keyframes skeleton-shimmer {
-        0% {
-            background-position: 100% 50%;
-        }
-        100% {
-            background-position: 0% 50%;
-        }
+    .board-empty {
+        max-width: 480px;
     }
 </style>
 
 @code {
     private const string DefaultBoardName = "Untitled board";
 
-    private IReadOnlyList<BoardSummary>? _boards;
+    private List<BoardSummary>? _boards;
+    private readonly Dictionary<Guid, Board?> _loadedBoards = [];
+    private bool _isLoadingSketches;
+    private bool _disposed;
     private bool _isCreating;
     private BoardSummary? _renamingBoard;
+    private BoardSummary? _deletingBoard;
 
     protected override async Task OnInitializedAsync() => await RefreshBoards();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) => await LoadMissingSketches();
 
     private async Task RefreshBoards()
     {
         var boards = await BoardStore.ListAsync();
         _boards = boards.OrderByDescending(b => b.UpdatedAt).ToList();
     }
+
+    private async Task LoadMissingSketches()
+    {
+        if (_isLoadingSketches || _boards is null)
+        {
+            return;
+        }
+
+        _isLoadingSketches = true;
+        try
+        {
+            while (!_disposed && _boards.FirstOrDefault(b => !_loadedBoards.ContainsKey(b.Id)) is { } board)
+            {
+                try
+                {
+                    _loadedBoards[board.Id] = (await BoardStore.LoadAsync(board.Id)).Board;
+                }
+                catch (BoardNotFoundException)
+                {
+                    _boards.Remove(board);
+                }
+                catch (Exception)
+                {
+                    _loadedBoards[board.Id] = null;
+                }
+
+                if (!_disposed)
+                {
+                    StateHasChanged();
+                }
+            }
+        }
+        finally
+        {
+            _isLoadingSketches = false;
+        }
+    }
+
+    private static string FullDate(DateTimeOffset when, DateTimeOffset now) =>
+        when.ToOffset(now.Offset).ToString("d MMMM yyyy 'at' HH:mm", CultureInfo.InvariantCulture);
 
     private async Task CreateBoard()
     {
@@ -212,8 +265,6 @@
         }
     }
 
-    private void OpenBoard(Guid id) => Navigation.NavigateTo($"/board/{id}");
-
     private void StartRename(BoardSummary board) => _renamingBoard = board;
 
     private void CancelRename() => _renamingBoard = null;
@@ -230,18 +281,23 @@
         await RefreshBoards();
     }
 
-    private async Task DeleteBoard(Guid id)
+    private void StartDelete(BoardSummary board) => _deletingBoard = board;
+
+    private void CancelDelete() => _deletingBoard = null;
+
+    private async Task ConfirmDelete()
     {
-        var confirmed = await JS.InvokeAsync<bool>(
-            "confirm",
-            "Delete this board? This cannot be undone."
-        );
-        if (!confirmed)
+        if (_deletingBoard is null)
         {
             return;
         }
 
-        await BoardStore.DeleteAsync(id);
-        await RefreshBoards();
+        var board = _deletingBoard;
+        _deletingBoard = null;
+        await BoardStore.DeleteAsync(board.Id);
+        _boards?.Remove(board);
+        _loadedBoards.Remove(board.Id);
     }
+
+    public void Dispose() => _disposed = true;
 }

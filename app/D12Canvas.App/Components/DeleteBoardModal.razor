@@ -1,0 +1,37 @@
+<ModalDialog @ref="_dialog" LabelledBy="delete-board-title" OnClose="Cancel">
+    <div class="modal-header">
+        <h2 class="modal-title fs-5" id="delete-board-title">Delete board</h2>
+    </div>
+    <div class="modal-body">
+        <p class="mb-0">Delete "@BoardName"? This cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" autofocus @onclick="Cancel">Cancel</button>
+        <button type="button" class="btn btn-danger" @onclick="Confirm">Delete</button>
+    </div>
+</ModalDialog>
+
+@code {
+    [Parameter, EditorRequired]
+    public string BoardName { get; set; } = "";
+
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private ModalDialog? _dialog;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _dialog is not null)
+        {
+            await _dialog.ShowAsync();
+        }
+    }
+
+    private async Task Confirm() => await OnConfirm.InvokeAsync();
+
+    private async Task Cancel() => await OnCancel.InvokeAsync();
+}

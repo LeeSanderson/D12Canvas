@@ -21,17 +21,26 @@ public sealed class InMemoryBoardStore : IBoardStore
     public StoredBoard Get(Guid id) =>
         _boards.TryGetValue(id, out var stored) ? stored : throw new BoardNotFoundException(id);
 
-    public Task<IReadOnlyList<BoardSummary>> ListAsync() =>
-        Task.FromResult<IReadOnlyList<BoardSummary>>(
-            _boards
-                .Values.Select(stored => new BoardSummary(
-                    stored.Id,
-                    stored.Name,
-                    stored.CreatedAt,
-                    stored.UpdatedAt
-                ))
-                .ToList()
-        );
+    public TaskCompletionSource? ListGate { get; set; }
+
+    public TaskCompletionSource? LoadGate { get; set; }
+
+    public async Task<IReadOnlyList<BoardSummary>> ListAsync()
+    {
+        if (ListGate is { } gate)
+        {
+            await gate.Task;
+        }
+
+        return _boards
+            .Values.Select(stored => new BoardSummary(
+                stored.Id,
+                stored.Name,
+                stored.CreatedAt,
+                stored.UpdatedAt
+            ))
+            .ToList();
+    }
 
     public Task<SavedBoard> CreateAsync(string name)
     {
@@ -40,8 +49,15 @@ public sealed class InMemoryBoardStore : IBoardStore
         return Task.FromResult(new SavedBoard(id, name, board));
     }
 
-    public Task<SavedBoard> LoadAsync(Guid id) =>
-        Task.FromResult(new SavedBoard(id, Get(id).Name, Get(id).Board));
+    public async Task<SavedBoard> LoadAsync(Guid id)
+    {
+        if (LoadGate is { } gate)
+        {
+            await gate.Task;
+        }
+
+        return new SavedBoard(id, Get(id).Name, Get(id).Board);
+    }
 
     public TaskCompletionSource? SaveGate { get; set; }
 

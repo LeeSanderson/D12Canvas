@@ -1,4 +1,3 @@
-using AngleSharp.Dom;
 using Bunit;
 using D12Canvas.Model;
 
@@ -20,7 +19,7 @@ public sealed class RenameTests : AppTestContext
         BoardStore.Add("Draft", new Board());
         var layout = RenderBoardList();
 
-        ClickRowRename(layout);
+        ChooseFromCardMenu(layout, "Draft", "Rename…");
 
         _dialogModule.VerifyInvoke("showModal");
         Assert.Equal("Draft", layout.Find("dialog form input").GetAttribute("value"));
@@ -31,7 +30,7 @@ public sealed class RenameTests : AppTestContext
     {
         var boardId = BoardStore.Add("Draft", new Board());
         var layout = RenderBoardList();
-        ClickRowRename(layout);
+        ChooseFromCardMenu(layout, "Draft", "Rename…");
 
         layout.Find("dialog form input").Input("Roadmap");
         layout.Find("dialog form").Submit();
@@ -46,7 +45,7 @@ public sealed class RenameTests : AppTestContext
     {
         var boardId = BoardStore.Add("Draft", new Board());
         var layout = RenderBoardList();
-        ClickRowRename(layout);
+        ChooseFromCardMenu(layout, "Draft", "Rename…");
 
         layout.Find("dialog form input").Input("Roadmap");
         layout.Find("dialog").TriggerEvent("onclose", EventArgs.Empty);
@@ -68,17 +67,5 @@ public sealed class RenameTests : AppTestContext
 
         Assert.Equal("Roadmap", BoardStore.Get(boardId).Name);
         Assert.Equal("Roadmap", layout.Find("h1").TextContent);
-    }
-
-    private static void ClickRowRename(IRenderedComponent<Layout.MainLayout> layout)
-    {
-        IElement? renameButton = null;
-        layout.WaitForAssertion(
-            () =>
-                renameButton = layout
-                    .FindAll("tbody button")
-                    .Single(button => button.TextContent.Trim() == "Rename")
-        );
-        renameButton!.Click();
     }
 }

@@ -54,4 +54,19 @@ public abstract class AppTestContext : BunitContext
             layout.Add<TPage>(layoutParameters => layoutParameters.Body, parameters ?? (_ => { }))
         );
     }
+
+    protected static void ChooseFromCardMenu(
+        IRenderedComponent<MainLayout> layout,
+        string boardName,
+        string item
+    )
+    {
+        layout.WaitForAssertion(
+            () => layout.Find($"main button[aria-label='Actions for {boardName}']").Click()
+        );
+        layout
+            .FindAll("main .dropdown-menu.show .dropdown-item")
+            .Single(button => button.TextContent.Trim() == item)
+            .Click();
+    }
 }
