@@ -15,7 +15,7 @@
             <button
                 type="button"
                 class="dropdown-item d-flex align-items-center gap-2 @(choice == _choice ? "active" : null)"
-                aria-pressed="@(choice == _choice ? "true" : "false")"
+                aria-pressed="@Aria.Bool(choice == _choice)"
                 @onclick="() => Choose(choice, close)"
             >
                 <Icon Name="@choice.Icon" /> @choice.Label
@@ -26,35 +26,23 @@
 
 @code {
     private ThemeChoice _choice = ThemeChoice.System;
-    private IJSObjectReference? _module;
+    private LazyJsModule _module = null!;
 
-    protected override async Task OnInitializedAsync() =>
-        _choice = ThemeChoice.Parse(await Preferences.GetAsync(ThemeChoice.PreferenceKey));
+    protected override async Task OnInitializedAsync()
+    {
+        _module = new(JS, "./Components/ThemeMenu.razor.js");
+        _choice = ThemeChoice.Parse(await Preferences.GetAsync(PreferenceKeys.Theme));
+    }
 
     private async Task Choose(ThemeChoice choice, Action close)
     {
         _choice = choice;
         close();
-        await Preferences.SetAsync(ThemeChoice.PreferenceKey, choice.Value);
-        var module = await ModuleAsync();
+        await Preferences.SetAsync(PreferenceKeys.Theme, choice.Value);
+        var module = await _module.GetAsync();
         var mode = choice == ThemeChoice.System ? await module.InvokeAsync<string>("systemMode") : choice.Value;
         await module.InvokeVoidAsync("setMode", mode);
     }
 
-    private async Task<IJSObjectReference> ModuleAsync() =>
-        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./Components/ThemeMenu.razor.js");
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_module is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await _module.DisposeAsync();
-        }
-        catch (JSDisconnectedException) { }
-    }
+    public ValueTask DisposeAsync() => _module.DisposeAsync();
 }

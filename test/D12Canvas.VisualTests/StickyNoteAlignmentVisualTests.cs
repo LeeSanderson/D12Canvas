@@ -82,6 +82,26 @@ public sealed class StickyNoteAlignmentVisualTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task TextEndingInANewlineStaysWhereTheEditorHadIt()
+    {
+        var note = Note(GridNoteId(1, 1));
+        await note.DblClickAsync();
+        var editor = note.Locator("textarea.d12-sticky-note-editor");
+        await Expect(editor).ToBeFocusedAsync();
+        var oneLine = await editor.BoundingBoxAsync();
+
+        await _page.Keyboard.TypeAsync("Line");
+        await _page.Keyboard.PressAsync("Enter");
+        var editing = await editor.BoundingBoxAsync();
+        await _page.Keyboard.PressAsync("Escape");
+        await Expect(editor).ToHaveCountAsync(0);
+        var after = await note.Locator("p.d12-sticky-note-text").BoundingBoxAsync();
+
+        Assert.True(editing!.Height > oneLine!.Height, "the editor grows with a new line");
+        ExpectSameBox(editing, after!, GridNoteId(1, 1));
+    }
+
     private static void ExpectSameBox(
         LocatorBoundingBoxResult expected,
         LocatorBoundingBoxResult actual,

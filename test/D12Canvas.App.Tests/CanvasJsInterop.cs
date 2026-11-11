@@ -35,10 +35,9 @@ public sealed class CanvasJsInterop
         CanvasModule.SetupVoid("focusTabStopAt", _ => true).SetVoidResult();
         CanvasModule.SetupVoid("focusCanvas", _ => true).SetVoidResult();
 
-        jsInterop
-            .SetupModule(InlineEditorEntry.ModulePath)
-            .SetupVoid("focusAndSelectAll", _ => true)
-            .SetVoidResult();
+        var inlineEditorModule = jsInterop.SetupModule(InlineEditorEntry.ModulePath);
+        inlineEditorModule.SetupVoid("focusAndSelectAll", _ => true).SetVoidResult();
+        inlineEditorModule.SetupVoid("growWithContent", _ => true).SetVoidResult();
 
         SetupCleanupHandle(
             jsInterop.SetupModule("./_content/D12Canvas/ContextMenu.razor.js"),

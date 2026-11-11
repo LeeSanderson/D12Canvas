@@ -1,12 +1,12 @@
 namespace D12Canvas;
 
-// The raised value set every surface floating over the board declares on its own root: the
-// palette, the context menu, the minimap, the property bar and the property panel, and the board
-// sketch, which sits on a host's own surface rather than the board. One source for
-// the four blocks each root carries, light by default, dark under the dark colour scheme, and
-// either one forced by data-d12-theme on the root or an ancestor, so a retuned value reaches every
-// surface at once. The attribute selectors are unquoted, since this text is rendered inside a
-// style element and a prerendered page would encode a quote.
+// The raised value set, declared on its own root by each surface floating over the board (the
+// palette, the context menu, the minimap, the property bar and the property panel) and by the
+// board sketch, which sits on a host's own surface instead. One source for the four blocks each
+// root carries: light by default, dark under the dark colour scheme, and either one forced by
+// data-d12-theme on the root or an ancestor, so a retuned value reaches all six at once. The
+// attribute selectors are unquoted, since this text is rendered inside a style element and a
+// prerendered page would encode a quote.
 internal static class RaisedSurface
 {
     private const string Light = """

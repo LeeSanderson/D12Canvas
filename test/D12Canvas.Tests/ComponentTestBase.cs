@@ -130,6 +130,7 @@ public abstract class ComponentTestBase : BunitContext
     {
         var module = JSInterop.SetupModule(D12Canvas.BuiltIns.InlineEditorEntry.ModulePath);
         module.SetupVoid("focusAndSelectAll", _ => true).SetVoidResult();
+        module.SetupVoid("growWithContent", _ => true).SetVoidResult();
         return module;
     }
 

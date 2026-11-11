@@ -35,6 +35,43 @@ public class StickyNoteTests : ComponentTestBase
     }
 
     [Fact]
+    public void BeginEditGrowsTheEditorWithItsText()
+    {
+        var component = Render<StickyNote>(parameters =>
+            parameters.Add(p => p.Props, new StickyNoteProps("Original", "#FFEB3B", "#000000", 14))
+        );
+
+        component.InvokeAsync(component.Instance.BeginEdit);
+
+        var invocation = Assert.Single(_inlineEditorModule.Invocations["growWithContent"]);
+        var editor = component.Find("textarea.d12-sticky-note-editor");
+        Assert.Equal(
+            editor.GetAttribute("blazor:elementReference"),
+            ((Microsoft.AspNetCore.Components.ElementReference)invocation.Arguments[0]!).Id
+        );
+    }
+
+    [Fact]
+    public void ATrailingNewlineKeepsItsEmptyLastLineOutsideEditing()
+    {
+        var stickyNote = Render<StickyNote>(parameters =>
+            parameters.Add(p => p.Props, new StickyNoteProps("Line\n", "#FFEB3B", "#000000", 14))
+        );
+
+        Assert.Equal("Line\n\n", stickyNote.Find("p.d12-sticky-note-text").TextContent);
+    }
+
+    [Fact]
+    public void TextWithoutATrailingNewlineRendersAsIs()
+    {
+        var stickyNote = Render<StickyNote>(parameters =>
+            parameters.Add(p => p.Props, new StickyNoteProps("Line\nTwo", "#FFEB3B", "#000000", 14))
+        );
+
+        Assert.Equal("Line\nTwo", stickyNote.Find("p.d12-sticky-note-text").TextContent);
+    }
+
+    [Fact]
     public void RendersTextColorAndFontSizeFromProps()
     {
         var stickyNote = Render<StickyNote>(parameters =>

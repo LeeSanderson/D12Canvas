@@ -1,12 +1,11 @@
 <div
     class="@(DropUp ? "dropup" : "dropdown") @Class"
     @onkeydown="HandleKeyDown"
-    @onkeydown:stopPropagation="_open"
 >
     <button
         type="button"
         class="@ToggleClass @(Caret ? "dropdown-toggle" : null)"
-        aria-expanded="@(_open ? "true" : "false")"
+        aria-expanded="@Aria.Bool(_open)"
         aria-label="@Label"
         title="@Title"
         @ref="_toggleButton"
@@ -57,8 +56,11 @@
     [Parameter]
     public string? MenuClass { get; set; }
 
+    [CascadingParameter]
+    public HandledEscape? HandledEscape { get; set; }
+
+    private readonly PendingFocus _pendingFocus = new();
     private bool _open;
-    private bool _focusToggle;
     private ElementReference _toggleButton;
 
     private void ToggleOpen() => _open = !_open;
@@ -74,16 +76,10 @@
         if (e.Key == "Escape" && _open)
         {
             _open = false;
-            _focusToggle = true;
+            HandledEscape?.Mark();
+            _pendingFocus.Request(() => _toggleButton);
         }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_focusToggle)
-        {
-            _focusToggle = false;
-            await _toggleButton.FocusAsync();
-        }
-    }
+    protected override Task OnAfterRenderAsync(bool firstRender) => _pendingFocus.ApplyAsync();
 }

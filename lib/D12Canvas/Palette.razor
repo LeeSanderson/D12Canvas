@@ -52,18 +52,12 @@
 
 <style>
     @(RaisedSurface.TokenRules(".d12-palette"))
+    @(PinnedChrome.Text(".d12-palette", 16))
+    @(PinnedChrome.Button(".d12-palette-entry-button"))
     .d12-palette {
         display: flex;
         flex-direction: column;
         gap: 12px;
-        font-family:
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
-        font-size: 16px;
-        font-weight: 400;
-        line-height: 1.5;
         background: var(--d12-surface);
         border: 1px solid var(--d12-border);
         border-radius: 6px;
@@ -98,17 +92,12 @@
         gap: 8px;
         width: 100%;
         box-sizing: border-box;
-        margin: 0;
         padding: 6px 8px;
         border: 1px solid transparent;
         border-radius: 4px;
         background: transparent;
         cursor: pointer;
         text-align: left;
-        font: inherit;
-        color: inherit;
-        text-transform: none;
-        appearance: button;
     }
 
     .d12-palette-entry-button:hover {

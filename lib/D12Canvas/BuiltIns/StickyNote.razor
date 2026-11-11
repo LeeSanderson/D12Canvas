@@ -7,6 +7,7 @@
     {
         <textarea class="d12-sticky-note-text d12-sticky-note-editor"
                   style="@TextStyle"
+                  rows="1"
                   @ref="_editorRef"
                   @bind="_editBuffer" @bind:event="oninput"
                   @onblur="HandleEditorBlur"
@@ -14,7 +15,7 @@
     }
     else
     {
-        <p class="d12-sticky-note-text" style="@TextStyle">@Props.Text</p>
+        <p class="d12-sticky-note-text" style="@TextStyle">@DisplayedText</p>
     }
 </div>
 
@@ -39,7 +40,6 @@
     }
 
     .d12-sticky-note-editor {
-        field-sizing: content;
         overflow: hidden;
         font: inherit;
         border: none;
@@ -78,6 +78,10 @@
             InlineStyleValue.Declaration("text-align", Props.TextAlign)
         );
 
+    // A pre-wrap paragraph drops the empty line after a final newline that a textarea shows, so
+    // the doubled newline keeps the text where the editor had it.
+    private string DisplayedText => Props.Text.EndsWith('\n') ? Props.Text + "\n" : Props.Text;
+
     // Safe alignment keeps the first line of text taller than the note at its top edge.
     private string JustifyContent =>
         Props.VerticalAlign switch
@@ -102,6 +106,7 @@
         if (_focusPending && _editorRef.Id is not null)
         {
             _focusPending = false;
+            await InlineEditorEntry.GrowWithContentAsync(JS, _editorRef);
             await InlineEditorEntry.FocusAndSelectAllAsync(JS, _editorRef);
         }
     }

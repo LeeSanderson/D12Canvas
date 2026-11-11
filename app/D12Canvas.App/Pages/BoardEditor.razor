@@ -45,7 +45,7 @@
         </button>
     </SectionContent>
     <SectionContent SectionName="@PageHeaderSections.More">
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
             <div class="btn-group btn-group-sm" role="group" aria-label="History">
                 <button
                     type="button"
@@ -90,7 +90,7 @@
                         <button
                             type="button"
                             class="dropdown-item d-flex align-items-center gap-2"
-                            aria-pressed="@(profile == _wheelProfile ? "true" : "false")"
+                            aria-pressed="@Aria.Bool(profile == _wheelProfile)"
                             @onclick="() => { _wheelProfile = profile; close(); }"
                         >
                             <span class="d-flex @(profile == _wheelProfile ? null : "invisible")"><Icon Name="check2" /></span>
@@ -103,39 +103,37 @@
                 type="button"
                 class="btn btn-sm @(_showShortcuts ? "btn-secondary" : "btn-outline-secondary")"
                 aria-label="Shortcuts"
-                aria-pressed="@(_showShortcuts ? "true" : "false")"
+                aria-pressed="@Aria.Bool(_showShortcuts)"
                 title="Keyboard shortcuts"
                 @onclick="ToggleShortcuts"
             >
                 <Icon Name="keyboard" /> <span class="d-none d-lg-inline">Shortcuts</span>
             </button>
-        </div>
-    </SectionContent>
-    <SectionContent SectionName="@PageHeaderSections.Actions">
-        <div class="d-flex align-items-center gap-3">
-            <span class="save-status small text-body-secondary d-flex align-items-center gap-1" role="status">
-                @if (SaveStatus.Icon is { } statusIcon)
+            <div class="d-flex align-items-center gap-3 ms-2">
+                <span class="save-status small text-body-secondary d-flex align-items-center gap-1" role="status">
+                    @if (_autosave.Status.Icon is { } statusIcon)
+                    {
+                        <Icon Name="@statusIcon" />
+                    }
+                    <span class="save-status-text">@_autosave.Status.Text</span>
+                </span>
+                @if (!_autosave.Enabled)
                 {
-                    <Icon Name="@statusIcon" />
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" disabled="@(!_autosave.IsDirty)" @onclick="Save">
+                        <Icon Name="floppy" /> Save
+                    </button>
                 }
-                <span class="save-status-text">@SaveStatus.Text</span>
-            </span>
-            @if (!_autosaveEnabled)
-            {
-                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" disabled="@(!_isDirty)" @onclick="Save">
-                    <Icon Name="floppy" /> Save
-                </button>
-            }
-            <div class="form-check form-switch mb-0">
-                <input
-                    class="form-check-input"
-                    type="checkbox"
-                    role="switch"
-                    id="autosave-switch"
-                    checked="@_autosaveEnabled"
-                    @onchange="SetAutosave"
-                />
-                <label class="form-check-label small" for="autosave-switch">Autosave</label>
+                <div class="form-check form-switch mb-0">
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        role="switch"
+                        id="autosave-switch"
+                        checked="@_autosave.Enabled"
+                        @onchange="SetAutosave"
+                    />
+                    <label class="form-check-label small" for="autosave-switch">Autosave</label>
+                </div>
             </div>
         </div>
     </SectionContent>
@@ -167,7 +165,7 @@
             @if (_showShortcuts)
             {
                 <div class="board-editor-overlay shadow-sm board-editor-shortcuts">
-                    @foreach (var (heading, rows) in Shortcuts)
+                    @foreach (var (heading, rows) in EditorShortcuts.Sections)
                     {
                         <h2>@heading</h2>
                         <dl>
@@ -186,7 +184,7 @@
             <button
                 type="button"
                 class="btn btn-link btn-sm status-bar-button status-bar-toggle d-none d-sm-flex align-items-center gap-1"
-                aria-pressed="@(_snapToGrid ? "true" : "false")"
+                aria-pressed="@Aria.Bool(_snapToGrid)"
                 title="Snap to grid (Ctrl+')"
                 @onclick="() => _snapToGrid = !_snapToGrid"
             >
@@ -195,7 +193,7 @@
             <button
                 type="button"
                 class="btn btn-link btn-sm status-bar-button status-bar-toggle d-none d-sm-flex align-items-center gap-1"
-                aria-pressed="@(_objectSnapping ? "true" : "false")"
+                aria-pressed="@Aria.Bool(_objectSnapping)"
                 title="Object snapping"
                 @onclick="() => _objectSnapping = !_objectSnapping"
             >
@@ -352,50 +350,6 @@
 </style>
 
 @code {
-    private const string AutosavePreferenceKey = "d12canvas.autosave";
-    private static readonly TimeSpan AutosaveDebounce = TimeSpan.FromSeconds(1);
-    private static readonly TimeSpan SavedNoticeDuration = TimeSpan.FromSeconds(2);
-
-    private static readonly (string Heading, (string Keys, string Action)[] Rows)[] Shortcuts =
-    [
-        ("Pointer", [
-            ("Drag on empty canvas", "Marquee select"),
-            ("Double-click", "Enter a group, then edit"),
-            ("Alt+drag", "Clone the selection"),
-            ("Alt+resize", "Resize from the centre"),
-            ("Shift+drag", "Move in a straight line"),
-            ("Click a port", "Duplicate and connect"),
-            ("Right- or middle-drag", "Pan"),
-            ("Right-click", "Context menu"),
-            ("Wheel", "Zoom, or pan on a trackpad"),
-        ]),
-        ("Keyboard", [
-            ("Tab", "Move between shapes"),
-            ("Space", "Add the focused shape to the selection"),
-            ("Enter / Escape", "Enter / leave a group"),
-            ("F2", "Edit text"),
-            ("Arrows", "Nudge"),
-            ("Ctrl+Arrow", "Duplicate and connect"),
-            ("Ctrl+Shift+Arrow", "Focus the nearest shape"),
-            ("Shift+F10", "Context menu"),
-            ("Ctrl+Enter", "Focus the property bar"),
-        ]),
-        ("Commands", [
-            ("Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"),
-            ("Ctrl+C / X / V", "Copy / cut / paste"),
-            ("Ctrl+D", "Duplicate"),
-            ("Ctrl+A", "Select all"),
-            ("Delete", "Delete"),
-            ("Ctrl+G / Ctrl+Shift+G", "Group / ungroup"),
-            ("Ctrl+Shift+L", "Lock or unlock"),
-            ("Ctrl+] / Ctrl+[", "Forward / backward"),
-            ("Ctrl+Shift+] / [", "To front / to back"),
-            ("Ctrl+'", "Snap to grid"),
-            ("PageUp / PageDown", "Zoom in / out"),
-            ("Shift+1 / 2 / 0", "Fit / selection / 100%"),
-        ]),
-    ];
-
     private static readonly WheelDeviceProfile[] WheelProfiles = Enum.GetValues<WheelDeviceProfile>();
 
     [Parameter]
@@ -406,39 +360,25 @@
     private bool _notFound;
     private DiagramCanvas? _canvas;
     private DiagramCanvas? _subscribedCanvas;
-    private bool _isDirty;
     private int _selectedCount;
     private bool _snapToGrid = true;
     private bool _objectSnapping = true;
     private bool _showShortcuts;
-    private bool _autosaveEnabled = true;
-    private int _changeCount;
-    private bool _showSavedNotice;
+    private Autosave _autosave = null!;
     private WheelDeviceProfile _wheelProfile = WheelDeviceProfile.Auto;
-    private CancellationTokenSource? _autosaveCts;
-    private CancellationTokenSource? _savedNoticeCts;
     private bool _isEditingName;
     private string _nameDraft = "";
-    private Func<ElementReference>? _pendingFocus;
+    private readonly PendingFocus _pendingFocus = new();
     private ElementReference _titleInputRef;
     private ElementReference _renameButtonRef;
 
     private string SelectionText =>
         _selectedCount == 0 ? "Nothing selected" : $"{_selectedCount} selected";
 
-    private (string? Icon, string Text) SaveStatus =>
-        (_autosaveEnabled, _isDirty) switch
-        {
-            (true, true) => ("cloud-arrow-up", "Saving…"),
-            (true, false) when _showSavedNotice => ("cloud-check", "Saved"),
-            (true, false) => (null, ""),
-            (false, true) => ("cloud", "Unsaved changes"),
-            (false, false) => ("cloud-check", "Saved"),
-        };
-
     protected override async Task OnInitializedAsync()
     {
-        _autosaveEnabled = await Preferences.GetAsync(AutosavePreferenceKey) != "false";
+        _autosave = new Autosave(Clock, () => BoardStore.SaveAsync(Id, _board!), InvokeAsync, StateHasChanged);
+        _autosave.Enabled = await Preferences.GetAsync(PreferenceKeys.Autosave) != "false";
 
         try
         {
@@ -454,11 +394,7 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        if (_pendingFocus is { } target)
-        {
-            _pendingFocus = null;
-            _ = target().FocusAsync();
-        }
+        _ = _pendingFocus.ApplyAsync();
 
         // DiagramCanvas is only rendered once _board finishes loading, so its @ref isn't captured
         // until a render after this page's own first one - re-checked on every render (cheap: a
@@ -504,116 +440,19 @@
 
     private void HandleBoardChanged(object? sender, EventArgs e)
     {
-        _isDirty = true;
-        _changeCount++;
-
-        if (_autosaveEnabled)
-        {
-            HideSavedNotice();
-            ScheduleAutosave();
-        }
-
+        _autosave.BoardChanged();
         StateHasChanged();
     }
 
     private async Task SetAutosave(ChangeEventArgs e)
     {
-        _autosaveEnabled = e.Value is true;
-        await Preferences.SetAsync(AutosavePreferenceKey, _autosaveEnabled ? "true" : "false");
-
-        if (!_autosaveEnabled)
-        {
-            CancelPendingAutosave();
-            HideSavedNotice();
-        }
-        else if (_isDirty)
-        {
-            await Save();
-        }
+        var enabled = e.Value is true;
+        var applying = _autosave.SetEnabledAsync(enabled);
+        await Preferences.SetAsync(PreferenceKeys.Autosave, enabled ? "true" : "false");
+        await applying;
     }
 
-    // Coalesces a burst of rapid gestures (several quick nudges) into a single save: each new
-    // Changed firing cancels whatever autosave was already pending and starts the debounce over.
-    private void ScheduleAutosave()
-    {
-        _autosaveCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _autosaveCts = cts;
-        _ = RunDebouncedAutosave(cts.Token);
-    }
-
-    private void CancelPendingAutosave() => _autosaveCts?.Cancel();
-
-    private async Task RunDebouncedAutosave(CancellationToken token)
-    {
-        try
-        {
-            await Task.Delay(AutosaveDebounce, Clock, token);
-        }
-        catch (TaskCanceledException)
-        {
-            return;
-        }
-
-        await InvokeAsync(Save);
-    }
-
-    private async Task Save()
-    {
-        if (_board is null)
-        {
-            return;
-        }
-
-        var changeCountAtSave = _changeCount;
-        await BoardStore.SaveAsync(Id, _board);
-
-        if (_changeCount != changeCountAtSave)
-        {
-            return;
-        }
-
-        _isDirty = false;
-        if (_autosaveEnabled)
-        {
-            ShowSavedNotice();
-        }
-
-        StateHasChanged();
-    }
-
-    private void ShowSavedNotice()
-    {
-        _savedNoticeCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _savedNoticeCts = cts;
-        _showSavedNotice = true;
-        _ = HideSavedNoticeAfterDelay(cts.Token);
-    }
-
-    private void HideSavedNotice()
-    {
-        _savedNoticeCts?.Cancel();
-        _showSavedNotice = false;
-    }
-
-    private async Task HideSavedNoticeAfterDelay(CancellationToken token)
-    {
-        try
-        {
-            await Task.Delay(SavedNoticeDuration, Clock, token);
-        }
-        catch (TaskCanceledException)
-        {
-            return;
-        }
-
-        await InvokeAsync(() =>
-        {
-            _showSavedNotice = false;
-            StateHasChanged();
-        });
-    }
+    private Task Save() => _board is null ? Task.CompletedTask : _autosave.SaveAsync();
 
     private void StartRenameTitle()
     {
@@ -628,7 +467,7 @@
             _isEditingName = true;
         }
 
-        _pendingFocus = () => _titleInputRef;
+        _pendingFocus.Request(() => _titleInputRef);
     }
 
     private async Task CommitRenameTitle()
@@ -670,12 +509,11 @@
         }
     }
 
-    private void ReturnFocusToRenameButton() => _pendingFocus = () => _renameButtonRef;
+    private void ReturnFocusToRenameButton() => _pendingFocus.Request(() => _renameButtonRef);
 
     public void Dispose()
     {
-        _autosaveCts?.Cancel();
-        _savedNoticeCts?.Cancel();
+        _autosave?.Dispose();
         if (_subscribedCanvas is not null)
         {
             _subscribedCanvas.Changed -= HandleBoardChanged;

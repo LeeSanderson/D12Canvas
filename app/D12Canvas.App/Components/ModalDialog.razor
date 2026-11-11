@@ -25,28 +25,15 @@
     public EventCallback OnClose { get; set; }
 
     private ElementReference _dialog;
-    private IJSObjectReference? _module;
+    private LazyJsModule _module = null!;
 
     public ElementReference Element => _dialog;
 
-    public async Task ShowAsync() => await (await ModuleAsync()).InvokeVoidAsync("showModal", _dialog);
+    protected override void OnInitialized() => _module = new(JS, "./Components/ModalDialog.razor.js");
 
-    public async Task CloseAsync() => await (await ModuleAsync()).InvokeVoidAsync("close", _dialog);
+    public async Task ShowAsync() => await (await _module.GetAsync()).InvokeVoidAsync("showModal", _dialog);
 
-    private async Task<IJSObjectReference> ModuleAsync() =>
-        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./Components/ModalDialog.razor.js");
+    public async Task CloseAsync() => await (await _module.GetAsync()).InvokeVoidAsync("close", _dialog);
 
-    public async ValueTask DisposeAsync()
-    {
-        if (_module is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await _module.DisposeAsync();
-        }
-        catch (JSDisconnectedException) { }
-    }
+    public ValueTask DisposeAsync() => _module.DisposeAsync();
 }

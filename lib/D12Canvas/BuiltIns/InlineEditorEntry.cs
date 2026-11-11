@@ -11,7 +11,13 @@ internal static class InlineEditorEntry
     private static readonly ConditionalWeakTable<IJSRuntime, Task<IJSObjectReference>> Modules =
         new();
 
-    public static async Task FocusAndSelectAllAsync(IJSRuntime js, ElementReference editor)
+    public static Task FocusAndSelectAllAsync(IJSRuntime js, ElementReference editor) =>
+        InvokeAsync(js, "focusAndSelectAll", editor);
+
+    public static Task GrowWithContentAsync(IJSRuntime js, ElementReference editor) =>
+        InvokeAsync(js, "growWithContent", editor);
+
+    private static async Task InvokeAsync(IJSRuntime js, string function, ElementReference editor)
     {
         try
         {
@@ -19,7 +25,7 @@ internal static class InlineEditorEntry
                 js,
                 runtime => runtime.InvokeAsync<IJSObjectReference>("import", ModulePath).AsTask()
             );
-            await module.InvokeVoidAsync("focusAndSelectAll", editor);
+            await module.InvokeVoidAsync(function, editor);
         }
         catch (JSDisconnectedException) { }
     }
