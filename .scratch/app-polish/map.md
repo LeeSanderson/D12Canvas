@@ -31,7 +31,7 @@ A spec at `.scratch/app-polish/spec.md` plus implementation issues under `.scrat
 
 ## Not yet specified
 
-- Ticket slicing. The [spec](spec.md) is written; it still needs `/to-tickets` to split it into implementation issues. Its Further Notes suggest an order.
+Nothing left. The [spec](spec.md) is written and split into implementation issues 12 to 22, ready for `/implement`.
 
 ## Out of scope
 
