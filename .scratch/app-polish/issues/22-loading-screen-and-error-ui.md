@@ -1,6 +1,6 @@
 # Loading screen and error UI
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 17, 18
 
 Spec: [App polish](../spec.md), "Loading screen and error UI". Decision record: [Loading and error UI](11-loading-and-error-ui.md).
@@ -25,3 +25,11 @@ No automated tests: this markup runs outside Blazor and App visual tests are out
 - [ ] Dismiss hides the bar.
 - [ ] A temporary `<ErrorBoundary>` around a throwing component shows the restyled message in both themes. Remove it afterwards.
 - [ ] No template loading or error CSS remains.
+
+## Comments
+
+Done. The loading screen shows the d12 mark in `--bs-primary`, a 4px `.progress` bar that reads `--blazor-load-percentage`, and "Loading D12Canvas…". `IconTests.TheLoadingScreenDrawsTheSameMarkAsTheD12Icon` fails if the inline paths drift from `IconPaths`, like the favicon test. The ticket asked for no tests, but this one checks only the copied path data.
+
+The error bar is `.alert.alert-danger` at `z-index: 1035`, above Bootstrap's fixed layer (1030) and below offcanvas and modals. Blazor shows the bar with an inline `display: block`, so the flex row sits on an inner div. `.blazor-error-boundary` uses the danger subtle tokens and a `mask-image` triangle.
+
+Checked by hand in Chromium, light and dark, with temporary throw and `<ErrorBoundary>` buttons that are now gone. The bar fills from 0 to 192px as the percentage goes 0 to 100%. The error bar covers the status bar. Reload on `/board/{id}` comes back to the same board. Dismiss hides the bar. The Demo keeps its template loading and error CSS; this ticket only covers the App.

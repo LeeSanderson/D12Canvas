@@ -36,6 +36,22 @@ public sealed class IconTests : BunitContext
         Assert.Equal(IconPaths.For("d12"), faviconPaths);
     }
 
+    [Fact]
+    public void TheLoadingScreenDrawsTheSameMarkAsTheD12Icon()
+    {
+        var indexHtml = new AngleSharp.Html.Parser.HtmlParser().ParseDocument(
+            File.ReadAllText(
+                Path.Combine(RepositoryRoot(), "app", "D12Canvas.App", "wwwroot", "index.html")
+            )
+        );
+
+        var loadingScreenPaths = indexHtml
+            .QuerySelectorAll("#app svg path")
+            .Select(path => new IconPath(path.GetAttribute("d")!, path.GetAttribute("fill-rule")));
+
+        Assert.Equal(IconPaths.For("d12"), loadingScreenPaths);
+    }
+
     private static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
