@@ -1,0 +1,60 @@
+@implements IAsyncDisposable
+@using D12Canvas.App.Preferences
+@inject IPreferences Preferences
+@inject IJSRuntime JS
+
+<Dropdown
+    ToggleClass="btn btn-link link-body-emphasis btn-sm d-flex align-items-center gap-1 text-decoration-none"
+    Title="@($"Theme: {_choice.Label}")"
+    MenuClass="dropdown-menu-md-end"
+>
+    <Toggle><Icon Name="@_choice.Icon" /> Theme</Toggle>
+    <ChildContent Context="close">
+        @foreach (var choice in ThemeChoice.All)
+        {
+            <button
+                type="button"
+                class="dropdown-item d-flex align-items-center gap-2 @(choice == _choice ? "active" : null)"
+                aria-pressed="@(choice == _choice ? "true" : "false")"
+                @onclick="() => Choose(choice, close)"
+            >
+                <Icon Name="@choice.Icon" /> @choice.Label
+            </button>
+        }
+    </ChildContent>
+</Dropdown>
+
+@code {
+    private ThemeChoice _choice = ThemeChoice.System;
+    private IJSObjectReference? _module;
+
+    protected override async Task OnInitializedAsync() =>
+        _choice = ThemeChoice.Parse(await Preferences.GetAsync(ThemeChoice.PreferenceKey));
+
+    private async Task Choose(ThemeChoice choice, Action close)
+    {
+        _choice = choice;
+        close();
+        await Preferences.SetAsync(ThemeChoice.PreferenceKey, choice.Value);
+        var module = await ModuleAsync();
+        var mode = choice == ThemeChoice.System ? await module.InvokeAsync<string>("systemMode") : choice.Value;
+        await module.InvokeVoidAsync("setMode", mode);
+    }
+
+    private async Task<IJSObjectReference> ModuleAsync() =>
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./Components/ThemeMenu.razor.js");
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

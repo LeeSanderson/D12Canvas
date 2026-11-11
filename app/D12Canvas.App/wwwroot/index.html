@@ -6,6 +6,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>D12Canvas</title>
     <base href="/" />
+    <script>
+        (function () {
+            var media = matchMedia("(prefers-color-scheme: dark)");
+
+            function storedChoice() {
+                try {
+                    var choice = localStorage.getItem("d12canvas.theme");
+                    return choice === "light" || choice === "dark" ? choice : "system";
+                } catch (e) {
+                    return "system";
+                }
+            }
+
+            function apply() {
+                var choice = storedChoice();
+                var mode = choice === "system" ? (media.matches ? "dark" : "light") : choice;
+                document.documentElement.setAttribute("data-bs-theme", mode);
+                document.documentElement.setAttribute("data-d12-theme", mode);
+            }
+
+            apply();
+            media.addEventListener("change", function () {
+                if (storedChoice() === "system") {
+                    apply();
+                }
+            });
+        })();
+    </script>
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />

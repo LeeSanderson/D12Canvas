@@ -1,0 +1,89 @@
+<div
+    class="@(DropUp ? "dropup" : "dropdown") @Class"
+    @onkeydown="HandleKeyDown"
+    @onkeydown:stopPropagation="_open"
+>
+    <button
+        type="button"
+        class="@ToggleClass @(Caret ? "dropdown-toggle" : null)"
+        aria-expanded="@(_open ? "true" : "false")"
+        aria-label="@Label"
+        title="@Title"
+        @ref="_toggleButton"
+        @onclick="ToggleOpen"
+    >
+        @Toggle
+    </button>
+    @if (_open)
+    {
+        <div class="dropdown-outside" @onclick="Close"></div>
+    }
+    <div
+        class="dropdown-menu @(AlignEnd ? "dropdown-menu-end" : null) @(_open ? "show" : null) @MenuClass"
+        data-bs-popper="static"
+    >
+        @ChildContent(Close)
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment Toggle { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public RenderFragment<Action> ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public string ToggleClass { get; set; } = "btn btn-outline-secondary btn-sm";
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public bool Caret { get; set; } = true;
+
+    [Parameter]
+    public bool AlignEnd { get; set; }
+
+    [Parameter]
+    public bool DropUp { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public string? MenuClass { get; set; }
+
+    private bool _open;
+    private bool _focusToggle;
+    private ElementReference _toggleButton;
+
+    private void ToggleOpen() => _open = !_open;
+
+    private void Close()
+    {
+        _open = false;
+        StateHasChanged();
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && _open)
+        {
+            _open = false;
+            _focusToggle = true;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusToggle)
+        {
+            _focusToggle = false;
+            await _toggleButton.FocusAsync();
+        }
+    }
+}

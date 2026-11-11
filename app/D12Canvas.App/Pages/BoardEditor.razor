@@ -43,7 +43,7 @@
     </SectionContent>
 }
 
-<div class="board-editor-page" data-d12-theme="@ThemeAttribute">
+<div class="board-editor-page">
     <div class="board-editor-toolbar">
         <div class="board-editor-group">
             <button class="btn btn-outline-secondary btn-sm" title="Ctrl+Z" @onclick="Undo">Undo</button>
@@ -76,14 +76,6 @@
                     <option value="@WheelDeviceProfile.Trackpad">Trackpad</option>
                 </select>
             </label>
-            <label class="d-flex align-items-center gap-1">
-                Theme
-                <select class="form-select form-select-sm w-auto" @bind="_theme">
-                    <option value="system">System</option>
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                </select>
-            </label>
         </div>
 
         <div class="board-editor-group">
@@ -113,21 +105,21 @@
                 @bind-ObjectSnapping="_objectSnapping"
                 WheelDeviceProfile="_wheelProfile"
             />
-            <div class="board-editor-overlay board-editor-palette">
+            <div class="board-editor-overlay shadow-sm board-editor-palette">
                 <Palette Canvas="_canvas" />
             </div>
             @if (_selectedCount > 0)
             {
-                <div class="board-editor-overlay board-editor-properties">
+                <div class="board-editor-overlay shadow-sm board-editor-properties">
                     <PropertyPanel Canvas="_canvas" />
                 </div>
             }
-            <div class="board-editor-overlay board-editor-minimap">
+            <div class="board-editor-overlay shadow-sm board-editor-minimap">
                 <Minimap Canvas="_canvas" />
             </div>
             @if (_showShortcuts)
             {
-                <div class="board-editor-overlay board-editor-shortcuts">
+                <div class="board-editor-overlay shadow-sm board-editor-shortcuts">
                     @foreach (var (heading, rows) in Shortcuts)
                     {
                         <h2>@heading</h2>
@@ -154,8 +146,6 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        background: var(--app-bg);
-        color: var(--app-text);
     }
 
     .board-title {
@@ -172,9 +162,9 @@
         align-items: center;
         gap: 8px 20px;
         padding: 6px 16px;
-        background: var(--app-surface);
-        border-bottom: 1px solid var(--app-border);
-        color: var(--app-muted-text);
+        background: var(--bs-body-bg);
+        border-bottom: 1px solid var(--bs-border-color);
+        color: var(--bs-secondary-color);
         font-size: 0.9rem;
     }
 
@@ -201,7 +191,6 @@
         z-index: 10;
         max-height: calc(100% - 24px);
         overflow-y: auto;
-        box-shadow: var(--app-shadow);
     }
 
     .board-editor-palette {
@@ -226,18 +215,18 @@
         width: 260px;
         box-sizing: border-box;
         padding: 12px;
-        background: var(--app-surface);
-        border: 1px solid var(--app-border);
-        border-radius: var(--app-radius-sm);
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: var(--bs-border-radius);
     }
     .board-editor-shortcuts {
         left: 204px;
         width: 340px;
         box-sizing: border-box;
         padding: 12px 16px;
-        background: var(--app-surface);
-        border: 1px solid var(--app-border);
-        border-radius: var(--app-radius-sm);
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: var(--bs-border-radius);
         font-size: 0.85rem;
     }
 
@@ -247,7 +236,7 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: var(--app-muted-text);
+        color: var(--bs-secondary-color);
     }
 
     .board-editor-shortcuts h2:first-child {
@@ -326,7 +315,6 @@
     private int _selectedCount;
     private bool _snapToGrid = true;
     private bool _objectSnapping = true;
-    private string _theme = "system";
     private bool _showShortcuts;
     private bool _autosaveEnabled;
     private WheelDeviceProfile _wheelProfile = WheelDeviceProfile.Auto;
@@ -388,8 +376,6 @@
 
         StateHasChanged();
     }
-
-    private string? ThemeAttribute => _theme == "system" ? null : _theme;
 
     private void HandleSelectionChanged(object? sender, EventArgs e)
     {
