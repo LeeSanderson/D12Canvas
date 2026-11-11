@@ -1,5 +1,4 @@
 using Bunit;
-using D12Canvas.App.Pages;
 using D12Canvas.Model;
 
 namespace D12Canvas.App.Tests;
@@ -23,12 +22,6 @@ public sealed class PageSmokeTests : AppTestContext
 
         var layout = RenderBoardEditor(boardId);
 
-        layout.WaitForAssertion(
-            () =>
-                Assert.Equal(
-                    "Service map",
-                    layout.FindComponent<BoardEditor>().Find("h1").TextContent
-                )
-        );
+        layout.WaitForAssertion(() => Assert.Equal("Service map", layout.Find("h1").TextContent));
     }
 }

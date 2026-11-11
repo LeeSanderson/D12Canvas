@@ -1,8 +1,99 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@using D12Canvas.App.Shared.Suggestions
+@inject NavigationManager Navigation
 
 <div class="app-layout">
-    @Body
+    <header>
+        <nav class="navbar navbar-expand-md bg-body-tertiary border-bottom py-1" aria-label="Main">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center gap-2 py-0" href="/">
+                    <span class="fs-4 text-primary d-flex"><Icon Name="d12" /></span>
+                    <span class="fw-semibold">D12Canvas</span>
+                </a>
+
+                @if (_savedSuggestion is not null)
+                {
+                    <span class="small text-success ms-auto me-2 d-md-none" role="status">Saved @_savedSuggestion</span>
+                }
+
+                <button
+                    type="button"
+                    class="navbar-toggler btn-sm border-0"
+                    @ref="_menuButton"
+                    aria-controls="app-menu"
+                    aria-expanded="@(_menuOpen ? "true" : "false")"
+                    aria-label="Menu"
+                    @onclick="OpenMenu"
+                >
+                    <span class="fs-4 d-flex"><Icon Name="list" /></span>
+                </button>
+
+                <div
+                    id="app-menu"
+                    class="app-menu offcanvas-md offcanvas-end flex-grow-1 @(_menuOpen ? "show" : null)"
+                    tabindex="-1"
+                    aria-labelledby="app-menu-title"
+                    @ref="_menu"
+                    @onkeydown="HandleMenuKeyDown"
+                >
+                    <div class="offcanvas-header border-bottom">
+                        <span class="offcanvas-title fw-semibold" id="app-menu-title">Menu</span>
+                        <button type="button" class="btn-close" aria-label="Close menu" @onclick="CloseMenu"></button>
+                    </div>
+                    <div class="offcanvas-body d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a
+                                    class="nav-link d-flex align-items-center gap-2 @(IsBoardList ? "active" : null)"
+                                    href="/"
+                                    aria-current="@(IsBoardList ? "page" : null)"
+                                    @onclick="CloseMenu"
+                                >
+                                    <Icon Name="grid-3x3-gap" /> Boards
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 ms-md-auto">
+                            @if (_savedSuggestion is not null)
+                            {
+                                <span class="small text-success d-none d-md-inline" role="status">Saved @_savedSuggestion</span>
+                            }
+                            <button
+                                type="button"
+                                class="btn btn-link link-body-emphasis btn-sm d-flex align-items-center gap-1 text-decoration-none"
+                                @onclick="OpenSuggestionBox"
+                            >
+                                <Icon Name="lightbulb" /> Suggest
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                @if (_menuOpen)
+                {
+                    <div class="offcanvas-backdrop fade show d-md-none" @onclick="CloseMenu"></div>
+                }
+            </div>
+        </nav>
+
+        <div class="page-header bg-body border-bottom px-3 py-2 d-flex flex-wrap align-items-center gap-2">
+            <div class="page-header-title d-flex align-items-center gap-1 flex-grow-1">
+                <SectionOutlet SectionName="@PageHeaderSections.Title" />
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <SectionOutlet SectionName="@PageHeaderSections.More" />
+                <SectionOutlet SectionName="@PageHeaderSections.Actions" />
+            </div>
+        </div>
+    </header>
+
+    <main class="app-main">
+        @Body
+    </main>
 </div>
+
+<SuggestionBox @ref="_suggestionBox" OnSaved="HandleSuggestionSaved" />
 
 <style>
     .app-layout {
@@ -10,4 +101,82 @@
         display: flex;
         flex-direction: column;
     }
+
+    .app-main {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+    }
+
+    .app-menu {
+        --bs-offcanvas-width: 18rem;
+    }
+
+    .page-header-title {
+        min-width: 0;
+    }
 </style>
+
+@code {
+    private SuggestionBox? _suggestionBox;
+    private string? _savedSuggestion;
+    private bool _menuOpen;
+    private ElementReference _menuButton;
+    private ElementReference _menu;
+    private ElementReference? _pendingFocus;
+
+    private bool IsBoardList
+    {
+        get
+        {
+            var path = Navigation.ToBaseRelativePath(Navigation.Uri);
+            var end = path.IndexOfAny(['?', '#']);
+            return (end < 0 ? path : path[..end]).Length == 0;
+        }
+    }
+
+    protected override void OnInitialized() => Navigation.LocationChanged += HandleLocationChanged;
+
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs e) =>
+        InvokeAsync(StateHasChanged);
+
+    private void OpenMenu()
+    {
+        _menuOpen = true;
+        _pendingFocus = _menu;
+    }
+
+    private void CloseMenu() => _menuOpen = false;
+
+    private void HandleMenuKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && _menuOpen)
+        {
+            CloseMenu();
+            _pendingFocus = _menuButton;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pendingFocus is { } target)
+        {
+            _pendingFocus = null;
+            await target.FocusAsync();
+        }
+    }
+
+    private async Task OpenSuggestionBox()
+    {
+        CloseMenu();
+        _savedSuggestion = null;
+        if (_suggestionBox is not null)
+        {
+            await _suggestionBox.OpenAsync();
+        }
+    }
+
+    private void HandleSuggestionSaved(SavedSuggestion saved) => _savedSuggestion = saved.Markdown;
+
+    public void Dispose() => Navigation.LocationChanged -= HandleLocationChanged;
+}

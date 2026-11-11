@@ -2,43 +2,48 @@
 @implements IDisposable
 @using D12Canvas
 @using D12Canvas.App.Storage
-@using D12Canvas.App.Shared.Suggestions
 @using D12Canvas.Model
 @inject IBoardStore BoardStore
-@inject NavigationManager Navigation
 
-<PageTitle>@(_name ?? "Board")</PageTitle>
+<AppPageTitle Page="@(_name ?? "Board")" />
 
-<div class="board-editor-page" data-d12-theme="@ThemeAttribute">
-    <div class="board-editor-header">
-        <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" @onclick="GoBack">
-            <Icon Name="arrow-left" /> Boards
-        </button>
-
+@if (!_notFound)
+{
+    <SectionContent SectionName="@PageHeaderSections.Title">
         @if (_isEditingName)
         {
-            <input
-                class="form-control board-title-input"
-                aria-label="Board name"
-                @ref="_titleInputRef"
-                value="@_nameDraft"
-                @oninput="args => _nameDraft = args.Value?.ToString() ?? string.Empty"
-                @onkeydown="HandleTitleKeyDown"
-                @onblur="CommitRenameTitle"
-            />
+            <form class="board-title-form" @onsubmit="SubmitRenameTitle">
+                <input
+                    class="form-control form-control-sm"
+                    aria-label="Board name"
+                    @ref="_titleInputRef"
+                    value="@_nameDraft"
+                    @oninput="args => _nameDraft = args.Value?.ToString() ?? string.Empty"
+                    @onkeydown="HandleTitleKeyDown"
+                    @onblur="CommitRenameTitle"
+                />
+            </form>
         }
         else
         {
-            <h1 class="board-title" @onclick="StartRenameTitle" title="Click to rename">@_name</h1>
+            <h1 class="board-title fs-5 fw-semibold mb-0 text-truncate" title="Click to rename" @onclick="StartRenameTitle">@_name</h1>
         }
+        <button
+            type="button"
+            class="btn btn-link link-secondary btn-sm"
+            aria-label="Rename board"
+            title="Rename board"
+            disabled="@(_board is null)"
+            @ref="_renameButtonRef"
+            @onmousedown:preventDefault="_isEditingName"
+            @onclick="StartRenameTitle"
+        >
+            <Icon Name="pencil" />
+        </button>
+    </SectionContent>
+}
 
-        <div class="form-check mb-0 autosave-toggle">
-            <input class="form-check-input" type="checkbox" id="autosave-toggle" @bind="_autosaveEnabled" />
-            <label class="form-check-label" for="autosave-toggle">Autosave</label>
-        </div>
-        <button class="btn btn-primary btn-sm" @onclick="Save" disabled="@(!_isDirty)">Save</button>
-    </div>
-
+<div class="board-editor-page" data-d12-theme="@ThemeAttribute">
     <div class="board-editor-toolbar">
         <div class="board-editor-group">
             <button class="btn btn-outline-secondary btn-sm" title="Ctrl+Z" @onclick="Undo">Undo</button>
@@ -85,17 +90,18 @@
             <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleShortcuts" aria-expanded="@_showShortcuts">
                 Shortcuts
             </button>
-            <button class="btn btn-primary btn-sm" @onclick="OpenSuggestionBox">Suggest…</button>
-            @if (_savedSuggestion is not null)
-            {
-                <span class="board-editor-saved" role="status">Saved @_savedSuggestion</span>
-            }
+        </div>
+
+        <div class="board-editor-group">
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="autosave-toggle" @bind="_autosaveEnabled" />
+                <label class="form-check-label" for="autosave-toggle">Autosave</label>
+            </div>
+            <button class="btn btn-primary btn-sm" @onclick="Save" disabled="@(!_isDirty)">Save</button>
         </div>
 
         <span class="board-editor-status">@_selectedCount selected · <ZoomReadout Canvas="_canvas" /></span>
     </div>
-
-    <SuggestionBox @ref="_suggestionBox" OnSaved="HandleSuggestionSaved" />
 
     @if (_board is not null)
     {
@@ -139,7 +145,7 @@
     }
     else if (_notFound)
     {
-        <p role="alert">No board found with that id.</p>
+        <p class="m-3" role="alert">No board found with that id.</p>
     }
 </div>
 
@@ -152,41 +158,12 @@
         color: var(--app-text);
     }
 
-    .board-editor-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 10px 16px;
-        background: var(--app-surface);
-        border-bottom: 1px solid var(--app-border);
-    }
-
-    .board-title,
-    .board-title-input {
-        flex: 1;
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--app-text);
-    }
-
     .board-title {
-        padding: 4px 8px;
-        border-radius: var(--app-radius-sm);
         cursor: pointer;
     }
 
-    .board-title:hover {
-        background: var(--app-bg);
-    }
-
-    .board-title-input {
-        padding: 3px 7px;
-    }
-
-    .autosave-toggle {
-        color: var(--app-muted-text);
-        font-size: 0.9rem;
+    .board-title-form {
+        flex: 0 1 24rem;
     }
 
     .board-editor-toolbar {
@@ -205,10 +182,6 @@
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-
-    .board-editor-saved {
-        color: var(--app-success);
     }
 
     .board-editor-status {
@@ -355,15 +328,14 @@
     private bool _objectSnapping = true;
     private string _theme = "system";
     private bool _showShortcuts;
-    private SuggestionBox? _suggestionBox;
-    private string? _savedSuggestion;
     private bool _autosaveEnabled;
     private WheelDeviceProfile _wheelProfile = WheelDeviceProfile.Auto;
     private CancellationTokenSource? _autosaveCts;
     private bool _isEditingName;
     private string _nameDraft = "";
-    private bool _focusTitleInputPending;
+    private Func<ElementReference>? _pendingFocus;
     private ElementReference _titleInputRef;
+    private ElementReference _renameButtonRef;
 
     protected override async Task OnInitializedAsync()
     {
@@ -379,22 +351,22 @@
         }
     }
 
-    // DiagramCanvas is only rendered once _board finishes loading, so its @ref isn't captured
-    // until a render after this page's own first one - re-checked on every render (cheap: a
-    // reference comparison) rather than gated to firstRender, the same "subscribe once the
-    // reference actually changes" shape PropertyPanel uses for its own Canvas parameter. @ref is
-    // only assigned after the render that produced it, so Palette's own Canvas parameter is still
-    // stale (null) on the render where _canvas is first captured (same wrinkle
-    // PropertyPanelDemo's own layout documents) - the extra StateHasChanged forces the one more
-    // render pass Palette needs to pick up the now-non-null reference.
     protected override void OnAfterRender(bool firstRender)
     {
-        if (_focusTitleInputPending)
+        if (_pendingFocus is { } target)
         {
-            _focusTitleInputPending = false;
-            _ = _titleInputRef.FocusAsync();
+            _pendingFocus = null;
+            _ = target().FocusAsync();
         }
 
+        // DiagramCanvas is only rendered once _board finishes loading, so its @ref isn't captured
+        // until a render after this page's own first one - re-checked on every render (cheap: a
+        // reference comparison) rather than gated to firstRender, the same "subscribe once the
+        // reference actually changes" shape PropertyPanel uses for its own Canvas parameter. @ref is
+        // only assigned after the render that produced it, so Palette's own Canvas parameter is still
+        // stale (null) on the render where _canvas is first captured (same wrinkle
+        // PropertyPanelDemo's own layout documents) - the extra StateHasChanged forces the one more
+        // render pass Palette needs to pick up the now-non-null reference.
         if (ReferenceEquals(_subscribedCanvas, _canvas))
         {
             return;
@@ -436,17 +408,6 @@
     private void ZoomTo100Percent() => _canvas?.ZoomTo100Percent();
 
     private void ToggleShortcuts() => _showShortcuts = !_showShortcuts;
-
-    private async Task OpenSuggestionBox()
-    {
-        _savedSuggestion = null;
-        if (_suggestionBox is not null)
-        {
-            await _suggestionBox.OpenAsync();
-        }
-    }
-
-    private void HandleSuggestionSaved(SavedSuggestion saved) => _savedSuggestion = saved.Markdown;
 
     private void HandleBoardChanged(object? sender, EventArgs e)
     {
@@ -493,8 +454,6 @@
         }
     }
 
-    private void GoBack() => Navigation.NavigateTo("/");
-
     private void StartRenameTitle()
     {
         if (_board is null)
@@ -502,9 +461,13 @@
             return;
         }
 
-        _nameDraft = _name ?? "";
-        _isEditingName = true;
-        _focusTitleInputPending = true;
+        if (!_isEditingName)
+        {
+            _nameDraft = _name ?? "";
+            _isEditingName = true;
+        }
+
+        _pendingFocus = () => _titleInputRef;
     }
 
     private async Task CommitRenameTitle()
@@ -531,18 +494,22 @@
         _nameDraft = _name ?? "";
     }
 
-    private async Task HandleTitleKeyDown(KeyboardEventArgs e)
+    private async Task SubmitRenameTitle()
     {
-        switch (e.Key)
+        ReturnFocusToRenameButton();
+        await CommitRenameTitle();
+    }
+
+    private void HandleTitleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
         {
-            case "Enter":
-                await CommitRenameTitle();
-                break;
-            case "Escape":
-                CancelRenameTitle();
-                break;
+            ReturnFocusToRenameButton();
+            CancelRenameTitle();
         }
     }
+
+    private void ReturnFocusToRenameButton() => _pendingFocus = () => _renameButtonRef;
 
     public void Dispose()
     {

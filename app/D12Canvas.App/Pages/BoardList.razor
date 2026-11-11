@@ -4,23 +4,24 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<PageTitle>D12Canvas.App</PageTitle>
+<AppPageTitle Page="Boards" />
+
+<SectionContent SectionName="@PageHeaderSections.Title">
+    <h1 class="fs-5 fw-semibold mb-0">Boards</h1>
+</SectionContent>
+
+<SectionContent SectionName="@PageHeaderSections.Actions">
+    <button
+        type="button"
+        class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+        @onclick="CreateBoard"
+        disabled="@_isCreating"
+    >
+        <Icon Name="plus-lg" /> New board
+    </button>
+</SectionContent>
 
 <div class="boards-page">
-    <header class="boards-header">
-        <div>
-            <h1>Boards</h1>
-            <p class="boards-subtitle">Create and manage your diagramming boards.</p>
-        </div>
-        <button
-            class="btn btn-primary d-inline-flex align-items-center gap-2"
-            @onclick="CreateBoard"
-            disabled="@_isCreating"
-        >
-            <Icon Name="plus-lg" /> New board
-        </button>
-    </header>
-
     <div class="boards-content card shadow-sm overflow-hidden">
         @if (_boards is null)
         {
@@ -122,25 +123,6 @@
         max-width: 840px;
         margin: 0 auto;
         padding: 32px 24px;
-    }
-
-    .boards-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-
-    .boards-header h1 {
-        margin: 0;
-        font-size: 1.5rem;
-    }
-
-    .boards-subtitle {
-        margin: 4px 0 0;
-        color: var(--app-muted-text);
-        font-size: 0.9rem;
     }
 
     .boards-content {

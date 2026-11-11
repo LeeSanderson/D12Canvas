@@ -1,8 +1,6 @@
 using AngleSharp.Dom;
 using Bunit;
-using D12Canvas.App.Pages;
 using D12Canvas.Model;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace D12Canvas.App.Tests;
 
@@ -25,7 +23,7 @@ public sealed class RenameTests : AppTestContext
         ClickRowRename(layout);
 
         _dialogModule.VerifyInvoke("showModal");
-        Assert.Equal("Draft", layout.Find("dialog input").GetAttribute("value"));
+        Assert.Equal("Draft", layout.Find("dialog form input").GetAttribute("value"));
     }
 
     [Fact]
@@ -35,11 +33,11 @@ public sealed class RenameTests : AppTestContext
         var layout = RenderBoardList();
         ClickRowRename(layout);
 
-        layout.Find("dialog input").Input("Roadmap");
+        layout.Find("dialog form input").Input("Roadmap");
         layout.Find("dialog form").Submit();
 
         Assert.Equal("Roadmap", BoardStore.Get(boardId).Name);
-        layout.WaitForAssertion(() => Assert.Empty(layout.FindAll("dialog input")));
+        layout.WaitForAssertion(() => Assert.Empty(layout.FindAll("dialog form input")));
         Assert.Contains("Roadmap", layout.Markup);
     }
 
@@ -50,11 +48,11 @@ public sealed class RenameTests : AppTestContext
         var layout = RenderBoardList();
         ClickRowRename(layout);
 
-        layout.Find("dialog input").Input("Roadmap");
+        layout.Find("dialog form input").Input("Roadmap");
         layout.Find("dialog").TriggerEvent("onclose", EventArgs.Empty);
 
         Assert.Equal("Draft", BoardStore.Get(boardId).Name);
-        Assert.Empty(layout.FindAll("dialog input"));
+        Assert.Empty(layout.FindAll("dialog form input"));
     }
 
     [Fact]
@@ -62,17 +60,14 @@ public sealed class RenameTests : AppTestContext
     {
         var boardId = BoardStore.Add("Draft", new Board());
         var layout = RenderBoardEditor(boardId);
-        var editor = layout.FindComponent<BoardEditor>();
-        editor.WaitForAssertion(() => Assert.Equal("Draft", editor.Find("h1").TextContent));
+        layout.WaitForAssertion(() => Assert.Equal("Draft", layout.Find("h1").TextContent));
 
-        editor.Find("h1").Click();
-        editor.Find("input[aria-label='Board name']").Input("Roadmap");
-        editor
-            .Find("input[aria-label='Board name']")
-            .KeyDown(new KeyboardEventArgs { Key = "Enter" });
+        layout.Find("h1").Click();
+        layout.Find("input[aria-label='Board name']").Input("Roadmap");
+        layout.Find(".page-header form").Submit();
 
         Assert.Equal("Roadmap", BoardStore.Get(boardId).Name);
-        Assert.Equal("Roadmap", editor.Find("h1").TextContent);
+        Assert.Equal("Roadmap", layout.Find("h1").TextContent);
     }
 
     private static void ClickRowRename(IRenderedComponent<Layout.MainLayout> layout)

@@ -19,6 +19,35 @@ public sealed class IconTests : BunitContext
     }
 
     [Fact]
+    public void TheFaviconDrawsTheSameMarkAsTheD12Icon()
+    {
+        var favicon = System.Xml.Linq.XDocument.Load(
+            Path.Combine(RepositoryRoot(), "app", "D12Canvas.App", "wwwroot", "favicon.svg")
+        );
+
+        var faviconPaths = favicon
+            .Descendants()
+            .Where(element => element.Name.LocalName == "path")
+            .Select(path => new IconPath(
+                (string)path.Attribute("d")!,
+                (string?)path.Attribute("fill-rule")
+            ));
+
+        Assert.Equal(IconPaths.For("d12"), faviconPaths);
+    }
+
+    private static string RepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (!File.Exists(Path.Combine(directory.FullName, "D12Canvas.slnx")))
+        {
+            directory = directory.Parent!;
+        }
+
+        return directory.FullName;
+    }
+
+    [Fact]
     public void AnUnknownIconNameFailsLoudly()
     {
         Assert.Throws<ArgumentException>(

@@ -1,6 +1,6 @@
 # Shared two-tier header and branding
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 15, 16
 
 Spec: [App polish](../spec.md), "Shared layout", "Branding" and the editor's rename in "Board editor page". Decision records: [Shared nav bar](07-shared-nav-bar.md), [App name and logo](06-app-name-and-logo.md), [Heading tab stop](03-heading-tab-stop.md).
@@ -20,11 +20,17 @@ Both pages share one header, and the App is called D12Canvas everywhere.
 
 ## Acceptance criteria
 
-- [ ] Both routes show the app bar and the page header.
-- [ ] The brand links to `/`; the Boards link is active only on `/`.
-- [ ] Suggest works from both routes.
-- [ ] The editor's Rename button and a click on the name both start a rename; Enter and Escape return focus to the Rename button.
-- [ ] Below `md`, the menu button opens the offcanvas, and the close button, the backdrop, Boards and Suggest close it.
-- [ ] Tab titles follow `<page> · D12Canvas` on every route.
-- [ ] The favicon shows the d12 mark in light and dark OS modes, and the PNG fallback is checked in.
-- [ ] App tests through the page harness: the brand links to `/`, Boards is active on `/` and not on the editor, the list's header shows New board, the editor's header shows the board name and Rename button, and the offcanvas opens and closes from its controls.
+- [x] Both routes show the app bar and the page header.
+- [x] The brand links to `/`; the Boards link is active only on `/`.
+- [x] Suggest works from both routes.
+- [x] The editor's Rename button and a click on the name both start a rename; Enter and Escape return focus to the Rename button.
+- [x] Below `md`, the menu button opens the offcanvas, and the close button, the backdrop, Boards and Suggest close it.
+- [x] Tab titles follow `<page> · D12Canvas` on every route.
+- [x] The favicon shows the d12 mark in light and dark OS modes, and the PNG fallback is checked in.
+- [x] App tests through the page harness: the brand links to `/`, Boards is active on `/` and not on the editor, the list's header shows New board, the editor's header shows the board name and Rename button, and the offcanvas opens and closes from its controls.
+
+## Comments
+
+Done. `MainLayout` renders the app bar and a page header with three `SectionOutlet`s named in `Layout/PageHeaderSections`. `SuggestionBox` now lives in the layout. `AppPageTitle` adds the ` · D12Canvas` suffix. The d12 mark is four filled paths in `IconPaths["d12"]`: the outer decagon ring, the pentagon ring, the five spokes, and the "12". `favicon.svg` repeats them, and an App test fails if the two drift apart. `favicon.png` is a 32px Chromium render of the SVG.
+
+The editor's rename input sits in a `<form @onsubmit>`. With a plain Enter keydown handler, focus moved to the Rename button before the browser ran Enter's default action, so Enter clicked the button and restarted the rename. Implicit form submission consumes the Enter instead. The offcanvas is 18rem wide. Bootstrap's 400px default covered a phone screen, so no backdrop was left to tap. Autosave and Save moved into the editor's toolbar row until the autosave ticket places them.
