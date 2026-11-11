@@ -6,141 +6,87 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
-<dialog class="suggestion-box" @ref="_dialog" aria-labelledby="suggestion-box-heading">
-    <h2 id="suggestion-box-heading">Suggest a feature or change</h2>
+<ModalDialog @ref="_dialog" LabelledBy="suggestion-box-heading" OnClose="StateHasChanged">
+    <div class="modal-header">
+        <h2 class="modal-title fs-5" id="suggestion-box-heading">Suggest a feature or change</h2>
+    </div>
 
-    <label class="suggestion-box-field">
-        Title
-        <input
-            type="text"
-            maxlength="@MaxTitleLength"
-            placeholder="What should change?"
-            @bind="_title"
-            @bind:event="oninput"
-        />
-    </label>
+    <div class="modal-body">
+        <div class="mb-3">
+            <label class="form-label" for="suggestion-box-title">Title</label>
+            <input
+                id="suggestion-box-title"
+                class="form-control"
+                type="text"
+                autofocus
+                maxlength="@MaxTitleLength"
+                placeholder="What should change?"
+                @bind="_title"
+                @bind:event="oninput"
+            />
+        </div>
 
-    <label class="suggestion-box-field">
-        Details
-        <textarea
-            rows="5"
-            placeholder="Optional: what you expected, what happened, why it matters"
-            @bind="_details"
-            @bind:event="oninput"
-        ></textarea>
-    </label>
+        <div class="mb-3">
+            <label class="form-label" for="suggestion-box-details">Details</label>
+            <textarea
+                id="suggestion-box-details"
+                class="form-control"
+                rows="5"
+                placeholder="Optional: what you expected, what happened, why it matters"
+                @bind="_details"
+                @bind:event="oninput"
+            ></textarea>
+        </div>
 
-    <div class="suggestion-box-screenshot">
-        @if (_screenshot is null)
+        <div class="suggestion-box-screenshot">
+            @if (_screenshot is null)
+            {
+                <span>Paste a screenshot with Ctrl+V while this box is open.</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="PasteFromClipboard">
+                    Paste from clipboard
+                </button>
+            }
+            else
+            {
+                <img src="@_screenshot" alt="Pasted screenshot" />
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="RemoveScreenshot">
+                    Remove screenshot
+                </button>
+            }
+        </div>
+
+        @if (_message is not null)
         {
-            <span>Paste a screenshot with Ctrl+V while this box is open.</span>
-            <button type="button" class="btn btn-secondary btn-sm" @onclick="PasteFromClipboard">
-                Paste from clipboard
-            </button>
-        }
-        else
-        {
-            <img src="@_screenshot" alt="Pasted screenshot" />
-            <button type="button" class="btn btn-secondary btn-sm" @onclick="RemoveScreenshot">
-                Remove screenshot
-            </button>
+            <p class="text-danger small mt-3 mb-0" role="alert">@_message</p>
         }
     </div>
 
-    @if (_message is not null)
-    {
-        <p class="suggestion-box-message" role="alert">@_message</p>
-    }
-
-    <div class="suggestion-box-actions">
-        <span class="suggestion-box-hint">Ctrl+Enter saves</span>
-        <button type="button" class="btn btn-secondary btn-sm" @onclick="CloseAsync">Cancel</button>
+    <div class="modal-footer">
+        <span class="text-body-secondary small me-auto">Ctrl+Enter saves</span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CloseAsync">Cancel</button>
         <button type="button" class="btn btn-primary btn-sm" disabled="@(!CanSave)" @onclick="SaveAsync">
             @(_saving ? "Saving…" : "Save")
         </button>
     </div>
-</dialog>
+</ModalDialog>
 
 <style>
-    .suggestion-box {
-        width: min(520px, calc(100vw - 32px));
-        padding: 20px;
-        border: 1px solid var(--app-border);
-        border-radius: var(--app-radius);
-        background: var(--app-surface);
-        color: var(--app-text);
-        box-shadow: var(--app-shadow);
-    }
-
-    .suggestion-box::backdrop {
-        background: rgba(0, 0, 0, 0.35);
-    }
-
-    .suggestion-box h2 {
-        margin: 0 0 16px;
-        font-size: 1.15rem;
-    }
-
-    .suggestion-box-field {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin-bottom: 12px;
-        font-size: 0.9rem;
-        font-weight: 600;
-    }
-
-    .suggestion-box-field input,
-    .suggestion-box-field textarea {
-        font: inherit;
-        font-weight: normal;
-        background: var(--app-bg);
-        color: var(--app-text);
-        padding: 6px 8px;
-        border: 1px solid var(--app-border);
-        border-radius: var(--app-radius-sm);
-    }
-
-    .suggestion-box-field textarea {
-        resize: vertical;
-    }
-
     .suggestion-box-screenshot {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
         padding: 12px;
-        border: 1px dashed var(--app-border);
-        border-radius: var(--app-radius-sm);
-        color: var(--app-muted-text);
-        font-size: 0.9rem;
+        border: 1px dashed var(--bs-border-color);
+        border-radius: var(--bs-border-radius);
+        color: var(--bs-secondary-color);
+        font-size: 0.875rem;
     }
 
     .suggestion-box-screenshot img {
         max-width: 100%;
         max-height: 240px;
-        border: 1px solid var(--app-border);
-    }
-
-    .suggestion-box-message {
-        margin: 12px 0 0;
-        color: var(--app-danger);
-        font-size: 0.9rem;
-    }
-
-    .suggestion-box-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 16px;
-    }
-
-    .suggestion-box-hint {
-        margin-right: auto;
-        color: var(--app-muted-text);
-        font-size: 0.8rem;
+        border: 1px solid var(--bs-border-color);
     }
 </style>
 
@@ -150,7 +96,7 @@
     [Parameter]
     public EventCallback<SavedSuggestion> OnSaved { get; set; }
 
-    private ElementReference _dialog;
+    private ModalDialog? _dialog;
     private DotNetObjectReference<SuggestionBox>? _selfReference;
     private IJSObjectReference? _module;
     private IJSObjectReference? _listener;
@@ -165,19 +111,24 @@
     // A closed box keeps its draft, so an accidental Escape loses nothing; only a save clears it.
     public async Task OpenAsync()
     {
+        if (_dialog is null)
+        {
+            return;
+        }
+
         _message = null;
-        _listener ??= await AttachAsync();
-        await _listener.InvokeVoidAsync("open");
+        _listener ??= await AttachAsync(_dialog.Element);
+        await _dialog.ShowAsync();
     }
 
-    private async Task<IJSObjectReference> AttachAsync()
+    private async Task<IJSObjectReference> AttachAsync(ElementReference dialog)
     {
         _module = await JS.InvokeAsync<IJSObjectReference>(
             "import",
             "./Components/SuggestionBox.razor.js"
         );
         _selfReference = DotNetObjectReference.Create(this);
-        return await _module.InvokeAsync<IJSObjectReference>("attach", _dialog, _selfReference);
+        return await _module.InvokeAsync<IJSObjectReference>("attach", dialog, _selfReference);
     }
 
     [JSInvokable]
@@ -190,9 +141,6 @@
 
     [JSInvokable]
     public Task OnSaveShortcut() => SaveAsync();
-
-    [JSInvokable]
-    public void OnDialogClosed() => StateHasChanged();
 
     private async Task PasteFromClipboard()
     {
@@ -210,9 +158,9 @@
 
     private async Task CloseAsync()
     {
-        if (_listener is not null)
+        if (_dialog is not null)
         {
-            await _listener.InvokeVoidAsync("close");
+            await _dialog.CloseAsync();
         }
     }
 

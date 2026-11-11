@@ -11,12 +11,15 @@
 
 <div class="board-editor-page" data-d12-theme="@ThemeAttribute">
     <div class="board-editor-header">
-        <button class="btn btn-secondary btn-sm" @onclick="GoBack">&larr; Boards</button>
+        <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" @onclick="GoBack">
+            <Icon Name="arrow-left" /> Boards
+        </button>
 
         @if (_isEditingName)
         {
             <input
-                class="board-title-input"
+                class="form-control board-title-input"
+                aria-label="Board name"
                 @ref="_titleInputRef"
                 value="@_nameDraft"
                 @oninput="args => _nameDraft = args.Value?.ToString() ?? string.Empty"
@@ -29,42 +32,48 @@
             <h1 class="board-title" @onclick="StartRenameTitle" title="Click to rename">@_name</h1>
         }
 
-        <label class="autosave-toggle">
-            <input type="checkbox" @bind="_autosaveEnabled" />
-            Autosave
-        </label>
+        <div class="form-check mb-0 autosave-toggle">
+            <input class="form-check-input" type="checkbox" id="autosave-toggle" @bind="_autosaveEnabled" />
+            <label class="form-check-label" for="autosave-toggle">Autosave</label>
+        </div>
         <button class="btn btn-primary btn-sm" @onclick="Save" disabled="@(!_isDirty)">Save</button>
     </div>
 
     <div class="board-editor-toolbar">
         <div class="board-editor-group">
-            <button class="btn btn-secondary btn-sm" title="Ctrl+Z" @onclick="Undo">Undo</button>
-            <button class="btn btn-secondary btn-sm" title="Ctrl+Shift+Z" @onclick="Redo">Redo</button>
+            <button class="btn btn-outline-secondary btn-sm" title="Ctrl+Z" @onclick="Undo">Undo</button>
+            <button class="btn btn-outline-secondary btn-sm" title="Ctrl+Shift+Z" @onclick="Redo">Redo</button>
         </div>
 
         <div class="board-editor-group">
-            <button class="btn btn-secondary btn-sm" title="Shift+1" @onclick="ZoomToFit">Fit</button>
-            <button class="btn btn-secondary btn-sm" title="Shift+2" @onclick="ZoomToSelection">Selection</button>
-            <button class="btn btn-secondary btn-sm" title="Shift+0" @onclick="ZoomTo100Percent">100%</button>
+            <button class="btn btn-outline-secondary btn-sm" title="Shift+1" @onclick="ZoomToFit">Fit</button>
+            <button class="btn btn-outline-secondary btn-sm" title="Shift+2" @onclick="ZoomToSelection">Selection</button>
+            <button class="btn btn-outline-secondary btn-sm" title="Shift+0" @onclick="ZoomTo100Percent">100%</button>
         </div>
 
         <div class="board-editor-group">
-            <label title="Ctrl+'"><input type="checkbox" @bind="_snapToGrid" /> Snap to grid</label>
-            <label><input type="checkbox" @bind="_objectSnapping" /> Object snapping</label>
+            <div class="form-check mb-0" title="Ctrl+'">
+                <input class="form-check-input" type="checkbox" id="snap-to-grid" @bind="_snapToGrid" />
+                <label class="form-check-label" for="snap-to-grid">Snap to grid</label>
+            </div>
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="object-snapping" @bind="_objectSnapping" />
+                <label class="form-check-label" for="object-snapping">Object snapping</label>
+            </div>
         </div>
 
         <div class="board-editor-group">
-            <label>
+            <label class="d-flex align-items-center gap-1">
                 Wheel
-                <select @bind="_wheelProfile">
+                <select class="form-select form-select-sm w-auto" @bind="_wheelProfile">
                     <option value="@WheelDeviceProfile.Auto">Auto</option>
                     <option value="@WheelDeviceProfile.Mouse">Mouse</option>
                     <option value="@WheelDeviceProfile.Trackpad">Trackpad</option>
                 </select>
             </label>
-            <label>
+            <label class="d-flex align-items-center gap-1">
                 Theme
-                <select @bind="_theme">
+                <select class="form-select form-select-sm w-auto" @bind="_theme">
                     <option value="system">System</option>
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
@@ -73,7 +82,7 @@
         </div>
 
         <div class="board-editor-group">
-            <button class="btn btn-secondary btn-sm" @onclick="ToggleShortcuts" aria-expanded="@_showShortcuts">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleShortcuts" aria-expanded="@_showShortcuts">
                 Shortcuts
             </button>
             <button class="btn btn-primary btn-sm" @onclick="OpenSuggestionBox">Suggest…</button>
@@ -173,17 +182,9 @@
 
     .board-title-input {
         padding: 3px 7px;
-        font-family: inherit;
-        border: 1px solid var(--app-accent);
-        border-radius: var(--app-radius-sm);
-        background: var(--app-surface);
-        outline: none;
     }
 
     .autosave-toggle {
-        display: flex;
-        align-items: center;
-        gap: 4px;
         color: var(--app-muted-text);
         font-size: 0.9rem;
     }
@@ -204,12 +205,6 @@
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-
-    .board-editor-group label {
-        display: flex;
-        align-items: center;
-        gap: 4px;
     }
 
     .board-editor-saved {

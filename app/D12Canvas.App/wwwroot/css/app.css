@@ -1,3 +1,9 @@
+@import url("../lib/bootstrap/css/bootstrap.min.css") layer(bootstrap);
+
+:root {
+    --bs-body-font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
 :root {
     --app-bg: #f5f6f8;
     --app-surface: #ffffff;
@@ -64,7 +70,6 @@
 html, body {
     margin: 0;
     height: 100%;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     color: var(--app-text);
     background: var(--app-bg);
 }
@@ -73,130 +78,24 @@ html, body {
     height: 100%;
 }
 
-button {
-    cursor: pointer;
-    font-family: inherit;
-}
-
-h1:focus-visible,
 h1:focus {
-    outline: 2px solid var(--app-accent);
-    outline-offset: 3px;
-    border-radius: 4px;
+    outline: none;
 }
 
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 14px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    line-height: 1.2;
-    border-radius: var(--app-radius-sm);
-    border: 1px solid transparent;
-    background: var(--app-surface);
-    color: var(--app-text);
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+.app-dialog[open] {
+    display: block;
 }
 
-.btn:disabled {
-    opacity: 0.5;
-    cursor: default;
-}
-
-.btn-sm {
-    padding: 5px 10px;
-    font-size: 0.8rem;
-}
-
-.btn-primary {
-    background: var(--app-accent);
-    color: var(--app-accent-text);
-    border-color: var(--app-accent);
-}
-
-.btn-primary:hover:not(:disabled) {
-    background: var(--app-accent-hover);
-    border-color: var(--app-accent-hover);
-}
-
-.btn-secondary {
+.app-dialog {
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    border: 0;
     background: transparent;
-    border-color: var(--app-border);
-    color: var(--app-text);
 }
 
-.btn-secondary:hover:not(:disabled) {
-    background: var(--app-bg);
-}
-
-.btn-danger {
-    background: transparent;
-    border-color: var(--app-border);
-    color: var(--app-danger);
-}
-
-.btn-danger:hover:not(:disabled) {
-    background: var(--app-danger);
-    color: var(--app-danger-text);
-    border-color: var(--app-danger);
-}
-
-.card {
-    background: var(--app-surface);
-    border: 1px solid var(--app-border);
-    border-radius: var(--app-radius);
-    box-shadow: var(--app-shadow);
-}
-
-.modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 18, 22, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    z-index: 1000;
-}
-
-.modal-card {
-    background: var(--app-surface);
-    border-radius: var(--app-radius);
-    box-shadow: var(--app-shadow);
-    padding: 24px;
-    width: min(400px, 100%);
-}
-
-.modal-title {
-    margin: 0 0 16px;
-    font-size: 1.1rem;
-    color: var(--app-text);
-}
-
-.modal-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px 10px;
-    font-size: 0.95rem;
-    border: 1px solid var(--app-border);
-    border-radius: var(--app-radius-sm);
-    background: var(--app-bg);
-    color: var(--app-text);
-}
-
-.modal-input:focus {
-    outline: 2px solid var(--app-accent);
-    outline-offset: 1px;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 20px;
+.app-dialog::backdrop {
+    background-color: rgb(0 0 0 / 0.5);
 }
 
 #blazor-error-ui {

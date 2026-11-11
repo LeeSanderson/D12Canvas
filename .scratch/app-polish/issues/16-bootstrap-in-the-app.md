@@ -1,6 +1,6 @@
 # Bootstrap in the App
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 12
 
 Spec: [App polish](../spec.md), "Bootstrap delivery" and "Heading focus". Decision records: [Bootstrap delivery and JS](02-bootstrap-delivery-and-js.md), [Heading tab stop](03-heading-tab-stop.md). Closes `.scratch/backlog/002-no-tabstop-of-heading-page.md`.
@@ -19,12 +19,18 @@ Leave the `--app-*` colour tokens, the loading screen and the error bar alone; l
 
 ## Acceptance criteria
 
-- [ ] Bootstrap's CSS loads from the App's own static files, inside the `bootstrap` layer, with no network fetch.
-- [ ] No App CSS rule uses a Bootstrap class name as its selector.
-- [ ] Buttons, the board table and form controls on both pages render as Bootstrap components.
-- [ ] The rename dialog opens as a native modal `<dialog>`: the page behind is inert, Escape closes it, and Rename still saves the new name.
-- [ ] The suggestion dialog still opens, closes and saves.
-- [ ] After navigating to either page, focus is on the `h1` and no focus ring shows.
-- [ ] Canvas components (sticky note, text, property panel, palette, context menu) look the same as before by eye.
-- [ ] App tests through the page harness cover the rename dialog: renaming from the editor calls the store with the new name.
-- [ ] No comments in any `<style>` block.
+- [x] Bootstrap's CSS loads from the App's own static files, inside the `bootstrap` layer, with no network fetch.
+- [x] No App CSS rule uses a Bootstrap class name as its selector.
+- [x] Buttons, the board table and form controls on both pages render as Bootstrap components.
+- [x] The rename dialog opens as a native modal `<dialog>`: the page behind is inert, Escape closes it, and Rename still saves the new name.
+- [x] The suggestion dialog still opens, closes and saves.
+- [x] After navigating to either page, focus is on the `h1` and no focus ring shows.
+- [x] Canvas components (sticky note, text, property panel, palette, context menu) look the same as before by eye.
+- [x] App tests through the page harness cover the rename dialog: renaming from the editor calls the store with the new name.
+- [x] No comments in any `<style>` block.
+
+## Comments
+
+Done. `app.css` imports `lib/bootstrap/css/bootstrap.min.css` (5.3.8, with its source map) into `layer(bootstrap)` and sets the App font through `--bs-body-font-family`. `ModalDialog` wraps a native `<dialog class="modal app-dialog">` around Bootstrap's `.modal-dialog` and `.modal-content`. Its JS module `Components/ModalDialog.razor.js` only calls `showModal()` and `close()`, and the component raises `OnClose` from the dialog's `close` event, so Escape needs no JS listener. `RenameBoardModal` and `SuggestionBox` both sit on it. The rename dialog is a form, so Enter submits it. Its confirm button now reads "Rename". `Icon` has `arrow-left`, `pencil`, `plus-lg` and `trash`. An unknown name throws.
+
+Bootstrap still renders light when the OS is dark, while the `--app-*` tokens go dark. The theme ticket sets `data-bs-theme`, which fixes that.

@@ -29,24 +29,13 @@ export function attach(dialog, dotnetRef) {
         }
     };
 
-    const handleClose = () => dotnetRef.invokeMethodAsync("OnDialogClosed");
-
     dialog.addEventListener("paste", handlePaste);
     dialog.addEventListener("keydown", handleKeyDown);
-    dialog.addEventListener("close", handleClose);
 
     return {
-        open: () => {
-            if (!dialog.open) {
-                dialog.showModal();
-            }
-            dialog.querySelector("input")?.focus();
-        },
-        close: () => dialog.close(),
         dispose: () => {
             dialog.removeEventListener("paste", handlePaste);
             dialog.removeEventListener("keydown", handleKeyDown);
-            dialog.removeEventListener("close", handleClose);
         }
     };
 }

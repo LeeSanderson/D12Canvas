@@ -1,25 +1,25 @@
-<div class="modal-backdrop" @onclick="Cancel">
-    <div class="modal-card" @onclick:stopPropagation="true">
-        <h2 class="modal-title">Rename board</h2>
-        <input
-            class="modal-input"
-            @ref="_inputRef"
-            value="@_value"
-            @oninput="args => _value = args.Value?.ToString() ?? string.Empty"
-            @onkeydown="HandleKeyDown"
-        />
-        <div class="modal-actions">
-            <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
-            <button
-                class="btn btn-primary"
-                @onclick="Confirm"
-                disabled="@string.IsNullOrWhiteSpace(_value)"
-            >
-                Save
+<ModalDialog @ref="_dialog" LabelledBy="rename-board-title" OnClose="Cancel">
+    <form @onsubmit="Confirm">
+        <div class="modal-header">
+            <h2 class="modal-title fs-5" id="rename-board-title">Rename board</h2>
+        </div>
+        <div class="modal-body">
+            <input
+                class="form-control"
+                aria-label="Board name"
+                autofocus
+                value="@_value"
+                @oninput="args => _value = args.Value?.ToString() ?? string.Empty"
+            />
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary" disabled="@string.IsNullOrWhiteSpace(_value)">
+                Rename
             </button>
         </div>
-    </div>
-</div>
+    </form>
+</ModalDialog>
 
 @code {
     [Parameter, EditorRequired]
@@ -31,29 +31,16 @@
     [Parameter]
     public EventCallback OnCancel { get; set; }
 
+    private ModalDialog? _dialog;
     private string _value = "";
-    private ElementReference _inputRef;
 
     protected override void OnInitialized() => _value = InitialName;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && _dialog is not null)
         {
-            await _inputRef.FocusAsync();
-        }
-    }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        switch (e.Key)
-        {
-            case "Enter":
-                await Confirm();
-                break;
-            case "Escape":
-                await Cancel();
-                break;
+            await _dialog.ShowAsync();
         }
     }
 
