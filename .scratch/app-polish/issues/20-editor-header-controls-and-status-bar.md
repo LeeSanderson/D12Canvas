@@ -1,6 +1,6 @@
 # Editor header controls and status bar
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 18, 19
 
 Spec: [App polish](../spec.md), "Board editor page". Decision record: [Editor toolbar](08-editor-toolbar.md).
@@ -22,12 +22,18 @@ The editor's toolbar row goes. Its controls move to the page header above the ca
 
 ## Acceptance criteria
 
-- [ ] The editor has no toolbar row.
-- [ ] Undo and Redo in the header undo and redo canvas edits.
-- [ ] The View menu's zoom commands, snapping switches and wheel profile act on the canvas, and the current wheel profile is checked.
-- [ ] The Shortcuts button shows and hides the shortcuts overlay and reflects its state in `aria-pressed`.
-- [ ] The status bar shows the selection count and updates as the selection changes.
-- [ ] The status bar's Grid and Snapping toggles and the View menu's switches stay in step.
-- [ ] Zoom out, zoom in and the zoom drop-up commands change the zoom, and the percentage updates.
-- [ ] Below `sm`, the View button shows its icon only and the status bar hides Grid and Snapping.
-- [ ] App tests through the page harness: the header shows Undo/Redo, View and Shortcuts on the editor and not on the list; selection count text; the Grid and Snapping toggles; zoom commands from the View menu and the status bar.
+- [x] The editor has no toolbar row.
+- [x] Undo and Redo in the header undo and redo canvas edits.
+- [x] The View menu's zoom commands, snapping switches and wheel profile act on the canvas, and the current wheel profile is checked.
+- [x] The Shortcuts button shows and hides the shortcuts overlay and reflects its state in `aria-pressed`.
+- [x] The status bar shows the selection count and updates as the selection changes.
+- [x] The status bar's Grid and Snapping toggles and the View menu's switches stay in step.
+- [x] Zoom out, zoom in and the zoom drop-up commands change the zoom, and the percentage updates.
+- [x] Below `sm`, the View button shows its icon only and the status bar hides Grid and Snapping.
+- [x] App tests through the page harness: the header shows Undo/Redo, View and Shortcuts on the editor and not on the list; selection count text; the Grid and Snapping toggles; zoom commands from the View menu and the status bar.
+
+## Comments
+
+Done. The toolbar row is gone. Undo/Redo, View and Shortcuts sit in the page header's more section, and a 30px status bar sits under the canvas. `ZoomControl` replaces `ZoomReadout`: zoom out, the percentage as a drop-up, zoom in. The View menu and the drop-up share `ZoomMenuItems`, so the three zoom commands and their shortcuts live in one place. Wheel profile items use `aria-pressed`, like the theme menu. Tests are in `EditorControlsTests`. The autosave tests now find the switch by `#autosave-switch`, because the View menu's switches come first in the header.
+
+One known gap, inherited from the shared dropdown: while the View menu or the zoom drop-up is open, keys pressed inside it don't reach the canvas, so Ctrl+Z there does nothing until the menu closes.

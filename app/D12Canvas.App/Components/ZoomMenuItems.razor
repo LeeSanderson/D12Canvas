@@ -1,0 +1,38 @@
+@foreach (var command in Commands)
+{
+    <button
+        type="button"
+        class="dropdown-item d-flex align-items-center gap-2"
+        @onclick="() => Run(command)"
+    >
+        <Icon Name="@command.Icon" />
+        <span>@command.Label</span>
+        <span class="dropdown-shortcut ms-auto ps-3 small text-body-secondary">@command.Shortcut</span>
+    </button>
+}
+
+@code {
+    private sealed record ZoomCommand(string Icon, string Label, string Shortcut, Action<DiagramCanvas> Run);
+
+    private static readonly ZoomCommand[] Commands =
+    [
+        new("arrows-fullscreen", "Zoom to fit", "Shift+1", canvas => canvas.ZoomToFit()),
+        new("bounding-box-circles", "Zoom to selection", "Shift+2", canvas => canvas.ZoomToSelection()),
+        new("aspect-ratio", "Actual size", "Shift+0", canvas => canvas.ZoomTo100Percent()),
+    ];
+
+    [Parameter, EditorRequired]
+    public DiagramCanvas? Canvas { get; set; }
+
+    [Parameter, EditorRequired]
+    public Action Close { get; set; } = default!;
+
+    private void Run(ZoomCommand command)
+    {
+        Close();
+        if (Canvas is not null)
+        {
+            command.Run(Canvas);
+        }
+    }
+}

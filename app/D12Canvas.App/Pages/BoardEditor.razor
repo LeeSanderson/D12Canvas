@@ -44,6 +44,73 @@
             <Icon Name="pencil" />
         </button>
     </SectionContent>
+    <SectionContent SectionName="@PageHeaderSections.More">
+        <div class="d-flex align-items-center gap-2">
+            <div class="btn-group btn-group-sm" role="group" aria-label="History">
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    aria-label="Undo"
+                    title="Undo (Ctrl+Z)"
+                    disabled="@(_canvas is null)"
+                    @onclick="Undo"
+                >
+                    <Icon Name="arrow-counterclockwise" />
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    aria-label="Redo"
+                    title="Redo (Ctrl+Shift+Z)"
+                    disabled="@(_canvas is null)"
+                    @onclick="Redo"
+                >
+                    <Icon Name="arrow-clockwise" />
+                </button>
+            </div>
+            <Dropdown Label="View" Title="View" AlignEnd="true">
+                <Toggle><Icon Name="sliders" /> <span class="d-none d-sm-inline">View</span></Toggle>
+                <ChildContent Context="close">
+                    <ZoomMenuItems Canvas="_canvas" Close="close" />
+                    <hr class="dropdown-divider" />
+                    <div class="px-3 py-1">
+                        <div class="form-check form-switch mb-1" title="Snap to grid (Ctrl+')">
+                            <input class="form-check-input" type="checkbox" role="switch" id="snap-to-grid" @bind="_snapToGrid" />
+                            <label class="form-check-label text-nowrap" for="snap-to-grid">Snap to grid</label>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="object-snapping" @bind="_objectSnapping" />
+                            <label class="form-check-label text-nowrap" for="object-snapping">Object snapping</label>
+                        </div>
+                    </div>
+                    <hr class="dropdown-divider" />
+                    <h6 class="dropdown-header">Mouse wheel</h6>
+                    @foreach (var profile in WheelProfiles)
+                    {
+                        <button
+                            type="button"
+                            class="dropdown-item d-flex align-items-center gap-2"
+                            aria-pressed="@(profile == _wheelProfile ? "true" : "false")"
+                            @onclick="() => { _wheelProfile = profile; close(); }"
+                        >
+                            <span class="d-flex @(profile == _wheelProfile ? null : "invisible")"><Icon Name="check2" /></span>
+                            @profile
+                        </button>
+                    }
+                </ChildContent>
+            </Dropdown>
+            <button
+                type="button"
+                class="btn btn-sm @(_showShortcuts ? "btn-secondary" : "btn-outline-secondary")"
+                aria-label="Shortcuts"
+                aria-pressed="@(_showShortcuts ? "true" : "false")"
+                title="Keyboard shortcuts"
+                @onclick="ToggleShortcuts"
+            >
+                <Icon Name="keyboard" /> <span class="d-none d-lg-inline">Shortcuts</span>
+            </button>
+        </div>
+    </SectionContent>
     <SectionContent SectionName="@PageHeaderSections.Actions">
         <div class="d-flex align-items-center gap-3">
             <span class="save-status small text-body-secondary d-flex align-items-center gap-1" role="status">
@@ -75,49 +142,6 @@
 }
 
 <div class="board-editor-page">
-    <div class="board-editor-toolbar">
-        <div class="board-editor-group">
-            <button class="btn btn-outline-secondary btn-sm" title="Ctrl+Z" @onclick="Undo">Undo</button>
-            <button class="btn btn-outline-secondary btn-sm" title="Ctrl+Shift+Z" @onclick="Redo">Redo</button>
-        </div>
-
-        <div class="board-editor-group">
-            <button class="btn btn-outline-secondary btn-sm" title="Shift+1" @onclick="ZoomToFit">Fit</button>
-            <button class="btn btn-outline-secondary btn-sm" title="Shift+2" @onclick="ZoomToSelection">Selection</button>
-            <button class="btn btn-outline-secondary btn-sm" title="Shift+0" @onclick="ZoomTo100Percent">100%</button>
-        </div>
-
-        <div class="board-editor-group">
-            <div class="form-check mb-0" title="Ctrl+'">
-                <input class="form-check-input" type="checkbox" id="snap-to-grid" @bind="_snapToGrid" />
-                <label class="form-check-label" for="snap-to-grid">Snap to grid</label>
-            </div>
-            <div class="form-check mb-0">
-                <input class="form-check-input" type="checkbox" id="object-snapping" @bind="_objectSnapping" />
-                <label class="form-check-label" for="object-snapping">Object snapping</label>
-            </div>
-        </div>
-
-        <div class="board-editor-group">
-            <label class="d-flex align-items-center gap-1">
-                Wheel
-                <select class="form-select form-select-sm w-auto" @bind="_wheelProfile">
-                    <option value="@WheelDeviceProfile.Auto">Auto</option>
-                    <option value="@WheelDeviceProfile.Mouse">Mouse</option>
-                    <option value="@WheelDeviceProfile.Trackpad">Trackpad</option>
-                </select>
-            </label>
-        </div>
-
-        <div class="board-editor-group">
-            <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleShortcuts" aria-expanded="@_showShortcuts">
-                Shortcuts
-            </button>
-        </div>
-
-        <span class="board-editor-status">@_selectedCount selected · <ZoomReadout Canvas="_canvas" /></span>
-    </div>
-
     @if (_board is not null)
     {
         <div class="board-editor-body">
@@ -157,6 +181,28 @@
                 </div>
             }
         </div>
+        <footer class="board-editor-status-bar bg-body-tertiary border-top small text-body-secondary d-flex align-items-center gap-2 px-2">
+            <span class="me-auto text-nowrap" role="status">@SelectionText</span>
+            <button
+                type="button"
+                class="btn btn-link btn-sm status-bar-button status-bar-toggle d-none d-sm-flex align-items-center gap-1"
+                aria-pressed="@(_snapToGrid ? "true" : "false")"
+                title="Snap to grid (Ctrl+')"
+                @onclick="() => _snapToGrid = !_snapToGrid"
+            >
+                <Icon Name="grid-3x3-gap" /> Grid
+            </button>
+            <button
+                type="button"
+                class="btn btn-link btn-sm status-bar-button status-bar-toggle d-none d-sm-flex align-items-center gap-1"
+                aria-pressed="@(_objectSnapping ? "true" : "false")"
+                title="Object snapping"
+                @onclick="() => _objectSnapping = !_objectSnapping"
+            >
+                <Icon Name="magnet" /> Snapping
+            </button>
+            <ZoomControl Canvas="_canvas" />
+        </footer>
     }
     else if (_notFound)
     {
@@ -194,26 +240,33 @@
         }
     }
 
-    .board-editor-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px 20px;
-        padding: 6px 16px;
-        background: var(--bs-body-bg);
-        border-bottom: 1px solid var(--bs-border-color);
-        color: var(--bs-secondary-color);
-        font-size: 0.9rem;
+    .board-editor-status-bar {
+        flex: none;
+        height: 30px;
     }
 
-    .board-editor-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    .status-bar-button {
+        --bs-btn-padding-y: 0;
+        --bs-btn-padding-x: 0.375rem;
+        --bs-btn-font-size: inherit;
+        text-decoration: none;
     }
 
-    .board-editor-status {
-        margin-left: auto;
+    .status-bar-toggle[aria-pressed="true"] {
+        --bs-btn-color: var(--bs-emphasis-color);
+        --bs-btn-hover-color: var(--bs-emphasis-color);
+        --bs-btn-active-color: var(--bs-emphasis-color);
+    }
+
+    .status-bar-toggle[aria-pressed="false"] {
+        --bs-btn-color: var(--bs-secondary-color);
+        --bs-btn-hover-color: var(--bs-body-color);
+        --bs-btn-active-color: var(--bs-body-color);
+        opacity: 0.6;
+    }
+
+    .zoom-level {
+        min-width: 3.5rem;
         font-variant-numeric: tabular-nums;
     }
 
@@ -343,6 +396,8 @@
         ]),
     ];
 
+    private static readonly WheelDeviceProfile[] WheelProfiles = Enum.GetValues<WheelDeviceProfile>();
+
     [Parameter]
     public Guid Id { get; set; }
 
@@ -367,6 +422,9 @@
     private Func<ElementReference>? _pendingFocus;
     private ElementReference _titleInputRef;
     private ElementReference _renameButtonRef;
+
+    private string SelectionText =>
+        _selectedCount == 0 ? "Nothing selected" : $"{_selectedCount} selected";
 
     private (string? Icon, string Text) SaveStatus =>
         (_autosaveEnabled, _isDirty) switch
@@ -441,12 +499,6 @@
     private void Undo() => _canvas?.OnUndoPressed();
 
     private void Redo() => _canvas?.OnRedoPressed();
-
-    private void ZoomToFit() => _canvas?.ZoomToFit();
-
-    private void ZoomToSelection() => _canvas?.ZoomToSelection();
-
-    private void ZoomTo100Percent() => _canvas?.ZoomTo100Percent();
 
     private void ToggleShortcuts() => _showShortcuts = !_showShortcuts;
 

@@ -1,9 +1,40 @@
 @implements IDisposable
 
-<span>@ZoomPercent%</span>
+<div class="d-flex align-items-center">
+    <button
+        type="button"
+        class="btn btn-link btn-sm link-body-emphasis status-bar-button"
+        aria-label="Zoom out"
+        title="Zoom out (PageDown)"
+        @onclick="ZoomOut"
+    >
+        <Icon Name="dash-lg" />
+    </button>
+    <Dropdown
+        DropUp="true"
+        AlignEnd="true"
+        Caret="false"
+        ToggleClass="btn btn-link btn-sm link-body-emphasis status-bar-button zoom-level"
+        Title="Zoom options"
+    >
+        <Toggle>@ZoomPercent%</Toggle>
+        <ChildContent Context="close">
+            <ZoomMenuItems Canvas="Canvas" Close="close" />
+        </ChildContent>
+    </Dropdown>
+    <button
+        type="button"
+        class="btn btn-link btn-sm link-body-emphasis status-bar-button"
+        aria-label="Zoom in"
+        title="Zoom in (PageUp)"
+        @onclick="ZoomIn"
+    >
+        <Icon Name="plus-lg" />
+    </button>
+</div>
 
 @code {
-    // Its own component so a pan or zoom re-renders this one span rather than the page that holds
+    // Its own component so a pan or zoom re-renders this control rather than the page that holds
     // the canvas.
     [Parameter]
     public DiagramCanvas? Canvas { get; set; }
@@ -29,6 +60,10 @@
             _scale = _subscribedCanvas.ZoomPanTracker.Scale;
         }
     }
+
+    private void ZoomIn() => Canvas?.OnZoomIn();
+
+    private void ZoomOut() => Canvas?.OnZoomOut();
 
     private void HandleZoomOrPanChanged(object? sender, ZoomPanChangedEventArgs args)
     {

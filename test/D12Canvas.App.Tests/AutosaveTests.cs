@@ -161,7 +161,7 @@ public sealed class AutosaveTests : AppTestContext
         layout.Find(".d12-palette-entry-button").Click();
 
     private static IElement Switch(IRenderedComponent<MainLayout> layout) =>
-        layout.Find(".page-header .form-switch input[type=checkbox]");
+        layout.Find(".page-header #autosave-switch");
 
     private static IElement? SaveButton(IRenderedComponent<MainLayout> layout) =>
         layout
