@@ -131,6 +131,9 @@
             BlinkMacSystemFont,
             "Segoe UI",
             sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 1.5;
         background: var(--d12-surface);
         border: 1px solid var(--d12-border);
         border-radius: 6px;
@@ -168,6 +171,7 @@
 
     .d12-property-panel-input {
         font: inherit;
+        margin: 0;
         padding: 4px 6px;
         border: 1px solid var(--d12-border);
         border-radius: 4px;
@@ -176,9 +180,17 @@
         color: inherit;
     }
 
+    .d12-property-panel-input::-webkit-inner-spin-button {
+        height: auto;
+    }
+
     .d12-property-panel-color {
         padding: 2px;
         height: 28px;
+    }
+
+    .d12-property-panel-color::-webkit-color-swatch-wrapper {
+        padding: 0;
     }
 
     .d12-property-panel-color-row {
@@ -225,12 +237,16 @@
     .d12-property-panel-unlock {
         font: inherit;
         font-size: 12px;
+        box-sizing: border-box;
+        margin: 0;
         padding: 2px 6px;
         border: 1px solid var(--d12-border);
         border-radius: 4px;
         background: transparent;
         color: inherit;
+        text-transform: none;
         cursor: pointer;
+        appearance: button;
     }
 
     .d12-property-panel-fields :disabled {
@@ -239,6 +255,7 @@
     }
 
     .d12-property-panel-checkbox {
+        margin: 0;
         width: 16px;
         height: 16px;
         align-self: flex-start;
