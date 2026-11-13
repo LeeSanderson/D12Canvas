@@ -18,10 +18,11 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 ## Decisions so far
 
 - [Icon source and style](issues/02-icon-source-and-style.md) — Lucide path data at a pinned version, 24-grid stroke icons in `currentColor`, with Lucide's LICENSE shipped as a third-party notice and a few gaps drawn in-house to its rules
+- [Icon inventory](issues/01-icon-inventory.md) — six sites draw icons today, including the LOD placeholder and the menu check mark; the bar's colour and option glyphs show the current value, the panel has no edge fields, and about 60 glyphs are listed
 
 ## Not yet specified
 
-- Whether the context-menu align/distribute glyphs (`ContextMenu.razor.cs`) move onto the shared set or stay hand-drawn.
+- Whether the context-menu align/distribute glyphs (`ContextMenu.razor.cs`) move onto the shared set or stay hand-drawn, and whether the text menu rows and the `✓` toggle mark take icons too.
 - How the visual-test baselines move and how the work is verified (palette, bar and panel baselines in light and dark).
 - Whether the Edge entry becomes registration-like instead of a fixed entry after every category.
 

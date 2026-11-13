@@ -15,3 +15,7 @@ Decide:
 - what happens to existing string and emoji icons, and whether this is a breaking change
 - whether consumers can render the library's icons in their own components and custom editors
 - whether a consumer's editable property can opt into an icon control, such as an icon-choice `EditorKind`, with its own icons per option
+
+## Comments
+
+From [Icon inventory](01-icon-inventory.md): `registration.Icon` renders in two places, the Palette and the zoomed-out LOD placeholder in `DiagramCanvas.razor`. Whatever `Icon` accepts has to render in both.

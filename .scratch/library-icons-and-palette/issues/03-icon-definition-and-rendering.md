@@ -19,3 +19,7 @@ Decide:
 - the default stroke width at 16px: Lucide's 24-grid stroke 2 renders 1.33px wide, so compare 2 against 1.5 at 1x and 2x
 - how the Lucide path data and the in-house gap icons (stroke width, orthogonal routing, possibly text vertical align) sit side by side, and how a Lucide version bump is done
 - packaging: Lucide's LICENSE shipped verbatim as `THIRD-PARTY-NOTICES.txt` in the NuGet package, and a licence header on the path-data file
+
+## Comments
+
+From [Icon inventory](01-icon-inventory.md): the Property bar's Fill, Stroke, Text colour and Edge colour glyphs paint the selection's colour into the icon, with a hatch pattern for mixed and a dashed outline for theme colour. The definition has to allow a glyph whose paint is set per render, or those four stay outside the icon set as swatches.
