@@ -115,6 +115,13 @@ _Avoid_: context toolbar, floating panel.
 **Property role**:
 The well-known role a property plays, drawn from a closed library-owned set (`Fill`, `Stroke`, `StrokeWidth`, `TextColour`, `FontSize`, `FontWeight`, `TextAlign`, `VerticalAlign`, plus four the library uses for an `Edge`). Declared explicitly by an author, never inferred — a glyph cannot be derived from a property's name or its `EditorKind`, since a rectangle's fill and stroke share a kind and a sticky note's `Color` is a background where a text instance's is a foreground. Each role declares the `EditorKind` and CLR type it expects and the label a merged row shows, so a mismatch is caught on the registration that causes it, and a type may declare each role at most once because the role is the merge key. Doing double duty: a role is both what admits a property to the `Property bar` and what merges it across types in a cross-type multi-selection (ADR 0021, replacing the free-string shared tag).
 
+**Glyph**:
+A named drawing on the library's 16-unit grid, held as a list of SVG path parts and painted in the host's `currentColor`: strokes by default, with some parts marked as fills or as **accent** parts, which take a colour the host sets per render through `--d12-icon-accent` (falling back to `currentColor`) so a colour control can paint its current value into its own glyph. One glyph shows one state, so a control whose look follows its value (text align, routing, arrowheads) picks a different glyph per value. Rendered by the `D12Icon` component at 16px with a 1.5 stroke, both overridable from any ancestor through `--d12-icon-size` and `--d12-icon-stroke`. Decorative by default; the control that carries it holds the accessible name. "Icon" is the slot a glyph fills, such as a component registration's icon or a palette entry's.
+_Avoid_: icon (for the drawing itself), symbol.
+
+**Glyph set**:
+The library's built-in catalogue of glyphs, the static `Glyphs` class, all drawn in-house to one rule set: 16 grid, 1.5 stroke, round caps and joins, 1 unit of padding, coordinates placed so lines land on whole pixels at 16px. No third-party icon set is copied in.
+
 **Editable property**:
 A `TProps` field exposed through the property panel, declared by default via an attribute on the `TProps` record and optionally overridden by the registration builder. Carries an `EditorKind` describing which panel control renders it, and optionally a `Property role`.
 

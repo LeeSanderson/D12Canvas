@@ -29,3 +29,7 @@ Use Lucide (ISC, with an MIT part for Feather-derived icons), copying path data 
 - At 16px the 2-unit stroke is 1.33px; compare stroke 2 and 1.5 at 1x and 2x before fixing a default.
 
 Full findings: [research/icon-source-and-style.md](../research/icon-source-and-style.md).
+
+## Comments
+
+Reversed by [How the library defines and renders an icon](03-icon-definition-and-rendering.md). The set needs only 30 to 50 glyphs and most are specific to D12Canvas, so the library draws all of them in-house on a 16 grid at stroke 1.5. No Lucide paths are copied in, and the package ships no third-party notice. The research file stays as a record of the comparison.
