@@ -15,3 +15,7 @@ Build a throwaway Demo route. Settle:
 - how a value shows beside its icon: a colour swatch, a number, the current choice
 - which roles become segmented or toggle controls in the bar itself (text align, vertical align, font weight, edge routing, arrowheads)
 - how mixed values and locked state look
+
+## Comments
+
+From [The consumer icon contract](04-consumer-icon-contract.md): the bar reads option glyphs from the declaring property's `OptionGlyphs`, not from a table per role. A value with no glyph, such as a consumer's extra option, shows its option text in the cell, so the prototype should show that case.

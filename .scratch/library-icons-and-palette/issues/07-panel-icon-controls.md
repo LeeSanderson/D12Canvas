@@ -18,3 +18,5 @@ The layout stays a label-and-control list. Decide:
 ## Comments
 
 From [Icon inventory](01-icon-inventory.md): the `PropertyPanel` edits component instances only. It has no edge fields, so edge routing and edge arrows aren't panel controls today. Making them icon controls would first mean adding edges to the panel, which may sit past the destination.
+
+From [The consumer icon contract](04-consumer-icon-contract.md): the trigger for an icon control is data, not a new `EditorKind`. A Dropdown whose every option has an entry in `EditableProperty.OptionGlyphs` gets icon buttons in place of a `<select>`. Built-in and consumer properties take the same route, so whatever this ticket decides for the buttons applies to consumer properties too.
