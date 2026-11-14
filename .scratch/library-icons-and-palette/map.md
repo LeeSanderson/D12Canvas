@@ -22,11 +22,13 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 - [How the library defines and renders an icon](issues/03-icon-definition-and-rendering.md) — an in-house `Glyph` record of path parts (stroke, fill, accent) on a 16 grid at stroke 1.5, drawn by a public `D12Icon` component; size and stroke overridable through `--d12-icon-size` and `--d12-icon-stroke`, accent colour through `--d12-icon-accent`, decorative unless given a `Label`; 30 to 50 glyphs
 - [The consumer icon contract](issues/04-consumer-icon-contract.md) — `Icon` becomes `Glyph?` with no string fallback, and null draws `Glyphs.Component`; `Glyphs` is public; an optional `OptionGlyphs` on `EditableProperty` turns a Dropdown into icon buttons for built-in and consumer properties alike, and the bar reads its glyphs from the same place
 - [Palette look](issues/05-palette-look.md) — a vertical rail of icon-only buttons: Edge first, then built-ins before host types, 8 on the rail and the rest behind a "…" flyout with one column per category; dividers stand in for category headings, names show in a tooltip to the right, and the entry is called "Edge"
+- [Property bar look](issues/06-property-bar-look.md) — value chips: glyph, value text and caret, each opening a flyout of glyph-and-name option rows or colour presets that a host can replace; numbers stay glyph and field with "–" when mixed; a partly locked selection ends with a lock count, and a fully locked one keeps the bar as a lone Unlock button
 
 ## Not yet specified
 
 - Whether the context-menu align/distribute glyphs (`ContextMenu.razor.cs`) move onto the shared set or stay hand-drawn, and whether the text menu rows and the `✓` toggle mark take icons too. This trim is what keeps the glyph set within 30 to 50.
 - Who draws the glyphs and when: whether the Palette and Property bar prototypes produce final drawings, or the spec lists the glyphs and the drawing rules and leaves the drawing to implementation.
+- How a host replaces the bar's colour presets: the option's name, where it lives, and the default list.
 - How the visual-test baselines move and how the work is verified (palette, bar and panel baselines in light and dark).
 
 ## Out of scope
