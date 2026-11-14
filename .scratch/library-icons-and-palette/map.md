@@ -21,13 +21,13 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 - [Icon inventory](issues/01-icon-inventory.md) — six sites draw icons today, including the LOD placeholder and the menu check mark; the bar's colour and option glyphs show the current value, the panel has no edge fields, and about 60 glyphs are listed
 - [How the library defines and renders an icon](issues/03-icon-definition-and-rendering.md) — an in-house `Glyph` record of path parts (stroke, fill, accent) on a 16 grid at stroke 1.5, drawn by a public `D12Icon` component; size and stroke overridable through `--d12-icon-size` and `--d12-icon-stroke`, accent colour through `--d12-icon-accent`, decorative unless given a `Label`; 30 to 50 glyphs
 - [The consumer icon contract](issues/04-consumer-icon-contract.md) — `Icon` becomes `Glyph?` with no string fallback, and null draws `Glyphs.Component`; `Glyphs` is public; an optional `OptionGlyphs` on `EditableProperty` turns a Dropdown into icon buttons for built-in and consumer properties alike, and the bar reads its glyphs from the same place
+- [Palette look](issues/05-palette-look.md) — a vertical rail of icon-only buttons: Edge first, then built-ins before host types, 8 on the rail and the rest behind a "…" flyout with one column per category; dividers stand in for category headings, names show in a tooltip to the right, and the entry is called "Edge"
 
 ## Not yet specified
 
 - Whether the context-menu align/distribute glyphs (`ContextMenu.razor.cs`) move onto the shared set or stay hand-drawn, and whether the text menu rows and the `✓` toggle mark take icons too. This trim is what keeps the glyph set within 30 to 50.
 - Who draws the glyphs and when: whether the Palette and Property bar prototypes produce final drawings, or the spec lists the glyphs and the drawing rules and leaves the drawing to implementation.
 - How the visual-test baselines move and how the work is verified (palette, bar and panel baselines in light and dark).
-- Whether the Edge entry becomes registration-like instead of a fixed entry after every category.
 
 ## Out of scope
 

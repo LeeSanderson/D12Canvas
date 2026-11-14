@@ -19,3 +19,5 @@ Build a throwaway Demo route. Settle:
 ## Comments
 
 From [The consumer icon contract](04-consumer-icon-contract.md): the bar reads option glyphs from the declaring property's `OptionGlyphs`, not from a table per role. A value with no glyph, such as a consumer's extra option, shows its option text in the cell, so the prototype should show that case.
+
+From [Palette look](05-palette-look.md): the Palette names its icon-only buttons with a library tooltip, not the native `title`. It shows on hover and keyboard focus, beside the control rather than over it. If the bar's icon cells get tooltips, decide whether they use the same one. The prototype's switcher and tooltip CSS are on the `prototype/palette-look` branch.
