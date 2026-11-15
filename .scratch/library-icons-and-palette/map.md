@@ -23,12 +23,14 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 - [The consumer icon contract](issues/04-consumer-icon-contract.md) — `Icon` becomes `Glyph?` with no string fallback, and null draws `Glyphs.Component`; `Glyphs` is public; an optional `OptionGlyphs` on `EditableProperty` turns a Dropdown into icon buttons for built-in and consumer properties alike, and the bar reads its glyphs from the same place
 - [Palette look](issues/05-palette-look.md) — a vertical rail of icon-only buttons: Edge first, then built-ins before host types, 8 on the rail and the rest behind a "…" flyout with one column per category; dividers stand in for category headings, names show in a tooltip to the right, and the entry is called "Edge"
 - [Property bar look](issues/06-property-bar-look.md) — value chips: glyph, value text and caret, each opening a flyout of glyph-and-name option rows or colour presets that a host can replace; numbers stay glyph and field with "–" when mixed; a partly locked selection ends with a lock count, and a fully locked one keeps the bar as a lone Unlock button
+- [Panel icon controls](issues/07-panel-icon-controls.md) — a glyphed Dropdown becomes labelled tiles (glyph above name) that wrap, with columns sized to the longest name and no tooltip or fallback; mixed presses nothing and tags the label; locked keeps today's rule; a `radiogroup` where arrows move focus and Space or Enter commits
 
 ## Not yet specified
 
 - Whether the context-menu align/distribute glyphs (`ContextMenu.razor.cs`) move onto the shared set or stay hand-drawn, and whether the text menu rows and the `✓` toggle mark take icons too. This trim is what keeps the glyph set within 30 to 50.
 - Who draws the glyphs and when: whether the Palette and Property bar prototypes produce final drawings, or the spec lists the glyphs and the drawing rules and leaves the drawing to implementation.
 - How a host replaces the bar's colour presets: the option's name, where it lives, and the default list.
+- Whether the `PropertyPanel` shows the bar's partial-lock count ("1/3"). Today it edits the unlocked targets and skips the rest without saying so.
 - How the visual-test baselines move and how the work is verified (palette, bar and panel baselines in light and dark).
 
 ## Out of scope
@@ -37,3 +39,4 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 - Colour tokens and the colour palette.
 - Palette search, filtering, collapsing categories and placement previews.
 - A full layout redesign of the `PropertyPanel` (grouped sections, W/H pairs, a custom colour field).
+- Edge fields in the `PropertyPanel`, so edge routing and arrowheads as panel controls: the panel edits component instances only, and adding edges is a new feature, not an icon change (from [Panel icon controls](issues/07-panel-icon-controls.md)).
