@@ -24,14 +24,10 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 - [Palette look](issues/05-palette-look.md) — a vertical rail of icon-only buttons: Edge first, then built-ins before host types, 8 on the rail and the rest behind a "…" flyout with one column per category; dividers stand in for category headings, names show in a tooltip to the right, and the entry is called "Edge"
 - [Property bar look](issues/06-property-bar-look.md) — value chips: glyph, value text and caret, each opening a flyout of glyph-and-name option rows or colour presets that a host can replace; numbers stay glyph and field with "–" when mixed; a partly locked selection ends with a lock count, and a fully locked one keeps the bar as a lone Unlock button
 - [Panel icon controls](issues/07-panel-icon-controls.md) — a glyphed Dropdown becomes labelled tiles (glyph above name) that wrap, with columns sized to the longest name and no tooltip or fallback; mixed presses nothing and tags the label; locked keeps today's rule; a `radiogroup` where arrows move focus and Space or Enter commits
+- [Context menu glyphs](issues/08-context-menu-glyphs.md) — the strip moves onto `Glyphs`, every text row gets a leading glyph in `currentColor`, `✓` becomes `Glyphs.Check` in its own column beside the row glyph, and the Image editor's buttons reuse the matching row glyphs; the set grows to about 65, since 30 to 50 was an estimate, not a limit
 
 ## Not yet specified
 
-- Whether the context-menu align/distribute glyphs (`ContextMenu.razor.cs`) move onto the shared set or stay hand-drawn, and whether the text menu rows and the `✓` toggle mark take icons too. This trim is what keeps the glyph set within 30 to 50.
-- Who draws the glyphs and when: whether the Palette and Property bar prototypes produce final drawings, or the spec lists the glyphs and the drawing rules and leaves the drawing to implementation.
-- How a host replaces the bar's colour presets: the option's name, where it lives, and the default list.
-- Whether the `PropertyPanel` shows the bar's partial-lock count ("1/3"). Today it edits the unlocked targets and skips the rest without saying so.
-- How the visual-test baselines move and how the work is verified (palette, bar and panel baselines in light and dark).
 
 ## Out of scope
 
