@@ -25,6 +25,7 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 - [Property bar look](issues/06-property-bar-look.md) — value chips: glyph, value text and caret, each opening a flyout of glyph-and-name option rows or colour presets that a host can replace; numbers stay glyph and field with "–" when mixed; a partly locked selection ends with a lock count, and a fully locked one keeps the bar as a lone Unlock button
 - [Panel icon controls](issues/07-panel-icon-controls.md) — a glyphed Dropdown becomes labelled tiles (glyph above name) that wrap, with columns sized to the longest name and no tooltip or fallback; mixed presses nothing and tags the label; locked keeps today's rule; a `radiogroup` where arrows move focus and Space or Enter commits
 - [Context menu glyphs](issues/08-context-menu-glyphs.md) — the strip moves onto `Glyphs`, every text row gets a leading glyph in `currentColor`, `✓` becomes `Glyphs.Check` in its own column beside the row glyph, and the Image editor's buttons reuse the matching row glyphs; the set grows to about 65, since 30 to 50 was an estimate, not a limit
+- [Colour preset option](issues/09-colour-preset-option.md) — `D12CanvasOptions.ColourPresets`, one list of `ColourPreset(Name, Hex)` for every colour role, with `#RRGGBB` checked when the list is configured; ten defaults led by Black, Grey and White; an empty list removes the grid and null throws; Property bar only, the panel is unchanged
 
 ## Not yet specified
 
