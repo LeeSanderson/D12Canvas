@@ -26,6 +26,7 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 - [Panel icon controls](issues/07-panel-icon-controls.md) — a glyphed Dropdown becomes labelled tiles (glyph above name) that wrap, with columns sized to the longest name and no tooltip or fallback; mixed presses nothing and tags the label; locked keeps today's rule; a `radiogroup` where arrows move focus and Space or Enter commits
 - [Context menu glyphs](issues/08-context-menu-glyphs.md) — the strip moves onto `Glyphs`, every text row gets a leading glyph in `currentColor`, `✓` becomes `Glyphs.Check` in its own column beside the row glyph, and the Image editor's buttons reuse the matching row glyphs; the set grows to about 65, since 30 to 50 was an estimate, not a limit
 - [Colour preset option](issues/09-colour-preset-option.md) — `D12CanvasOptions.ColourPresets`, one list of `ColourPreset(Name, Hex)` for every colour role, with `#RRGGBB` checked when the list is configured; ten defaults led by Black, Grey and White; an empty list removes the grid and null throws; Property bar only, the panel is unchanged
+- [Panel partial-lock count](issues/10-panel-partial-lock-count.md) — yes: a partly locked selection shows the lock glyph and "1 of 3 locked; changes skip them" above the fields, in the Unlock button's slot; it's plain text with no action, no tooltip and no live region
 
 ## Not yet specified
 
