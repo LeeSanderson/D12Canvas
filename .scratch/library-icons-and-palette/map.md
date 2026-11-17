@@ -28,6 +28,7 @@ A spec at `.scratch/library-icons-and-palette/spec.md`, ready for `/implement`. 
 - [Colour preset option](issues/09-colour-preset-option.md) — `D12CanvasOptions.ColourPresets`, one list of `ColourPreset(Name, Hex)` for every colour role, with `#RRGGBB` checked when the list is configured; ten defaults led by Black, Grey and White; an empty list removes the grid and null throws; Property bar only, the panel is unchanged
 - [Panel partial-lock count](issues/10-panel-partial-lock-count.md) — yes: a partly locked selection shows the lock glyph and "1 of 3 locked; changes skip them" above the fields, in the Unlock button's slot; it's plain text with no action, no tooltip and no live region
 - [Glyph drawing handoff](issues/11-glyph-drawing-handoff.md) — the spec lists 59 glyphs with the drawing rules and no path data; an implementation slice draws them from the prototype paths, and the user signs off a Demo glyph gallery that also gets a baseline and a padding-box unit test; extra demo shapes, a broken-image variant and glyphs on the Theme colour and Custom rows are left out
+- [Verification and baselines](issues/12-verification-and-baselines.md) — the drawing slice goes first and moves no existing baseline, then each site slice moves its own baselines once in its commit; nine new screenshot cases in light and dark, the tooltip covered by a probe instead; bUnit owns roles, state and validation, probes own flyout focus, tile arrow focus and the Palette overflow; the plain Dropdown baseline moves to a property without `OptionGlyphs`
 
 ## Not yet specified
 
