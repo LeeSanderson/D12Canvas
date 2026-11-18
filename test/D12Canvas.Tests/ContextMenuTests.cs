@@ -1,5 +1,6 @@
 using AngleSharp.Dom;
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Xunit;
 
 namespace D12Canvas.Tests;
@@ -36,16 +37,27 @@ public class ContextMenuTests : ComponentTestBase
         Action<ContextMenuCommand>? onInvoke = null,
         Action? onRequestClose = null
     ) =>
-        Render<ContextMenu>(parameters =>
-            parameters
-                .Add(p => p.Context, context)
-                .Add(p => p.X, x)
-                .Add(p => p.Y, y)
-                .Add(p => p.ContainerWidth, containerWidth)
-                .Add(p => p.ContainerHeight, containerHeight)
-                .Add(p => p.OnInvoke, command => onInvoke?.Invoke(command))
-                .Add(p => p.OnRequestClose, () => onRequestClose?.Invoke())
-        );
+        Render<CascadingValue<D12IconStyles>>(root =>
+                root.Add(p => p.Value, D12IconStyles.InScope)
+                    .Add(p => p.IsFixed, true)
+                    .AddChildContent<ContextMenu>(parameters =>
+                        parameters
+                            .Add(p => p.Context, context)
+                            .Add(p => p.X, x)
+                            .Add(p => p.Y, y)
+                            .Add(p => p.ContainerWidth, containerWidth)
+                            .Add(p => p.ContainerHeight, containerHeight)
+                            .Add(p => p.OnInvoke, command => onInvoke?.Invoke(command))
+                            .Add(p => p.OnRequestClose, () => onRequestClose?.Invoke())
+                    )
+            )
+            .FindComponent<ContextMenu>();
+
+    private static string PathData(Glyph glyph) =>
+        string.Join(" ", glyph.Parts.Select(part => part.Data));
+
+    private static string IconPathData(IElement icon) =>
+        string.Join(" ", icon.QuerySelectorAll("path").Select(path => path.GetAttribute("d")));
 
     // The rows top to bottom, with "|" standing for each separator.
     private static string[] Layout(IRenderedComponent<ContextMenu> menu) =>
@@ -234,9 +246,147 @@ public class ContextMenuTests : ComponentTestBase
         Assert.Equal(snapToGrid ? "true" : "false", snapRow.GetAttribute("aria-checked"));
         Assert.Equal(objectSnapping ? "true" : "false", objectRow.GetAttribute("aria-checked"));
         Assert.Equal(
-            snapToGrid ? "✓" : "",
-            snapRow.QuerySelector(".d12-context-menu-check")!.TextContent
+            snapToGrid ? [PathData(Glyphs.Check)] : [],
+            snapRow
+                .QuerySelectorAll(".d12-context-menu-check svg.d12-icon")
+                .Select(IconPathData)
+                .ToArray()
         );
+        Assert.Equal(
+            objectSnapping ? 1 : 0,
+            objectRow.QuerySelectorAll(".d12-context-menu-check svg.d12-icon").Length
+        );
+    }
+
+    [Fact]
+    public void ACheckedToggleRowDrawsTheCheckInItsOwnColumnBeforeItsOwnGlyph()
+    {
+        var menu = RenderMenu(EmptyBoardCanvas with { SnapToGrid = true });
+
+        var snapRow = RowNamed(menu, "Snap to Grid");
+        var columns = snapRow.Children.Take(2).ToArray();
+        Assert.Contains("d12-context-menu-check", columns[0].ClassList);
+        Assert.Equal(PathData(Glyphs.Check), IconPathData(columns[0].QuerySelector("svg")!));
+        Assert.Equal("svg", columns[1].TagName.ToLowerInvariant());
+        Assert.Equal(PathData(Glyphs.SnapToGrid), IconPathData(columns[1]));
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryRowWithItsGlyph))]
+    public void EveryRowLeadsWithItsDecorativeGlyphAndIsNamedByItsLabel(string label, Glyph glyph)
+    {
+        var menu = RenderMenu(EveryRowContext(label));
+
+        var row = RowNamed(menu, label);
+        var icon = row.Children.Single(child => child.ClassList.Contains("d12-icon"));
+        Assert.Equal(PathData(glyph), IconPathData(icon));
+        Assert.Equal("true", icon.GetAttribute("aria-hidden"));
+        Assert.Same(icon.NextElementSibling, row.QuerySelector(".d12-context-menu-label"));
+        Assert.False(row.HasAttribute("aria-label"));
+    }
+
+    public static TheoryData<string, Glyph> EveryRowWithItsGlyph() =>
+        new()
+        {
+            { "Cut", Glyphs.Cut },
+            { "Copy", Glyphs.Copy },
+            { "Paste", Glyphs.Paste },
+            { "Duplicate", Glyphs.Duplicate },
+            { "Delete", Glyphs.Delete },
+            { "Group", Glyphs.Group },
+            { "Ungroup", Glyphs.Ungroup },
+            { "Bring to Front", Glyphs.BringToFront },
+            { "Bring Forward", Glyphs.BringForward },
+            { "Send Backward", Glyphs.SendBackward },
+            { "Send to Back", Glyphs.SendToBack },
+            { "Lock", Glyphs.Lock },
+            { "Unlock", Glyphs.Unlock },
+            { "Zoom to Selection", Glyphs.ZoomToSelection },
+            { "Add port here", Glyphs.AddPort },
+            { "Add port…", Glyphs.AddPort },
+            { "Remove port", Glyphs.RemovePort },
+            { "Choose image…", Glyphs.ChooseImage },
+            { "Remove image", Glyphs.RemoveImage },
+            { "Select All", Glyphs.SelectAll },
+            { "Zoom to Fit", Glyphs.ZoomToFit },
+            { "Zoom to 100%", Glyphs.ZoomTo100Percent },
+            { "Snap to Grid", Glyphs.SnapToGrid },
+            { "Object Snapping", Glyphs.ObjectSnapping },
+            { "Unlock All", Glyphs.Unlock },
+        };
+
+    private static ContextMenuContext EveryRowContext(string label) =>
+        label switch
+        {
+            "Select All"
+            or "Zoom to Fit"
+            or "Zoom to 100%"
+            or "Snap to Grid"
+            or "Object Snapping"
+            or "Unlock All" => EmptyBoardCanvas with
+            {
+                CanSelectAll = true,
+                CanUnlockAll = true,
+            },
+            "Unlock" => SingleInstance with { SelectionLocked = true },
+            "Add port…" => SingleInstance with { CanPlacePort = true },
+            _ => SingleInstance with
+            {
+                AsyncClipboard = true,
+                CanCut = true,
+                CanCopy = true,
+                CanDelete = true,
+                CanGroup = true,
+                CanUngroup = true,
+                CanAddPortHere = true,
+                CanRemovePort = true,
+                CanChangePicture = true,
+            },
+        };
+
+    [Fact]
+    public void TheStripButtonsDrawTheAlignAndDistributeGlyphsAndKeepTheirNames()
+    {
+        var menu = RenderMenu(SingleInstance with { CanAlign = true, CanDistribute = true });
+
+        var buttons = menu.FindAll(".d12-context-menu-strip button");
+        Assert.Equal(
+            [
+                ("Align left", PathData(Glyphs.AlignLeft)),
+                ("Align centre", PathData(Glyphs.AlignCentre)),
+                ("Align right", PathData(Glyphs.AlignRight)),
+                ("Align top", PathData(Glyphs.AlignTop)),
+                ("Align middle", PathData(Glyphs.AlignMiddle)),
+                ("Align bottom", PathData(Glyphs.AlignBottom)),
+                ("Distribute horizontally", PathData(Glyphs.DistributeHorizontally)),
+                ("Distribute vertically", PathData(Glyphs.DistributeVertically)),
+            ],
+            buttons.Select(button =>
+                (
+                    button.GetAttribute("aria-label")!,
+                    IconPathData(button.QuerySelector("svg.d12-icon")!)
+                )
+            )
+        );
+        Assert.All(
+            buttons,
+            button => Assert.Equal("true", button.QuerySelector("svg")!.GetAttribute("aria-hidden"))
+        );
+    }
+
+    [Fact]
+    public void TheMenusIconsBringNoStyleBlockOfTheirOwn()
+    {
+        var menu = RenderMenu(
+            SingleInstance with
+            {
+                CanAlign = true,
+                CanDistribute = true,
+                CanGroup = true,
+            }
+        );
+
+        Assert.Single(menu.FindAll("style"));
     }
 
     [Fact]

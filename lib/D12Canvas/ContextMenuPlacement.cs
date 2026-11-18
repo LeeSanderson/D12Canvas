@@ -13,7 +13,7 @@ internal static class ContextMenuPlacement
     public static double HeightOf(IReadOnlyList<IReadOnlyList<ContextMenuRow>> sections) =>
         Frame
         + sections.Sum(section =>
-            section.Count(row => !row.Glyph) + (section.Any(row => row.Glyph) ? 1 : 0)
+            section.Count(row => !row.InStrip) + (section.Any(row => row.InStrip) ? 1 : 0)
         ) * RowHeight
         + Math.Max(0, sections.Count - 1) * SeparatorHeight;
 

@@ -1,13 +1,14 @@
 namespace D12Canvas;
 
-// Checked is null for a row that is not a toggle. A glyph row is drawn as an icon in one strip with
-// its neighbouring glyph rows, its Label becoming the icon's accessible name.
+// Checked is null for a row that is not a toggle. A strip row is drawn as its icon alone in one
+// strip with its neighbouring strip rows, its Label becoming the button's accessible name.
 internal sealed record ContextMenuRow(
     ContextMenuCommand Command,
     string Label,
+    Glyph Icon,
     string? Hint,
     bool? Checked,
-    bool Glyph = false
+    bool InStrip = false
 );
 
 // Both content sets come from one list of sections in one fixed order, and each row decides for
@@ -19,9 +20,10 @@ internal static class ContextMenuComposition
         ContextMenuCommand Command,
         Func<ContextMenuContext, bool> IsEligible,
         string Label,
+        Glyph Icon,
         Func<ContextMenuContext, Chord?> Chord,
         Func<ContextMenuContext, bool?> Checked,
-        bool Glyph = false
+        bool InStrip = false
     );
 
     private static readonly Chord DeleteChord = new("Delete", AppleKey: "⌫");
@@ -58,64 +60,120 @@ internal static class ContextMenuComposition
         [
             Row(
                 ContextMenuCommand.Cut,
+                Glyphs.Cut,
                 "Cut",
                 c => OnObject(c) && c.AsyncClipboard && c.CanCut,
                 CutChord
             ),
             Row(
                 ContextMenuCommand.Copy,
+                Glyphs.Copy,
                 "Copy",
                 c => OnObject(c) && c.AsyncClipboard && c.CanCopy,
                 CopyChord
             ),
-            Row(ContextMenuCommand.Paste, "Paste", c => c.AsyncClipboard, PasteChord),
+            Row(ContextMenuCommand.Paste, Glyphs.Paste, "Paste", c => c.AsyncClipboard, PasteChord),
             Row(
                 ContextMenuCommand.Duplicate,
+                Glyphs.Duplicate,
                 "Duplicate",
                 c => OnObject(c) && c.CanCopy,
                 DuplicateChord
             ),
         ],
-        [Row(ContextMenuCommand.Delete, "Delete", c => OnObject(c) && c.CanDelete, DeleteChord)],
+        [
+            Row(
+                ContextMenuCommand.Delete,
+                Glyphs.Delete,
+                "Delete",
+                c => OnObject(c) && c.CanDelete,
+                DeleteChord
+            ),
+        ],
         [
             Row(
                 ContextMenuCommand.SelectAll,
+                Glyphs.SelectAll,
                 "Select All",
                 c => OnCanvas(c) && c.CanSelectAll,
                 SelectAllChord
             ),
         ],
         [
-            Row(ContextMenuCommand.Group, "Group", c => OnObject(c) && c.CanGroup, GroupChord),
+            Row(
+                ContextMenuCommand.Group,
+                Glyphs.Group,
+                "Group",
+                c => OnObject(c) && c.CanGroup,
+                GroupChord
+            ),
             Row(
                 ContextMenuCommand.Ungroup,
+                Glyphs.Ungroup,
                 "Ungroup",
                 c => OnObject(c) && c.CanUngroup,
                 UngroupChord
             ),
         ],
         [
-            Glyph(ContextMenuCommand.AlignLeft, "Align left", CanAlign),
-            Glyph(ContextMenuCommand.AlignCentre, "Align centre", CanAlign),
-            Glyph(ContextMenuCommand.AlignRight, "Align right", CanAlign),
-            Glyph(ContextMenuCommand.AlignTop, "Align top", CanAlign),
-            Glyph(ContextMenuCommand.AlignMiddle, "Align middle", CanAlign),
-            Glyph(ContextMenuCommand.AlignBottom, "Align bottom", CanAlign),
-            Glyph(
+            Strip(ContextMenuCommand.AlignLeft, Glyphs.AlignLeft, "Align left", CanAlign),
+            Strip(ContextMenuCommand.AlignCentre, Glyphs.AlignCentre, "Align centre", CanAlign),
+            Strip(ContextMenuCommand.AlignRight, Glyphs.AlignRight, "Align right", CanAlign),
+            Strip(ContextMenuCommand.AlignTop, Glyphs.AlignTop, "Align top", CanAlign),
+            Strip(ContextMenuCommand.AlignMiddle, Glyphs.AlignMiddle, "Align middle", CanAlign),
+            Strip(ContextMenuCommand.AlignBottom, Glyphs.AlignBottom, "Align bottom", CanAlign),
+            Strip(
                 ContextMenuCommand.DistributeHorizontally,
+                Glyphs.DistributeHorizontally,
                 "Distribute horizontally",
                 CanDistribute
             ),
-            Glyph(ContextMenuCommand.DistributeVertically, "Distribute vertically", CanDistribute),
-            Row(ContextMenuCommand.BringToFront, "Bring to Front", CanArrange, BringToFrontChord),
-            Row(ContextMenuCommand.BringForward, "Bring Forward", CanArrange, BringForwardChord),
-            Row(ContextMenuCommand.SendBackward, "Send Backward", CanArrange, SendBackwardChord),
-            Row(ContextMenuCommand.SendToBack, "Send to Back", CanArrange, SendToBackChord),
+            Strip(
+                ContextMenuCommand.DistributeVertically,
+                Glyphs.DistributeVertically,
+                "Distribute vertically",
+                CanDistribute
+            ),
+            Row(
+                ContextMenuCommand.BringToFront,
+                Glyphs.BringToFront,
+                "Bring to Front",
+                CanArrange,
+                BringToFrontChord
+            ),
+            Row(
+                ContextMenuCommand.BringForward,
+                Glyphs.BringForward,
+                "Bring Forward",
+                CanArrange,
+                BringForwardChord
+            ),
+            Row(
+                ContextMenuCommand.SendBackward,
+                Glyphs.SendBackward,
+                "Send Backward",
+                CanArrange,
+                SendBackwardChord
+            ),
+            Row(
+                ContextMenuCommand.SendToBack,
+                Glyphs.SendToBack,
+                "Send to Back",
+                CanArrange,
+                SendToBackChord
+            ),
         ],
         [
-            Row(ContextMenuCommand.Lock, "Lock", c => OnObject(c) && !c.SelectionLocked, LockChord),
+            Row(
+                ContextMenuCommand.Lock,
+                Glyphs.Lock,
+                "Lock",
+                c => OnObject(c) && !c.SelectionLocked,
+                LockChord
+            ),
             Row(
                 ContextMenuCommand.Unlock,
+                Glyphs.Unlock,
                 "Unlock",
                 c => OnObject(c) && c.SelectionLocked,
                 LockChord
@@ -124,13 +182,21 @@ internal static class ContextMenuComposition
         [
             Row(
                 ContextMenuCommand.ZoomToSelection,
+                Glyphs.ZoomToSelection,
                 "Zoom to Selection",
                 OnObject,
                 ZoomToSelectionChord
             ),
-            Row(ContextMenuCommand.ZoomToFit, "Zoom to Fit", OnCanvas, ZoomToFitChord),
+            Row(
+                ContextMenuCommand.ZoomToFit,
+                Glyphs.ZoomToFit,
+                "Zoom to Fit",
+                OnCanvas,
+                ZoomToFitChord
+            ),
             Row(
                 ContextMenuCommand.ZoomTo100Percent,
+                Glyphs.ZoomTo100Percent,
                 "Zoom to 100%",
                 OnCanvas,
                 ZoomTo100PercentChord
@@ -141,6 +207,7 @@ internal static class ContextMenuComposition
                 ContextMenuCommand.ToggleSnapToGrid,
                 OnCanvas,
                 "Snap to Grid",
+                Glyphs.SnapToGrid,
                 c => c.SnapToGridChordLive ? SnapToGridChord : null,
                 c => c.SnapToGrid
             ),
@@ -148,27 +215,52 @@ internal static class ContextMenuComposition
                 ContextMenuCommand.ToggleObjectSnapping,
                 OnCanvas,
                 "Object Snapping",
+                Glyphs.ObjectSnapping,
                 _ => null,
                 c => c.ObjectSnapping
             ),
         ],
-        [Unhinted(ContextMenuCommand.UnlockAll, "Unlock All", c => OnCanvas(c) && c.CanUnlockAll)],
+        [
+            Unhinted(
+                ContextMenuCommand.UnlockAll,
+                Glyphs.Unlock,
+                "Unlock All",
+                c => OnCanvas(c) && c.CanUnlockAll
+            ),
+        ],
         [
             Unhinted(
                 ContextMenuCommand.AddPortHere,
+                Glyphs.AddPort,
                 "Add port here",
                 c => OnObject(c) && c.CanAddPortHere
             ),
-            Unhinted(ContextMenuCommand.PlacePort, "Add port…", c => OnObject(c) && c.CanPlacePort),
+            Unhinted(
+                ContextMenuCommand.PlacePort,
+                Glyphs.AddPort,
+                "Add port…",
+                c => OnObject(c) && c.CanPlacePort
+            ),
             Unhinted(
                 ContextMenuCommand.RemovePort,
+                Glyphs.RemovePort,
                 "Remove port",
                 c => OnObject(c) && c.CanRemovePort
             ),
         ],
         [
-            Unhinted(ContextMenuCommand.ChooseImage, "Choose image…", CanChangePicture),
-            Unhinted(ContextMenuCommand.RemoveImage, "Remove image", CanChangePicture),
+            Unhinted(
+                ContextMenuCommand.ChooseImage,
+                Glyphs.ChooseImage,
+                "Choose image…",
+                CanChangePicture
+            ),
+            Unhinted(
+                ContextMenuCommand.RemoveImage,
+                Glyphs.RemoveImage,
+                "Remove image",
+                CanChangePicture
+            ),
         ],
     ];
 
@@ -190,31 +282,35 @@ internal static class ContextMenuComposition
         new(
             row.Command,
             row.Label,
+            row.Icon,
             row.Chord(context) is { } chord
                 ? ShortcutHint.Render(chord, context.ApplePlatform, context.KeyLabels)
                 : null,
             row.Checked(context),
-            row.Glyph
+            row.InStrip
         );
 
     private static RowDefinition Row(
         ContextMenuCommand command,
+        Glyph icon,
         string label,
         Func<ContextMenuContext, bool> isEligible,
         Chord chord
-    ) => new(command, isEligible, label, _ => chord, _ => null);
+    ) => new(command, isEligible, label, icon, _ => chord, _ => null);
 
     private static RowDefinition Unhinted(
         ContextMenuCommand command,
+        Glyph icon,
         string label,
         Func<ContextMenuContext, bool> isEligible
-    ) => new(command, isEligible, label, _ => null, _ => null);
+    ) => new(command, isEligible, label, icon, _ => null, _ => null);
 
-    private static RowDefinition Glyph(
+    private static RowDefinition Strip(
         ContextMenuCommand command,
+        Glyph icon,
         string label,
         Func<ContextMenuContext, bool> isEligible
-    ) => new(command, isEligible, label, _ => null, _ => null, Glyph: true);
+    ) => new(command, isEligible, label, icon, _ => null, _ => null, InStrip: true);
 
     private static bool CanAlign(ContextMenuContext context) =>
         OnObject(context) && context.CanAlign;

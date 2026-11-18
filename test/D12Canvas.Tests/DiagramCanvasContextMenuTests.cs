@@ -326,6 +326,21 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     }
 
     [Fact]
+    public async Task TheCanvasCarriesTheIconRulesSoTheMenusGlyphsBringNoStyleBlockOfTheirOwn()
+    {
+        var board = new Board();
+        var instance = AddInstance(board, 0);
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        canvas.ClickOn(canvas.Find(".component-container"));
+        await RightClick(canvas, instance);
+
+        var menu = canvas.FindComponent<ContextMenu>();
+
+        Assert.NotEmpty(menu.FindAll("svg.d12-icon"));
+        Assert.Single(menu.FindAll("style"));
+    }
+
+    [Fact]
     public async Task EscapeInsideTheMenuClosesItWithoutClearingTheBoardSelection()
     {
         var board = new Board();

@@ -14,18 +14,18 @@
         var stripDrawn = false;
         @foreach (var row in section)
         {
-            if (row.Glyph)
+            if (row.InStrip)
             {
                 if (!stripDrawn)
                 {
                     stripDrawn = true;
                     <div class="d12-context-menu-strip" role="group" aria-label="Align and distribute">
-                        @foreach (var glyph in section.Where(candidate => candidate.Glyph))
+                        @foreach (var stripRow in section.Where(candidate => candidate.InStrip))
                         {
                             <button type="button" class="d12-context-menu-glyph" role="menuitem"
-                                    title="@glyph.Label" aria-label="@glyph.Label"
-                                    @onclick="() => OnInvoke.InvokeAsync(glyph.Command)">
-                                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">@GlyphMarkup(glyph.Command)</svg>
+                                    title="@stripRow.Label" aria-label="@stripRow.Label"
+                                    @onclick="() => OnInvoke.InvokeAsync(stripRow.Command)">
+                                <D12Icon Glyph="stripRow.Icon" />
                             </button>
                         }
                     </div>
@@ -40,8 +40,14 @@
                     @onclick="() => OnInvoke.InvokeAsync(row.Command)">
                 @if (HasToggles)
                 {
-                    <span class="d12-context-menu-check" aria-hidden="true">@(row.Checked == true ? "✓" : "")</span>
+                    <span class="d12-context-menu-check" aria-hidden="true">
+                        @if (row.Checked == true)
+                        {
+                            <D12Icon Glyph="Glyphs.Check" />
+                        }
+                    </span>
                 }
+                <D12Icon Glyph="row.Icon" />
                 <span class="d12-context-menu-label">@row.Label</span>
                 @if (row.Hint is not null)
                 {
@@ -92,7 +98,8 @@
     }
 
     .d12-context-menu-check {
-        flex: 0 0 12px;
+        display: flex;
+        flex: 0 0 16px;
     }
 
     .d12-context-menu-label {
@@ -130,11 +137,6 @@
         border-radius: 4px;
         background: transparent;
         cursor: pointer;
-    }
-
-    .d12-context-menu-glyph svg {
-        fill: currentColor;
-        stroke: currentColor;
     }
 
     .d12-context-menu-glyph:hover {

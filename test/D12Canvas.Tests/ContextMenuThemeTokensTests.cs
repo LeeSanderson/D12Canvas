@@ -1,4 +1,5 @@
 using Bunit;
+using Microsoft.AspNetCore.Components;
 using Xunit;
 
 namespace D12Canvas.Tests;
@@ -15,9 +16,17 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
     }
 
     private IRenderedComponent<ContextMenu> RenderMenu() =>
-        Render<ContextMenu>(parameters =>
-            parameters.Add(p => p.Context, new ContextMenuContext(ContextMenuSet.Object))
-        );
+        Render<CascadingValue<D12IconStyles>>(root =>
+                root.Add(p => p.Value, D12IconStyles.InScope)
+                    .Add(p => p.IsFixed, true)
+                    .AddChildContent<ContextMenu>(parameters =>
+                        parameters.Add(
+                            p => p.Context,
+                            new ContextMenuContext(ContextMenuSet.Object)
+                        )
+                    )
+            )
+            .FindComponent<ContextMenu>();
 
     [Fact]
     public void HintReadsTheMutedTextToken()

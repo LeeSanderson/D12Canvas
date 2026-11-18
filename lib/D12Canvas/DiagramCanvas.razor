@@ -267,13 +267,15 @@
        content, so its anchor (_contextMenu.X/Y) is plain container-relative pixels, not board space. *@
     @if (_contextMenu is not null)
     {
-        <ContextMenu Context="ContextMenuContextFor(_contextMenu)"
-                     X="_contextMenu.X" Y="_contextMenu.Y"
-                     ContainerWidth="_zoomPanTracker.ContainerWidth"
-                     ContainerHeight="_zoomPanTracker.ContainerHeight"
-                     OpenedFromKeyboard="_contextMenu.OpenedFromKeyboard"
-                     OnInvoke="InvokeFromContextMenu"
-                     OnRequestClose="CloseContextMenu" />
+        <CascadingValue Value="D12IconStyles.InScope" IsFixed="true">
+            <ContextMenu Context="ContextMenuContextFor(_contextMenu)"
+                         X="_contextMenu.X" Y="_contextMenu.Y"
+                         ContainerWidth="_zoomPanTracker.ContainerWidth"
+                         ContainerHeight="_zoomPanTracker.ContainerHeight"
+                         OpenedFromKeyboard="_contextMenu.OpenedFromKeyboard"
+                         OnInvoke="InvokeFromContextMenu"
+                         OnRequestClose="CloseContextMenu" />
+        </CascadingValue>
     }
     @if (CurrentPropertyBar() is { } propertyBar)
     {

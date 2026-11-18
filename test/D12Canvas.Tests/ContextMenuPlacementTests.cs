@@ -75,7 +75,13 @@ public class ContextMenuPlacementTests
     [Fact]
     public void HeightCountsRowsSeparatorsAndTheFrame()
     {
-        var row = new ContextMenuRow(ContextMenuCommand.Delete, "Delete", null, null);
+        var row = new ContextMenuRow(
+            ContextMenuCommand.Delete,
+            "Delete",
+            Glyphs.Delete,
+            null,
+            null
+        );
 
         var height = ContextMenuPlacement.HeightOf(
             [
@@ -95,18 +101,25 @@ public class ContextMenuPlacementTests
     [Fact]
     public void AStripOfGlyphsIsOneRowTall()
     {
-        var row = new ContextMenuRow(ContextMenuCommand.BringToFront, "Bring to Front", null, null);
-        var glyph = new ContextMenuRow(
+        var row = new ContextMenuRow(
+            ContextMenuCommand.BringToFront,
+            "Bring to Front",
+            Glyphs.BringToFront,
+            null,
+            null
+        );
+        var stripRow = new ContextMenuRow(
             ContextMenuCommand.AlignLeft,
             "Align left",
+            Glyphs.AlignLeft,
             null,
             null,
-            true
+            InStrip: true
         );
 
         var height = ContextMenuPlacement.HeightOf(
             [
-                [glyph, glyph, glyph, row],
+                [stripRow, stripRow, stripRow, row],
             ]
         );
 
