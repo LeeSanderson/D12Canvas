@@ -29,7 +29,9 @@ public class ImageTests : ComponentTestBase
         var image = Render<Image>();
 
         Assert.Empty(image.FindAll(".d12-image"));
-        Assert.NotEmpty(image.FindAll(".d12-image-placeholder"));
+        var placeholder = image.Find(".d12-image-placeholder");
+        DrawnGlyph.AssertDecorativeIcon(Glyphs.Image, placeholder);
+        Assert.Equal("No image", placeholder.QuerySelector("span")!.TextContent);
     }
 
     [Fact]
@@ -56,7 +58,9 @@ public class ImageTests : ComponentTestBase
         image.Find(".d12-image").Error(new ErrorEventArgs());
 
         Assert.Empty(image.FindAll(".d12-image"));
-        Assert.NotEmpty(image.FindAll(".d12-image-placeholder"));
+        var placeholder = image.Find(".d12-image-placeholder");
+        DrawnGlyph.AssertDecorativeIcon(Glyphs.Image, placeholder);
+        Assert.Equal("Image unavailable", placeholder.QuerySelector("span")!.TextContent);
     }
 
     [Fact]

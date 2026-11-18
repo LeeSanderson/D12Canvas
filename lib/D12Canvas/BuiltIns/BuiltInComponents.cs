@@ -18,7 +18,7 @@ internal static class BuiltInComponents
                 builder.DisplayName = "Rectangle";
                 builder.AccessibleName = "Rectangle";
                 builder.DefaultProps = new RectangleProps(null, null, 2);
-                builder.Icon = "▭";
+                builder.Icon = Glyphs.Rectangle;
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(160, 100);
             }
@@ -38,7 +38,7 @@ internal static class BuiltInComponents
                     "center",
                     "middle"
                 );
-                builder.Icon = "🗒️";
+                builder.Icon = Glyphs.StickyNote;
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(200, 200);
             }
@@ -51,7 +51,7 @@ internal static class BuiltInComponents
                 builder.DisplayName = "Text";
                 builder.AccessibleName = "Text";
                 builder.DefaultProps = new TextProps("", null, 16, "normal", "left");
-                builder.Icon = "🔤";
+                builder.Icon = Glyphs.Text;
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(200, 40);
                 builder.IsEmpty = props => string.IsNullOrWhiteSpace(props.Text);
@@ -65,7 +65,7 @@ internal static class BuiltInComponents
                 builder.DisplayName = "Image";
                 builder.AccessibleName = "Image";
                 builder.DefaultProps = new ImageProps("", "", "cover");
-                builder.Icon = "🖼️";
+                builder.Icon = Glyphs.Image;
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(240, 180);
                 builder.EditableProperties =

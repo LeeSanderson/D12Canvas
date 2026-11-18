@@ -133,7 +133,7 @@ public class D12CanvasOptionsTests
                 builder.DisplayName = "Widget";
                 builder.AccessibleName = "Widget";
                 builder.DefaultProps = defaultProps;
-                builder.Icon = "widget-icon";
+                builder.Icon = Glyphs.Lock;
                 builder.Role = "img";
                 builder.DefaultSize = new ComponentSize(200, 150);
                 builder.Category = "Basic Shapes";
@@ -141,7 +141,7 @@ public class D12CanvasOptionsTests
         );
 
         var registration = options.Registry.Resolve("widget");
-        Assert.Equal("widget-icon", registration.Icon);
+        Assert.Equal(Glyphs.Lock, registration.Icon);
         Assert.Equal("img", registration.Role);
         Assert.Equal(new ComponentSize(200, 150), registration.DefaultSize);
         Assert.Equal("Basic Shapes", registration.Category);

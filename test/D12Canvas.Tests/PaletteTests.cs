@@ -30,7 +30,7 @@ public class PaletteTests : ComponentTestBase
         string key,
         string displayName,
         string accessibleName,
-        string? icon = null,
+        Glyph? icon = null,
         string? category = null
     )
     {
@@ -51,42 +51,30 @@ public class PaletteTests : ComponentTestBase
     }
 
     [Fact]
-    public void RendersEveryRegisteredTypeWithItsDisplayNameAndIcon()
+    public void RendersEveryRegisteredTypeWithItsDisplayNameAndGlyph()
     {
-        RegisterComponent("rectangle", "Rectangle", "Rectangle", icon: "▭");
-        RegisterComponent("sticky-note", "Sticky Note", "Sticky note", icon: "🗒");
+        var widgetGlyph = new Glyph(new GlyphPart("M3 3h10v10h-10z"));
+        RegisterComponent("rectangle", "Rectangle", "Rectangle", icon: Glyphs.Rectangle);
+        RegisterComponent("widget", "Widget", "Widget", icon: widgetGlyph);
 
         var palette = Render<Palette>();
 
-        // The built-in Connector entry always renders alongside registered types - excluded
-        // here since this test is only about registrations.
-        var entries = palette
-            .FindAll(".d12-palette-entry-button")
-            .Where(e => e.GetAttribute("aria-label") != "Connector")
-            .ToList();
-        Assert.Equal(2, entries.Count);
-        Assert.Contains(
-            entries,
-            e =>
-                e.QuerySelector(".d12-palette-entry-name")!.TextContent == "Rectangle"
-                && e.QuerySelector(".d12-palette-entry-icon")!.TextContent == "▭"
-        );
-        Assert.Contains(
-            entries,
-            e =>
-                e.QuerySelector(".d12-palette-entry-name")!.TextContent == "Sticky Note"
-                && e.QuerySelector(".d12-palette-entry-icon")!.TextContent == "🗒"
-        );
+        var rectangle = EntryButton(palette, "Rectangle");
+        Assert.Equal("Rectangle", rectangle.QuerySelector(".d12-palette-entry-name")!.TextContent);
+        DrawnGlyph.AssertDecorativeIcon(Glyphs.Rectangle, rectangle);
+        var widget = EntryButton(palette, "Widget");
+        Assert.Equal("Widget", widget.QuerySelector(".d12-palette-entry-name")!.TextContent);
+        DrawnGlyph.AssertDecorativeIcon(widgetGlyph, widget);
     }
 
     [Fact]
-    public void OmitsTheIconElementWhenNoIconIsRegistered()
+    public void ATypeWithNoIconDrawsTheComponentGlyph()
     {
-        RegisterComponent("rectangle", "Rectangle", "Rectangle");
+        RegisterComponent("widget", "Widget", "Widget");
 
         var palette = Render<Palette>();
 
-        Assert.Null(EntryButton(palette, "Rectangle").QuerySelector(".d12-palette-entry-icon"));
+        DrawnGlyph.AssertDecorativeIcon(Glyphs.Component, EntryButton(palette, "Widget"));
     }
 
     [Fact]

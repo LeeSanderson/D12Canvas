@@ -8,7 +8,7 @@ using Xunit;
 namespace D12Canvas.Tests;
 
 // LOD placeholder: below a host-configurable on-screen-size threshold, a component instance
-// renders a generic placeholder (built from its registration's DisplayName/Icon) instead of
+// renders a generic placeholder (built from its registration's DisplayName and glyph) instead of
 // mounting its full ComponentContainer/DynamicComponent tree. The placeholder is still a hit
 // target, so a zoomed-out board stays reachable by click and marquee.
 public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
@@ -20,7 +20,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         SetupDiagramCanvasJsModule();
     }
 
-    private void RegisterTestComponent(string? icon = "★")
+    private void RegisterTestComponent(Glyph? icon = null)
     {
         var registry = new ComponentRegistry();
         registry.Register(
@@ -63,7 +63,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
     [Fact]
     public void InstanceBelowTheDefaultThresholdRendersAsAPlaceholderInstead()
     {
-        RegisterTestComponent();
+        RegisterTestComponent(Glyphs.StickyNote);
         var board = new Board();
         AddInstance(board, new Bounds(0, 0, 10, 10));
 
@@ -71,7 +71,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
 
         Assert.Empty(canvas.FindAll(".component-container"));
         var placeholder = canvas.Find(".lod-placeholder");
-        Assert.Equal("★", placeholder.QuerySelector(".lod-placeholder-icon")!.TextContent);
+        DrawnGlyph.AssertDecorativeIcon(Glyphs.StickyNote, placeholder);
         Assert.Equal(
             "Test Props",
             placeholder.QuerySelector(".lod-placeholder-label")!.TextContent
@@ -79,7 +79,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
     }
 
     [Fact]
-    public void PlaceholderOmitsTheIconElementWhenTheRegistrationHasNone()
+    public void PlaceholderDrawsTheComponentGlyphWhenTheRegistrationHasNoIcon()
     {
         RegisterTestComponent(icon: null);
         var board = new Board();
@@ -88,7 +88,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         var placeholder = canvas.Find(".lod-placeholder");
-        Assert.Null(placeholder.QuerySelector(".lod-placeholder-icon"));
+        DrawnGlyph.AssertDecorativeIcon(Glyphs.Component, placeholder);
         Assert.Equal(
             "Test Props",
             placeholder.QuerySelector(".lod-placeholder-label")!.TextContent

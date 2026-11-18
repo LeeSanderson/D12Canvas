@@ -19,10 +19,7 @@
                             @ondragstart="() => HandleDragStart(entry.Key)"
                             @onclick="() => HandleClick(entry.Key)"
                         >
-                            @if (!string.IsNullOrEmpty(entry.Icon))
-                            {
-                                <span class="d12-palette-entry-icon" aria-hidden="true">@entry.Icon</span>
-                            }
+                            <D12Icon Glyph="entry.IconOrDefault" />
                             <span class="d12-palette-entry-name">@entry.DisplayName</span>
                         </button>
                     </li>
@@ -103,11 +100,6 @@
     .d12-palette-entry-button:hover {
         background: color-mix(in srgb, var(--d12-border) 25%, var(--d12-surface));
         border-color: var(--d12-border);
-    }
-
-    .d12-palette-entry-icon {
-        font-size: 16px;
-        line-height: 1;
     }
 
     .d12-palette-entry-name {

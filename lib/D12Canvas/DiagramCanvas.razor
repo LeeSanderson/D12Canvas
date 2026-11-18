@@ -113,10 +113,7 @@
                                  data-d12-locked="@(instance.Locked ? "true" : null)"
                                  style="@LodPlaceholderStyle(stop.Bounds, instance.ZIndex)"
                                  aria-hidden="true">
-                                @if (!string.IsNullOrEmpty(registration.Icon))
-                                {
-                                    <span class="lod-placeholder-icon">@registration.Icon</span>
-                                }
+                                <D12Icon Glyph="registration.IconOrDefault" />
                                 <span class="lod-placeholder-label">@registration.DisplayName</span>
                             </div>
                         }
@@ -567,11 +564,6 @@
         background: var(--d12-surface);
         border: 1px solid var(--d12-border);
         color: var(--d12-muted-text);
-    }
-
-    .lod-placeholder-icon {
-        font-size: 16px;
-        line-height: 1;
     }
 
     .lod-placeholder-label {

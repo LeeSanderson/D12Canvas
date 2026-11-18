@@ -1,3 +1,4 @@
+using D12Canvas;
 using D12Canvas.Demo;
 using D12Canvas.Demo.Components;
 using D12Canvas.Panel;
@@ -24,7 +25,7 @@ builder.Services.AddD12Canvas(options =>
             b.AccessibleName = "Demo note";
             b.DefaultProps = new DemoNoteProps("New note", "#ffd966");
             b.DefaultSize = new ComponentSize(200, 150);
-            b.Icon = "📝";
+            b.Icon = Glyphs.StickyNote;
             b.Category = "Notes";
             // Color demonstrates the EditorKind.Custom escape hatch (a curated swatch picker, not
             // expressible by the built-in Color/Dropdown kinds) - it can only be declared here,
@@ -51,7 +52,9 @@ builder.Services.AddD12Canvas(options =>
             b.DisplayName = "Stress Item";
             b.AccessibleName = "Stress item";
             b.DefaultProps = new StressItemProps(0, "#e74c3c");
-            b.Icon = "▦";
+            b.Icon = new Glyph(
+                new GlyphPart("M2.75 2.75h10.5v10.5h-10.5z M7.75 2.75v10.5 M2.75 7.75h10.5")
+            );
             b.Category = "Stress Test";
         }
     );

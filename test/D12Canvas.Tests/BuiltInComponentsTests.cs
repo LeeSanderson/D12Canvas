@@ -27,7 +27,7 @@ public class BuiltInComponentsTests
         Assert.Equal("Basic Shapes", registration.Category);
         Assert.Equal(new ComponentSize(160, 100), registration.DefaultSize);
         Assert.Equal(new RectangleProps(null, null, 2), registration.DefaultProps);
-        Assert.False(string.IsNullOrEmpty(registration.Icon));
+        Assert.Equal(Glyphs.Rectangle, registration.Icon);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class BuiltInComponentsTests
             new StickyNoteProps("", "#FFEB3B", "#000000", 14, "center", "middle"),
             registration.DefaultProps
         );
-        Assert.False(string.IsNullOrEmpty(registration.Icon));
+        Assert.Equal(Glyphs.StickyNote, registration.Icon);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class BuiltInComponentsTests
         Assert.Equal("Basic Shapes", registration.Category);
         Assert.Equal(new ComponentSize(200, 40), registration.DefaultSize);
         Assert.Equal(new TextProps("", null, 16, "normal", "left"), registration.DefaultProps);
-        Assert.False(string.IsNullOrEmpty(registration.Icon));
+        Assert.Equal(Glyphs.Text, registration.Icon);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class BuiltInComponentsTests
         Assert.Equal("Basic Shapes", registration.Category);
         Assert.Equal(new ComponentSize(240, 180), registration.DefaultSize);
         Assert.Equal(new ImageProps("", "", "cover"), registration.DefaultProps);
-        Assert.False(string.IsNullOrEmpty(registration.Icon));
+        Assert.Equal(Glyphs.Image, registration.Icon);
     }
 
     // Every visual/style prop the four built-ins declare is panel-editable through one of the

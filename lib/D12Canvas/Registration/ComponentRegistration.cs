@@ -10,7 +10,7 @@ public sealed record ComponentRegistration(
     string DisplayName,
     string AccessibleName,
     object DefaultProps,
-    string? Icon,
+    Glyph? Icon,
     string Role,
     ComponentSize? DefaultSize,
     string? Category,
@@ -25,6 +25,8 @@ public sealed record ComponentRegistration(
 )
 {
     public bool CountsAsEmpty(object props) => IsEmpty?.Invoke(props) == true;
+
+    internal Glyph IconOrDefault => Icon ?? Glyphs.Component;
 
     // Known before any instance of the type is mounted, so the canvas can tell a type that
     // declines editing from one that has not mounted yet.
