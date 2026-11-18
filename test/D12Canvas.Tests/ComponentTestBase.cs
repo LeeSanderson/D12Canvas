@@ -12,7 +12,15 @@ public abstract class ComponentTestBase : BunitContext
     {
         Services.AddScoped<IServiceProvider>(sp => sp);
         Services.AddSingleton<IComponentRegistry>(new ComponentRegistry());
+        JSInterop
+            .SetupModule(Palette.ModulePath)
+            .SetupVoid("registerRail", _ => true)
+            .SetVoidResult();
+        FlyoutModule = JSInterop.SetupModule(Flyout.ModulePath);
+        SetupDisposableCleanupHandle(FlyoutModule, "registerFlyout");
     }
+
+    protected BunitJSModuleInterop FlyoutModule { get; }
 
     // The shared theme-token layer every independently-mounted chrome root declares its own
     // copy of.

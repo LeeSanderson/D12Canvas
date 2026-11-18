@@ -52,6 +52,12 @@ public sealed class CanvasJsInterop
         var propertyBarModule = jsInterop.SetupModule(PropertyBar.ModulePath);
         SetupCleanupHandle(propertyBarModule, "registerPropertyBar");
         propertyBarModule.Setup<double>("measurePropertyBar", _ => true).SetResult(120);
+
+        jsInterop
+            .SetupModule(Palette.ModulePath)
+            .SetupVoid("registerRail", _ => true)
+            .SetVoidResult();
+        SetupCleanupHandle(jsInterop.SetupModule(Flyout.ModulePath), "registerFlyout");
     }
 
     public BunitJSModuleInterop CanvasModule { get; }

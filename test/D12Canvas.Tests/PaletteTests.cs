@@ -161,7 +161,11 @@ public class PaletteTests : ComponentTestBase
         var palette = Render<Palette>();
 
         Assert.Equal(
-            ["Edge", .. Enumerable.Range(1, 8).Select(number => $"Type {number}")],
+            [
+                "Edge",
+                .. Enumerable.Range(1, 8).Select(number => $"Type {number}"),
+                "More components",
+            ],
             ButtonNames(palette)
         );
     }
@@ -184,7 +188,11 @@ public class PaletteTests : ComponentTestBase
         var palette = Render<Palette>();
 
         Assert.Equal(
-            ["Edge", .. Enumerable.Range(1, 8).Select(number => $"Shape {number}")],
+            [
+                "Edge",
+                .. Enumerable.Range(1, 8).Select(number => $"Shape {number}"),
+                "More components",
+            ],
             ButtonNames(palette)
         );
     }
@@ -442,5 +450,250 @@ public class PaletteTests : ComponentTestBase
 
         Assert.Empty(board.Components);
         Assert.Single(board.Edges);
+    }
+
+    private void RegisterNumberedTypes(int count, string? category = null)
+    {
+        for (var number = 1; number <= count; number++)
+        {
+            RegisterComponent(
+                $"type-{number}",
+                $"Type {number}",
+                $"Type {number}",
+                category: category
+            );
+        }
+    }
+
+    private static IElement MoreButton(IRenderedComponent<Palette> palette) =>
+        palette.Find(".d12-palette-more-button");
+
+    private static IElement OpenFlyout(IRenderedComponent<Palette> palette)
+    {
+        MoreButton(palette).Click();
+        return palette.Find("[role=menu]");
+    }
+
+    private static string[] FlyoutRowNames(IRenderedComponent<Palette> palette) =>
+        palette
+            .FindAll("[role=menu] [role=menuitem]")
+            .Select(e => e.GetAttribute("aria-label") ?? "")
+            .ToArray();
+
+    [Fact]
+    public void WithEightTypesTheRailHasNoMoreButton()
+    {
+        RegisterNumberedTypes(8);
+
+        var palette = Render<Palette>();
+
+        Assert.Empty(palette.FindAll(".d12-palette-more-button"));
+        Assert.DoesNotContain("More components", palette.Markup);
+    }
+
+    [Fact]
+    public void PastEightTypesADividerAndTheMoreButtonEndTheRail()
+    {
+        RegisterNumberedTypes(9);
+
+        var palette = Render<Palette>();
+
+        var lastTwo = palette
+            .Find(".d12-palette")
+            .QuerySelectorAll(".d12-palette-divider, .d12-palette-button")
+            .TakeLast(2)
+            .ToArray();
+        Assert.True(lastTwo[0].ClassList.Contains("d12-palette-divider"));
+        Assert.Equal("More components", lastTwo[1].GetAttribute("aria-label"));
+    }
+
+    [Fact]
+    public void TheMoreButtonIsNamedMoreComponentsAndItsTooltipGivesTheCount()
+    {
+        RegisterNumberedTypes(22);
+
+        var palette = Render<Palette>();
+
+        var more = MoreButton(palette);
+        Assert.Equal("More components", more.GetAttribute("aria-label"));
+        Assert.Equal("menu", more.GetAttribute("aria-haspopup"));
+        Assert.Equal("false", more.GetAttribute("aria-expanded"));
+        Assert.Equal("More components (14)", TooltipText(more));
+        DrawnGlyph.AssertDecorativeIcon(Palette.MoreGlyph, more);
+    }
+
+    [Fact]
+    public void ClickingTheMoreButtonOpensAMenuBesideItAndMarksTheButtonExpanded()
+    {
+        RegisterNumberedTypes(9);
+        var palette = Render<Palette>();
+
+        var menu = OpenFlyout(palette);
+
+        Assert.Equal("More components", menu.GetAttribute("aria-label"));
+        Assert.Equal("true", MoreButton(palette).GetAttribute("aria-expanded"));
+        Assert.True(menu.ClassList.Contains("d12-palette-flyout"));
+        Assert.Same(MoreButton(palette).ParentElement!.ParentElement, menu.ParentElement);
+    }
+
+    [Fact]
+    public void OpeningTheFlyoutRegistersItWithItsOpener()
+    {
+        RegisterNumberedTypes(9);
+        var palette = Render<Palette>();
+
+        OpenFlyout(palette);
+
+        var registration = Assert.Single(FlyoutModule.Invocations["registerFlyout"]);
+        Assert.Equal(3, registration.Arguments.Count);
+    }
+
+    [Fact]
+    public void ClickingTheMoreButtonAgainClosesTheFlyout()
+    {
+        RegisterNumberedTypes(9);
+        var palette = Render<Palette>();
+
+        OpenFlyout(palette);
+        MoreButton(palette).Click();
+
+        Assert.Empty(palette.FindAll("[role=menu]"));
+        Assert.Equal("false", MoreButton(palette).GetAttribute("aria-expanded"));
+    }
+
+    [Fact]
+    public void TheFlyoutHoldsOnlyTheTypesNotOnTheRailGroupedByCategory()
+    {
+        RegisterComponent("rectangle", "Rectangle", "Rectangle", category: "Basic Shapes");
+        for (var number = 1; number <= 7; number++)
+        {
+            RegisterComponent(
+                $"flow-{number}",
+                $"Flow {number}",
+                $"Flow {number}",
+                category: "Flowchart"
+            );
+        }
+        RegisterComponent("callout", "Callout", "Callout", category: "Annotations");
+        RegisterComponent("gadget", "Gadget", "Gadget");
+        RegisterComponent("flow-8", "Flow 8", "Flow 8", category: "Flowchart");
+        var palette = Render<Palette>();
+
+        OpenFlyout(palette);
+
+        Assert.Equal(["Flow 8", "Callout", "Gadget"], FlyoutRowNames(palette));
+        var columns = palette.FindAll("[role=menu] > [role=group]");
+        Assert.Equal(
+            ["Flowchart", "Annotations", "Uncategorized"],
+            columns.Select(column => column.GetAttribute("aria-label") ?? "").ToArray()
+        );
+        Assert.Equal(
+            ["Flowchart", "Annotations", "Uncategorized"],
+            columns
+                .Select(column => column.QuerySelector(".d12-flyout-heading")!.TextContent)
+                .ToArray()
+        );
+        Assert.Equal(
+            ["Flow 8"],
+            columns[0]
+                .QuerySelectorAll("[role=menuitem]")
+                .Select(row => row.GetAttribute("aria-label") ?? "")
+                .ToArray()
+        );
+    }
+
+    [Fact]
+    public void EachFlyoutRowShowsItsGlyphAndDisplayNameAndIsNamedByItsAccessibleName()
+    {
+        var widgetGlyph = new Glyph(new GlyphPart("M3 3h10v10h-10z"));
+        RegisterNumberedTypes(8);
+        RegisterComponent("widget", "Widget", "A host widget", icon: widgetGlyph);
+        RegisterComponent("gadget", "Gadget", "Gadget");
+        var palette = Render<Palette>();
+
+        OpenFlyout(palette);
+
+        var rows = palette.FindAll("[role=menuitem]");
+        Assert.Equal("A host widget", rows[0].GetAttribute("aria-label"));
+        Assert.Equal("Widget", rows[0].TextContent.Trim());
+        DrawnGlyph.AssertDecorativeIcon(widgetGlyph, rows[0]);
+        DrawnGlyph.AssertDecorativeIcon(Glyphs.Component, rows[1]);
+        Assert.All(rows, row => Assert.Equal("-1", row.GetAttribute("tabindex")));
+        Assert.All(rows, row => Assert.Equal("true", row.GetAttribute("draggable")));
+        Assert.Empty(palette.FindAll("[title]"));
+    }
+
+    [Fact]
+    public void PickingAFlyoutRowAddsTheTypeAndClosesTheFlyout()
+    {
+        RegisterNumberedTypes(9);
+        SetupDiagramCanvasJsModule();
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
+
+        OpenFlyout(palette);
+        palette.Find("[role=menuitem]").Click();
+
+        var instance = Assert.Single(board.Components);
+        Assert.Equal("type-9", instance.ComponentTypeKey);
+        Assert.Empty(palette.FindAll("[role=menu]"));
+    }
+
+    [Fact]
+    public void DraggingAFlyoutRowPlacesItWhereItIsDroppedAndClosesTheFlyout()
+    {
+        RegisterNumberedTypes(9);
+        SetupDiagramCanvasJsModule();
+        var board = new Board();
+        var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
+        var palette = Render<Palette>(parameters => parameters.Add(p => p.Canvas, canvas.Instance));
+
+        OpenFlyout(palette);
+        palette.Find("[role=menuitem]").DragStart(new DragEventArgs());
+        canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
+        palette.Find("[role=menuitem]").DragEnd(new DragEventArgs());
+
+        var instance = Assert.Single(board.Components);
+        Assert.Equal("type-9", instance.ComponentTypeKey);
+        Assert.Empty(palette.FindAll("[role=menu]"));
+    }
+
+    [Fact]
+    public async Task AClosingRequestFromTheFlyoutClosesIt()
+    {
+        RegisterNumberedTypes(9);
+        var palette = Render<Palette>();
+        OpenFlyout(palette);
+
+        await palette.InvokeAsync(() => palette.FindComponent<Flyout>().Instance.RequestClose());
+
+        Assert.Empty(palette.FindAll("[role=menu]"));
+        Assert.Equal("false", MoreButton(palette).GetAttribute("aria-expanded"));
+    }
+
+    [Fact]
+    public void TheMoreButtonIsTheLastStopOnTheRail()
+    {
+        RegisterNumberedTypes(9);
+        var palette = Render<Palette>();
+
+        PressKey(palette, "End");
+
+        Assert.Equal("0", MoreButton(palette).GetAttribute("tabindex"));
+        PressKey(palette, "ArrowDown");
+        Assert.Equal("0", Button(palette, "Edge").GetAttribute("tabindex"));
+    }
+
+    [Fact]
+    public void TheRailRegistersItsKeysSoTheyDoNotScrollThePage()
+    {
+        Render<Palette>();
+
+        var registration = Assert.Single(
+            JSInterop.Invocations,
+            invocation => invocation.Identifier == "registerRail"
+        );
+        Assert.Single(registration.Arguments);
     }
 }

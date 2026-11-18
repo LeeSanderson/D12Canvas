@@ -41,7 +41,7 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
         );
         _page = await _context.NewPageAsync();
         await _page.GotoAsync("/property-panel-demo");
-        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(6);
+        await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(8);
     }
 
     private async Task PlaceAndSelectAsync(string paletteEntryLabel)

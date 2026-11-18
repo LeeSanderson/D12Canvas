@@ -58,6 +58,7 @@ builder.Services.AddD12Canvas(options =>
             b.Category = "Stress Test";
         }
     );
+    DemoShapes.RegisterAll(options);
 });
 
 await builder.Build().RunAsync();

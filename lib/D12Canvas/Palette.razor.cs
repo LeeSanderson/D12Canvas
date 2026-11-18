@@ -1,28 +1,52 @@
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
 /// <summary>
 /// The component palette: a vertical toolbar of icon buttons, Edge first and then up to
-/// <see cref="RailLimit"/> registered types grouped by category. Clicking a button adds that type
-/// to <see cref="Canvas"/>, and dragging one places it where it is dropped.
+/// <see cref="RailLimit"/> registered types grouped by category, with a "More components" button
+/// that opens the rest in a flyout. Clicking a button or a flyout row adds that type to
+/// <see cref="Canvas"/>, and dragging one places it where it is dropped.
 /// </summary>
-public partial class Palette
+public partial class Palette : IAsyncDisposable
 {
     internal const int RailLimit = 8;
 
     internal const string EdgeName = "Edge";
 
+    internal const string MoreName = "More components";
+
+    internal const string ModulePath = "./_content/D12Canvas/Palette.razor.js";
+
     private const string UncategorizedLabel = "Uncategorized";
+
+    internal static readonly Glyph MoreGlyph = new(
+        new GlyphPart(
+            "M2.25 8a1.25 1.25 0 1 0 2.5 0a1.25 1.25 0 1 0-2.5 0z"
+                + " M6.75 8a1.25 1.25 0 1 0 2.5 0a1.25 1.25 0 1 0-2.5 0z"
+                + " M11.25 8a1.25 1.25 0 1 0 2.5 0a1.25 1.25 0 1 0-2.5 0z",
+            GlyphPaint.Fill
+        )
+    );
 
     private readonly Dictionary<int, ElementReference> _buttonElements = new();
 
+    private ElementReference _railElement;
+
+    private IJSObjectReference? _module;
+
     private int _activeIndex;
+
+    private bool _flyoutOpen;
 
     [Inject]
     private IComponentRegistry Registry { get; set; } = null!;
+
+    [Inject]
+    private IJSRuntime JS { get; set; } = null!;
 
     // Palette is a sibling of DiagramCanvas in host markup (chrome isn't nested inside
     // the canvas), so it can't reach it via the cascading "ParentCanvas" value ComponentContainer
@@ -30,14 +54,33 @@ public partial class Palette
     [Parameter]
     public DiagramCanvas? Canvas { get; set; }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath);
+            await _module.InvokeVoidAsync("registerRail", _railElement);
+        }
+    }
+
     private void HandleDragStart(string componentTypeKey) =>
         Canvas?.BeginPaletteDrag(componentTypeKey);
 
     private void HandleClick(string componentTypeKey) => Canvas?.ClickToAdd(componentTypeKey);
 
+    private void HandleFlyoutPick(string componentTypeKey)
+    {
+        _flyoutOpen = false;
+        HandleClick(componentTypeKey);
+    }
+
+    private void ToggleFlyout() => _flyoutOpen = !_flyoutOpen;
+
+    private void CloseFlyout() => _flyoutOpen = false;
+
     private async Task HandleKeyDown(KeyboardEventArgs args)
     {
-        var lastIndex = RailButtons().Count - 1;
+        var lastIndex = RailStopCount() - 1;
         int? target = args.Key switch
         {
             "ArrowDown" => _activeIndex >= lastIndex ? 0 : _activeIndex + 1,
@@ -58,12 +101,14 @@ public partial class Palette
         }
     }
 
+    private int RailStopCount() => RailButtons().Count + (OverflowCount() > 0 ? 1 : 0);
+
     private List<RailButton> RailButtons()
     {
         var buttons = new List<RailButton>
         {
             new(
-                DiagramCanvas.ConnectorPaletteKey,
+                DiagramCanvas.EdgePaletteKey,
                 EdgeName,
                 EdgeName,
                 Glyphs.Edge,
@@ -73,7 +118,7 @@ public partial class Palette
         };
 
         string? previousCategory = null;
-        foreach (var registration in RailRegistrations())
+        foreach (var registration in DisplayOrder().Take(RailLimit))
         {
             var category = CategoryOf(registration);
             buttons.Add(
@@ -92,11 +137,24 @@ public partial class Palette
         return buttons;
     }
 
-    private IEnumerable<ComponentRegistration> RailRegistrations() =>
-        Registry.All.GroupBy(CategoryOf).SelectMany(category => category).Take(RailLimit);
+    private int OverflowCount() => Math.Max(0, Registry.All.Count - RailLimit);
+
+    private IEnumerable<IGrouping<string, ComponentRegistration>> OverflowCategories() =>
+        DisplayOrder().Skip(RailLimit).GroupBy(CategoryOf);
+
+    private IEnumerable<ComponentRegistration> DisplayOrder() =>
+        Registry.All.GroupBy(CategoryOf).SelectMany(category => category);
 
     private static string CategoryOf(ComponentRegistration registration) =>
         registration.Category ?? UncategorizedLabel;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            await _module.DisposeAsync();
+        }
+    }
 
     private sealed record RailButton(
         string Key,

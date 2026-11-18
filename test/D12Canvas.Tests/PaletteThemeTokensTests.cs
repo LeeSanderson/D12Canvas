@@ -63,6 +63,20 @@ public class PaletteThemeTokensTests : ComponentTestBase
     }
 
     [Fact]
+    public void FlyoutReadsTokensExclusively()
+    {
+        var palette = Render<Palette>();
+        var css = StyleBlockText(palette);
+
+        var flyout = ExtractBlock(css, ".d12-flyout {");
+        Assert.Contains("var(--d12-surface)", flyout);
+        Assert.Contains("var(--d12-border)", flyout);
+        Assert.Contains("var(--d12-shadow)", flyout);
+        Assert.DoesNotContain("#", flyout);
+        Assert.DoesNotContain("rgba(", flyout);
+    }
+
+    [Fact]
     public void ButtonHoverReadsTokensExclusively()
     {
         var palette = Render<Palette>();

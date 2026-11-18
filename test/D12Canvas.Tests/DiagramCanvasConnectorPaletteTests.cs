@@ -61,7 +61,7 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Instance.BeginPaletteDrag(DiagramCanvas.ConnectorPaletteKey);
+        canvas.Instance.BeginPaletteDrag(DiagramCanvas.EdgePaletteKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
 
         var edge = Assert.Single(board.Edges);
@@ -88,9 +88,7 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
 
         // Container is 800x600 (see ComponentTestBase.SetupDiagramCanvasJsModule) at scale 1 with
         // no pan, so the viewport center in board coordinates is (400, 300).
-        await canvas.InvokeAsync(
-            () => canvas.Instance.ClickToAdd(DiagramCanvas.ConnectorPaletteKey)
-        );
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(DiagramCanvas.EdgePaletteKey));
 
         var edge = Assert.Single(board.Edges);
         Assert.Equal(new FloatingEndpoint(360, 300), edge.Source);
@@ -107,9 +105,7 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
-        await canvas.InvokeAsync(
-            () => canvas.Instance.ClickToAdd(DiagramCanvas.ConnectorPaletteKey)
-        );
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(DiagramCanvas.EdgePaletteKey));
 
         Assert.Single(board.Components);
         var edge = Assert.Single(board.Edges);
@@ -125,9 +121,7 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        await canvas.InvokeAsync(
-            () => canvas.Instance.ClickToAdd(DiagramCanvas.ConnectorPaletteKey)
-        );
+        await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(DiagramCanvas.EdgePaletteKey));
 
         Assert.Empty(JSInterop.Invocations["focusTabStopAt"]);
     }
@@ -138,7 +132,7 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.Instance.BeginPaletteDrag(DiagramCanvas.ConnectorPaletteKey);
+        canvas.Instance.BeginPaletteDrag(DiagramCanvas.EdgePaletteKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
         Assert.Single(board.Edges);
 
@@ -160,7 +154,7 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.ReturnToOrigin();
 
-        canvas.Instance.BeginPaletteDrag(DiagramCanvas.ConnectorPaletteKey);
+        canvas.Instance.BeginPaletteDrag(DiagramCanvas.EdgePaletteKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
         Assert.Single(board.Edges);
 
