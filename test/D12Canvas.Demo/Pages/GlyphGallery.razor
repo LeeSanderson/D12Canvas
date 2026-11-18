@@ -1,0 +1,178 @@
+@page "/glyph-gallery"
+
+<PageTitle>Glyph Gallery</PageTitle>
+
+<div class="glyph-gallery">
+    <svg class="glyph-gallery-defs" width="0" height="0" aria-hidden="true" focusable="false">
+        <defs>
+            <pattern id="glyph-gallery-hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <path d="M0 0V3" stroke="currentColor" stroke-width="1.5" />
+            </pattern>
+        </defs>
+    </svg>
+
+    <h1>Glyph gallery</h1>
+    <p class="glyph-gallery-note">Each glyph at 16px (1x) and at 32px, which shows the same drawing at 2x density.</p>
+
+    @foreach (var section in GlyphGalleryEntries.Sections)
+    {
+        <section class="glyph-gallery-section">
+            <h2>@section.Title</h2>
+            <ul class="glyph-gallery-grid">
+                @foreach (var entry in section.Entries)
+                {
+                    <li class="glyph-gallery-cell @(entry.HasAccent ? "glyph-gallery-cell-accent" : null)" data-glyph="@entry.Name">
+                        <div class="glyph-gallery-states">
+                            @foreach (var state in StatesFor(entry))
+                            {
+                                <div class="glyph-gallery-state @state.Class">
+                                    <D12Icon Glyph="entry.Glyph" />
+                                    <D12Icon Glyph="entry.Glyph" Class="glyph-gallery-2x" />
+                                    @if (state.Label is not null)
+                                    {
+                                        <span class="glyph-gallery-state-label">@state.Label</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <span class="glyph-gallery-name">@entry.Name</span>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+</div>
+
+<style>
+    .glyph-gallery {
+        --gallery-surface: #ffffff;
+        --gallery-text: #212529;
+        --gallery-muted: #6b6b6b;
+        --gallery-border: #dee2e6;
+        --gallery-accent: #2f80ed;
+        color: var(--gallery-text);
+        background: var(--gallery-surface);
+        padding: 16px;
+        font-family: system-ui, sans-serif;
+    }
+
+    @@media (prefers-color-scheme: dark) {
+        .glyph-gallery {
+            --gallery-surface: #1e1e1e;
+            --gallery-text: #e8e8e8;
+            --gallery-muted: #a0a0a0;
+            --gallery-border: #3a3a3a;
+        }
+    }
+
+    .glyph-gallery-defs {
+        position: absolute;
+    }
+
+    .glyph-gallery h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+    }
+
+    .glyph-gallery h2 {
+        font-size: 14px;
+        margin: 16px 0 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--gallery-muted);
+    }
+
+    .glyph-gallery-note {
+        font-size: 12px;
+        color: var(--gallery-muted);
+        margin: 0;
+    }
+
+    .glyph-gallery-grid {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, 136px);
+        gap: 8px;
+    }
+
+    .glyph-gallery-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--gallery-border);
+        border-radius: 6px;
+    }
+
+    .glyph-gallery-cell-accent {
+        grid-column: span 3;
+    }
+
+    .glyph-gallery-states {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .glyph-gallery-state {
+        display: grid;
+        grid-template-columns: auto auto;
+        align-items: center;
+        column-gap: 10px;
+        row-gap: 2px;
+    }
+
+    .glyph-gallery-2x {
+        --d12-icon-size: 32px;
+    }
+
+    .glyph-gallery-state-label {
+        grid-column: span 2;
+        font-size: 11px;
+        color: var(--gallery-muted);
+    }
+
+    .glyph-gallery-name {
+        font-size: 12px;
+        overflow-wrap: anywhere;
+    }
+
+    .glyph-gallery .glyph-gallery-colour {
+        --d12-icon-accent: var(--gallery-accent);
+    }
+
+    .glyph-gallery .glyph-gallery-hatch .d12-icon .d12-icon-accent {
+        stroke: url(#glyph-gallery-hatch);
+    }
+
+    .glyph-gallery .glyph-gallery-hatch .d12-icon .d12-icon-accent.d12-icon-fill {
+        fill: url(#glyph-gallery-hatch);
+        stroke: none;
+    }
+
+    .glyph-gallery .glyph-gallery-theme .d12-icon .d12-icon-accent,
+    .glyph-gallery .glyph-gallery-theme .d12-icon .d12-icon-accent.d12-icon-fill {
+        fill: none;
+        stroke: var(--gallery-muted);
+        stroke-dasharray: 2 1.5;
+    }
+</style>
+
+@code {
+    private sealed record GalleryState(string? Class, string? Label);
+
+    private static readonly GalleryState[] PlainStates = [new(null, null)];
+
+    private static readonly GalleryState[] AccentStates =
+    [
+        new(null, "Current colour"),
+        new("glyph-gallery-colour", "Colour"),
+        new("glyph-gallery-hatch", "Mixed"),
+        new("glyph-gallery-theme", "Theme"),
+    ];
+
+    private static GalleryState[] StatesFor(GlyphGalleryEntry entry) =>
+        entry.HasAccent ? AccentStates : PlainStates;
+}

@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\D12Canvas.Demo\Pages\GlyphGalleryEntries.cs" Link="Linked\GlyphGalleryEntries.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\lib\D12Canvas\D12Canvas.csproj" />
   </ItemGroup>
 
