@@ -22,7 +22,9 @@ public sealed class ImageRoutesVisualTests : IAsyncLifetime
         _browser = playwright.Browser;
     }
 
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync() => new(OpenPageAsync(colorScheme: null));
+
+    private async Task OpenPageAsync(ColorScheme? colorScheme)
     {
         _context = await _browser.NewContextAsync(
             new BrowserNewContextOptions
@@ -30,6 +32,7 @@ public sealed class ImageRoutesVisualTests : IAsyncLifetime
                 BaseURL = DemoAppFixture.BaseUrl,
                 ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 1000, Height = 700 },
+                ColorScheme = colorScheme,
             }
         );
         _page = await _context.NewPageAsync();
@@ -55,11 +58,26 @@ public sealed class ImageRoutesVisualTests : IAsyncLifetime
     [Fact]
     public async Task PictureEditorForASelectedImage_MatchesBaseline()
     {
+        await SelectTheEmptyImageAsync();
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task PictureEditorForASelectedImage_DarkColorScheme_MatchesBaseline()
+    {
+        await _context.DisposeAsync();
+        await OpenPageAsync(ColorScheme.Dark);
+        await SelectTheEmptyImageAsync();
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    private async Task SelectTheEmptyImageAsync()
+    {
         await EmptyImage.ClickAsync();
 
         await Expect(_page.Locator(".d12-image-picture-button")).ToHaveCountAsync(2);
-
-        await ContentSnapshot.Verify(_page);
     }
 
     [Fact]

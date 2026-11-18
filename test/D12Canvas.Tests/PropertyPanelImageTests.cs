@@ -69,6 +69,45 @@ public class PropertyPanelImageTests : ComponentTestBase
         );
     }
 
+    private static string PathData(Glyph glyph) =>
+        string.Join(" ", glyph.Parts.Select(part => part.Data));
+
+    [Fact]
+    public void TheButtonsLeadWithTheMenusImageGlyphsAndKeepTheirTextAsTheirName()
+    {
+        var board = new Board();
+        var image = AddImage(board);
+
+        var (_, panel) = RenderSelected(board, image);
+
+        var buttons = panel.FindAll(".d12-image-picture-button");
+        Assert.Equal(
+            ["Choose file…", "Remove image"],
+            buttons.Select(button => button.TextContent)
+        );
+        Assert.Equal(
+            [PathData(Glyphs.ChooseImage), PathData(Glyphs.RemoveImage)],
+            buttons.Select(button =>
+                string.Join(
+                    " ",
+                    button
+                        .QuerySelectorAll("svg.d12-icon path")
+                        .Select(path => path.GetAttribute("d"))
+                )
+            )
+        );
+        Assert.All(
+            buttons,
+            button =>
+            {
+                var icon = button.QuerySelector("svg.d12-icon")!;
+                Assert.Same(button.FirstElementChild, icon);
+                Assert.Equal("true", icon.GetAttribute("aria-hidden"));
+                Assert.False(button.HasAttribute("aria-label"));
+            }
+        );
+    }
+
     [Fact]
     public void ImagesHoldingDifferentPicturesShowTheUrlRowAsMixed()
     {

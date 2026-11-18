@@ -74,9 +74,11 @@ public partial class PropertyPanel : IAsyncDisposable
 
     // A locked selection is shown with every field disabled and one live control that unlocks it,
     // which is what keeps a lock reachable without a pointer. A selection with anything unlocked
-    // stays editable, and an edit writes only to the unlocked instances.
-    private bool AllLocked =>
-        LockTally.Of(SelectedInstances.Select(instance => instance.Locked)).IsFull;
+    // stays editable, an edit writes only to the unlocked instances, and a partly locked one says
+    // how many it skips.
+    private LockTally Locks => LockTally.Of(SelectedInstances.Select(instance => instance.Locked));
+
+    private bool AllLocked => Locks.IsFull;
 
     private void Unlock() => Canvas?.OnUnlockPressed();
 

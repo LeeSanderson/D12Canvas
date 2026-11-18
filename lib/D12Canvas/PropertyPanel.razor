@@ -14,6 +14,10 @@
         {
             <button type="button" class="d12-property-panel-unlock" @onclick="Unlock">Unlock</button>
         }
+        else if (Locks.IsPartial)
+        {
+            <p class="d12-property-panel-locks"><D12Icon Glyph="Glyphs.Lock" /><span>@Locks.Summary</span></p>
+        }
         <ul class="d12-property-panel-fields">
             @foreach (var field in Fields)
             {
@@ -157,6 +161,19 @@
         margin: 0;
         font-size: 13px;
         color: var(--d12-muted-text);
+    }
+
+    .d12-property-panel-locks {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        font-size: 12px;
+        color: var(--d12-muted-text);
+    }
+
+    .d12-property-panel-locks .d12-icon {
+        flex: none;
     }
 
     .d12-property-panel-fields {

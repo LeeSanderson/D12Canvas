@@ -7,7 +7,8 @@ namespace D12Canvas.VisualTests;
 // The locking demo board: a free rectangle beside a locked one, with the property panel. A
 // right-click on the locked one selects it, its menu reads Unlock, and the panel shows its fields
 // disabled with the unlock control live. Once the menu closes, the property bar holds only Unlock;
-// with the free rectangle added to the selection it shows its chips and ends with the lock count.
+// with the free rectangle added to the selection it shows its chips and ends with the lock count,
+// and the panel opens with a line saying a recolour skips the locked one.
 public sealed class LockingVisualTests : IAsyncLifetime
 {
     private const string FreeId = "10c00000-0000-0000-0000-000000000001";
@@ -98,6 +99,35 @@ public sealed class LockingVisualTests : IAsyncLifetime
         await SelectBothShapesAsync();
 
         await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task APartlyLockedSelectionsPanelSaysItsEditSkipsTheLockedShape_MatchesBaseline()
+    {
+        await SelectBothShapesAndRecolourThemFromThePanelAsync();
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task APartlyLockedSelectionsPanelSaysItsEditSkipsTheLockedShape_DarkColorScheme_MatchesBaseline()
+    {
+        await ReopenInTheDarkColorSchemeAsync();
+        await SelectBothShapesAndRecolourThemFromThePanelAsync();
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    private async Task SelectBothShapesAndRecolourThemFromThePanelAsync()
+    {
+        await SelectBothShapesAsync();
+        await Expect(_page.Locator(".d12-property-panel-locks"))
+            .ToHaveTextAsync("1 of 2 locked; changes skip them");
+
+        await _page.Locator("#d12-property-panel-field-FillColor").FillAsync("#b8e6c1");
+
+        await Expect(Bar.Locator(".d12-property-bar-chip").First)
+            .ToHaveAttributeAsync("aria-label", "Fill: Mixed");
     }
 
     private async Task SelectTheLockedShapeAsync()

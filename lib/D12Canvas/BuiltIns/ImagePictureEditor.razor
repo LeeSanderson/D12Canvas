@@ -9,8 +9,8 @@
     {
         <span class="d12-image-picture-mixed">@MixedValue.Label</span>
     }
-    <button type="button" class="d12-image-picture-button" disabled="@(Context.AddAsset is null || Context.Disabled)" @onclick="ChooseFile">Choose file…</button>
-    <button type="button" class="d12-image-picture-button" disabled="@Context.Disabled" @onclick="RemoveImage">Remove image</button>
+    <button type="button" class="d12-image-picture-button" disabled="@(Context.AddAsset is null || Context.Disabled)" @onclick="ChooseFile"><D12Icon Glyph="Glyphs.ChooseImage" /><span>Choose file…</span></button>
+    <button type="button" class="d12-image-picture-button" disabled="@Context.Disabled" @onclick="RemoveImage"><D12Icon Glyph="Glyphs.RemoveImage" /><span>Remove image</span></button>
 </div>
 
 <style>
@@ -28,6 +28,9 @@
     }
 
     .d12-image-picture-button {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         font-size: 12px;
         box-sizing: border-box;
         padding: 2px 6px;
