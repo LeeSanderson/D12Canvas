@@ -25,6 +25,19 @@ public abstract class ComponentTestBase : BunitContext
 
     protected BunitJSModuleInterop FlyoutModule { get; }
 
+    // Renders the component as DiagramCanvas mounts its chrome: inside the cascade that tells its
+    // icons the canvas already carries their rules.
+    protected IRenderedComponent<TComponent> RenderInIconScope<TComponent>(
+        Action<ComponentParameterCollectionBuilder<TComponent>>? parameters = null
+    )
+        where TComponent : Microsoft.AspNetCore.Components.IComponent =>
+        Render<Microsoft.AspNetCore.Components.CascadingValue<D12IconStyles>>(root =>
+                root.Add(p => p.Value, D12IconStyles.InScope)
+                    .Add(p => p.IsFixed, true)
+                    .AddChildContent<TComponent>(parameters ?? (_ => { }))
+            )
+            .FindComponent<TComponent>();
+
     // The shared theme-token layer every independently-mounted chrome root declares its own
     // copy of.
     protected static readonly string[] ThemeTokens =

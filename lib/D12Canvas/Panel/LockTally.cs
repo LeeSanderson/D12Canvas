@@ -2,7 +2,7 @@ namespace D12Canvas.Panel;
 
 // How many of a selection's targets are locked. The property bar and the property panel both read
 // it, so "some locked, some not" means the same thing in each.
-public readonly record struct LockTally(int Locked, int Total)
+internal readonly record struct LockTally(int Locked, int Total)
 {
     public static LockTally Of(IEnumerable<bool> lockedFlags)
     {

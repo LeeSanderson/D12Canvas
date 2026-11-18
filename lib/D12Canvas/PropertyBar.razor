@@ -38,7 +38,10 @@
                             aria-label="@ChipName(row)"
                             @ref="_chipElements[row.Id]"
                             @onclick="@(() => ToggleFlyout(row))">
-                        <D12Icon Glyph="RoleGlyph(row.Role)" />
+                        @if (RoleGlyph(row) is { } roleGlyph)
+                        {
+                            <D12Icon Glyph="roleGlyph" />
+                        }
                         <span class="d12-property-bar-value">@ChipValue(row)</span>
                         <D12Icon Glyph="Glyphs.Caret" Class="d12-property-bar-caret" />
                     </button>
@@ -184,7 +187,7 @@
     .d12-property-bar-chip:hover,
     .d12-property-bar-unlock:hover,
     .d12-property-bar-chip[aria-expanded=true] {
-        background: color-mix(in srgb, var(--d12-border) 35%, var(--d12-surface));
+        background: @(RaisedSurface.HoverBackground);
     }
 
     .d12-property-bar-divider {
@@ -330,6 +333,11 @@
         right: 0;
     }
 
+    .d12-property-bar-flyout[data-d12-flyout-flipped] {
+        top: auto;
+        bottom: calc(100% + 8px);
+    }
+
     .d12-property-bar-flyout .d12-flyout-heading {
         margin: 2px 0 4px 8px;
         font-size: 10px;
@@ -387,7 +395,10 @@
 
     private RenderFragment NumberMarkup(PropertyBarRow row) =>
         @<text>
-            <D12Icon Glyph="RoleGlyph(row.Role)" />
+            @if (RoleGlyph(row) is { } roleGlyph)
+            {
+                <D12Icon Glyph="roleGlyph" />
+            }
             <input class="d12-property-bar-control d12-property-bar-number"
                    type="number"
                    min="0"
@@ -415,7 +426,7 @@
                     @foreach (var preset in ColourPresets)
                     {
                         var picked = preset;
-                        @Tooltip.Around($"{preset.Name} {preset.Hex}", TooltipSide.Above, SwatchMarkup(row, picked))
+                        @Tooltip.Around(SwatchTooltip(preset), TooltipSide.Above, SwatchMarkup(row, picked))
                     }
                 </div>
             }

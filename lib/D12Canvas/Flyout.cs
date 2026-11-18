@@ -8,14 +8,16 @@ namespace D12Canvas;
 // to its first item, and the arrow keys, Home and End move between items. Escape, Tab or a press
 // outside it and its opener asks the owner to close it, and on closing it hands focus back to the
 // opener when focus was inside it. The owner keeps whether it is open, renders it through Around,
-// places it with its own class and carries Rules once in its style block. Rows are buttons with
+// places it with its own class and carries Rules once in its style block. An owner may also place
+// it on the opener's other side under [data-d12-flyout-flipped], which the flyout sets on opening
+// when its own side would run past whatever clips it and the other side runs past less. Rows are buttons with
 // the menuitem role and the d12-flyout-item class; a column of rows is a group, and an element
 // with data-d12-flyout-columns holds a grid of items that Up and Down cross a whole row at a time.
 internal sealed class Flyout : ComponentBase, IAsyncDisposable
 {
     internal const string ModulePath = "./_content/D12Canvas/flyout.js";
 
-    public const string Rules = """
+    public const string Rules = $$"""
 
             .d12-flyout {
                 position: absolute;
@@ -62,14 +64,14 @@ internal sealed class Flyout : ComponentBase, IAsyncDisposable
             }
 
             .d12-flyout-item:hover {
-                background: color-mix(in srgb, var(--d12-border) 35%, var(--d12-surface));
+                background: {{RaisedSurface.HoverBackground}};
             }
 
             .d12-flyout-item:focus-visible {
                 outline: 2px solid var(--d12-accent);
                 outline-offset: -2px;
             }
-
+        
         """;
 
     private ElementReference _element;

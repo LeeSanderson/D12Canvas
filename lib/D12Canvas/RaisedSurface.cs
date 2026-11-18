@@ -29,6 +29,9 @@ internal static class RaisedSurface
                 color-scheme: dark;
         """;
 
+    public const string HoverBackground =
+        "color-mix(in srgb, var(--d12-border) 35%, var(--d12-surface))";
+
     public static string TokenRules(string root) =>
         $$"""
 

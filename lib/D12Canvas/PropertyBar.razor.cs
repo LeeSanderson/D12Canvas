@@ -34,7 +34,12 @@ public partial class PropertyBar : IAsyncDisposable
     public PropertyBarAnchor Anchor { get; set; }
 
     [Parameter]
-    public LockTally Locks { get; set; }
+    public int LockedCount { get; set; }
+
+    [Parameter]
+    public int TargetCount { get; set; }
+
+    private LockTally Locks => new(LockedCount, TargetCount);
 
     [Parameter]
     public EventCallback OnUnlock { get; set; }
@@ -274,17 +279,8 @@ public partial class PropertyBar : IAsyncDisposable
     private static Glyph? CurrentOptionGlyph(PropertyBarRow row) =>
         row.IsMixed ? null : row.OptionGlyphs?.GetValueOrDefault(TextValue(row));
 
-    private static Glyph RoleGlyph(PropertyRole role) =>
-        role switch
-        {
-            PropertyRole.Fill => Glyphs.Fill,
-            PropertyRole.Stroke => Glyphs.Stroke,
-            PropertyRole.TextColour => Glyphs.TextColour,
-            PropertyRole.EdgeColour => Glyphs.EdgeColour,
-            PropertyRole.StrokeWidth => Glyphs.StrokeWidth,
-            PropertyRole.FontSize => Glyphs.FontSize,
-            _ => throw new ArgumentOutOfRangeException(nameof(role), role, null),
-        };
+    private static Glyph? RoleGlyph(PropertyBarRow row) =>
+        PropertyRoleDeclarations.For(row.Role).Glyph;
 
     private static string ColourCellClass(PropertyBarRow row) =>
         "d12-property-bar-cell d12-property-bar-colour"
@@ -310,6 +306,9 @@ public partial class PropertyBar : IAsyncDisposable
                 : TextValue(row).ToUpperInvariant()
         : row.Kind == EditorKind.Dropdown ? OptionName.For(TextValue(row))
         : TextValue(row);
+
+    private static string SwatchTooltip(ColourPreset preset) =>
+        $"{preset.Name} {preset.Hex.ToUpperInvariant()}";
 
     private static string ChipName(PropertyBarRow row) => $"{row.Label}: {ChipValue(row)}";
 

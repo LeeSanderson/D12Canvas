@@ -37,21 +37,16 @@ public class ContextMenuTests : ComponentTestBase
         Action<ContextMenuCommand>? onInvoke = null,
         Action? onRequestClose = null
     ) =>
-        Render<CascadingValue<D12IconStyles>>(root =>
-                root.Add(p => p.Value, D12IconStyles.InScope)
-                    .Add(p => p.IsFixed, true)
-                    .AddChildContent<ContextMenu>(parameters =>
-                        parameters
-                            .Add(p => p.Context, context)
-                            .Add(p => p.X, x)
-                            .Add(p => p.Y, y)
-                            .Add(p => p.ContainerWidth, containerWidth)
-                            .Add(p => p.ContainerHeight, containerHeight)
-                            .Add(p => p.OnInvoke, command => onInvoke?.Invoke(command))
-                            .Add(p => p.OnRequestClose, () => onRequestClose?.Invoke())
-                    )
-            )
-            .FindComponent<ContextMenu>();
+        RenderInIconScope<ContextMenu>(parameters =>
+            parameters
+                .Add(p => p.Context, context)
+                .Add(p => p.X, x)
+                .Add(p => p.Y, y)
+                .Add(p => p.ContainerWidth, containerWidth)
+                .Add(p => p.ContainerHeight, containerHeight)
+                .Add(p => p.OnInvoke, command => onInvoke?.Invoke(command))
+                .Add(p => p.OnRequestClose, () => onRequestClose?.Invoke())
+        );
 
     private static string PathData(Glyph glyph) =>
         string.Join(" ", glyph.Parts.Select(part => part.Data));

@@ -344,6 +344,21 @@ public sealed class PropertyBarColourFlyoutTests : ComponentTestBase
     }
 
     [Fact]
+    public void ASwatchTooltipShowsALowerCasePresetHexInUpperCaseAsTheChipDoes()
+    {
+        UseServices(options => options.ColourPresets = [new ColourPreset("Brand ink", "#abcdef")]);
+        AddRectangle(200, "#ff0000");
+        var canvas = RenderAndSelectAll();
+
+        Chip(canvas, "Fill").Click();
+
+        Assert.Equal(
+            "Brand ink #ABCDEF",
+            Swatch(canvas, "Brand ink").ParentElement!.QuerySelector(".d12-tooltip")!.TextContent
+        );
+    }
+
+    [Fact]
     public void AnEmptyPresetListRemovesTheGridAndKeepsThemeColourAndCustom()
     {
         UseServices(options => options.ColourPresets = []);

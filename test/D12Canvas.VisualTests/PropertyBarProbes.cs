@@ -9,7 +9,8 @@ namespace D12Canvas.VisualTests;
 // a drag and while a menu is open, chrome hidden only while the pointer is on it, Ctrl+Enter in,
 // arrows across and Escape back to the shape, a recolour that shows on the edge at once, a choice
 // chip's flyout taking focus and handing it back, the colour flyout's grid, swatch tooltip and
-// "Custom…", and the bar kept inside a narrow container.
+// "Custom…", a flyout opening above its chip when the selection is low on the board, and the bar
+// kept inside a narrow container.
 public sealed class PropertyBarProbes : IAsyncLifetime
 {
     private const string Theme = "light";
@@ -411,6 +412,30 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         await Expect(Bar.Locator(".d12-property-bar-picker")).ToBeFocusedAsync();
         Assert.Equal("Colour: Custom colour", await FocusedLabelAsync());
         await Expect(ColourChip).ToHaveAttributeAsync("aria-label", "Colour: #E5246B");
+    }
+
+    // The edge runs along the bottom of the pane and is left unframed, so a flyout opened below its
+    // chip would run past the container's bottom edge.
+    [Fact]
+    public async Task AFlyoutOnASelectionNearTheBottomOpensAboveItsChipInsideTheContainer()
+    {
+        var container = Pane(_page, Theme).Locator(".diagram-container");
+        await SelectEdgeAsync(_page, Theme);
+
+        await ColourChip.ClickAsync();
+        await Expect(MenuItemRadio("Black")).ToBeFocusedAsync();
+
+        var outer = (await container.BoundingBoxAsync())!;
+        var flyout = (await ChipFlyout.BoundingBoxAsync())!;
+        var chip = (await ColourChip.BoundingBoxAsync())!;
+        Assert.True(
+            flyout.Y >= outer.Y && flyout.Y + flyout.Height <= outer.Y + outer.Height,
+            $"The {flyout.Height}px flyout at {flyout.Y} should sit inside the {outer.Height}px container at {outer.Y}."
+        );
+        Assert.True(
+            flyout.Y + flyout.Height <= chip.Y,
+            $"The flyout ending at {flyout.Y + flyout.Height} should open above the chip at {chip.Y}."
+        );
     }
 
     // Chips make the bar wider than the old glyph cells, so a narrow pane checks that the existing

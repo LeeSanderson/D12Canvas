@@ -16,17 +16,9 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
     }
 
     private IRenderedComponent<ContextMenu> RenderMenu() =>
-        Render<CascadingValue<D12IconStyles>>(root =>
-                root.Add(p => p.Value, D12IconStyles.InScope)
-                    .Add(p => p.IsFixed, true)
-                    .AddChildContent<ContextMenu>(parameters =>
-                        parameters.Add(
-                            p => p.Context,
-                            new ContextMenuContext(ContextMenuSet.Object)
-                        )
-                    )
-            )
-            .FindComponent<ContextMenu>();
+        RenderInIconScope<ContextMenu>(parameters =>
+            parameters.Add(p => p.Context, new ContextMenuContext(ContextMenuSet.Object))
+        );
 
     [Fact]
     public void HintReadsTheMutedTextToken()

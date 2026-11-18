@@ -38,12 +38,7 @@ public class ImageTests : ComponentTestBase
     [Fact]
     public void ThePlaceholderPaintsFromTheCanvasThemeTokens()
     {
-        var image = Render<CascadingValue<D12IconStyles>>(parameters =>
-            parameters
-                .Add(p => p.Value, D12IconStyles.InScope)
-                .Add(p => p.IsFixed, true)
-                .AddChildContent<Image>()
-        );
+        var image = RenderInIconScope<Image>();
 
         var placeholder = ExtractBlock(StyleBlockText(image), ".d12-image-placeholder");
         Assert.Contains("background-color: var(--d12-surface)", placeholder);
