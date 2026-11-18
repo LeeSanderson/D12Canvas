@@ -399,6 +399,36 @@ public sealed class PropertyBarProbes : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SwatchesKeepTheirColourWhenAnotherOwnersFlyoutRulesComeLater()
+    {
+        await SelectEdgeAsync(_page, Theme);
+        await ColourChip.ClickAsync();
+        await _page.EvaluateAsync(
+            """
+            () => {
+                const barStyles = [...document.querySelectorAll('style')]
+                    .map(style => style.textContent)
+                    .find(text => text.includes('.d12-property-bar-swatch'));
+                const start = barStyles.indexOf('.d12-flyout {');
+                const lastRule = barStyles.indexOf('.d12-flyout-item:focus-visible');
+                const sharedFlyoutRules = barStyles.slice(start, barStyles.indexOf('}', lastRule) + 1);
+                if (start < 0 || lastRule < start) {
+                    throw new Error('the shared flyout rules were not found in the bar styles');
+                }
+                const later = document.createElement('style');
+                later.textContent = sharedFlyoutRules;
+                document.body.append(later);
+            }
+            """
+        );
+        var blue = MenuItemRadio("Blue");
+
+        await Expect(blue).ToHaveCSSAsync("background-color", "rgb(47, 128, 237)");
+        await Expect(blue).ToHaveCSSAsync("width", "20px");
+        await Expect(ChipFlyout).ToHaveCSSAsync("padding-top", "6px");
+    }
+
+    [Fact]
     public async Task CustomClosesTheFlyoutAndHandsFocusToTheNativePicker()
     {
         await OpenTheColourFlyoutFromTheKeyboardAsync();
