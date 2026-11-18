@@ -76,7 +76,7 @@ public partial class PropertyPanel : IAsyncDisposable
     // which is what keeps a lock reachable without a pointer. A selection with anything unlocked
     // stays editable, and an edit writes only to the unlocked instances.
     private bool AllLocked =>
-        SelectedInstances.Count > 0 && SelectedInstances.All(instance => instance.Locked);
+        LockTally.Of(SelectedInstances.Select(instance => instance.Locked)).IsFull;
 
     private void Unlock() => Canvas?.OnUnlockPressed();
 

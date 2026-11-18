@@ -280,6 +280,8 @@
         <CascadingValue Value="D12IconStyles.InScope" IsFixed="true">
             <PropertyBar Rows="propertyBar.Rows"
                          Anchor="propertyBar.Anchor"
+                         Locks="propertyBar.Locks"
+                         OnUnlock="OnUnlockPressed"
                          ContainerWidth="_zoomPanTracker.ContainerWidth"
                          ContainerHeight="_zoomPanTracker.ContainerHeight"
                          FlightDuration="@(_inFlight ? _ambientTransition : TimeSpan.Zero)" />

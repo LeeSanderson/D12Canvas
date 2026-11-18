@@ -12,6 +12,18 @@
             </pattern>
         </defs>
     </svg>
+    @if (Locks.IsFull)
+    {
+        <button type="button"
+                class="d12-property-bar-control d12-property-bar-unlock"
+                tabindex="-1"
+                @onclick="Unlock">
+            <D12Icon Glyph="Glyphs.Unlock" />
+            <span>Unlock</span>
+        </button>
+    }
+    else
+    {
     @foreach (var row in Rows)
     {
         switch (row.Kind)
@@ -77,12 +89,18 @@
                 break;
         }
     }
+    @if (Locks.IsPartial)
+    {
+        <span class="d12-property-bar-divider" aria-hidden="true"></span>
+        @Tooltip.Around(Locks.Summary, TooltipSide.Above, LockCountMarkup)
+    }
+    }
 </div>
 
 <style>
     @(RaisedSurface.TokenRules(".d12-property-bar"))
     @(PinnedChrome.Text(".d12-property-bar", 12))
-    @(PinnedChrome.Button(".d12-property-bar-chip"))
+    @(PinnedChrome.Button(".d12-property-bar-chip, .d12-property-bar-unlock"))
     @(Tooltip.Rules)
     @(Flyout.Rules)
     .d12-property-bar {
@@ -159,9 +177,31 @@
         padding: 0 4px 0 6px;
     }
 
+    .d12-property-bar-unlock {
+        padding: 0 8px 0 6px;
+    }
+
     .d12-property-bar-chip:hover,
+    .d12-property-bar-unlock:hover,
     .d12-property-bar-chip[aria-expanded=true] {
         background: color-mix(in srgb, var(--d12-border) 35%, var(--d12-surface));
+    }
+
+    .d12-property-bar-divider {
+        flex: none;
+        width: 1px;
+        height: 18px;
+        margin: 0 4px;
+        background: var(--d12-border);
+    }
+
+    .d12-property-bar-locks {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        height: 26px;
+        padding: 0 6px 0 2px;
+        color: var(--d12-muted-text);
     }
 
     .d12-property-bar-colour:has(.d12-property-bar-picker:focus),
@@ -170,7 +210,8 @@
         outline-offset: -2px;
     }
 
-    .d12-property-bar-chip {
+    .d12-property-bar-chip,
+    .d12-property-bar-unlock {
         display: flex;
         align-items: center;
         gap: 4px;
@@ -181,11 +222,13 @@
         cursor: pointer;
     }
 
-    .d12-property-bar-chip:focus {
+    .d12-property-bar-chip:focus,
+    .d12-property-bar-unlock:focus {
         outline: none;
     }
 
-    .d12-property-bar-chip:focus-visible {
+    .d12-property-bar-chip:focus-visible,
+    .d12-property-bar-unlock:focus-visible {
         outline: 2px solid var(--d12-accent);
         outline-offset: -2px;
     }
@@ -336,6 +379,12 @@
 </style>
 
 @code {
+    private RenderFragment LockCountMarkup =>
+        @<span class="d12-property-bar-locks" role="img" aria-label="@Locks.Summary">
+            <D12Icon Glyph="Glyphs.Lock" />
+            <span>@Locks.Fraction</span>
+        </span>;
+
     private RenderFragment NumberMarkup(PropertyBarRow row) =>
         @<text>
             <D12Icon Glyph="RoleGlyph(row.Role)" />

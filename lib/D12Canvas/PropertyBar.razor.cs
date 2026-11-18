@@ -3,6 +3,7 @@ using D12Canvas.Model;
 using D12Canvas.Panel;
 using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
 namespace D12Canvas;
@@ -33,6 +34,12 @@ public partial class PropertyBar : IAsyncDisposable
     public PropertyBarAnchor Anchor { get; set; }
 
     [Parameter]
+    public LockTally Locks { get; set; }
+
+    [Parameter]
+    public EventCallback OnUnlock { get; set; }
+
+    [Parameter]
     public double ContainerWidth { get; set; }
 
     [Parameter]
@@ -61,12 +68,31 @@ public partial class PropertyBar : IAsyncDisposable
     // a swatch with no single colour holds one nobody is likely to pick rather than black.
     private const string UnsetSwatchValue = "#010203";
 
-    private string Layout => string.Join("|", Rows.Select(row => $"{row.Id}:{row.Kind}"));
+    private const string UnlockOnlyLayout = "unlock";
+
+    private string Layout =>
+        Locks.IsFull
+            ? UnlockOnlyLayout
+            : string.Join("|", Rows.Select(row => $"{row.Id}:{row.Kind}"));
 
     // A chip's width follows the value it shows, so the bar measures itself again whenever a shown
     // value changes, not only when its rows do.
     private string MeasuredContent =>
-        string.Join("|", Rows.Select(row => $"{row.Id}:{row.Kind}:{ChipValue(row)}"));
+        Locks.IsFull
+            ? UnlockOnlyLayout
+            : string.Join("|", Rows.Select(row => $"{row.Id}:{row.Kind}:{ChipValue(row)}"))
+                + (Locks.IsPartial ? $"|locks:{Locks.Fraction}" : "");
+
+    // Unlock replaces itself with the chips, so focus would fall to the page. Pressed from the
+    // keyboard, which a click's zero Detail tells apart, focus lands on the first chip instead. A
+    // pointer press leaves it, since focus inside the bar keeps the selection chrome hidden.
+    private bool _focusFirstControlAfterUnlock;
+
+    private async Task Unlock(MouseEventArgs args)
+    {
+        _focusFirstControlAfterUnlock = args.Detail == 0;
+        await OnUnlock.InvokeAsync();
+    }
 
     private const string MixedNumberPlaceholder = "–";
 
@@ -144,6 +170,15 @@ public partial class PropertyBar : IAsyncDisposable
                 "registerPropertyBar",
                 _barRef
             );
+        }
+
+        if (_focusFirstControlAfterUnlock)
+        {
+            _focusFirstControlAfterUnlock = false;
+            if (_module is not null && !Locks.IsFull)
+            {
+                await _module.InvokeVoidAsync("focusFirstControl", _barRef);
+            }
         }
 
         if (_module is null || _measuredContent == MeasuredContent)

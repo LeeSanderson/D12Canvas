@@ -123,6 +123,7 @@ public abstract class ComponentTestBase : BunitContext
 
         PropertyBarModule = JSInterop.SetupModule(PropertyBar.ModulePath);
         SetupDisposableCleanupHandle(PropertyBarModule, "registerPropertyBar");
+        PropertyBarModule.SetupVoid("focusFirstControl", _ => true).SetVoidResult();
         ReportPropertyBarWidth(120);
     }
 

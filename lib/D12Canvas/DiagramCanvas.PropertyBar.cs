@@ -7,12 +7,14 @@ public partial class DiagramCanvas
 {
     private sealed record PropertyBarState(
         IReadOnlyList<PropertyBarRow> Rows,
-        PropertyBarAnchor Anchor
+        PropertyBarAnchor Anchor,
+        LockTally Locks
     );
 
-    // Absent for the whole of a pointer gesture and while a context menu is open, and whenever
-    // nothing selected can be edited. Anchored on committed bounds, which a gesture's release has
-    // already written by the time the bar comes back.
+    // Absent for the whole of a pointer gesture and while a context menu is open, and whenever the
+    // selection has no role in common. A fully locked selection keeps the bar, which then offers
+    // only Unlock. Anchored on committed bounds, which a gesture's release has already written by
+    // the time the bar comes back.
     private PropertyBarState? CurrentPropertyBar()
     {
         if (!BoardShown || _activeGesture is not null || _contextMenu is not null)
@@ -22,9 +24,7 @@ public partial class DiagramCanvas
 
         var instances = ResolvedSelection();
         var edges = SelectedEdges;
-        var nothingEditable =
-            instances.All(instance => instance.Locked) && edges.All(edge => edge.Locked);
-        if (nothingEditable || Board!.ExtentOf(instances, edges) is not { } extent)
+        if (Board!.ExtentOf(instances, edges) is not { } extent)
         {
             return null;
         }
@@ -56,6 +56,11 @@ public partial class DiagramCanvas
                 extent.X * scale + _zoomPanTracker.PanX,
                 extent.Y * scale + _zoomPanTracker.PanY,
                 extent.Width * scale
+            ),
+            LockTally.Of(
+                instances
+                    .Select(instance => instance.Locked)
+                    .Concat(edges.Select(edge => edge.Locked))
             )
         );
     }

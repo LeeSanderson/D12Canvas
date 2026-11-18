@@ -530,7 +530,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
     }
 
     [Fact]
-    public void ALockedSelectionShowsNoBar()
+    public void ALockedSelectionShowsABarOfOnlyUnlock()
     {
         var board = new Board();
         var rectangle = AddRectangle(board, locked: true);
@@ -539,7 +539,12 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         canvas.ContainerOf(rectangle.Id).Focus();
 
         Assert.Single(canvas.FindAll(".component-container.selected"));
-        Assert.Null(Bar(canvas));
+        Assert.Equal(
+            ["Unlock"],
+            canvas
+                .FindAll(".d12-property-bar-control")
+                .Select(control => control.TextContent.Trim())
+        );
     }
 
     [Fact]
