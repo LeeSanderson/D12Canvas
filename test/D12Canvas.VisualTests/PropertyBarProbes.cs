@@ -8,7 +8,8 @@ namespace D12Canvas.VisualTests;
 // The property bar driven by real input on the light pane of the property bar demo: absent through
 // a drag and while a menu is open, chrome hidden only while the pointer is on it, Ctrl+Enter in,
 // arrows across and Escape back to the shape, a recolour that shows on the edge at once, a choice
-// chip's flyout taking focus and handing it back, and the bar kept inside a narrow container.
+// chip's flyout taking focus and handing it back, the colour flyout's grid, swatch tooltip and
+// "Custom…", and the bar kept inside a narrow container.
 public sealed class PropertyBarProbes : IAsyncLifetime
 {
     private const string Theme = "light";
@@ -53,6 +54,28 @@ public sealed class PropertyBarProbes : IAsyncLifetime
     private ILocator RoutingChip => Bar.Locator(".d12-property-bar-chip[aria-label^='Routing: ']");
 
     private ILocator ChipFlyout => Bar.Locator(".d12-flyout");
+
+    private ILocator ColourChip => Bar.Locator(".d12-property-bar-chip[aria-label^='Colour: ']");
+
+    private ILocator MenuItemRadio(string name) =>
+        ChipFlyout.GetByRole(AriaRole.Menuitemradio, new() { Name = name, Exact = true });
+
+    private ILocator SwatchTooltip(string name) =>
+        ChipFlyout.Locator($".d12-tooltip-anchor:has([aria-label='{name}']) .d12-tooltip");
+
+    private async Task OpenTheColourFlyoutFromTheKeyboardAsync()
+    {
+        await SelectEdgeAsync(_page, Theme);
+        await _page.Keyboard.PressAsync("Control+Enter");
+        for (var step = 0; step < 3; step++)
+        {
+            await _page.Keyboard.PressAsync("ArrowRight");
+        }
+
+        Assert.Equal("Colour: #E5246B", await FocusedLabelAsync());
+        await _page.Keyboard.PressAsync("Enter");
+        await Expect(MenuItemRadio("Black")).ToBeFocusedAsync();
+    }
 
     private async Task OpenTheRoutingFlyoutAsync()
     {
@@ -325,6 +348,69 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         await Expect(ChipFlyout).ToHaveCountAsync(0);
         await Expect(RoutingChip).ToHaveAttributeAsync("aria-label", "Routing: Straight");
         await Expect(Bar).ToBeVisibleAsync();
+    }
+
+    [Fact]
+    public async Task TheKeyboardCrossesThePresetGridByRowsAndPicksASwatch()
+    {
+        await OpenTheColourFlyoutFromTheKeyboardAsync();
+        var line = Pane(_page, Theme).Locator(".edge-line");
+
+        await _page.Keyboard.PressAsync("ArrowDown");
+        await Expect(MenuItemRadio("Yellow")).ToBeFocusedAsync();
+        await _page.Keyboard.PressAsync("ArrowRight");
+        await Expect(MenuItemRadio("Green")).ToBeFocusedAsync();
+        await _page.Keyboard.PressAsync("ArrowDown");
+        await Expect(MenuItemRadio("Theme colour")).ToBeFocusedAsync();
+        await _page.Keyboard.PressAsync("ArrowUp");
+        await Expect(MenuItemRadio("Pink")).ToBeFocusedAsync();
+        await _page.Keyboard.PressAsync("ArrowUp");
+        await Expect(MenuItemRadio("Orange")).ToBeFocusedAsync();
+        await Expect(SwatchTooltip("Orange")).ToHaveTextAsync("Orange #F08C00");
+        await Expect(SwatchTooltip("Orange")).ToBeVisibleAsync();
+
+        await _page.Keyboard.PressAsync("Enter");
+
+        await Expect(ChipFlyout).ToHaveCountAsync(0);
+        await Expect(ColourChip).ToHaveAttributeAsync("aria-label", "Colour: #F08C00");
+        await Expect(ColourChip).ToBeFocusedAsync();
+        await Expect(line)
+            .ToHaveAttributeAsync("style", new System.Text.RegularExpressions.Regex("#F08C00"));
+
+        await Pane(_page, Theme).Locator(".diagram-canvas").FocusAsync();
+        await _page.Keyboard.PressAsync("Control+z");
+        await Expect(ColourChip).ToHaveAttributeAsync("aria-label", "Colour: #E5246B");
+    }
+
+    [Fact]
+    public async Task HoveringASwatchShowsItsNameAndHex()
+    {
+        await SelectEdgeAsync(_page, Theme);
+        await ColourChip.ClickAsync();
+        await Expect(MenuItemRadio("Black")).ToBeFocusedAsync();
+        var blueTooltip = SwatchTooltip("Blue");
+        await Expect(blueTooltip).ToBeHiddenAsync();
+
+        await MenuItemRadio("Blue").HoverAsync();
+
+        await Expect(blueTooltip).ToBeVisibleAsync();
+        await Expect(blueTooltip).ToHaveTextAsync("Blue #2F80ED");
+    }
+
+    [Fact]
+    public async Task CustomClosesTheFlyoutAndHandsFocusToTheNativePicker()
+    {
+        await OpenTheColourFlyoutFromTheKeyboardAsync();
+
+        await _page.Keyboard.PressAsync("End");
+        await Expect(ChipFlyout.GetByRole(AriaRole.Menuitem, new() { Name = "Custom…" }))
+            .ToBeFocusedAsync();
+        await _page.Keyboard.PressAsync("Enter");
+
+        await Expect(ChipFlyout).ToHaveCountAsync(0);
+        await Expect(Bar.Locator(".d12-property-bar-picker")).ToBeFocusedAsync();
+        Assert.Equal("Colour: Custom colour", await FocusedLabelAsync());
+        await Expect(ColourChip).ToHaveAttributeAsync("aria-label", "Colour: #E5246B");
     }
 
     // Chips make the bar wider than the old glyph cells, so a narrow pane checks that the existing

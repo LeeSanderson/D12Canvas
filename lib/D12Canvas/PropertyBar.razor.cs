@@ -1,6 +1,7 @@
 using System.Globalization;
 using D12Canvas.Model;
 using D12Canvas.Panel;
+using D12Canvas.Registration;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
@@ -15,6 +16,15 @@ public partial class PropertyBar : IAsyncDisposable
 
     [Inject]
     private IJSRuntime JS { get; set; } = null!;
+
+    [Inject]
+    private IServiceProvider Services { get; set; } = null!;
+
+    // A host that registers the canvas's services by hand rather than through AddD12Canvas still
+    // gets the default presets.
+    private IReadOnlyList<ColourPreset> ColourPresets =>
+        (Services.GetService(typeof(ColourPresetCatalog)) as ColourPresetCatalog)?.Presets
+        ?? ColourPresetCatalog.Defaults;
 
     [Parameter, EditorRequired]
     public IReadOnlyList<PropertyBarRow> Rows { get; set; } = [];
@@ -202,6 +212,27 @@ public partial class PropertyBar : IAsyncDisposable
         row.Commit(option);
     }
 
+    private void PickThemeColour(PropertyBarRow row)
+    {
+        _openRowId = null;
+        UseThemeColour(row);
+    }
+
+    // A chip in the bar's second half opens its flyout leftwards from its own right edge, so the
+    // flyout of a chip near the bar's end stays over the bar rather than past it.
+    private string FlyoutPlacement(PropertyBarRow row)
+    {
+        var index = Rows.ToList().FindIndex(candidate => candidate.Id == row.Id);
+        return index * 2 >= Rows.Count
+            ? "d12-property-bar-flyout d12-property-bar-flyout-end"
+            : "d12-property-bar-flyout";
+    }
+
+    private static bool IsCurrentColour(PropertyBarRow row, ColourPreset preset) =>
+        !row.IsMixed
+        && !row.IsThemed
+        && string.Equals(TextValue(row), preset.Hex, StringComparison.OrdinalIgnoreCase);
+
     private static bool IsCurrent(PropertyBarRow row, string option) =>
         !row.IsMixed && TextValue(row) == option;
 
@@ -246,6 +277,8 @@ public partial class PropertyBar : IAsyncDisposable
         : TextValue(row);
 
     private static string ChipName(PropertyBarRow row) => $"{row.Label}: {ChipValue(row)}";
+
+    private static string CustomColourName(PropertyBarRow row) => $"{row.Label}: Custom colour";
 
     private static string NumberName(PropertyBarRow row) =>
         row.IsMixed ? $"{row.Label}: {MixedValue.Label}" : row.Label;

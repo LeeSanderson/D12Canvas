@@ -6,8 +6,9 @@ namespace D12Canvas.VisualTests;
 
 // The property bar demo on a light and a dark pane: a selected rectangle's bar centred above it, a
 // mixed fill across two rectangles, a selected edge's bar, a shape along the top whose bar slides
-// along the container's edge, the selection chrome hidden while the pointer is on a bar, and an
-// edge's routing chip with its option flyout open once the edge is framed.
+// along the container's edge, the selection chrome hidden while the pointer is on a bar, an
+// edge's routing chip with its option flyout open once the edge is framed, and its colour chip
+// with the preset grid open on a colour picked from it.
 public sealed class PropertyBarVisualTests : IAsyncLifetime
 {
     internal const string TopRectangleId = "b0a00000-0000-0000-0000-000000000001";
@@ -147,6 +148,45 @@ public sealed class PropertyBarVisualTests : IAsyncLifetime
         await bar.Locator(".d12-property-bar-chip[aria-label^='Routing: ']").ClickAsync();
         await Expect(bar.Locator(".d12-flyout")).ToBeVisibleAsync();
         await Expect(bar.GetByRole(AriaRole.Menuitemradio).First).ToBeFocusedAsync();
+    }
+
+    [Fact]
+    public async Task AnEdgesColourChipOpensThePresetGrid_MatchesBaseline()
+    {
+        await OpenTheColourFlyoutOnAPresetAsync("light");
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task AnEdgesColourChipOpensThePresetGrid_DarkColorScheme_MatchesBaseline()
+    {
+        await ReopenInTheDarkColorSchemeAsync();
+        await OpenTheColourFlyoutOnAPresetAsync("dark");
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    // Blue is picked from the grid first, so the reopened grid shows a checked swatch.
+    private async Task OpenTheColourFlyoutOnAPresetAsync(string theme)
+    {
+        await SelectEdgeAsync(_page, theme);
+        var bar = Pane(_page, theme).Locator(".d12-property-bar");
+        var unframed = (await bar.GetAttributeAsync("style"))!;
+        await _page.Keyboard.PressAsync("Shift+Digit2");
+        await Expect(bar).Not.ToHaveAttributeAsync("style", unframed);
+        var chip = bar.Locator(".d12-property-bar-chip[aria-label^='Colour: ']");
+        await chip.ClickAsync();
+        await Expect(bar.GetByRole(AriaRole.Menuitemradio).First).ToBeFocusedAsync();
+        await bar.GetByRole(AriaRole.Menuitemradio, new() { Name = "Blue", Exact = true })
+            .ClickAsync();
+        await Expect(chip).ToHaveAttributeAsync("aria-label", "Colour: #2F80ED");
+        await Expect(bar.Locator(".d12-flyout")).ToHaveCountAsync(0);
+        await chip.ClickAsync();
+        await Expect(bar.Locator(".d12-flyout")).ToBeVisibleAsync();
+        await Expect(bar.GetByRole(AriaRole.Menuitemradio).First).ToBeFocusedAsync();
+        await Expect(bar.Locator(".d12-property-bar-swatch[aria-checked=true]"))
+            .ToHaveAttributeAsync("aria-label", "Blue");
     }
 
     [Fact]

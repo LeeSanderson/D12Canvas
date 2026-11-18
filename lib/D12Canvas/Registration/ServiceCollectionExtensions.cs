@@ -19,7 +19,19 @@ public static class ServiceCollectionExtensions
 
         if (existingRegistry is not null)
         {
-            configure(new D12CanvasOptions(existingRegistry));
+            var existingPresets =
+                services
+                    .FirstOrDefault(descriptor =>
+                        descriptor.ServiceType == typeof(ColourPresetCatalog)
+                    )
+                    ?.ImplementationInstance as ColourPresetCatalog;
+            var presets = existingPresets ?? new ColourPresetCatalog();
+            configure(new D12CanvasOptions(existingRegistry, presets));
+            if (existingPresets is null)
+            {
+                services.AddSingleton(presets);
+            }
+
             return services;
         }
 
@@ -29,6 +41,7 @@ public static class ServiceCollectionExtensions
         configure(options);
 
         services.AddSingleton(options.Registry);
+        services.AddSingleton(options.ColourPresetCatalog);
         services.AddSingleton<IBoardSerializer, BoardJsonSerializer>();
         return services;
     }

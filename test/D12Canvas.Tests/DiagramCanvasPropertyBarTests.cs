@@ -93,6 +93,9 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
                 && (name == label || name.StartsWith($"{label}: ", StringComparison.Ordinal))
             );
 
+    private static IElement Picker(IRenderedComponent<DiagramCanvas> canvas, string label) =>
+        canvas.Find($".d12-property-bar-picker[aria-label='{label}: Custom colour']");
+
     private static void PickOption(
         IRenderedComponent<DiagramCanvas> canvas,
         string label,
@@ -221,7 +224,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         var canvas = RenderCanvas(board);
         Select(canvas, rectangle.Id);
 
-        Control(canvas, "Fill").Change("#00ff00");
+        Picker(canvas, "Fill").Change("#00ff00");
 
         Assert.Equal("#00ff00", ((RectangleProps)rectangle.Props).FillColor);
         Assert.Equal("--d12-icon-accent: #00ff00", CellStyle(canvas, "Fill"));
@@ -279,7 +282,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         );
         Assert.NotEmpty(canvas.FindAll(".d12-property-bar .d12-property-bar-colour-themed"));
 
-        Control(canvas, "Colour").Change("#e5246b");
+        Picker(canvas, "Colour").Change("#e5246b");
 
         Assert.Equal("#e5246b", edge.Color);
         Assert.Contains("#e5246b", canvas.Find(".edge-line").GetAttribute("style"));
@@ -295,11 +298,11 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         var edge = AddEdge(board);
         var canvas = RenderCanvas(board);
         canvas.ClickElement(canvas.Find(".edge-hit"));
-        var swatchValue = Control(canvas, "Colour").GetAttribute("value")!;
+        var swatchValue = Picker(canvas, "Colour").GetAttribute("value")!;
 
-        Control(canvas, "Colour").Input("#123456");
-        Control(canvas, "Colour").Input(swatchValue);
-        Control(canvas, "Colour").Blur();
+        Picker(canvas, "Colour").Input("#123456");
+        Picker(canvas, "Colour").Input(swatchValue);
+        Picker(canvas, "Colour").Blur();
 
         Assert.Equal(swatchValue, edge.Color);
     }
@@ -353,7 +356,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         Assert.NotEmpty(canvas.FindAll(".d12-property-bar-colour-mixed"));
         Assert.Equal("left: 190px; top: 158px;", Bar(canvas)!.GetAttribute("style"));
 
-        Control(canvas, "Fill").Change("#00ff00");
+        Picker(canvas, "Fill").Change("#00ff00");
 
         Assert.Equal("#00ff00", ((RectangleProps)rectangle.Props).FillColor);
         Assert.Equal("#00ff00", ((StickyNoteProps)note.Props).Color);

@@ -1,6 +1,7 @@
 @namespace D12Canvas
 @using D12Canvas.Model
 @using D12Canvas.Panel
+@using D12Canvas.Registration
 
 <div class="d12-property-bar" role="toolbar" aria-label="Selection properties" style="@BarStyle" @ref="_barRef">
     <svg class="d12-property-bar-defs" width="0" height="0" aria-hidden="true" focusable="false">
@@ -16,15 +17,25 @@
         switch (row.Kind)
         {
             case EditorKind.Color:
-                <div class="@ColourCellClass(row)" style="@AccentStyle(row)" @key="RowKey(row)">
-                    <D12Icon Glyph="RoleGlyph(row.Role)" />
-                    <span class="d12-property-bar-value">@ChipValue(row)</span>
-                    <D12Icon Glyph="Glyphs.Caret" Class="d12-property-bar-caret" />
-                    <input class="d12-property-bar-control d12-property-bar-overlay"
+                <div class="@ColourCellClass(row)" style="@AccentStyle(row)" @key="row.Id">
+                    <button type="button"
+                            class="d12-property-bar-control d12-property-bar-chip"
+                            tabindex="-1"
+                            aria-haspopup="menu"
+                            aria-expanded="@(IsOpen(row) ? "true" : "false")"
+                            aria-label="@ChipName(row)"
+                            @ref="_chipElements[row.Id]"
+                            @onclick="@(() => ToggleFlyout(row))">
+                        <D12Icon Glyph="RoleGlyph(row.Role)" />
+                        <span class="d12-property-bar-value">@ChipValue(row)</span>
+                        <D12Icon Glyph="Glyphs.Caret" Class="d12-property-bar-caret" />
+                    </button>
+                    <input class="d12-property-bar-picker"
                            type="color"
                            tabindex="-1"
-                           aria-label="@ChipName(row)"
+                           aria-label="@CustomColourName(row)"
                            value="@ColorValue(row)"
+                           @key="RowKey(row)"
                            @oninput="@(e => HoldPick(row, e))"
                            @onchange="@(e => CommitPick(row, e))"
                            @onblur="@(() => CommitHeldPick(row))" />
@@ -36,6 +47,7 @@
                                 tabindex="-1"
                                 @onclick="@(() => UseThemeColour(row))"></button>
                     }
+                    @ChipFlyout(row, ColoursMarkup(row))
                 </div>
                 break;
             case EditorKind.Dropdown:
@@ -55,10 +67,7 @@
                         <span class="d12-property-bar-value">@ChipValue(row)</span>
                         <D12Icon Glyph="Glyphs.Caret" Class="d12-property-bar-caret" />
                     </button>
-                    @if (IsOpen(row) && _chipElements.TryGetValue(row.Id, out var opener))
-                    {
-                        @Flyout.Around(row.Label, "d12-property-bar-flyout", opener, EventCallback.Factory.Create(this, CloseFlyout), OptionsMarkup(row))
-                    }
+                    @ChipFlyout(row, OptionsMarkup(row))
                 </div>
                 break;
             case EditorKind.Number:
@@ -146,18 +155,16 @@
         color: var(--d12-text);
     }
 
-    .d12-property-bar-colour,
     .d12-property-bar-chip {
         padding: 0 4px 0 6px;
     }
 
-    .d12-property-bar-colour:hover,
     .d12-property-bar-chip:hover,
     .d12-property-bar-chip[aria-expanded=true] {
         background: color-mix(in srgb, var(--d12-border) 35%, var(--d12-surface));
     }
 
-    .d12-property-bar-colour:focus-within,
+    .d12-property-bar-colour:has(.d12-property-bar-picker:focus),
     .d12-property-bar-cell-number:focus-within {
         outline: 2px solid var(--d12-accent);
         outline-offset: -2px;
@@ -231,7 +238,7 @@
         gap: 2px;
     }
 
-    .d12-property-bar-overlay {
+    .d12-property-bar-picker {
         position: absolute;
         inset: 0;
         width: 100%;
@@ -240,9 +247,8 @@
         margin: 0;
         padding: 0;
         border: 0;
-        font: inherit;
         opacity: 0;
-        cursor: pointer;
+        pointer-events: none;
     }
 
     .d12-property-bar-number {
@@ -276,6 +282,11 @@
         padding: 6px;
     }
 
+    .d12-property-bar-flyout-end {
+        left: auto;
+        right: 0;
+    }
+
     .d12-property-bar-flyout .d12-flyout-heading {
         margin: 2px 0 4px 8px;
         font-size: 10px;
@@ -284,6 +295,38 @@
     .d12-property-bar-flyout-item[aria-checked=true] {
         color: var(--d12-accent);
         font-weight: 600;
+    }
+
+    .d12-property-bar-swatches {
+        display: grid;
+        grid-template-columns: repeat(5, 20px);
+        gap: 8px;
+        padding: 2px 8px 8px;
+        --d12-tooltip-offset: 6px;
+    }
+
+    .d12-property-bar-swatch,
+    .d12-property-bar-swatch:hover {
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border: 1px solid color-mix(in srgb, var(--d12-text) 25%, transparent);
+        border-radius: 50%;
+        background: var(--d12-swatch);
+    }
+
+    .d12-property-bar-swatch:hover {
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--d12-border) 60%, var(--d12-surface));
+    }
+
+    .d12-property-bar-swatch[aria-checked=true] {
+        outline: 2px solid var(--d12-accent);
+        outline-offset: 2px;
+    }
+
+    .d12-property-bar-swatch:focus-visible {
+        outline: 2px solid var(--d12-text);
+        outline-offset: 2px;
     }
 
     .d12-property-bar-flyout-gap {
@@ -305,6 +348,57 @@
                    placeholder="@(row.IsMixed ? MixedNumberPlaceholder : null)"
                    @onchange="@(e => Commit(row, e))" />
         </text>;
+
+    private RenderFragment ChipFlyout(PropertyBarRow row, RenderFragment content) =>
+        @<text>
+            @if (IsOpen(row) && _chipElements.TryGetValue(row.Id, out var opener))
+            {
+                @Flyout.Around(row.Label, FlyoutPlacement(row), opener, EventCallback.Factory.Create(this, CloseFlyout), content)
+            }
+        </text>;
+
+    private RenderFragment ColoursMarkup(PropertyBarRow row) =>
+        @<text>
+            <div class="d12-flyout-heading" aria-hidden="true">@row.Label</div>
+            @if (ColourPresets.Count > 0)
+            {
+                <div class="d12-property-bar-swatches" data-d12-flyout-columns="5">
+                    @foreach (var preset in ColourPresets)
+                    {
+                        var picked = preset;
+                        @Tooltip.Around($"{preset.Name} {preset.Hex}", TooltipSide.Above, SwatchMarkup(row, picked))
+                    }
+                </div>
+            }
+            @if (row.CanHoldNull)
+            {
+                <button type="button"
+                        role="menuitemradio"
+                        class="d12-flyout-item d12-property-bar-flyout-item"
+                        aria-checked="@(!row.IsMixed && row.IsThemed ? "true" : "false")"
+                        tabindex="-1"
+                        @onclick="@(() => PickThemeColour(row))">
+                    Theme colour
+                </button>
+            }
+            <button type="button"
+                    role="menuitem"
+                    class="d12-flyout-item d12-property-bar-flyout-item d12-property-bar-custom"
+                    tabindex="-1"
+                    @onclick="CloseFlyout">
+                Custom…
+            </button>
+        </text>;
+
+    private RenderFragment SwatchMarkup(PropertyBarRow row, ColourPreset preset) =>
+        @<button type="button"
+                 role="menuitemradio"
+                 class="d12-flyout-item d12-property-bar-swatch"
+                 style="--d12-swatch: @preset.Hex"
+                 aria-label="@preset.Name"
+                 aria-checked="@(IsCurrentColour(row, preset) ? "true" : "false")"
+                 tabindex="-1"
+                 @onclick="@(() => PickOption(row, preset.Hex))"></button>;
 
     private RenderFragment OptionsMarkup(PropertyBarRow row) =>
         @<text>

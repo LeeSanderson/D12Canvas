@@ -8,14 +8,26 @@ public sealed class D12CanvasOptions
     private readonly ComponentRegistry _registry;
 
     public D12CanvasOptions()
-        : this(new ComponentRegistry()) { }
+        : this(new ComponentRegistry(), new ColourPresetCatalog()) { }
 
-    internal D12CanvasOptions(ComponentRegistry registry)
+    internal D12CanvasOptions(ComponentRegistry registry, ColourPresetCatalog colourPresets)
     {
         _registry = registry;
+        ColourPresetCatalog = colourPresets;
     }
 
     public IComponentRegistry Registry => _registry;
+
+    internal ColourPresetCatalog ColourPresetCatalog { get; }
+
+    // The swatches every colour role offers in the Property bar's colour flyout, in order. An
+    // empty list removes the grid. Setting a null list, or a preset whose Hex is not #RRGGBB,
+    // throws.
+    public IReadOnlyList<ColourPreset> ColourPresets
+    {
+        get => ColourPresetCatalog.Presets;
+        set => ColourPresetCatalog.Presets = value;
+    }
 
     public D12CanvasOptions RegisterComponent<TComponent, TProps>(
         string key,
