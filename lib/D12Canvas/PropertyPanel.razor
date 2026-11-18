@@ -2,7 +2,8 @@
 
 @using D12Canvas.Panel
 
-<div class="d12-property-panel" role="region" aria-label="Property panel">
+<CascadingValue Value="D12IconStyles.InScope" IsFixed="true">
+<div class="d12-property-panel" role="region" aria-label="Property panel" @ref="_panelElement">
     @if (SelectedInstances.Count == 0)
     {
         <p class="d12-property-panel-empty">No selection</p>
@@ -17,6 +18,19 @@
             @foreach (var field in Fields)
             {
                 <li class="d12-property-panel-field" @key="RowKey(field)">
+                    @if (field.DrawsTiles)
+                    {
+                        <div class="d12-property-panel-label">
+                            <span id="@field.LabelId">@field.Label</span>
+                            @if (field.IsMixed)
+                            {
+                                <span class="d12-property-panel-mixed-tag">@MixedValue.Label</span>
+                            }
+                        </div>
+                        @TilesMarkup(field)
+                    }
+                    else
+                    {
                     <label class="d12-property-panel-label" for="@field.FieldId">@field.Label</label>
                     @switch (field.Kind)
                     {
@@ -114,16 +128,19 @@
                             </div>
                             break;
                     }
+                    }
                 </li>
             }
         </ul>
     }
 </div>
+</CascadingValue>
 
 <style>
+    @(D12IconStyles.Rules)
     @(RaisedSurface.TokenRules(".d12-property-panel"))
     @(PinnedChrome.Text(".d12-property-panel", 16))
-    @(PinnedChrome.Button(".d12-property-panel-clear, .d12-property-panel-unlock"))
+    @(PinnedChrome.Button(".d12-property-panel-clear, .d12-property-panel-unlock, .d12-property-panel-tile"))
     .d12-property-panel {
         display: flex;
         flex-direction: column;
@@ -253,4 +270,106 @@
     .d12-property-panel-custom {
         display: flex;
     }
+
+    .d12-property-panel-mixed-tag {
+        margin-left: 6px;
+        font-weight: 400;
+        font-style: italic;
+    }
+
+    .d12-property-panel-tiles {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fill,
+            minmax(
+                min(max(52px, calc(var(--d12-tile-name-length) * 1.2ch + 12px)), calc(50% - 1px)),
+                1fr
+            )
+        );
+        gap: 2px;
+        padding: 2px;
+        border: 1px solid var(--d12-border);
+        border-radius: 5px;
+        background: color-mix(in srgb, var(--d12-border) 20%, var(--d12-surface));
+        font-size: 10px;
+    }
+
+    .d12-property-panel-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-width: 0;
+        height: 42px;
+        padding: 0;
+        border: 0;
+        border-radius: 3px;
+        background: transparent;
+        font-size: 10px;
+        cursor: pointer;
+    }
+
+    .d12-property-panel-tile:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--d12-border) 45%, var(--d12-surface));
+    }
+
+    .d12-property-panel-tile:focus-visible {
+        outline: 2px solid var(--d12-accent);
+        outline-offset: -2px;
+    }
+
+    .d12-property-panel-tile[aria-checked="true"] {
+        background: var(--d12-surface);
+        color: var(--d12-accent);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--d12-accent) 50%, transparent);
+    }
+
+    .d12-property-panel-tile-name {
+        max-width: 100%;
+        padding: 0 2px;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.2;
+    }
 </style>
+
+@code {
+    private RenderFragment TilesMarkup(PanelField field) =>
+        @<div
+            id="@field.FieldId"
+            class="d12-property-panel-tiles"
+            role="radiogroup"
+            aria-labelledby="@field.LabelId"
+            style="--d12-tile-name-length: @field.LongestOptionNameLength"
+            @onfocusout="() => TilesLostFocus(field)"
+        >
+            @{
+                var checkedIndex = CheckedTileIndex(field);
+                var tabStopIndex = TabStopTileIndex(field);
+            }
+            @for (var index = 0; index < field.Options!.Count; index++)
+            {
+                var tileIndex = index;
+                var option = field.Options[tileIndex];
+                <button
+                    type="button"
+                    role="radio"
+                    class="d12-property-panel-tile"
+                    aria-checked="@(tileIndex == checkedIndex ? "true" : "false")"
+                    tabindex="@(!AllLocked && tileIndex == tabStopIndex ? "0" : "-1")"
+                    disabled="@AllLocked"
+                    @key="option"
+                    @ref="_tileElements[(field.FieldId, tileIndex)]"
+                    @onfocus="() => TileFocused(field, tileIndex)"
+                    @onkeydown="args => HandleTileKeyDown(field, tileIndex, args)"
+                    @onclick="() => Commit(field, option)"
+                >
+                    <D12Icon Glyph="field.OptionGlyphs![option]" />
+                    <span class="d12-property-panel-tile-name">@OptionName.For(option)</span>
+                </button>
+            }
+        </div>;
+}

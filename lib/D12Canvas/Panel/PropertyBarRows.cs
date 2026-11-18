@@ -117,8 +117,37 @@ internal static class PropertyBarRows
         Func<Edge, object?> Read,
         Func<EdgeStyle, object?, EdgeStyle> Write,
         IReadOnlyList<string>? Options,
-        bool CanHoldNull
+        bool CanHoldNull,
+        IReadOnlyDictionary<string, Glyph>? OptionGlyphs = null
     );
+
+    private static readonly IReadOnlyDictionary<string, Glyph> RoutingGlyphs = new Dictionary<
+        string,
+        Glyph
+    >
+    {
+        [nameof(EdgeRouting.Straight)] = Glyphs.RoutingStraight,
+        [nameof(EdgeRouting.Orthogonal)] = Glyphs.RoutingOrthogonal,
+        [nameof(EdgeRouting.Curved)] = Glyphs.RoutingCurved,
+    };
+
+    private static readonly IReadOnlyDictionary<string, Glyph> SourceArrowGlyphs = new Dictionary<
+        string,
+        Glyph
+    >
+    {
+        [nameof(ArrowStyle.None)] = Glyphs.SourceArrowNone,
+        [nameof(ArrowStyle.Arrow)] = Glyphs.SourceArrowArrow,
+    };
+
+    private static readonly IReadOnlyDictionary<string, Glyph> TargetArrowGlyphs = new Dictionary<
+        string,
+        Glyph
+    >
+    {
+        [nameof(ArrowStyle.None)] = Glyphs.TargetArrowNone,
+        [nameof(ArrowStyle.Arrow)] = Glyphs.TargetArrowArrow,
+    };
 
     private static readonly IReadOnlyList<EdgeRole> EdgeRoles =
     [
@@ -127,21 +156,24 @@ internal static class PropertyBarRows
             edge => edge.RoutingStyle,
             (style, value) => style with { RoutingStyle = (EdgeRouting)value! },
             Enum.GetNames<EdgeRouting>(),
-            CanHoldNull: false
+            CanHoldNull: false,
+            RoutingGlyphs
         ),
         new(
             PropertyRole.EdgeSourceArrow,
             edge => edge.SourceArrow,
             (style, value) => style with { SourceArrow = (ArrowStyle)value! },
             Enum.GetNames<ArrowStyle>(),
-            CanHoldNull: false
+            CanHoldNull: false,
+            SourceArrowGlyphs
         ),
         new(
             PropertyRole.EdgeTargetArrow,
             edge => edge.TargetArrow,
             (style, value) => style with { TargetArrow = (ArrowStyle)value! },
             Enum.GetNames<ArrowStyle>(),
-            CanHoldNull: false
+            CanHoldNull: false,
+            TargetArrowGlyphs
         ),
         new(
             PropertyRole.EdgeColour,

@@ -9,6 +9,52 @@ namespace D12Canvas.BuiltIns;
 // built-ins come before any host-registered types.
 internal static class BuiltInComponents
 {
+    private static readonly IReadOnlyDictionary<string, Glyph> TextAlignGlyphs = new Dictionary<
+        string,
+        Glyph
+    >
+    {
+        ["left"] = Glyphs.TextAlignLeft,
+        ["center"] = Glyphs.TextAlignCentre,
+        ["right"] = Glyphs.TextAlignRight,
+    };
+
+    private static readonly IReadOnlyDictionary<string, Glyph> VerticalAlignGlyphs = new Dictionary<
+        string,
+        Glyph
+    >
+    {
+        ["top"] = Glyphs.TextVerticalTop,
+        ["middle"] = Glyphs.TextVerticalMiddle,
+        ["bottom"] = Glyphs.TextVerticalBottom,
+    };
+
+    private static readonly IReadOnlyDictionary<string, Glyph> FontWeightGlyphs = new Dictionary<
+        string,
+        Glyph
+    >
+    {
+        ["normal"] = Glyphs.WeightNormal,
+        ["bold"] = Glyphs.WeightBold,
+    };
+
+    private static IReadOnlyList<EditableProperty> WithOptionGlyphs(
+        Type propsType,
+        params (string PropertyName, IReadOnlyDictionary<string, Glyph> Glyphs)[] optionGlyphs
+    ) =>
+        EditablePropertySchema
+            .DiscoverFrom(propsType)
+            .Select(property =>
+                optionGlyphs.FirstOrDefault(entry => entry.PropertyName == property.Property.Name)
+                    is { Glyphs: { } glyphs }
+                    ? property with
+                    {
+                        OptionGlyphs = glyphs,
+                    }
+                    : property
+            )
+            .ToList();
+
     public static void RegisterAll(D12CanvasOptions options)
     {
         options.RegisterComponent<Rectangle, RectangleProps>(
@@ -41,6 +87,11 @@ internal static class BuiltInComponents
                 builder.Icon = Glyphs.StickyNote;
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(200, 200);
+                builder.EditableProperties = WithOptionGlyphs(
+                    typeof(StickyNoteProps),
+                    (nameof(StickyNoteProps.TextAlign), TextAlignGlyphs),
+                    (nameof(StickyNoteProps.VerticalAlign), VerticalAlignGlyphs)
+                );
             }
         );
 
@@ -55,6 +106,11 @@ internal static class BuiltInComponents
                 builder.Category = "Basic Shapes";
                 builder.DefaultSize = new ComponentSize(200, 40);
                 builder.IsEmpty = props => string.IsNullOrWhiteSpace(props.Text);
+                builder.EditableProperties = WithOptionGlyphs(
+                    typeof(TextProps),
+                    (nameof(TextProps.FontWeight), FontWeightGlyphs),
+                    (nameof(TextProps.TextAlign), TextAlignGlyphs)
+                );
             }
         );
 

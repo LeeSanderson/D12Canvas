@@ -46,7 +46,11 @@ public partial class PropertyPanel : IAsyncDisposable
         }
     }
 
-    private void HandleSelectionChanged(object? sender, EventArgs e) => StateHasChanged();
+    private void HandleSelectionChanged(object? sender, EventArgs e)
+    {
+        _focusedTiles.Clear();
+        StateHasChanged();
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -85,6 +89,7 @@ public partial class PropertyPanel : IAsyncDisposable
     // CanHoldNull is true when every target's property can hold null, which for a colour means
     // "no author opinion, follow the theme": the panel then offers the way back to that state,
     // because <input type="color"> cannot express absence and would otherwise show #000000.
+    // OptionGlyphs is set only when every option has a glyph, and the field is then drawn as tiles.
     private sealed record PanelField(
         string FieldId,
         string Label,
@@ -92,9 +97,16 @@ public partial class PropertyPanel : IAsyncDisposable
         IReadOnlyList<string>? Options,
         RenderFragment<CustomEditorContext>? CustomEditor,
         IReadOnlyList<(ComponentInstance Instance, PropertyInfo Property)> Targets,
-        bool CanHoldNull
+        bool CanHoldNull,
+        IReadOnlyDictionary<string, Glyph>? OptionGlyphs
     )
     {
+        public bool DrawsTiles => OptionGlyphs is not null;
+
+        public string LabelId => $"{FieldId}-label";
+
+        public int LongestOptionNameLength => Options!.Max(option => OptionName.For(option).Length);
+
         public bool IsMixed { get; } =
             MixedValue.IsMixed(
                 Kind,
@@ -136,7 +148,7 @@ public partial class PropertyPanel : IAsyncDisposable
     private int _edits;
 
     private object RowKey(PanelField field) =>
-        field.IsMixed ? $"{field.FieldId}#{_edits}" : field.FieldId;
+        field.IsMixed && !field.DrawsTiles ? $"{field.FieldId}#{_edits}" : field.FieldId;
 
     private IReadOnlyList<PanelField> Fields
     {
@@ -174,7 +186,8 @@ public partial class PropertyPanel : IAsyncDisposable
                 Options: property.Options,
                 CustomEditor: property.CustomEditor,
                 Targets: instances.Select(instance => (instance, property.Property)).ToList(),
-                CanHoldNull: property.CanHoldNull
+                CanHoldNull: property.CanHoldNull,
+                OptionGlyphs: TileGlyphs(property)
             ))
             .ToList();
 
@@ -221,11 +234,15 @@ public partial class PropertyPanel : IAsyncDisposable
                     Options: representative.Options,
                     CustomEditor: representative.CustomEditor,
                     Targets: targets,
-                    CanHoldNull: propertiesByType.Values.All(property => property.CanHoldNull)
+                    CanHoldNull: propertiesByType.Values.All(property => property.CanHoldNull),
+                    OptionGlyphs: TileGlyphs(representative)
                 );
             })
             .ToList();
     }
+
+    private static IReadOnlyDictionary<string, Glyph>? TileGlyphs(EditableProperty property) =>
+        property.HasGlyphForEveryOption ? property.OptionGlyphs : null;
 
     private static string CurrentValue(PanelField field) => FormatValue(field.Value);
 
@@ -255,6 +272,12 @@ public partial class PropertyPanel : IAsyncDisposable
     // element and the property would otherwise outlive the mixed row.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", ModulePath);
+            await _module.InvokeVoidAsync("registerTileKeys", _panelElement);
+        }
+
         var checkboxes = Fields.Where(field => field.Kind == EditorKind.Checkbox).ToList();
         var toWrite = checkboxes
             .Where(field => field.IsMixed || _indeterminateCheckboxes.Contains(field.FieldId))
@@ -278,6 +301,57 @@ public partial class PropertyPanel : IAsyncDisposable
                 _checkboxes[field.FieldId],
                 field.IsMixed
             );
+        }
+    }
+
+    private ElementReference _panelElement;
+
+    // The tiles are one tab stop with a roving tabindex: the focused tile while focus is inside the
+    // group, otherwise the checked tile, or the first one when the value is mixed. Arrow keys only
+    // move focus; Space, Enter or a click commits, so browsing the options adds no history.
+    private readonly Dictionary<string, int> _focusedTiles = new();
+    private readonly Dictionary<(string FieldId, int Index), ElementReference> _tileElements =
+        new();
+
+    private static int CheckedTileIndex(PanelField field) =>
+        field.IsMixed ? -1 : field.Options!.ToList().IndexOf(CurrentValue(field));
+
+    private int TabStopTileIndex(PanelField field) =>
+        _focusedTiles.TryGetValue(field.FieldId, out var focused) ? focused
+        : CheckedTileIndex(field) is var checkedIndex and >= 0 ? checkedIndex
+        : 0;
+
+    private void TileFocused(PanelField field, int index) => _focusedTiles[field.FieldId] = index;
+
+    private void TilesLostFocus(PanelField field) => _focusedTiles.Remove(field.FieldId);
+
+    private async Task HandleTileKeyDown(PanelField field, int index, KeyboardEventArgs args)
+    {
+        var lastIndex = field.Options!.Count - 1;
+        int? target = args.Key switch
+        {
+            "ArrowRight" or "ArrowDown" => index >= lastIndex ? 0 : index + 1,
+            "ArrowLeft" or "ArrowUp" => index <= 0 ? lastIndex : index - 1,
+            "Home" => 0,
+            "End" => lastIndex,
+            _ => null,
+        };
+
+        if (args.Key is "Enter" or " ")
+        {
+            Commit(field, field.Options[index]);
+            return;
+        }
+
+        if (target is not { } next)
+        {
+            return;
+        }
+
+        _focusedTiles[field.FieldId] = next;
+        if (_tileElements.TryGetValue((field.FieldId, next), out var element))
+        {
+            await element.FocusAsync();
         }
     }
 

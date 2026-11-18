@@ -12,15 +12,24 @@ namespace D12Canvas.Panel;
 // property plays - null means it never participates in a cross-type multi-selection's merged view
 // or the property bar, regardless of its name or Kind. CanHoldNull is read off the property's own
 // nullability annotation: for a colour it means "no author opinion, follow the theme", and the
-// panel offers the way back to that state.
+// panel offers the way back to that state. OptionGlyphs gives a Dropdown's options a glyph each,
+// keyed by option value; like CustomEditor it can only come from the builder override, and a
+// Dropdown with a glyph for every option is drawn as tiles rather than a <select>.
 public sealed record EditableProperty(
     PropertyInfo Property,
     EditorKind Kind,
     IReadOnlyList<string>? Options = null,
     RenderFragment<CustomEditorContext>? CustomEditor = null,
-    PropertyRole? Role = null
+    PropertyRole? Role = null,
+    IReadOnlyDictionary<string, Glyph>? OptionGlyphs = null
 )
 {
     public bool CanHoldNull { get; } =
         new NullabilityInfoContext().Create(Property).WriteState == NullabilityState.Nullable;
+
+    internal bool HasGlyphForEveryOption =>
+        Kind == EditorKind.Dropdown
+        && Options is { Count: > 0 }
+        && OptionGlyphs is not null
+        && Options.All(OptionGlyphs.ContainsKey);
 }

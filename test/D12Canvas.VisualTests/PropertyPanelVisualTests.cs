@@ -6,11 +6,11 @@ using static Microsoft.Playwright.Assertions;
 namespace D12Canvas.VisualTests;
 
 // Screenshot-diff baselines for the property panel: its empty state with nothing selected, its
-// populated state for each property-editor kind (Number, Color, Dropdown, Custom), and the two
-// populated states again under the dark colour scheme, where the panel's raised values and
-// color-scheme must carry its native inputs along with it. Checkbox has no baseline here since no
-// built-in declares a Checkbox-kind property yet - see PropertyPanelTests for its control-level
-// coverage.
+// populated state for each property-editor kind (Number, Color, Dropdown, Custom), a Dropdown
+// with a glyph for every option drawn as tiles, and those states again under the dark colour
+// scheme, where the panel's raised values and color-scheme must carry its native inputs along
+// with it. Checkbox has no baseline here since no built-in declares a Checkbox-kind property yet -
+// see PropertyPanelTests for its control-level coverage.
 public sealed class PropertyPanelVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
@@ -88,9 +88,9 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
     public async Task PopulatedPanelWithDropdownControl_MatchesBaseline()
     {
         await NewPageAsync(ColorScheme.Light);
-        await PlaceAndSelectAsync("Text");
+        await PlaceAndSelectAsync("Process");
 
-        await Expect(_page.Locator("#d12-property-panel-field-FontWeight")).ToBeVisibleAsync();
+        await Expect(_page.Locator("select#d12-property-panel-field-Outline")).ToBeVisibleAsync();
 
         await ContentSnapshot.Verify(_page);
     }
@@ -99,9 +99,33 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
     public async Task PopulatedPanelWithDropdownControl_DarkColorScheme_MatchesBaseline()
     {
         await NewPageAsync(ColorScheme.Dark);
+        await PlaceAndSelectAsync("Process");
+
+        await Expect(_page.Locator("select#d12-property-panel-field-Outline")).ToBeVisibleAsync();
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task PopulatedPanelWithGlyphTiles_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Light);
         await PlaceAndSelectAsync("Text");
 
-        await Expect(_page.Locator("#d12-property-panel-field-FontWeight")).ToBeVisibleAsync();
+        await Expect(_page.Locator("#d12-property-panel-field-FontWeight [aria-checked=true]"))
+            .ToHaveCountAsync(1);
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task PopulatedPanelWithGlyphTiles_DarkColorScheme_MatchesBaseline()
+    {
+        await NewPageAsync(ColorScheme.Dark);
+        await PlaceAndSelectAsync("Text");
+
+        await Expect(_page.Locator("#d12-property-panel-field-FontWeight [aria-checked=true]"))
+            .ToHaveCountAsync(1);
 
         await ContentSnapshot.Verify(_page);
     }

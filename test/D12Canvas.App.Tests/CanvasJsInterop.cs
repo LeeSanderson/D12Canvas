@@ -44,10 +44,9 @@ public sealed class CanvasJsInterop
             "registerMenu"
         );
 
-        jsInterop
-            .SetupModule(PropertyPanel.ModulePath)
-            .SetupVoid("setIndeterminate", _ => true)
-            .SetVoidResult();
+        var propertyPanelModule = jsInterop.SetupModule(PropertyPanel.ModulePath);
+        propertyPanelModule.SetupVoid("setIndeterminate", _ => true).SetVoidResult();
+        propertyPanelModule.SetupVoid("registerTileKeys", _ => true).SetVoidResult();
 
         var propertyBarModule = jsInterop.SetupModule(PropertyBar.ModulePath);
         SetupCleanupHandle(propertyBarModule, "registerPropertyBar");

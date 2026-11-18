@@ -18,6 +18,9 @@ public abstract class ComponentTestBase : BunitContext
             .SetVoidResult();
         FlyoutModule = JSInterop.SetupModule(Flyout.ModulePath);
         SetupDisposableCleanupHandle(FlyoutModule, "registerFlyout");
+        PropertyPanelModule = JSInterop.SetupModule(PropertyPanel.ModulePath);
+        PropertyPanelModule.SetupVoid("setIndeterminate", _ => true).SetVoidResult();
+        PropertyPanelModule.SetupVoid("registerTileKeys", _ => true).SetVoidResult();
     }
 
     protected BunitJSModuleInterop FlyoutModule { get; }
@@ -118,9 +121,6 @@ public abstract class ComponentTestBase : BunitContext
         var menuModule = JSInterop.SetupModule("./_content/D12Canvas/ContextMenu.razor.js");
         SetupDisposableCleanupHandle(menuModule, "registerMenu");
 
-        PropertyPanelModule = JSInterop.SetupModule(PropertyPanel.ModulePath);
-        PropertyPanelModule.SetupVoid("setIndeterminate", _ => true).SetVoidResult();
-
         PropertyBarModule = JSInterop.SetupModule(PropertyBar.ModulePath);
         SetupDisposableCleanupHandle(PropertyBarModule, "registerPropertyBar");
         ReportPropertyBarWidth(120);
@@ -128,7 +128,7 @@ public abstract class ComponentTestBase : BunitContext
 
     protected BunitJSModuleInterop PropertyBarModule { get; private set; } = null!;
 
-    protected BunitJSModuleInterop PropertyPanelModule { get; private set; } = null!;
+    protected BunitJSModuleInterop PropertyPanelModule { get; }
 
     // The latest setup wins.
     protected void ReportPropertyBarWidth(double width) =>
