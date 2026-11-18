@@ -115,7 +115,7 @@ public partial class DiagramCanvas : IAsyncDisposable
     private string? _pendingPaletteDragKey;
     private bool _isDragOverBoard;
 
-    // Edge is not a registered component type, so the Connector palette entry has no registry
+    // Edge is not a registered component type, so the Palette's Edge button has no registry
     // key. This sentinel goes through the same palette plumbing, and PlaceComponent routes it to
     // PlaceConnector.
     public const string ConnectorPaletteKey = "__d12-connector__";

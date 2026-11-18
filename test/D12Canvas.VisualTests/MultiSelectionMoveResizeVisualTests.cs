@@ -40,9 +40,8 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
     // visible.
     private async Task SelectBothInstances()
     {
-        var entries = _page.Locator(".d12-palette-entry-button");
-        await entries.Nth(0).ClickAsync();
-        await entries.Nth(1).ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.StressItem).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(2);
 
         var boxes = await _page.Locator(".component-container").AllAsync();

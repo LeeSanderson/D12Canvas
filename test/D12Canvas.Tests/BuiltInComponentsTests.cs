@@ -247,7 +247,7 @@ public class BuiltInComponentsTests
     }
 
     [Fact]
-    public void HostRegisteredComponentsPrecedeBuiltInsInPaletteOrder()
+    public void BuiltInsPrecedeHostRegisteredComponentsInPaletteOrder()
     {
         var services = new ServiceCollection();
 
@@ -267,7 +267,7 @@ public class BuiltInComponentsTests
         var registry = provider.GetRequiredService<IComponentRegistry>();
 
         Assert.Equal(
-            ["widget", "rectangle", "sticky-note", "text", "image"],
+            ["rectangle", "sticky-note", "text", "image", "widget"],
             registry.All.Select(r => r.Key)
         );
     }

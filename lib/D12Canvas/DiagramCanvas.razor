@@ -27,6 +27,7 @@
          @ondrop="@HandleDrop" @ondrop:preventDefault="true">
         <div class="canvas-content" style="@ContentStyle" data-d12-flight="@(_inFlight ? "true" : null)">
             <CascadingValue Value="this" Name="ParentCanvas">
+            <CascadingValue Value="D12IconStyles.InScope" IsFixed="true">
             <div class="edge-band">
             <svg class="edges-layer">
                 @if (BoardShown)
@@ -254,6 +255,7 @@
             }
             </div>
             </CascadingValue>
+            </CascadingValue>
         </div>
     </div>
     @if (_isDragOverBoard)
@@ -284,6 +286,7 @@
 </div>
 
 <style>
+    @(D12IconStyles.Rules)
     .diagram-container {
         --d12-surface: #f0f0f0;
         --d12-border: rgba(0, 0, 0, 0.1);

@@ -17,18 +17,19 @@ public static class ServiceCollectionExtensions
                 .FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IComponentRegistry))
                 ?.ImplementationInstance as ComponentRegistry;
 
-        var options = existingRegistry is null
-            ? new D12CanvasOptions()
-            : new D12CanvasOptions(existingRegistry);
-        configure(options);
-
-        if (existingRegistry is null)
+        if (existingRegistry is not null)
         {
-            BuiltInComponents.RegisterAll(options);
-            services.AddSingleton(options.Registry);
-            services.AddSingleton<IBoardSerializer, BoardJsonSerializer>();
+            configure(new D12CanvasOptions(existingRegistry));
+            return services;
         }
 
+        // The built-ins register before the host's types so the Palette lists them first.
+        var options = new D12CanvasOptions();
+        BuiltInComponents.RegisterAll(options);
+        configure(options);
+
+        services.AddSingleton(options.Registry);
+        services.AddSingleton<IBoardSerializer, BoardJsonSerializer>();
         return services;
     }
 }

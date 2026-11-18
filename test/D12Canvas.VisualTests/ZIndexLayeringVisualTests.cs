@@ -41,15 +41,14 @@ public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
     // two overlap (the cascading +20,+20 offset).
     private async Task PlaceTwoOverlappingInstancesWithTheFirstSelected()
     {
-        var entries = _page.Locator(".d12-palette-entry-button");
-        await entries.Nth(0).ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
 
         await _page.Locator(".component-container").ClickAsync();
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(1);
 
-        await entries.Nth(1).ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.StressItem).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(2);
     }
 

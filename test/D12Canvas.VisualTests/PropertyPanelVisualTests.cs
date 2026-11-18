@@ -46,9 +46,7 @@ public sealed class PropertyPanelVisualTests : IAsyncLifetime
 
     private async Task PlaceAndSelectAsync(string paletteEntryLabel)
     {
-        await _page
-            .Locator($".d12-palette-entry-button[aria-label='{paletteEntryLabel}']")
-            .ClickAsync();
+        await _page.Locator($".d12-palette-entry[aria-label='{paletteEntryLabel}']").ClickAsync();
         await _page.Locator(".component-container").ClickAsync();
     }
 

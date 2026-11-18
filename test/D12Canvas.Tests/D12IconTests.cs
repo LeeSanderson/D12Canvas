@@ -1,4 +1,5 @@
 using Bunit;
+using Microsoft.AspNetCore.Components;
 
 namespace D12Canvas.Tests;
 
@@ -94,5 +95,19 @@ public class D12IconTests : BunitContext
         Assert.Contains("var(--d12-icon-size, 16px)", css);
         Assert.Contains("var(--d12-icon-stroke, 1.5)", css);
         Assert.Contains("var(--d12-icon-accent, currentColor)", css);
+    }
+
+    [Fact]
+    public void AnIconInsideARootThatCarriesTheRulesLeavesOutItsOwnStyleBlock()
+    {
+        var root = Render<CascadingValue<D12IconStyles>>(parameters =>
+            parameters
+                .Add(p => p.Value, D12IconStyles.InScope)
+                .Add(p => p.IsFixed, true)
+                .AddChildContent<D12Icon>(icon => icon.Add(p => p.Glyph, Glyphs.Lock))
+        );
+
+        Assert.Single(root.FindAll("svg.d12-icon"));
+        Assert.Empty(root.FindAll("style"));
     }
 }

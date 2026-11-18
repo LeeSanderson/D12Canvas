@@ -27,7 +27,7 @@ public abstract class ComponentTestBase : BunitContext
 
     protected static string StyleBlockText<TComponent>(IRenderedComponent<TComponent> component)
         where TComponent : Microsoft.AspNetCore.Components.IComponent =>
-        string.Join("\n", component.FindAll("style").Select(style => style.InnerHtml));
+        component.Find("style").InnerHtml;
 
     // Extracts the (possibly nested) `{ ... }` block immediately following the first occurrence
     // of `marker` - used both for a plain rule's own declaration block and for an @media block's

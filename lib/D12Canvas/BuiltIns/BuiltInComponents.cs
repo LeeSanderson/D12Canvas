@@ -5,8 +5,8 @@ namespace D12Canvas.BuiltIns;
 
 // Registers D12Canvas's own shipped component types through the exact same RegisterComponent
 // mechanism a host uses for its own types - there is no separate "built-in" path. Called once from
-// ServiceCollectionExtensions.AddD12Canvas, after the host's own configure callback has already
-// run, so built-ins are appended after any host-registered types.
+// ServiceCollectionExtensions.AddD12Canvas, before the host's own configure callback runs, so
+// built-ins come before any host-registered types.
 internal static class BuiltInComponents
 {
     public static void RegisterAll(D12CanvasOptions options)

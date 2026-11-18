@@ -1,5 +1,6 @@
 using Bunit;
 using D12Canvas.BuiltIns;
+using Microsoft.AspNetCore.Components;
 using Xunit;
 using ErrorEventArgs = Microsoft.AspNetCore.Components.Web.ErrorEventArgs;
 
@@ -37,7 +38,12 @@ public class ImageTests : ComponentTestBase
     [Fact]
     public void ThePlaceholderPaintsFromTheCanvasThemeTokens()
     {
-        var image = Render<Image>();
+        var image = Render<CascadingValue<D12IconStyles>>(parameters =>
+            parameters
+                .Add(p => p.Value, D12IconStyles.InScope)
+                .Add(p => p.IsFixed, true)
+                .AddChildContent<Image>()
+        );
 
         var placeholder = ExtractBlock(StyleBlockText(image), ".d12-image-placeholder");
         Assert.Contains("background-color: var(--d12-surface)", placeholder);

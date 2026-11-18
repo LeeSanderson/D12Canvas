@@ -38,7 +38,7 @@ public sealed class ClickToAddPlacementVisualTests : IAsyncLifetime
     [Fact]
     public async Task ClickToAddedInstance_MatchesBaseline()
     {
-        await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
 
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
 
@@ -48,7 +48,7 @@ public sealed class ClickToAddPlacementVisualTests : IAsyncLifetime
     [Fact]
     public async Task ConsecutiveClickToAdds_CascadeWithAnOffset_MatchesBaseline()
     {
-        var entry = _page.Locator(".d12-palette-entry-button").First;
+        var entry = PaletteEntry.Named(_page, PaletteEntry.DemoNote);
         await entry.ClickAsync();
         await entry.ClickAsync();
 

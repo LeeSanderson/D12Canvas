@@ -38,7 +38,7 @@ public sealed class ConnectorPaletteEntryVisualTests : IAsyncLifetime
     [Fact]
     public async Task DroppedConnector_MatchesBaseline()
     {
-        var source = _page.Locator(".d12-palette-entry-button[aria-label='Connector']");
+        var source = _page.Locator(".d12-palette-edge[aria-label='Edge']");
         var target = _page.Locator(".diagram-canvas");
 
         // Centered rather than nearer the container's edge: with the nav sidebar and palette

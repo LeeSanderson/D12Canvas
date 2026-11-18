@@ -27,6 +27,9 @@ public partial class D12Icon
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
+    [CascadingParameter]
+    private D12IconStyles? StylesInScope { get; set; }
+
     private string SvgClass => Class is null ? "d12-icon" : $"d12-icon {Class}";
 
     private static bool IsFill(GlyphPaint paint) =>

@@ -38,7 +38,7 @@ public sealed class SelectionVisualTests : IAsyncLifetime
     [Fact]
     public async Task SelectedInstance_MatchesBaseline()
     {
-        await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
         await _page.Locator(".component-container").ClickAsync();
 
         await Expect(_page.Locator(".component-container"))

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The built-in "Connector" palette entry - not a registry registration (Edge isn't a component
+// The built-in "Edge" palette entry - not a registry registration (Edge isn't a component
 // type) - flows through the exact same BeginPaletteDrag/ClickToAdd gesture plumbing every other
 // palette entry uses, but drops a new Edge with both endpoints floating instead of a
 // ComponentInstance.

@@ -40,7 +40,7 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
 
     private async Task OpenContextMenuOnASelectedInstance()
     {
-        await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
         var instance = _page.Locator(".component-container");
         await instance.ClickAsync();
         await Expect(instance).ToHaveAttributeAsync("aria-selected", "true");
@@ -79,13 +79,12 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
     {
         await NewPageAsync(ColorScheme.Light);
 
-        var entries = _page.Locator(".d12-palette-entry-button");
-        await entries.Nth(0).ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(1);
 
-        await entries.Nth(1).ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.StressItem).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(2);
 
         var firstInstance = _page.Locator(".component-container").First;
@@ -114,10 +113,15 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
     {
         await NewPageAsync(ColorScheme.Dark);
 
-        var entries = _page.Locator(".d12-palette-entry-button");
+        string[] placementOrder =
+        [
+            PaletteEntry.DemoNote,
+            PaletteEntry.StressItem,
+            PaletteEntry.Rectangle,
+        ];
         for (var placed = 1; placed <= 3; placed++)
         {
-            await entries.Nth(placed - 1).ClickAsync();
+            await PaletteEntry.Named(_page, placementOrder[placed - 1]).ClickAsync();
             await Expect(_page.Locator(".component-container")).ToHaveCountAsync(placed);
         }
 
@@ -143,7 +147,7 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
     // canvas well away from it, so the canvas set opens with Select All and both snap toggles.
     private async Task OpenContextMenuOnEmptyCanvas()
     {
-        await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(1);
 
         await _page

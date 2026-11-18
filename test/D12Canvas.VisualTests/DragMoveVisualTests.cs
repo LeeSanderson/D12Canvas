@@ -37,7 +37,7 @@ public sealed class DragMoveVisualTests : IAsyncLifetime
 
     private async Task<(double X, double Y)> PlaceAndSelectInstance()
     {
-        await _page.Locator(".d12-palette-entry-button").First.ClickAsync();
+        await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
         var target = _page.Locator(".component-container");
         await target.ClickAsync();
         await Expect(target).ToHaveAttributeAsync("aria-selected", "true");

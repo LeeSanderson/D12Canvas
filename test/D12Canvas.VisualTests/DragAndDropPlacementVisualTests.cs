@@ -66,7 +66,7 @@ public sealed class DragAndDropPlacementVisualTests : IAsyncLifetime
     [Fact]
     public async Task DroppedInstance_MatchesBaseline()
     {
-        var source = _page.Locator(".d12-palette-entry-button").First;
+        var source = PaletteEntry.Named(_page, PaletteEntry.DemoNote);
         var target = _page.Locator(".diagram-canvas");
 
         await source.DragToAsync(

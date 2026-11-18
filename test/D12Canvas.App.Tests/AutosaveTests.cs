@@ -153,12 +153,12 @@ public sealed class AutosaveTests : AppTestContext
     {
         var boardId = BoardStore.Add("Service map", new Board());
         var layout = RenderBoardEditor(boardId);
-        layout.WaitForAssertion(() => Assert.NotEmpty(layout.FindAll(".d12-palette-entry-button")));
+        layout.WaitForAssertion(() => Assert.NotEmpty(layout.FindAll(".d12-palette-entry")));
         return layout;
     }
 
     private static void Edit(IRenderedComponent<MainLayout> layout) =>
-        layout.Find(".d12-palette-entry-button").Click();
+        layout.Find(".d12-palette-entry").Click();
 
     private static IElement Switch(IRenderedComponent<MainLayout> layout) =>
         layout.Find(".page-header #autosave-switch");

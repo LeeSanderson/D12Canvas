@@ -50,36 +50,37 @@ public class PaletteThemeTokensTests : ComponentTestBase
     }
 
     [Fact]
-    public void CategoryTitleReadsTokensExclusively()
+    public void TooltipReadsTokensExclusively()
     {
         var palette = Render<Palette>();
         var css = StyleBlockText(palette);
 
-        var title = ExtractBlock(css, ".d12-palette-category-title {");
-        Assert.Contains("var(--d12-muted-text)", title);
-        Assert.DoesNotContain("#", title);
-        Assert.DoesNotContain("rgba(", title);
+        var tooltip = ExtractBlock(css, ".d12-tooltip {");
+        Assert.Contains("var(--d12-text)", tooltip);
+        Assert.Contains("var(--d12-surface)", tooltip);
+        Assert.DoesNotContain("#", tooltip);
+        Assert.DoesNotContain("rgba(", tooltip);
     }
 
     [Fact]
-    public void EntryButtonHoverReadsTokensExclusively()
+    public void ButtonHoverReadsTokensExclusively()
     {
         var palette = Render<Palette>();
         var css = StyleBlockText(palette);
 
-        var hover = ExtractBlock(css, ".d12-palette-entry-button:hover {");
+        var hover = ExtractBlock(css, ".d12-palette-button:hover {");
         Assert.Contains("var(--d12-surface)", hover);
         Assert.Contains("var(--d12-border)", hover);
         Assert.DoesNotContain("#", hover);
         Assert.DoesNotContain("rgba(", hover);
     }
 
-    // .d12-palette-entry-button sets color: inherit (overriding the button element's own UA
-    // default) - without the root itself setting a token-driven color, entry names would fall
-    // through to whatever ambient text color the host page happens to have, which stays
-    // low-contrast dark text even once the palette's own background goes dark.
+    // .d12-palette-button sets color: inherit (overriding the button element's own UA default) -
+    // without the root itself setting a token-driven color, the glyphs would fall through to
+    // whatever ambient text color the host page happens to have, which stays low-contrast dark
+    // even once the palette's own background goes dark.
     [Fact]
-    public void RootDeclaresATokenDrivenTextColorEntryNamesInherit()
+    public void RootDeclaresATokenDrivenTextColorTheGlyphsInherit()
     {
         var palette = Render<Palette>();
         var css = StyleBlockText(palette);
