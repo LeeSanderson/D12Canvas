@@ -1,6 +1,6 @@
 # Library icons, Palette and Property bar
 
-Status: ready-for-agent
+Status: resolved
 Map: [Library icons, Palette and Property bar](map.md)
 
 ## Problem Statement
