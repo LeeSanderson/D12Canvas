@@ -7,7 +7,8 @@ namespace D12Canvas.VisualTests;
 
 // The property bar driven by real input on the light pane of the property bar demo: absent through
 // a drag and while a menu is open, chrome hidden only while the pointer is on it, Ctrl+Enter in,
-// arrows across and Escape back to the shape, and a recolour that shows on the edge at once.
+// arrows across and Escape back to the shape, a recolour that shows on the edge at once, a choice
+// chip's flyout taking focus and handing it back, and the bar kept inside a narrow container.
 public sealed class PropertyBarProbes : IAsyncLifetime
 {
     private const string Theme = "light";
@@ -48,6 +49,18 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         _page.EvaluateAsync<string>(
             "() => document.activeElement?.getAttribute('aria-label') ?? ''"
         );
+
+    private ILocator RoutingChip => Bar.Locator(".d12-property-bar-chip[aria-label^='Routing: ']");
+
+    private ILocator ChipFlyout => Bar.Locator(".d12-flyout");
+
+    private async Task OpenTheRoutingFlyoutAsync()
+    {
+        await SelectEdgeAsync(_page, Theme);
+        await RoutingChip.ClickAsync();
+        await Expect(ChipFlyout).ToBeVisibleAsync();
+        await Expect(ChipFlyout.GetByRole(AriaRole.Menuitemradio).First).ToBeFocusedAsync();
+    }
 
     [Fact]
     public async Task TheBarIsAbsentThroughADragAndReturnsAfterTheRelease()
@@ -125,14 +138,14 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         await Blue.FocusAsync();
 
         await _page.Keyboard.PressAsync("Control+Enter");
-        Assert.Equal("Fill", await FocusedLabelAsync());
+        Assert.Equal("Fill: #CFE3FF", await FocusedLabelAsync());
 
         await _page.Keyboard.PressAsync("ArrowRight");
-        Assert.Equal("Stroke", await FocusedLabelAsync());
+        Assert.Equal("Stroke: Theme", await FocusedLabelAsync());
         await _page.Keyboard.PressAsync("ArrowRight");
         Assert.Equal("Stroke width", await FocusedLabelAsync());
         await _page.Keyboard.PressAsync("ArrowRight");
-        Assert.Equal("Fill", await FocusedLabelAsync());
+        Assert.Equal("Fill: #CFE3FF", await FocusedLabelAsync());
         await _page.Keyboard.PressAsync("ArrowLeft");
         Assert.Equal("Stroke width", await FocusedLabelAsync());
 
@@ -155,7 +168,7 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         await SelectAsync(_page, Theme, BlueRectangleId);
 
         await _page.Keyboard.PressAsync("Control+Enter");
-        Assert.Equal("Fill", await FocusedLabelAsync());
+        Assert.Equal("Fill: #CFE3FF", await FocusedLabelAsync());
 
         await _page.Keyboard.PressAsync("Escape");
         Assert.Equal(
@@ -177,10 +190,10 @@ public sealed class PropertyBarProbes : IAsyncLifetime
             await _page.Keyboard.PressAsync("ArrowRight");
         }
 
-        Assert.Equal("Colour", await FocusedLabelAsync());
+        Assert.Equal("Colour: #E5246B", await FocusedLabelAsync());
         await _page.Keyboard.PressAsync("Delete");
 
-        await Expect(Bar.Locator(".d12-property-bar-swatch-themed-stroke")).ToHaveCountAsync(1);
+        await Expect(Bar.Locator(".d12-property-bar-colour-themed")).ToHaveCountAsync(1);
         await Expect(line)
             .Not.ToHaveAttributeAsync("style", new System.Text.RegularExpressions.Regex("#e5246b"));
         await Expect(Pane(_page, Theme).Locator(".edge-line")).ToHaveCountAsync(1);
@@ -192,7 +205,7 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         await SelectEdgeAsync(_page, Theme);
         var line = Pane(_page, Theme).Locator(".edge-line");
 
-        await Bar.Locator("input[aria-label='Colour']").FillAsync("#2ecc71");
+        await Bar.Locator("input[aria-label^='Colour: ']").FillAsync("#2ecc71");
 
         await Expect(line)
             .ToHaveAttributeAsync("style", new System.Text.RegularExpressions.Regex("#2ecc71"));
@@ -242,6 +255,104 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         Assert.Equal(
             [true, false],
             (await _page.EvaluateAsync<bool[]>("() => window.__d12BarSettled")).Distinct()
+        );
+    }
+
+    [Fact]
+    public async Task AChipOpensItsFlyoutWithFocusInsideAndEscapeReturnsFocusToTheChip()
+    {
+        await OpenTheRoutingFlyoutAsync();
+
+        await Expect(RoutingChip).ToHaveAttributeAsync("aria-expanded", "true");
+
+        await _page.Keyboard.PressAsync("Escape");
+
+        await Expect(ChipFlyout).ToHaveCountAsync(0);
+        await Expect(RoutingChip).ToBeFocusedAsync();
+        await Expect(RoutingChip).ToHaveAttributeAsync("aria-expanded", "false");
+        await Expect(Bar).ToBeVisibleAsync();
+    }
+
+    [Fact]
+    public async Task AClickOutsideClosesTheChipFlyoutAndReturnsFocusToTheChip()
+    {
+        await OpenTheRoutingFlyoutAsync();
+        var pane = (await Pane(_page, Theme).BoundingBoxAsync())!;
+
+        await _page.Mouse.ClickAsync(pane.X + pane.Width + 8, pane.Y + 100);
+
+        await Expect(ChipFlyout).ToHaveCountAsync(0);
+        await Expect(RoutingChip).ToBeFocusedAsync();
+    }
+
+    [Fact]
+    public async Task ChoosingAnOptionCommitsItClosesTheFlyoutAndUndoesInOneStep()
+    {
+        await OpenTheRoutingFlyoutAsync();
+        await Expect(ChipFlyout.Locator("[role=menuitemradio][aria-checked=true]"))
+            .ToHaveTextAsync("Orthogonal");
+
+        await ChipFlyout.GetByRole(AriaRole.Menuitemradio, new() { Name = "Curved" }).ClickAsync();
+
+        await Expect(ChipFlyout).ToHaveCountAsync(0);
+        await Expect(RoutingChip).ToHaveAttributeAsync("aria-label", "Routing: Curved");
+        await Expect(RoutingChip).ToBeFocusedAsync();
+
+        await Pane(_page, Theme).Locator(".diagram-canvas").FocusAsync();
+        await _page.Keyboard.PressAsync("Control+z");
+        await Expect(RoutingChip).ToHaveAttributeAsync("aria-label", "Routing: Orthogonal");
+    }
+
+    [Fact]
+    public async Task TheKeyboardOpensAChipMovesThroughItsOptionsAndPicksOne()
+    {
+        await SelectEdgeAsync(_page, Theme);
+        await _page.Keyboard.PressAsync("Control+Enter");
+        Assert.Equal("Routing: Orthogonal", await FocusedLabelAsync());
+
+        await _page.Keyboard.PressAsync("Enter");
+        await Expect(ChipFlyout).ToBeVisibleAsync();
+        await Expect(ChipFlyout.GetByRole(AriaRole.Menuitemradio).First).ToBeFocusedAsync();
+
+        await _page.Keyboard.PressAsync("End");
+        await Expect(ChipFlyout.GetByRole(AriaRole.Menuitemradio, new() { Name = "Curved" }))
+            .ToBeFocusedAsync();
+        await _page.Keyboard.PressAsync("ArrowDown");
+        await Expect(ChipFlyout.GetByRole(AriaRole.Menuitemradio, new() { Name = "Straight" }))
+            .ToBeFocusedAsync();
+        await _page.Keyboard.PressAsync("Enter");
+
+        await Expect(ChipFlyout).ToHaveCountAsync(0);
+        await Expect(RoutingChip).ToHaveAttributeAsync("aria-label", "Routing: Straight");
+        await Expect(Bar).ToBeVisibleAsync();
+    }
+
+    // Chips make the bar wider than the old glyph cells, so a narrow pane checks that the existing
+    // clamp still keeps the whole bar inside the container for the widest bar the demo shows.
+    [Fact]
+    public async Task ANarrowContainerStillHoldsTheWholeBar()
+    {
+        await Pane(_page, Theme).EvaluateAsync("pane => { pane.style.flex = '0 0 440px'; }");
+        var container = Pane(_page, Theme).Locator(".diagram-container");
+
+        await SelectEdgeAsync(_page, Theme);
+        await AssertTheBarIsInsideAsync(container);
+
+        await SelectAsync(_page, Theme, OrangeRectangleId);
+        await AssertTheBarIsInsideAsync(container);
+    }
+
+    private async Task AssertTheBarIsInsideAsync(ILocator container)
+    {
+        await Expect(Bar)
+            .Not.ToHaveClassAsync(
+                new System.Text.RegularExpressions.Regex("d12-property-bar-settling")
+            );
+        var outer = (await container.BoundingBoxAsync())!;
+        var bar = (await Bar.BoundingBoxAsync())!;
+        Assert.True(
+            bar.X >= outer.X && bar.X + bar.Width <= outer.X + outer.Width,
+            $"The {bar.Width}px bar at {bar.X} should sit inside the {outer.Width}px container at {outer.X}."
         );
     }
 }

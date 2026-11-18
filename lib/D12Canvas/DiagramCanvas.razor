@@ -277,11 +277,13 @@
     }
     @if (CurrentPropertyBar() is { } propertyBar)
     {
-        <PropertyBar Rows="propertyBar.Rows"
-                     Anchor="propertyBar.Anchor"
-                     ContainerWidth="_zoomPanTracker.ContainerWidth"
-                     ContainerHeight="_zoomPanTracker.ContainerHeight"
-                     FlightDuration="@(_inFlight ? _ambientTransition : TimeSpan.Zero)" />
+        <CascadingValue Value="D12IconStyles.InScope" IsFixed="true">
+            <PropertyBar Rows="propertyBar.Rows"
+                         Anchor="propertyBar.Anchor"
+                         ContainerWidth="_zoomPanTracker.ContainerWidth"
+                         ContainerHeight="_zoomPanTracker.ContainerHeight"
+                         FlightDuration="@(_inFlight ? _ambientTransition : TimeSpan.Zero)" />
+        </CascadingValue>
     }
 </div>
 

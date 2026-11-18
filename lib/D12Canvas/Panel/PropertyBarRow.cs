@@ -4,7 +4,8 @@ namespace D12Canvas.Panel;
 // row edits instances or edges: the producer that built the row closes over its targets in Commit,
 // which takes the raw value a control reports and writes it to every target in one history entry.
 // Value is null on a mixed row, so no one target's value is shown as though it were the
-// selection's.
+// selection's. OptionGlyphs comes from whatever declares the role: the representative property
+// for instance rows, the edge role for edge rows.
 public sealed record PropertyBarRow(
     string Id,
     PropertyRole Role,
@@ -13,7 +14,8 @@ public sealed record PropertyBarRow(
     object? Value,
     bool IsMixed,
     bool CanHoldNull,
-    Action<object?> Commit
+    Action<object?> Commit,
+    IReadOnlyDictionary<string, Glyph>? OptionGlyphs = null
 )
 {
     public string Label => PropertyRoleDeclarations.For(Role).Label;

@@ -62,7 +62,7 @@ public class PropertyBarThemeTokensTests : ComponentTestBase
             $"height: {PropertyBarPlacement.Height}px",
             ExtractEveryBlock(css, ".d12-property-bar {")
         );
-        Assert.Contains("flex: 0 0 26px", ExtractBlock(css, ".d12-property-bar-cell {"));
+        Assert.Contains("height: 26px", ExtractBlock(css, ".d12-property-bar-cell {"));
     }
 
     [Fact]
@@ -73,7 +73,8 @@ public class PropertyBarThemeTokensTests : ComponentTestBase
 
     [Theory]
     [InlineData(".d12-property-bar-hatch-line {")]
-    [InlineData(".d12-property-bar-swatch-themed-fill {")]
+    [InlineData(".d12-property-bar-colour-themed .d12-icon .d12-icon-accent {")]
+    [InlineData(".d12-property-bar-caret {")]
     [InlineData(".d12-property-bar-number {")]
     public void ItsPartsReadTokensExclusively(string marker)
     {

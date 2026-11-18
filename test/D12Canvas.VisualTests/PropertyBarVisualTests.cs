@@ -6,7 +6,8 @@ namespace D12Canvas.VisualTests;
 
 // The property bar demo on a light and a dark pane: a selected rectangle's bar centred above it, a
 // mixed fill across two rectangles, a selected edge's bar, a shape along the top whose bar slides
-// along the container's edge, and the selection chrome hidden while the pointer is on a bar.
+// along the container's edge, the selection chrome hidden while the pointer is on a bar, and an
+// edge's routing chip with its option flyout open once the edge is framed.
 public sealed class PropertyBarVisualTests : IAsyncLifetime
 {
     internal const string TopRectangleId = "b0a00000-0000-0000-0000-000000000001";
@@ -24,7 +25,9 @@ public sealed class PropertyBarVisualTests : IAsyncLifetime
         _browser = playwright.Browser;
     }
 
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync() => new(OpenPageAsync(colorScheme: null));
+
+    private async Task OpenPageAsync(ColorScheme? colorScheme)
     {
         _context = await _browser.NewContextAsync(
             new BrowserNewContextOptions
@@ -32,11 +35,18 @@ public sealed class PropertyBarVisualTests : IAsyncLifetime
                 BaseURL = DemoAppFixture.BaseUrl,
                 ReducedMotion = ReducedMotion.Reduce,
                 ViewportSize = new ViewportSize { Width = 1200, Height = 640 },
+                ColorScheme = colorScheme,
             }
         );
         _page = await _context.NewPageAsync();
         await _page.GotoAsync("/property-bar-demo");
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(6);
+    }
+
+    private async Task ReopenInTheDarkColorSchemeAsync()
+    {
+        await _context.DisposeAsync();
+        await OpenPageAsync(ColorScheme.Dark);
     }
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
@@ -91,9 +101,52 @@ public sealed class PropertyBarVisualTests : IAsyncLifetime
         await SelectAsync(_page, "light", BlueRectangleId, OrangeRectangleId);
         await SelectAsync(_page, "dark", BlueRectangleId, OrangeRectangleId);
 
-        await Expect(_page.Locator(".d12-property-bar-swatch-mixed-fill")).ToHaveCountAsync(2);
+        await Expect(_page.Locator(".d12-property-bar-colour-mixed")).ToHaveCountAsync(2);
 
         await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task TwoRectanglesInDifferentFillsShowAHatchedFillGlyph_DarkColorScheme_MatchesBaseline()
+    {
+        await ReopenInTheDarkColorSchemeAsync();
+        await SelectAsync(_page, "light", BlueRectangleId, OrangeRectangleId);
+        await SelectAsync(_page, "dark", BlueRectangleId, OrangeRectangleId);
+
+        await Expect(_page.Locator(".d12-property-bar-colour-mixed")).ToHaveCountAsync(2);
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task AnEdgesRoutingChipOpensItsOptionFlyout_MatchesBaseline()
+    {
+        await OpenTheRoutingFlyoutAsync("light");
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    [Fact]
+    public async Task AnEdgesRoutingChipOpensItsOptionFlyout_DarkColorScheme_MatchesBaseline()
+    {
+        await ReopenInTheDarkColorSchemeAsync();
+        await OpenTheRoutingFlyoutAsync("dark");
+
+        await ContentSnapshot.Verify(_page);
+    }
+
+    // The edge sits along the bottom of the pane, so it is framed first to leave the flyout room
+    // below the bar.
+    private async Task OpenTheRoutingFlyoutAsync(string theme)
+    {
+        await SelectEdgeAsync(_page, theme);
+        var bar = Pane(_page, theme).Locator(".d12-property-bar");
+        var unframed = (await bar.GetAttributeAsync("style"))!;
+        await _page.Keyboard.PressAsync("Shift+Digit2");
+        await Expect(bar).Not.ToHaveAttributeAsync("style", unframed);
+        await bar.Locator(".d12-property-bar-chip[aria-label^='Routing: ']").ClickAsync();
+        await Expect(bar.Locator(".d12-flyout")).ToBeVisibleAsync();
+        await Expect(bar.GetByRole(AriaRole.Menuitemradio).First).ToBeFocusedAsync();
     }
 
     [Fact]

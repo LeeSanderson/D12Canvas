@@ -37,12 +37,14 @@ public partial class PropertyBar : IAsyncDisposable
     private IJSObjectReference? _module;
     private IJSObjectReference? _registration;
     private double? _width;
-    private string? _measuredLayout;
+    private string? _measuredContent;
     private (double Left, double Top) _shown;
     private string? _shownLayout;
 
     // A row still mixed after an edit renders the same empty value as before, so Blazor would keep
     // whatever was typed into it. Keying a mixed row on the edit count rebuilds it after every edit.
+    // A choice chip holds nothing typed and keeps its plain id, so a pick from a mixed row leaves
+    // the chip in place for the closing flyout to hand focus back to.
     private int _edits;
 
     // The native picker opens on the input's value, and confirming that value fires no change, so
@@ -50,6 +52,16 @@ public partial class PropertyBar : IAsyncDisposable
     private const string UnsetSwatchValue = "#010203";
 
     private string Layout => string.Join("|", Rows.Select(row => $"{row.Id}:{row.Kind}"));
+
+    // A chip's width follows the value it shows, so the bar measures itself again whenever a shown
+    // value changes, not only when its rows do.
+    private string MeasuredContent =>
+        string.Join("|", Rows.Select(row => $"{row.Id}:{row.Kind}:{ChipValue(row)}"));
+
+    private const string MixedNumberPlaceholder = "–";
+
+    private readonly Dictionary<string, ElementReference> _chipElements = new();
+    private string? _openRowId;
 
     private string BarStyle
     {
@@ -72,7 +84,22 @@ public partial class PropertyBar : IAsyncDisposable
         }
     }
 
-    protected override void OnParametersSet() => Reposition();
+    protected override void OnParametersSet()
+    {
+        if (_openRowId is not null && Rows.All(row => row.Id != _openRowId))
+        {
+            _openRowId = null;
+        }
+
+        foreach (
+            var goneId in _chipElements.Keys.Where(id => Rows.All(row => row.Id != id)).ToList()
+        )
+        {
+            _chipElements.Remove(goneId);
+        }
+
+        Reposition();
+    }
 
     // Once measured, a bar keeps its place through a move smaller than the minimum, as long as its
     // rows are the same ones it was showing.
@@ -109,12 +136,12 @@ public partial class PropertyBar : IAsyncDisposable
             );
         }
 
-        if (_module is null || _measuredLayout == Layout)
+        if (_module is null || _measuredContent == MeasuredContent)
         {
             return;
         }
 
-        _measuredLayout = Layout;
+        _measuredContent = MeasuredContent;
         var width = await _module.InvokeAsync<double>("measurePropertyBar", _barRef);
         if (width != _width)
         {
@@ -162,20 +189,66 @@ public partial class PropertyBar : IAsyncDisposable
 
     private object RowKey(PropertyBarRow row) => row.IsMixed ? $"{row.Id}#{_edits}" : row.Id;
 
-    private static string CellClass(PropertyBarRow row) =>
-        row.Kind == EditorKind.Number
-            ? "d12-property-bar-cell d12-property-bar-cell-number"
-            : "d12-property-bar-cell";
+    private bool IsOpen(PropertyBarRow row) => _openRowId == row.Id;
 
-    private static string Title(PropertyBarRow row) =>
-        row.CanHoldNull && !row.IsThemed
-            ? $"{row.Label}: {ValueText(row)} (Delete to use the theme colour)"
-            : $"{row.Label}: {ValueText(row)}";
+    private void ToggleFlyout(PropertyBarRow row) => _openRowId = IsOpen(row) ? null : row.Id;
 
-    private static string ValueText(PropertyBarRow row) =>
+    private void CloseFlyout() => _openRowId = null;
+
+    private void PickOption(PropertyBarRow row, string option)
+    {
+        _openRowId = null;
+        _edits++;
+        row.Commit(option);
+    }
+
+    private static bool IsCurrent(PropertyBarRow row, string option) =>
+        !row.IsMixed && TextValue(row) == option;
+
+    private static Glyph? CurrentOptionGlyph(PropertyBarRow row) =>
+        row.IsMixed ? null : row.OptionGlyphs?.GetValueOrDefault(TextValue(row));
+
+    private static Glyph RoleGlyph(PropertyRole role) =>
+        role switch
+        {
+            PropertyRole.Fill => Glyphs.Fill,
+            PropertyRole.Stroke => Glyphs.Stroke,
+            PropertyRole.TextColour => Glyphs.TextColour,
+            PropertyRole.EdgeColour => Glyphs.EdgeColour,
+            PropertyRole.StrokeWidth => Glyphs.StrokeWidth,
+            PropertyRole.FontSize => Glyphs.FontSize,
+            _ => throw new ArgumentOutOfRangeException(nameof(role), role, null),
+        };
+
+    private static string ColourCellClass(PropertyBarRow row) =>
+        "d12-property-bar-cell d12-property-bar-colour"
+        + (
+            row.IsMixed ? " d12-property-bar-colour-mixed"
+            : row.IsThemed ? " d12-property-bar-colour-themed"
+            : ""
+        );
+
+    private static string ChoiceChipClass(PropertyBarRow row) =>
+        "d12-property-bar-control d12-property-bar-chip"
+        + (row.IsMixed ? " d12-property-bar-chip-mixed" : "");
+
+    private static string? AccentStyle(PropertyBarRow row) =>
+        row.IsMixed || row.IsThemed || InlineStyleValue.Safe(row.Value as string) is not { } ink
+            ? null
+            : $"--d12-icon-accent: {ink}";
+
+    private static string ChipValue(PropertyBarRow row) =>
         row.IsMixed ? MixedValue.Label
-        : row.IsThemed ? "Theme colour"
+        : row.Kind == EditorKind.Color
+            ? row.IsThemed ? "Theme"
+                : TextValue(row).ToUpperInvariant()
+        : row.Kind == EditorKind.Dropdown ? OptionName.For(TextValue(row))
         : TextValue(row);
+
+    private static string ChipName(PropertyBarRow row) => $"{row.Label}: {ChipValue(row)}";
+
+    private static string NumberName(PropertyBarRow row) =>
+        row.IsMixed ? $"{row.Label}: {MixedValue.Label}" : row.Label;
 
     private static string TextValue(PropertyBarRow row) =>
         row.Value switch
@@ -188,38 +261,6 @@ public partial class PropertyBar : IAsyncDisposable
 
     private static string ColorValue(PropertyBarRow row) =>
         row.IsMixed || row.IsThemed ? UnsetSwatchValue : TextValue(row);
-
-    private static string? Ink(PropertyBarRow row) =>
-        row.IsMixed || row.IsThemed ? null : InlineStyleValue.Safe(row.Value as string);
-
-    private static string? SwatchClass(PropertyBarRow row, string paint) =>
-        row.IsMixed ? $"d12-property-bar-swatch-mixed-{paint}"
-        : row.IsThemed ? $"d12-property-bar-swatch-themed-{paint}"
-        : null;
-
-    private static string TextAlignPath(PropertyBarRow row) =>
-        row.Value switch
-        {
-            "center" => "M2.5 4 H13.5 M4.5 8 H11.5 M2.5 12 H13.5",
-            "right" => "M2.5 4 H13.5 M6.5 8 H13.5 M2.5 12 H13.5",
-            _ => "M2.5 4 H13.5 M2.5 8 H9.5 M2.5 12 H13.5",
-        };
-
-    private static string VerticalAlignPath(PropertyBarRow row) =>
-        row.Value switch
-        {
-            "top" => "M4.5 5 H11.5 M4.5 7.5 H11.5",
-            "bottom" => "M4.5 8.5 H11.5 M4.5 11 H11.5",
-            _ => "M4.5 6.75 H11.5 M4.5 9.25 H11.5",
-        };
-
-    private static string RoutingPath(PropertyBarRow row) =>
-        row.Value switch
-        {
-            EdgeRouting.Straight => "M2.5 12.5 L13.5 3.5",
-            EdgeRouting.Curved => "M2.5 12.5 C8 12.5 8 3.5 13.5 3.5",
-            _ => "M2.5 12.5 H8 V3.5 H13.5",
-        };
 
     public async ValueTask DisposeAsync()
     {

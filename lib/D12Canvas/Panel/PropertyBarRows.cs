@@ -62,6 +62,7 @@ internal static class PropertyBarRows
                 InstanceRow(
                     role,
                     representative.Options,
+                    representative.OptionGlyphs,
                     targets,
                     propertiesByType.Values.All(property => property!.CanHoldNull),
                     commit
@@ -75,6 +76,7 @@ internal static class PropertyBarRows
     private static PropertyBarRow InstanceRow(
         PropertyRole role,
         IReadOnlyList<string>? options,
+        IReadOnlyDictionary<string, Glyph>? optionGlyphs,
         IReadOnlyList<(ComponentInstance Instance, PropertyInfo Property)> targets,
         bool canHoldNull,
         Action<IReadOnlyList<PropsChange>> commit
@@ -108,7 +110,8 @@ internal static class PropertyBarRows
             isMixed ? null : values[0],
             isMixed,
             canHoldNull,
-            Commit
+            Commit,
+            optionGlyphs
         );
     }
 
@@ -228,7 +231,8 @@ internal static class PropertyBarRows
             isMixed ? null : values[0],
             isMixed,
             edgeRole.CanHoldNull,
-            Commit
+            Commit,
+            edgeRole.OptionGlyphs
         );
     }
 

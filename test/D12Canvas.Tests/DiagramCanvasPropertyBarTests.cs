@@ -86,7 +86,28 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
             .ToList();
 
     private static IElement Control(IRenderedComponent<DiagramCanvas> canvas, string label) =>
-        canvas.Find($".d12-property-bar-control[aria-label=\"{label}\"]");
+        canvas
+            .FindAll(".d12-property-bar-control")
+            .Single(control =>
+                control.GetAttribute("aria-label") is { } name
+                && (name == label || name.StartsWith($"{label}: ", StringComparison.Ordinal))
+            );
+
+    private static void PickOption(
+        IRenderedComponent<DiagramCanvas> canvas,
+        string label,
+        string optionName
+    )
+    {
+        Control(canvas, label).Click();
+        canvas
+            .FindAll(".d12-property-bar-flyout [role=menuitemradio]")
+            .Single(row => row.TextContent.Trim() == optionName)
+            .Click();
+    }
+
+    private static string? CellStyle(IRenderedComponent<DiagramCanvas> canvas, string label) =>
+        Control(canvas, label).Closest(".d12-property-bar-cell")!.GetAttribute("style");
 
     [Fact]
     public void NothingSelectedShowsNoBar()
@@ -107,7 +128,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
 
         Select(canvas, rectangle.Id);
 
-        Assert.Equal(["Fill", "Stroke", "Stroke width"], ControlLabels(canvas));
+        Assert.Equal(["Fill: #FF0000", "Stroke: Theme", "Stroke width"], ControlLabels(canvas));
         Assert.Equal("toolbar", Bar(canvas)!.GetAttribute("role"));
         Assert.Equal("left: 190px; top: 158px;", Bar(canvas)!.GetAttribute("style"));
     }
@@ -203,7 +224,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         Control(canvas, "Fill").Change("#00ff00");
 
         Assert.Equal("#00ff00", ((RectangleProps)rectangle.Props).FillColor);
-        Assert.Equal("#00ff00", canvas.Find(".d12-property-bar circle").GetAttribute("fill"));
+        Assert.Equal("--d12-icon-accent: #00ff00", CellStyle(canvas, "Fill"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -252,8 +273,11 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         var canvas = RenderCanvas(board);
         canvas.ClickElement(canvas.Find(".edge-hit"));
 
-        Assert.Equal(["Routing", "Source arrow", "Target arrow", "Colour"], ControlLabels(canvas));
-        Assert.NotEmpty(canvas.FindAll(".d12-property-bar .d12-property-bar-swatch-themed-stroke"));
+        Assert.Equal(
+            ["Routing: Straight", "Source arrow: None", "Target arrow: Arrow", "Colour: Theme"],
+            ControlLabels(canvas)
+        );
+        Assert.NotEmpty(canvas.FindAll(".d12-property-bar .d12-property-bar-colour-themed"));
 
         Control(canvas, "Colour").Change("#e5246b");
 
@@ -288,7 +312,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         var canvas = RenderCanvas(board);
         canvas.ClickElement(canvas.Find(".edge-hit"));
 
-        Control(canvas, "Routing").Change("Curved");
+        PickOption(canvas, "Routing", "Curved");
 
         Assert.Equal(EdgeRouting.Curved, edge.RoutingStyle);
         Assert.Equal("#e5246b", edge.Color);
@@ -325,15 +349,15 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
 
         Select(canvas, rectangle.Id);
 
-        Assert.Equal(["Fill"], ControlLabels(canvas));
-        Assert.NotEmpty(canvas.FindAll(".d12-property-bar-swatch-mixed-fill"));
+        Assert.Equal(["Fill: Mixed"], ControlLabels(canvas));
+        Assert.NotEmpty(canvas.FindAll(".d12-property-bar-colour-mixed"));
         Assert.Equal("left: 190px; top: 158px;", Bar(canvas)!.GetAttribute("style"));
 
         Control(canvas, "Fill").Change("#00ff00");
 
         Assert.Equal("#00ff00", ((RectangleProps)rectangle.Props).FillColor);
         Assert.Equal("#00ff00", ((StickyNoteProps)note.Props).Color);
-        Assert.Empty(canvas.FindAll(".d12-property-bar-swatch-mixed-fill"));
+        Assert.Empty(canvas.FindAll(".d12-property-bar-colour-mixed"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -342,7 +366,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
     }
 
     [Fact]
-    public void AColourGlyphIsInkedThemedOrHatched()
+    public void AColourChipPaintsItsGlyphAndShowsTheHexOrAMutedThemeOrMixed()
     {
         var board = new Board();
         var red = AddRectangle(board, x: 100, fill: "#ff0000");
@@ -350,26 +374,38 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         var canvas = RenderCanvas(board);
 
         Select(canvas, red.Id);
-        var inked = canvas.Find(".d12-property-bar circle");
-        Assert.Equal("#ff0000", inked.GetAttribute("fill"));
-        Assert.Null(inked.GetAttribute("class"));
+        var inked = Control(canvas, "Fill").Closest(".d12-property-bar-cell")!;
+        Assert.Equal("--d12-icon-accent: #ff0000", inked.GetAttribute("style"));
+        Assert.Equal("#FF0000", inked.QuerySelector(".d12-property-bar-value")!.TextContent);
+        Assert.NotNull(inked.QuerySelector("svg.d12-icon .d12-icon-accent"));
+        Assert.False(inked.ClassList.Contains("d12-property-bar-colour-themed"));
+        Assert.False(inked.ClassList.Contains("d12-property-bar-colour-mixed"));
 
         Select(canvas, themed.Id);
-        var themedSwatch = canvas.Find(".d12-property-bar circle");
-        Assert.Equal("d12-property-bar-swatch-themed-fill", themedSwatch.GetAttribute("class"));
-        Assert.Null(themedSwatch.GetAttribute("fill"));
-        Assert.Equal(
-            "Fill: Theme colour",
-            themedSwatch.Closest(".d12-property-bar-cell")!.GetAttribute("title")
-        );
+        var themedCell = Control(canvas, "Fill").Closest(".d12-property-bar-cell")!;
+        Assert.True(themedCell.ClassList.Contains("d12-property-bar-colour-themed"));
+        Assert.Null(themedCell.GetAttribute("style"));
+        Assert.Equal("Theme", themedCell.QuerySelector(".d12-property-bar-value")!.TextContent);
+        Assert.Equal("Fill: Theme", Control(canvas, "Fill").GetAttribute("aria-label"));
 
         Select(canvas, red.Id, shift: true);
-        var mixed = canvas.Find(".d12-property-bar circle");
-        Assert.Equal("d12-property-bar-swatch-mixed-fill", mixed.GetAttribute("class"));
-        Assert.StartsWith(
-            "Fill: Mixed",
-            mixed.Closest(".d12-property-bar-cell")!.GetAttribute("title")
-        );
+        var mixedCell = Control(canvas, "Fill").Closest(".d12-property-bar-cell")!;
+        Assert.True(mixedCell.ClassList.Contains("d12-property-bar-colour-mixed"));
+        Assert.Null(mixedCell.GetAttribute("style"));
+        Assert.Equal("Mixed", mixedCell.QuerySelector(".d12-property-bar-value")!.TextContent);
+        Assert.Equal("Fill: Mixed", Control(canvas, "Fill").GetAttribute("aria-label"));
+    }
+
+    [Fact]
+    public void NoBarControlCarriesANativeTitle()
+    {
+        var board = new Board();
+        var note = AddStickyNote(board, 200, 200);
+        var canvas = RenderCanvas(board);
+
+        Select(canvas, note.Id);
+
+        Assert.Empty(canvas.FindAll(".d12-property-bar [title]"));
     }
 
     [Fact]
@@ -381,13 +417,13 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         Select(canvas, rectangle.Id);
 
         var fillCell = canvas.Find(".d12-property-bar-cell");
-        Assert.Contains("Delete to use the theme colour", fillCell.GetAttribute("title"));
         fillCell.QuerySelector(".d12-property-bar-use-theme")!.Click();
 
         Assert.Null(((RectangleProps)rectangle.Props).FillColor);
-        Assert.Equal(
-            "d12-property-bar-swatch-themed-fill",
-            canvas.Find(".d12-property-bar circle").GetAttribute("class")
+        Assert.True(
+            Control(canvas, "Fill")
+                .Closest(".d12-property-bar-cell")!
+                .ClassList.Contains("d12-property-bar-colour-themed")
         );
         Assert.Empty(canvas.FindAll(".d12-property-bar-use-theme"));
 
@@ -405,12 +441,18 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         Select(canvas, note.Id);
 
         Assert.Equal(
-            ["Fill", "Text colour", "Font size", "Text align", "Vertical align"],
+            [
+                "Fill: #FFEB3B",
+                "Text colour: #000000",
+                "Font size",
+                "Text align: Center",
+                "Vertical align: Middle",
+            ],
             ControlLabels(canvas)
         );
 
-        Control(canvas, "Vertical align").Change("bottom");
-        Control(canvas, "Text align").Change("right");
+        PickOption(canvas, "Vertical align", "Bottom");
+        PickOption(canvas, "Text align", "Right");
 
         Assert.Equal("bottom", ((StickyNoteProps)note.Props).VerticalAlign);
         Assert.Equal("right", ((StickyNoteProps)note.Props).TextAlign);
@@ -442,10 +484,9 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         Select(canvas, note.Id);
         Select(canvas, text.Id, shift: true);
 
-        Assert.Equal(["Text colour", "Font size", "Text align"], ControlLabels(canvas));
-        Assert.StartsWith(
-            "Text align: Mixed",
-            Control(canvas, "Text align").Closest(".d12-property-bar-cell")!.GetAttribute("title")
+        Assert.Equal(
+            ["Text colour: Mixed", "Font size: Mixed", "Text align: Mixed"],
+            ControlLabels(canvas)
         );
     }
 
@@ -461,7 +502,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
     }
 
     [Fact]
-    public void AMixedNumberIsEmptyWithAMixedPlaceholder()
+    public void AMixedNumberIsEmptyWithADashPlaceholderAndMixedInItsName()
     {
         var board = new Board();
         var first = AddRectangle(board, x: 100);
@@ -474,7 +515,15 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
 
         var strokeWidth = Control(canvas, "Stroke width");
         Assert.Equal("", strokeWidth.GetAttribute("value"));
-        Assert.Equal("Mixed", strokeWidth.GetAttribute("placeholder"));
+        Assert.Equal("\u2013", strokeWidth.GetAttribute("placeholder"));
+        Assert.Equal("Stroke width: Mixed", strokeWidth.GetAttribute("aria-label"));
+        Assert.Equal(
+            "Stroke width: Mixed",
+            strokeWidth
+                .Closest(".d12-tooltip-anchor")!
+                .QuerySelector(".d12-tooltip-above")!
+                .TextContent
+        );
     }
 
     [Fact]
@@ -518,7 +567,7 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
             .Select(style => style.InnerHtml)
             .Single(text => text.Contains(".d12-property-bar {"));
 
-        Assert.Equal(1, Occurrences(css, ":has("));
+        Assert.Equal(1, Occurrences(css, ".diagram-container:has("));
         var rule = ExtractBlock(css, SuppressionCondition);
         foreach (
             var chrome in new[]
