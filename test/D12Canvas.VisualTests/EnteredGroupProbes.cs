@@ -3,11 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// An author's control inside a group that is not entered does nothing: C# renders a marker on the
-// member's container and the listener's walk reads it, so the press classifies as the instance and
-// the browser never delivers the control its click. Once the group is entered the same control
-// answers the press itself. The first click selects the group, so the double-click to enter it
-// lands on the selection box drawn over the group.
 public sealed class EnteredGroupProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

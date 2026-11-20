@@ -9,8 +9,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A partly locked selection opens the property panel with a line that counts the locked targets;
-// a fully locked one shows the Unlock button instead, and an unlocked one shows neither.
 public sealed class PropertyPanelLockLineTests : ComponentTestBase
 {
     private readonly Board _board = new();
@@ -35,8 +33,6 @@ public sealed class PropertyPanelLockLineTests : ComponentTestBase
         return instance;
     }
 
-    // A right-click is the one pointer route that selects a locked shape; Escape then closes its
-    // menu.
     private async Task<IRenderedComponent<PropertyPanel>> RenderWithAGroupSelected(
         int lockedMembers
     )

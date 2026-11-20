@@ -7,10 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The canvas swaps an asset reference for the asset's data: URI before it binds props, so the
-// component only ever sees a URL. A value that is not a reference, or a reference to an asset the
-// board does not hold, reaches the component exactly as written, and an edit the component
-// commits back never carries the data URI into the board.
 public class DiagramCanvasAssetResolutionTests : ComponentTestBase
 {
     private static readonly byte[] PngBytes = AssetTestComponent.PngBytes;

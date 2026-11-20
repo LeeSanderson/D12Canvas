@@ -6,8 +6,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Custom ports - instance-scoped runtime state, fractionally positioned on a border so they
-// survive move/resize, shown and attachable exactly like a standard port.
 public class DiagramCanvasCustomPortTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -50,8 +48,6 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
 
-    // A custom port at fraction (1, 0.25) of the 100x100 source, board point (200, 125), dragged
-    // to the target's left port at (300, 150).
     private static void ConnectFromCustomPort(
         IRenderedComponent<DiagramCanvas> canvas,
         ComponentInstance source,
@@ -139,8 +135,8 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
 
         Assert.Equal(new Bounds(200, 150, 100, 100), source.Bounds);
         var line = canvas.Find(".edge-line");
-        Assert.Equal("300", line.GetAttribute("x1")); // fraction (1, 0.25) of the moved Bounds
-        Assert.Equal("175", line.GetAttribute("y1")); // 150 + 100*0.25
+        Assert.Equal("300", line.GetAttribute("x1"));
+        Assert.Equal("175", line.GetAttribute("y1"));
     }
 
     [Fact]
@@ -162,8 +158,8 @@ public class DiagramCanvasCustomPortTests : ComponentTestBase
 
         Assert.Equal(new Bounds(100, 100, 140, 120), source.Bounds);
         var line = canvas.Find(".edge-line");
-        Assert.Equal("240", line.GetAttribute("x1")); // fraction (1, 0.25): 100 + 140
-        Assert.Equal("130", line.GetAttribute("y1")); // 100 + 120*0.25
+        Assert.Equal("240", line.GetAttribute("x1"));
+        Assert.Equal("130", line.GetAttribute("y1"));
     }
 
     [Fact]

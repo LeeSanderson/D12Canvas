@@ -5,9 +5,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The menu reads nothing but the context it is handed, so every assertion here is about which rows
-// that context composes, how they read and where the menu lands; which command a row runs on the
-// board is DiagramCanvasContextMenuTests' concern.
 public class ContextMenuTests : ComponentTestBase
 {
     private static readonly ContextMenuContext SingleInstance = new(
@@ -54,7 +51,6 @@ public class ContextMenuTests : ComponentTestBase
     private static string IconPathData(IElement icon) =>
         string.Join(" ", icon.QuerySelectorAll("path").Select(path => path.GetAttribute("d")));
 
-    // The rows top to bottom, with "|" standing for each separator.
     private static string[] Layout(IRenderedComponent<ContextMenu> menu) =>
         menu.Find(".d12-context-menu")
             .Children.Select(child =>
@@ -569,8 +565,6 @@ public class ContextMenuTests : ComponentTestBase
         );
     }
 
-    // Placement computes the menu's height from these numbers rather than measuring it, so the
-    // stylesheet and ContextMenuPlacement must describe the same box.
     [Fact]
     public void TheStylesheetDrawsTheBoxPlacementAssumes()
     {

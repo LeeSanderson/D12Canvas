@@ -3,9 +3,6 @@ using Microsoft.Playwright;
 
 namespace D12Canvas.VisualTests;
 
-// Snapshots the demo page's content area rather than the whole page, so the demo app's nav menu
-// and layout stay out of every baseline. Some demo pages overflow the content area's fixed
-// height, so the screenshot covers its scroll extent, not just its box.
 public static class ContentSnapshot
 {
     private const string ContentSelector = "article.content";
@@ -21,16 +18,10 @@ public static class ContentSnapshot
         }
         """;
 
-    // A property bar is drawn hidden until it has measured its own width, one interop round trip
-    // after it mounts.
     private const string UnmeasuredPropertyBar = ".d12-property-bar[style*='visibility: hidden']";
 
-    // A bar the canvas has just moved stays hidden until it has stood still for a moment.
     private const string SettlingPropertyBar = ".d12-property-bar-settling";
 
-    // A full-page capture resizes the viewport, sometimes briefly to 1x1, and the canvas answers by
-    // moving the bar, which then hides while it settles. A capture that saw the bar start settling
-    // is taken again once it has.
     private const string WatchForSettlingScript = """
         () => {
             let settled = false;

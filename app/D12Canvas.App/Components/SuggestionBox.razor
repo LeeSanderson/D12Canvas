@@ -108,7 +108,6 @@
 
     private bool CanSave => !_saving && !string.IsNullOrWhiteSpace(_title);
 
-    // A closed box keeps its draft, so an accidental Escape loses nothing; only a save clears it.
     public async Task OpenAsync()
     {
         if (_dialog is null)

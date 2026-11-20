@@ -9,9 +9,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The canvas content holds four layers in a fixed order, each its own stacking context, and
-// ZIndex orders only the inside of the instance layer. These tests pin which layer each kind of
-// element lives in; the browser's stacking does the rest.
 public class DiagramCanvasPaintLayerTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

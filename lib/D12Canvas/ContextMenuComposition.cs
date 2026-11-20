@@ -1,7 +1,5 @@
 namespace D12Canvas;
 
-// Checked is null for a row that is not a toggle. A strip row is drawn as its icon alone in one
-// strip with its neighbouring strip rows, its Label becoming the button's accessible name.
 internal sealed record ContextMenuRow(
     ContextMenuCommand Command,
     string Label,
@@ -11,9 +9,6 @@ internal sealed record ContextMenuRow(
     bool InStrip = false
 );
 
-// Both content sets come from one list of sections in one fixed order, and each row decides for
-// itself whether it is eligible. A section with no eligible row is left out entirely, so the
-// separators that sit between rendered sections never lead, trail or double up.
 internal static class ContextMenuComposition
 {
     private sealed record RowDefinition(

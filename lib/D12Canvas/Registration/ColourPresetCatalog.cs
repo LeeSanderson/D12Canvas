@@ -2,8 +2,6 @@ using System.Text.RegularExpressions;
 
 namespace D12Canvas.Registration;
 
-// The one preset list every colour role in the Property bar offers. AddD12Canvas registers a
-// single instance, so a second AddD12Canvas call changes the list the first one registered.
 internal sealed partial class ColourPresetCatalog
 {
     public static readonly IReadOnlyList<ColourPreset> Defaults =

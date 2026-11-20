@@ -5,9 +5,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Board extent and zoom range are unbounded by default - a host opts into a ceiling and/or floor
-// via MinZoom/MaxZoom, which the canvas honours through the keyboard zoom path every other zoom
-// test drives.
 public class DiagramCanvasZoomLimitsTests : ComponentTestBase
 {
     public DiagramCanvasZoomLimitsTests()
@@ -36,7 +33,7 @@ public class DiagramCanvasZoomLimitsTests : ComponentTestBase
     {
         var canvas = Render<DiagramCanvas>();
 
-        ZoomIn(canvas, 100); // old fixed ceiling was 6.0x
+        ZoomIn(canvas, 100);
 
         Assert.Equal(11.0, canvas.Instance.ZoomPanTracker.Scale, precision: 10);
     }
@@ -65,7 +62,7 @@ public class DiagramCanvasZoomLimitsTests : ComponentTestBase
     public void ChangingMaxZoomAtRuntimeReclampsAnAlreadyExceedingScale()
     {
         var canvas = Render<DiagramCanvas>();
-        ZoomIn(canvas, 50); // scale -> 6.0, well past the old fixed ceiling
+        ZoomIn(canvas, 50);
 
         canvas.Render(parameters => parameters.Add(p => p.MaxZoom, 3.0));
 

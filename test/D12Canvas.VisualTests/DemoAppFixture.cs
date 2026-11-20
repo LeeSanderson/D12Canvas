@@ -5,8 +5,6 @@ using Xunit;
 
 namespace D12Canvas.VisualTests;
 
-// Boots the real D12Canvas.Demo WASM app once for the whole assembly so Playwright can drive it,
-// per the project's layered testing strategy.
 public sealed class DemoAppFixture : IAsyncLifetime
 {
     public const string BaseUrl = "http://127.0.0.1:5299";
@@ -20,8 +18,6 @@ public sealed class DemoAppFixture : IAsyncLifetime
     {
         var demoProjectPath = FindDemoProjectPath();
 
-        // Streams are left inherited (not redirected) rather than captured: nothing here reads them,
-        // and Blazor's dev-server build output is enough to fill the redirect buffer and deadlock the process.
         _demoProcess = Process.Start(
             new ProcessStartInfo("dotnet", $"run --no-launch-profile --urls {BaseUrl}")
             {

@@ -4,9 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Alt on a MoveSelection drags a copy of the selection and leaves the originals where they are.
-// The copy lives in the preview's pending fragment, Alt is read on every move, and the release
-// commits whichever of the two the last move published.
 public class CloneDragGestureTests
 {
     private static ComponentInstance AddInstance(Board board, double x, double y, int zIndex = 0)

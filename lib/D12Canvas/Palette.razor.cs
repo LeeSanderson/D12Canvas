@@ -5,12 +5,6 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-/// <summary>
-/// The component palette: a vertical toolbar of icon buttons, Edge first and then up to
-/// <see cref="RailLimit"/> registered types grouped by category, with a "More components" button
-/// that opens the rest in a flyout. Clicking a button or a flyout row adds that type to
-/// <see cref="Canvas"/>, and dragging one places it where it is dropped.
-/// </summary>
 public partial class Palette : IAsyncDisposable
 {
     internal const int RailLimit = 8;
@@ -48,9 +42,6 @@ public partial class Palette : IAsyncDisposable
     [Inject]
     private IJSRuntime JS { get; set; } = null!;
 
-    // Palette is a sibling of DiagramCanvas in host markup (chrome isn't nested inside
-    // the canvas), so it can't reach it via the cascading "ParentCanvas" value ComponentContainer
-    // uses; wiring is this explicit reference instead, set by the host.
     [Parameter]
     public DiagramCanvas? Canvas { get; set; }
 

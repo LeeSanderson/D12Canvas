@@ -9,10 +9,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The minimap beside a canvas at the origin, 800 by 600, holding instances at (100, 100) and
-// (400, 400), each 50 by 50. Measured at 200 by 150, the minimap frames the union of that content
-// and the viewport, (0, 0, 800, 600), at 0.225 with the board origin at (10, 7.5), so minimap
-// (55, 41.25) is board (200, 150), which centred in the canvas is pan (200, 150).
 public class MinimapTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -229,7 +225,6 @@ public class MinimapTests : ComponentTestBase
         );
     }
 
-    // The new board frames to the same view as the old, so no viewport change tells the minimap.
     [Fact]
     public async Task ANewBoardThatLeavesTheViewWhereItWasStillRedrawsTheBoxes()
     {

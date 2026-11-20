@@ -1,8 +1,5 @@
 namespace D12Canvas;
 
-// Board content is written into inline style attributes, and a board can arrive from a file or
-// from the clipboard. A value that could end its declaration, open a block or fetch something is
-// dropped, so the property falls back to what the stylesheet gives it.
 internal static class InlineStyleValue
 {
     private static readonly char[] Breakouts =

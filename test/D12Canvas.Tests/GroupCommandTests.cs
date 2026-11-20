@@ -42,7 +42,7 @@ public class GroupCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         var restored = board.GetGroup(group.Id);
         Assert.Same(group, restored);

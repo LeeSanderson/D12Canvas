@@ -4,9 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The band is drawn in board space from the press point, every tick replaces the selection with
-// what it intersects, Shift at press unions into the press-time selection instead, and a release
-// below the threshold is the click on empty canvas that clears the selection.
 public class MarqueeSelectGestureTests
 {
     private const string ComponentTypeKey = "test-props";

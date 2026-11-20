@@ -8,9 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Clicking an edge selects it, with a visible affordance and aria-selected, mirroring
-// component-instance selection. A plain click replaces the whole selection with the edge; Shift
-// adds an edge to a mixed selection, which DiagramCanvasMixedSelectionTests covers.
 public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -74,8 +71,6 @@ public class DiagramCanvasEdgeSelectionTests : ComponentTestBase
         Assert.Empty(canvas.FindAll(".edge-halo"));
     }
 
-    // The line paints and takes no presses; the stroke over it is the hit region, sized against
-    // the scale the content publishes so it stays 20 screen pixels wide at any zoom.
     [Fact]
     public void AnEdgeIsHitByItsOwnRegionAndNotByTheLineThatPaintsIt()
     {

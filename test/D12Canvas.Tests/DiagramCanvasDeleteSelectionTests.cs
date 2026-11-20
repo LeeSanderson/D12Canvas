@@ -8,10 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Delete removes every currently selected instance from Board and clears the selection - single
-// and multi-selection are the same code path (unlike move/resize, deletion has no "as one unit"
-// delta to apply). Undo-wrapping is covered by DiagramCanvasUndoRedoTests.
-// Delete also removes every selected edge and every edge between two deleted instances.
 public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -145,8 +141,6 @@ public class DiagramCanvasDeleteSelectionTests : ComponentTestBase
         Assert.NotNull(board.GetComponent(target.Id));
     }
 
-    // Delete removes what Cut would carry: the edges between the deleted shapes go with them, and
-    // an edge with only one end on a deleted shape stays.
     [Fact]
     public async Task DeleteTakesTheEdgesBetweenTheDeletedShapesAsCutDoes()
     {

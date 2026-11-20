@@ -11,10 +11,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A choice role in the property bar is a menu button showing its current option's glyph and name;
-// clicking it opens the library flyout with one menuitemradio row per option. The glyphs come from
-// whatever declares the role, so a host property with OptionGlyphs gets the same chip and flyout
-// as the built-ins.
 public sealed class PropertyBarChipTests : ComponentTestBase
 {
     private const string HostTypeKey = "chip-test-host";

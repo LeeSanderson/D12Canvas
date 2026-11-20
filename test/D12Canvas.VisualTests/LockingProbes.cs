@@ -5,8 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The listener reads the rendered lock: a real primary press, drag or marquee passes a locked
-// shape by, a real right-click reaches it, and Ctrl+Shift+L marks the selection locked.
 public sealed class LockingProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

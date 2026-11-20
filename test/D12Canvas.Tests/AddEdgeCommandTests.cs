@@ -48,7 +48,7 @@ public class AddEdgeCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         var restored = board.GetEdge(edge.Id);
         Assert.Same(edge, restored);

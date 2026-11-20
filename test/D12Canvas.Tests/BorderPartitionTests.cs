@@ -3,9 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// One side of an instance, in screen pixels: the run between the two corner reserves, a span for
-// each port nearest it and capped at the port target, resize in what is left, and nothing below
-// the floor.
 public class BorderPartitionTests
 {
     private static readonly IReadOnlyList<(Guid Id, double Along)> NoCustomPorts = [];
@@ -130,9 +127,6 @@ public class BorderPartitionTests
 
     public static TheoryData<int> Seeds => new() { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-    // The WCAG spacing exception as a property: over side lengths from nothing to large and any
-    // crowding of custom ports, every surviving region on the border is at least the floor, lies
-    // inside the run, and touches no other region, the four corner targets included.
     [Theory]
     [MemberData(nameof(Seeds))]
     public void NoTwoRegionsOnABorderIntersectAndNoneIsBelowTheFloor(int seed)
@@ -225,8 +219,6 @@ public class BorderPartitionTests
         && a.Top < b.Bottom - 1e-9
         && b.Top < a.Bottom - 1e-9;
 
-    // A span reaches half a port target outward, and inward no further than halfway across the
-    // instance, as the span's style does, so opposite sides of a thin instance never meet.
     private static Region RegionOf(BorderSpan span, double width, double height)
     {
         var half = ScreenPixels.PortTarget / 2;
@@ -246,8 +238,6 @@ public class BorderPartitionTests
         };
     }
 
-    // A corner target is the port target square, narrowed on a side too short to hold two of them,
-    // as the corner handle's style does.
     private static IEnumerable<Region> CornerRegions(double width, double height)
     {
         var halfWidth = Math.Min(ScreenPixels.CornerTarget, width / 2) / 2;

@@ -5,10 +5,6 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace D12Canvas.Tests;
 
-// A props type with one declared asset reference beside an ordinary string, standing in for any
-// host component that shows stored content: it writes Src straight into an <img>, exactly as an
-// author who has never heard of assets would, and commits an edit of its caption back through the
-// canvas the way the editing built-ins do.
 internal sealed record AssetTestProps(
     [property: AssetReference] string Src = "",
     string Caption = ""

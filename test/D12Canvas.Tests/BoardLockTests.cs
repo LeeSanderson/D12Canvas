@@ -3,8 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A lock is a flag on instances and edges; a group holds none and is locked when every member that
-// resolves is, nested groups recursively.
 public class BoardLockTests
 {
     private static ComponentInstance AddShape(Board board, bool locked = false)

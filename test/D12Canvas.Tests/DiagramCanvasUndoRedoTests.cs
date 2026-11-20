@@ -8,10 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Completing a move or resize gesture records one ChangeBoundsCommand in a session-scoped
-// CommandHistory - Ctrl+Z/Ctrl+Shift+Z (wired via JS, tested here by invoking the JSInvokable
-// handlers directly, matching DiagramCanvasDeleteSelectionTests) undo/redo it. A multi-select
-// move/resize commits as one CompositeCommand, so one undo reverts every member at once.
 public class DiagramCanvasUndoRedoTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -57,9 +53,6 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         return instance;
     }
 
-    // DiagramCanvas.Changed re-exposes CommandHistory.Changed (see CommandHistory's own
-    // ChangedFiresOnDoUndoAndRedo test for the underlying firing rules) - this covers only the
-    // re-exposure wiring itself.
     [Fact]
     public async Task ChangedFiresOnAMoveAndOnUndo()
     {
@@ -203,8 +196,6 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 0, 100, 50), second.Bounds);
     }
 
-    // A persisted Group (Ctrl+G, not just an ad-hoc selection) moves/resizes through the exact
-    // same CompositeCommand-per-gesture path - one undo must revert every member here too.
     [Fact]
     public async Task UndoAfterAPersistedGroupMoveRevertsEveryMemberInOneStep()
     {
@@ -256,11 +247,6 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 0, 100, 50), second.Bounds);
     }
 
-    // A persisted Group's layering commands bulk-write every member's ZIndex as one
-    // CompositeCommand, exactly like its move/resize commands above - one undo must revert every
-    // member here too. Bring to Front goes through RestackSelection; Bring Forward goes through
-    // the separate ApplyZIndexChange path - covering both proves the undo entry holds for either
-    // code path a layering command can take.
     [Fact]
     public async Task UndoAfterAPersistedGroupLayeringCommandRevertsEveryMemberInOneStep()
     {
@@ -291,7 +277,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, 0, zIndex: 1);
         var second = AddInstance(board, 300, 0, zIndex: 2);
-        AddInstance(board, 600, 0, zIndex: 3); // untouched, outside the group
+        AddInstance(board, 600, 0, zIndex: 3);
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
@@ -324,7 +310,6 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         canvas.DragOn(container, (300, 200), (340, 175));
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
-        // A fresh gesture after the undo - the undone move must never come back via redo.
         container = canvas.Find(".component-container");
         canvas.DragOn(container, (300, 200), (260, 190));
         Assert.Equal(new Bounds(60, 90, 50, 50), instance.Bounds);
@@ -362,8 +347,6 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 100, 50, 50), instance.Bounds);
     }
 
-    // Click-to-add and drag-drop placement both route through PlaceComponent's AddEntityCommand -
-    // undo removes the placed instance, redo restores it under the same Id.
     [Fact]
     public async Task UndoAfterAClickToAddRemovesThePlacedInstance()
     {
@@ -430,9 +413,6 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(placedId, Assert.Single(board.Components).Id);
     }
 
-    // OnDeletePressed wraps every selected instance's RemoveEntityCommand in one CompositeCommand -
-    // single and multi-selection deletes both undo as one atomic entry, restoring each instance's
-    // identity, bounds, and props intact.
     [Fact]
     public async Task UndoAfterASingleSelectionDeleteRestoresTheInstance()
     {
@@ -513,14 +493,12 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Empty(board.Components);
     }
 
-    // The port-to-port drag gesture routes through AddEdgeCommand - undo removes the created
-    // edge, redo restores it with the same attachments.
     [Fact]
     public async Task UndoAfterCreatingAnEdgeRemovesIt()
     {
         var board = new Board();
-        AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
-        AddInstance(board, 300, 100, 100, 100); // left port at (300, 150)
+        AddInstance(board, 100, 100, 100, 100);
+        AddInstance(board, 300, 100, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
@@ -544,8 +522,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task RedoAfterUndoingAnEdgeCreationRestoresItWithTheSameAttachments()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
-        var target = AddInstance(board, 300, 100, 100, 100); // left port at (300, 150)
+        var source = AddInstance(board, 100, 100, 100, 100);
+        var target = AddInstance(board, 300, 100, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
@@ -569,14 +547,12 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
         Assert.Equal(new PortEndpoint(target.Id, PortId.Left), restored.Target);
     }
 
-    // A selected edge's own RemoveEdgeCommand - undo restores the same Edge reference, so both
-    // endpoints (attached or floating) come back exactly as they were.
     [Fact]
     public async Task UndoAfterDeletingASelectedEdgeRestoresItWithBothAttachedEndpointsIntact()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
-        var target = AddInstance(board, 300, 100, 100, 100); // left port at (300, 150)
+        var source = AddInstance(board, 100, 100, 100, 100);
+        var target = AddInstance(board, 300, 100, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
@@ -606,7 +582,7 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task UndoAfterDeletingASelectedEdgeRestoresAFloatingEndpointIntact()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
+        var source = AddInstance(board, 100, 100, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
@@ -630,8 +606,8 @@ public class DiagramCanvasUndoRedoTests : ComponentTestBase
     public async Task RedoAfterUndoingAnEdgeDeleteRemovesItAgain()
     {
         var board = new Board();
-        AddInstance(board, 100, 100, 100, 100); // right port at (200, 150)
-        AddInstance(board, 300, 100, 100, 100); // left port at (300, 150)
+        AddInstance(board, 100, 100, 100, 100);
+        AddInstance(board, 300, 100, 100, 100);
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );

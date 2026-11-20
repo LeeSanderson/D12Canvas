@@ -2,7 +2,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The browser reports an Apple platform, where Ctrl+click is the system secondary click.
 public sealed class ApplePlatformPressProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

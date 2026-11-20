@@ -10,18 +10,10 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The property panel is chrome - standalone and host-positioned, wired to its DiagramCanvas the
-// same explicit way Palette is - built generically from whatever [PanelEditable] the selection's
-// registered TProps declares. Exercised through the real DiagramCanvas/ComponentContainer stack
-// (not a bare Board) since selection itself is DiagramCanvas's own transient view state - there's
-// no other way to select an instance.
 public partial class PropertyPanelTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "panel-test-component";
 
-    // A second, distinct registered type - PanelTestPropsSecondary.AccentColor declares the same
-    // Fill role as PanelTestProps.Tint, so the two combine into one cross-type row;
-    // PanelTestPropsSecondary.Note declares no role, so it must never surface there.
     private const string SecondaryComponentTypeKey = "panel-test-component-secondary";
 
     private readonly ComponentRegistry _registry = new();
@@ -42,9 +34,6 @@ public partial class PropertyPanelTests : ComponentTestBase
                 Role: "group",
                 DefaultSize: null,
                 Category: null,
-                // CustomValue carries no [PanelEditable] - a Custom-kind property can only come
-                // from the builder override, so it's appended here rather than being picked up by
-                // DiscoverFrom like every other kind above.
                 EditableProperties: EditablePropertySchema
                     .DiscoverFrom(typeof(PanelTestProps))
                     .Append(
@@ -114,10 +103,6 @@ public partial class PropertyPanelTests : ComponentTestBase
     private static void Select(IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.ClickOn(canvas.Find(".component-container"));
 
-    // A nullable colour prop holding null means "follow the theme". The colour input cannot show
-    // absence (it would display #000000 and a confirmed pick would freeze it), so the row marks
-    // the swatch as themed and offers no clear control; once a colour is set, the clear control
-    // is the way back to the themed default.
     [Fact]
     public void AThemedColourFieldMarksItsSwatchAndOffersNoClearControl()
     {
@@ -200,8 +185,6 @@ public partial class PropertyPanelTests : ComponentTestBase
         Assert.Empty(panel.FindAll(".d12-property-panel-field"));
     }
 
-    // A same-type 2+ multi-selection now edits that type's full declared schema, rather than
-    // showing the empty state that any multi-selection used to trigger.
     [Fact]
     public void SameTypeMultiSelectionRendersTheFullDeclaredSchema()
     {
@@ -265,9 +248,6 @@ public partial class PropertyPanelTests : ComponentTestBase
         Assert.Equal("#000000", ((PanelTestProps)second.Props).Tint);
     }
 
-    // Only the properties whose declared role every selected type also declares surface for a
-    // cross-type selection, keyed and labelled by the role - PanelTestProps.Label and
-    // PanelTestPropsSecondary.Note declare no role at all, and must not appear.
     [Fact]
     public void CrossTypeMultiSelectionSurfacesOnlyTheRolesEverySelectedTypeDeclares()
     {
@@ -332,8 +312,6 @@ public partial class PropertyPanelTests : ComponentTestBase
         Assert.Equal("#000000", ((PanelTestPropsSecondary)second.Props).AccentColor);
     }
 
-    // Grouping collapses a multi-selection onto a single Group id, and the panel reads the
-    // selection expanded through it, so an edit reaches every member.
     [Fact]
     public async Task ASelectedGroupEditsEveryMember()
     {
@@ -356,8 +334,6 @@ public partial class PropertyPanelTests : ComponentTestBase
         Assert.Equal("#00ff00", ((PanelTestProps)second.Props).Tint);
     }
 
-    // A shift-click can mix a group's id with a standalone instance's plain id in one selection;
-    // the group contributes its members, so the edit reaches all three rather than a subset.
     [Fact]
     public async Task AGroupMixedWithAStandaloneInstanceEditsAllThree()
     {
@@ -534,8 +510,8 @@ public partial class PropertyPanelTests : ComponentTestBase
         );
         Select(canvas);
 
-        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00"); // one real gesture
-        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00"); // no-op: same value again
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
+        panel.Find("#d12-property-panel-field-Tint").Change("#00ff00");
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -586,8 +562,8 @@ public partial class PropertyPanelTests : ComponentTestBase
         );
         Select(canvas);
 
-        panel.Find("#d12-property-panel-field-Flag").Change(true); // one real gesture
-        panel.Find("#d12-property-panel-field-Flag").Change(true); // no-op: same value again
+        panel.Find("#d12-property-panel-field-Flag").Change(true);
+        panel.Find("#d12-property-panel-field-Flag").Change(true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -638,8 +614,8 @@ public partial class PropertyPanelTests : ComponentTestBase
         );
         Select(canvas);
 
-        panel.Find("#d12-property-panel-field-Mode").Change("b"); // one real gesture
-        panel.Find("#d12-property-panel-field-Mode").Change("b"); // no-op: same value again
+        panel.Find("#d12-property-panel-field-Mode").Change("b");
+        panel.Find("#d12-property-panel-field-Mode").Change("b");
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
@@ -757,11 +733,9 @@ public partial class PropertyPanelTests : ComponentTestBase
         );
         Select(canvas);
 
-        panel.Find("#d12-property-panel-field-Label").Change("Edited"); // one real gesture
-        panel.Find("#d12-property-panel-field-Label").Change("Edited"); // no-op: same value again
+        panel.Find("#d12-property-panel-field-Label").Change("Edited");
+        panel.Find("#d12-property-panel-field-Label").Change("Edited");
 
-        // If the no-op had wrongly recorded its own history entry, a single Undo would only
-        // revert that phantom entry and Label would still read "Edited" here.
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 
         Assert.Equal("Original", ((PanelTestProps)instance.Props).Label);
@@ -895,8 +869,8 @@ public partial class PropertyPanelTests : ComponentTestBase
         );
         Select(canvas);
 
-        panel.Find($"#{PanelTestCustomEditor.CommitButtonId}").Click(); // one real gesture
-        panel.Find($"#{PanelTestCustomEditor.CommitButtonId}").Click(); // no-op: same value again
+        panel.Find($"#{PanelTestCustomEditor.CommitButtonId}").Click();
+        panel.Find($"#{PanelTestCustomEditor.CommitButtonId}").Click();
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
 

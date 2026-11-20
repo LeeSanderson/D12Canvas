@@ -8,11 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Marquee + shift-click multi-select, driven through the pointer entry points the browser-side
-// listener calls. A plain primary drag on empty canvas draws an intersection-based marquee that
-// replaces the selection; Shift+drag adds the band's contents to the selection instead; the
-// middle and secondary buttons pan. A press inside the multi-selection's own box lands on the box,
-// not the canvas, so it is never a marquee.
 public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -93,9 +88,9 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
     public async Task MarqueeSelectsEveryInstanceItIntersectsIncludingOnesOnlyPartiallyOverlapped()
     {
         var board = new Board();
-        AddInstance(board, 60, 60); // fully inside the drag rectangle (0,0)-(200,200)
-        AddInstance(board, 190, 190); // only its top-left corner overlaps the rectangle
-        AddInstance(board, 400, 400); // untouched
+        AddInstance(board, 60, 60);
+        AddInstance(board, 190, 190);
+        AddInstance(board, 400, 400);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.ReturnToOrigin();
 
@@ -115,7 +110,6 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.ReturnToOrigin();
 
-        // Dragged from bottom-right up to top-left (negative deltas), not the usual direction.
         await canvas.Marquee(from: (200, 200), to: (0, 0));
 
         Assert.Equal("true", canvas.Find(".component-container").GetAttribute("aria-selected"));
@@ -191,11 +185,8 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         AddInstance(board, 210, 210);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        canvas.ZoomIn(); // zooms to scale 1.1
+        canvas.ZoomIn();
 
-        // At scale 1.1, this 220px screen-space drag reaches only ~200 board units - short of the
-        // instance's (210,210) origin. If the conversion ignored zoom (treating screen pixels as
-        // board units 1:1), the same drag would reach 220 and wrongly intersect it.
         await canvas.Marquee(from: (0, 0), to: (220, 220));
 
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
@@ -211,8 +202,6 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
 
         await canvas.Pan(from: (0, 0), to: (200, 200));
 
-        // The instance now sits at screen (260, 260). A band over screen (0,0)-(100,100) reads
-        // board (-200,-200)-(-100,-100) and misses it; one over (250,250)-(350,350) hits it.
         await canvas.Marquee(from: (0, 0), to: (100, 100));
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
 
@@ -276,9 +265,6 @@ public class DiagramCanvasMarqueeSelectTests : ComponentTestBase
         Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
     }
 
-    // The multi-selection's box is a solid hit target, so a press inside it never reaches the
-    // canvas: a stationary press-release on the box leaves the selection alone, where the same
-    // press on empty canvas outside the box clears it.
     [Fact]
     public async Task AStationaryPressOnTheSelectionBoxLeavesTheSelectionAloneWhereOneOnEmptyCanvasClearsIt()
     {

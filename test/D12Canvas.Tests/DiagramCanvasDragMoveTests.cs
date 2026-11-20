@@ -8,9 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Press-to-select-and-drag. A press on an instance selects it and a drag past the threshold moves
-// the selection in the same motion. What a drag shows each frame comes from the gesture preview,
-// Board is written once at release with exactly what was shown, and a drag is one undo step.
 public class DiagramCanvasDragMoveTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -85,8 +82,6 @@ public class DiagramCanvasDragMoveTests : ComponentTestBase
         canvas.ZoomIn();
         canvas.DragOn(Container(canvas, instance.Id), (300, 200), (344, 222));
 
-        // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the
-        // decimal literal 1.1, so this can't disagree with production code over double rounding.
         var scale = 1.0 + 0.1;
         Assert.Equal(100 + 44 / scale, instance.Bounds.X, precision: 10);
         Assert.Equal(100 + 22 / scale, instance.Bounds.Y, precision: 10);
@@ -282,8 +277,6 @@ public class DiagramCanvasDragMoveTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 100, 50, 50), pressed.Bounds);
     }
 
-    // The second instance joins the selection while a pan has it on screen, and the pan back
-    // leaves it outside the viewport, so the drag starts with one participant unmounted.
     [Fact]
     public async Task AShapeDraggedInFromOffScreenMountsAndStaysMountedUntilRelease()
     {

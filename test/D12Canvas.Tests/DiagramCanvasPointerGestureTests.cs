@@ -8,11 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The pointer arbitration spine, driven through the four public entry points the browser-side
-// listener calls. The release-reliability and cancel theories enumerate the closed gesture set,
-// so a new member fails the suite until its cases exist; the switches below throw for one they
-// do not know. Nothing here inspects which gesture is live: a leak shows as a response to a
-// buttonless move, and a cancel shows as what the board and the selection look like afterwards.
 public class DiagramCanvasPointerGestureTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -39,7 +34,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         Services.AddSingleton<IComponentRegistry>(registry);
     }
 
-    // Enumerated by name because the enum is internal and a public theory cannot take it.
     public static IEnumerable<object[]> EveryGestureKind() =>
         Enum.GetNames<GestureKind>().Select(name => new object[] { name });
 
@@ -89,9 +83,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         Assert.Equal(expected.Y, y, 6);
     }
 
-    // The minimap beside the seeded board, 200 by 150, maps the union of the content and the
-    // viewport at the origin, (0, 0, 800, 600), at 0.225 with its origin at (10, 7.5), so minimap
-    // (55, 41.25) is board (200, 150) and centring the canvas there pans it to (200, 150).
     private IRenderedComponent<Minimap>? _minimap;
 
     private async Task<IRenderedComponent<Minimap>> RenderMinimap(
@@ -104,8 +95,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         return minimap;
     }
 
-    // The minimap's own listener reports every move, release and interruption of a press that
-    // began on it.
     private Task Move(
         IRenderedComponent<DiagramCanvas> canvas,
         GestureKind kind,
@@ -129,15 +118,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         string reason
     ) => kind == GestureKind.MinimapPan ? _minimap!.Cancel(reason) : canvas.Cancel(reason);
 
-    // Every case starts on the same board: one instance at (100, 100), another at (400, 400),
-    // the first selected before the press. A pan starts with the middle button at (0, 0) and
-    // drags to (50, 30). A marquee starts on empty canvas at (380, 380) and drags over the second
-    // instance, replacing the selection. A move presses the second instance, which selects it, and
-    // drags it by (50, 40). A resize presses the first instance's bottom-right handle and grows it
-    // by (50, 40). A connector drag pulls a new edge from the second instance's top port. An edge
-    // joins the two instances, and a press on its line that crosses the threshold is abandoned. A
-    // press on the second instance's own content adds it to the selection and holds nothing, so
-    // no move or release of it ever arrives.
     private IRenderedComponent<DiagramCanvas> RenderSeededBoard(out Board board)
     {
         var seeded = new Board();
@@ -304,7 +284,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         switch (kind)
         {
             case GestureKind.Pan:
-                // The viewport is never restored.
                 Assert.Contains("translate(50px, 30px)", ContentStyle(canvas));
                 break;
             case GestureKind.MarqueeSelect:
@@ -332,7 +311,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 break;
             case GestureKind.MinimapPan:
-                // The viewport is never restored.
                 AssertPanNear((200, 150), canvas);
                 Assert.Equal("true", AriaSelected(canvas, 0));
                 break;
@@ -341,8 +319,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         }
     }
 
-    // The one gesture that holds no press: Escape falls straight to its selection-clearing rung,
-    // and the keyboard is never blocked.
     private static async Task AssertNothingIsHeld(
         IRenderedComponent<DiagramCanvas> canvas,
         Board board
@@ -362,8 +338,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         await StartAndDrag(canvas, kind);
         AssertDragTookEffect(canvas, kind);
 
-        // Released outside the surface it was pressed on: capture delivers it wherever the
-        // pointer ends up.
         await Release(canvas, kind, -20, -20);
         var styleAfterRelease = ContentStyle(canvas);
         var selectionAfterRelease = (AriaSelected(canvas, 0), AriaSelected(canvas, 1));
@@ -394,8 +368,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
         AssertDragWasCancelled(canvas, kind);
 
-        // The cancelled gesture still owns the press, so Escape's selection-clearing rung is not
-        // reached and a delete cannot land.
         await canvas.InvokeAsync(() => canvas.Instance.OnEscapePressed());
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         AssertDragWasCancelled(canvas, kind);
@@ -405,7 +377,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         await Release(canvas, kind, 10, 10);
         AssertDragWasCancelled(canvas, kind);
 
-        // The press has ended: the keyboard works again.
         await canvas.InvokeAsync(() => canvas.Instance.OnDeletePressed());
         Assert.Single(board.Components);
     }
@@ -632,8 +603,6 @@ public class DiagramCanvasPointerGestureTests : ComponentTestBase
         Assert.Contains("translate(80px, 50px)", ContentStyle(canvas));
     }
 
-    // A palette click is a board write from outside the keyboard. Refused while a press is held,
-    // it must also leave the selection alone, rather than selecting an instance never placed.
     [Fact]
     public async Task ClickToAddDuringAHeldPressAddsNothingAndLeavesTheSelectionAlone()
     {

@@ -11,8 +11,6 @@ public sealed class DragMoveVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public DragMoveVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -55,9 +53,6 @@ public sealed class DragMoveVisualTests : IAsyncLifetime
     {
         var (startX, startY) = await PlaceAndSelectInstance();
 
-        // A plain mouse drag (not native HTML5 drag-and-drop) - Chromium repaints normally while
-        // it's in flight, so this can be driven with a real Mouse.Down/Move/Up sequence rather
-        // than the synthetic-dragover workaround DragAndDropPlacementVisualTests needed.
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)(startX + 80), (float)(startY + 40));
 

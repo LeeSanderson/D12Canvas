@@ -49,7 +49,7 @@ public class ChangeEdgeLabelCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         Assert.Same(label, edge.Label);
     }

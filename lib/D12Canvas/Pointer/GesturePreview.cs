@@ -2,13 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Pointer;
 
-// What the active pointer gesture publishes while it runs: the bounds of its participants, keyed
-// by instance id, the floating edge ends it carries, keyed by edge end, at most one pending edge
-// line, the guides drawn along what object snapping matched, the pending fragment a clone drag
-// adds at release, whose entities are not in Board yet, and the selection frame a resize holding
-// locked members draws in place of the selection's box. Written only by that gesture,
-// read only through live geometry, discarded on cancel and written back verbatim on commit. Board
-// is never touched while it holds anything.
 internal sealed class GesturePreview
 {
     private Dictionary<Guid, Bounds> _boundsOverrides = new();
@@ -58,13 +51,8 @@ internal sealed class GesturePreview
     }
 }
 
-// One end of one edge: its source when IsSource is true, its target otherwise.
 internal readonly record struct EdgeEnd(Guid EdgeId, bool IsSource);
 
-// The line a connector drag draws, from the end that stays put to the pointer. EdgeId names the
-// edge whose IsSource end is being carried, which the line stands in for while it is drawn; it is
-// null while a new edge is being pulled from a port. DropTargetId is the shape under the pointer
-// that a release would attach to, which shows its ports; never the shape the anchor is on.
 internal sealed record PendingEdge(
     Guid? EdgeId,
     bool IsSource,

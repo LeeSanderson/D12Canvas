@@ -4,10 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The base for tests that drive a real browser and assert DOM or interop state rather than
-// pixels. Every call the page's JavaScript makes into a .NET object is recorded before it is
-// dispatched, so a probe reads what C# was handed. A console error logged at any point fails the
-// test when it is disposed.
 public abstract class InteractionProbe : IAsyncLifetime
 {
     private static readonly string[] PointerEntryPoints =
@@ -70,8 +66,6 @@ public abstract class InteractionProbe : IAsyncLifetime
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
 
-    // demoApp is otherwise unused: taking it documents that every probe depends on the Demo app
-    // assembly fixture having finished starting up.
     protected InteractionProbe(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -81,19 +75,14 @@ public abstract class InteractionProbe : IAsyncLifetime
 
     protected IBrowserContext Context => _context;
 
-    // The page a probe drives, and how many instances it seeds, which the probe waits for.
     protected virtual string ProbePagePath => "/interaction-probe-demo";
 
     protected virtual int ProbePageInstanceCount => 4;
 
-    // Appended to the probe page's path, for a probe that needs the canvas configured otherwise.
     protected virtual string ProbePageQuery => "";
 
-    // The suite runs with reduced motion, so a framing flight lands at once; a probe of the flight
-    // itself opts back in.
     protected virtual ReducedMotion Motion => ReducedMotion.Reduce;
 
-    // Run before any page script, for a probe that needs the browser to report itself otherwise.
     protected virtual string? BrowserInitScript => null;
 
     protected ConsoleErrorTrap ConsoleErrors { get; } = new();
@@ -177,9 +166,6 @@ public abstract class InteractionProbe : IAsyncLifetime
 
     protected Task<(float X, float Y)> EmptyCanvasPointAsync() => PagePointOnCanvasAsync(560, 420);
 
-    // A board point on the page under the view the canvas shows now, which the initial fit has
-    // already moved off scale 1.0 at pan origin. The content element has no box of its own, so its
-    // client rect is where the board's origin is drawn.
     protected async Task<(float X, float Y)> PagePointOnBoardAsync(double boardX, double boardY)
     {
         var origin = await Page.EvaluateAsync<double[]>(
@@ -195,7 +181,6 @@ public abstract class InteractionProbe : IAsyncLifetime
         return ((float)(origin[0] + boardX * origin[2]), (float)(origin[1] + boardY * origin[2]));
     }
 
-    // Holds the middle button on empty canvas and drags far enough to pan, so a gesture is live.
     protected async Task<int> StartMiddlePanAsync()
     {
         var start = await EmptyCanvasPointAsync();
@@ -213,9 +198,6 @@ public abstract class InteractionProbe : IAsyncLifetime
         return ((float)(box!.X + box.Width / 2), (float)(box.Y + box.Height / 2));
     }
 
-    // A response to a pointer with no button held is a leaked gesture. The pointer is swept over
-    // empty canvas and across an instance, and neither the interop layer nor the viewport, the
-    // selection or the marquee may react.
     protected async Task ExpectNothingRespondsToAButtonlessMoveAsync()
     {
         await SettleAsync();

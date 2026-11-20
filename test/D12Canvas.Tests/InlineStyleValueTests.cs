@@ -2,9 +2,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A board can come from a file or the clipboard, and its colours and keywords are written into
-// inline styles. Ordinary CSS values pass; anything that could leave its declaration or fetch a
-// resource is dropped.
 public class InlineStyleValueTests
 {
     [Theory]

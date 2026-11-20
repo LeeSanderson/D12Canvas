@@ -4,9 +4,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Panel;
 
-// The one rule the property panel and the property bar share for writing a value to every target
-// of a row: an empty colour on a row that can hold null is the themed state, and a target already
-// holding the value, by the same comparison that decides whether the row is mixed, is skipped.
 internal static class TargetedEdit
 {
     public static object? Normalise(EditorKind kind, bool canHoldNull, object? value) =>

@@ -2,10 +2,6 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// Duplicate places a copy straight onto the board, never through the clipboard, so whatever the
-// user copied elsewhere survives. The run's offset is replayed as it stands and never snapped:
-// snapping each step against a zoom-dependent grid would drift, while a verbatim replay puts the
-// nth copy exactly n offsets along.
 public partial class DiagramCanvas
 {
     private readonly DuplicateRun _duplicateRun = new();

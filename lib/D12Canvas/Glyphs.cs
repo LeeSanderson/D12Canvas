@@ -2,12 +2,6 @@ using System.Globalization;
 
 namespace D12Canvas;
 
-/// <summary>
-/// The library's glyph set: every drawing the editor's chrome uses, available to hosts for their
-/// own components and editors through <see cref="D12Icon"/>. Each glyph is drawn on a 16-unit
-/// grid at a 1.5 stroke with round caps and joins, keeps every coordinate inside the 1 to 15 box,
-/// and centres its straight strokes on a quarter unit so their edges meet whole pixels at 16px.
-/// </summary>
 public static class Glyphs
 {
     public static readonly Glyph Rectangle = new(S("M2.75 3.75h10.5v8.5H2.75z"));

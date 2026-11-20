@@ -63,8 +63,6 @@ namespace D12Canvas.Tests
             Assert.Equal(0.9, _tracker.Scale);
         }
 
-        // No built-in ceiling/floor by default - the prototype's fixed 0.6x-6.0x range is gone,
-        // so zooming well past either of its former edges must keep working.
         [Fact]
         public void ZoomInHasNoBuiltInCeilingByDefault()
         {
@@ -81,9 +79,6 @@ namespace D12Canvas.Tests
             Assert.Equal(0.5, _tracker.Scale);
         }
 
-        // A numerical-stability guard, not a product-facing limit: with no host-configured
-        // MinZoom, repeated zoom-out must approach zero without ever reaching zero or going
-        // negative (which would flip the canvas and break Viewport's division by Scale).
         [Fact]
         public void ZoomOutNeverReachesZeroOrNegativeWithNoMinZoomSet()
         {
@@ -116,8 +111,6 @@ namespace D12Canvas.Tests
             Assert.Equal(0.5, _tracker.Scale);
         }
 
-        // Setting a limit re-clamps whatever Scale already is, rather than waiting for the next
-        // ZoomIn/ZoomOut - Scale must never sit outside the currently configured bounds.
         [Fact]
         public void SettingMaxZoomBelowTheCurrentScaleClampsItImmediately()
         {
@@ -154,8 +147,6 @@ namespace D12Canvas.Tests
             Assert.Throws<ArgumentException>(() => _tracker.SetZoomLimits(null, double.NaN));
         }
 
-        // Setting both at once so a host changing both together can never trip a transient
-        // min > max state depending on which field this API happened to assign first.
         [Fact]
         public void MinZoomMustNotExceedMaxZoom()
         {
@@ -219,8 +210,6 @@ namespace D12Canvas.Tests
             Assert.Equal(0, _lastEventArgs!.PanY);
         }
 
-        // No fixed board extent - panning is never clamped, so content can be placed and panned
-        // to arbitrarily far coordinates in any direction.
         [Fact]
         public void PanIsUnboundedInEveryDirection()
         {
@@ -290,7 +279,7 @@ namespace D12Canvas.Tests
         public void ViewportShrinksAsScaleIncreases()
         {
             _tracker.SetContainerSize(800, 600);
-            _tracker.Zoom(true); // scale -> 1.1
+            _tracker.Zoom(true);
 
             Assert.Equal(new Bounds(0, 0, 800 / 1.1, 600 / 1.1), _tracker.Viewport);
         }

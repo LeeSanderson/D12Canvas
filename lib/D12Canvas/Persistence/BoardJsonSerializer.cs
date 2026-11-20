@@ -30,8 +30,6 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         return JsonSerializer.Serialize(envelope, Options);
     }
 
-    // Only the assets some entity still refers to reach the file; an abandoned one stays in
-    // memory until the board is reloaded. Null rather than empty so the property is omitted.
     private IReadOnlyList<AssetEnvelope>? ReferencedAssetEnvelopes(Board board)
     {
         var assets = ReferencedAssets
@@ -129,9 +127,6 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         return new PartialBoardDeserializeResult(board, warnings);
     }
 
-    // A reference to an asset the file does not carry degrades rather than failing: the reference
-    // is left in place, so the built-in Image lands on its "Image unavailable" state, and the
-    // partial path says which instance points at what. The strict path tolerates it silently.
     private void WarnAboutMissingAssets(Board board, List<BoardDeserializeWarning> warnings)
     {
         foreach (var instance in board.InstancesIncludingEdgeLabels())
@@ -154,11 +149,6 @@ public sealed class BoardJsonSerializer : IBoardSerializer
     private static Asset FromAssetEnvelope(AssetEnvelope envelope) =>
         new(envelope.Id, envelope.MimeType, envelope.Data);
 
-    // An edge referencing a missing instance is tolerated, not fatal - Board.ResolveEndpoint
-    // already tolerates a dangling PortEndpoint componentId at read time (Model/Board.cs), so a
-    // warning is recorded but the edge still loads, mirroring how a group's missing member is
-    // handled just above. Edges never reference Groups, so no group-membership check is needed
-    // here.
     private void DeserializeEdgesPartial(
         JsonElement edgesElement,
         Board board,
@@ -200,11 +190,6 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         }
     }
 
-    // A group's problems never fail the load either. Every parsed group is added first, so a
-    // nested reference to a group declared later in the array resolves, and the membership repair
-    // then runs over the whole set at once: a member id that resolves to nothing is dropped, a
-    // group left with no members is removed and a group left with one is dissolved into its
-    // parent, each with its own warning. The strict path makes the same repair silently.
     private static void DeserializeGroupsPartial(
         JsonElement groupsElement,
         Board board,
@@ -271,13 +256,6 @@ public sealed class BoardJsonSerializer : IBoardSerializer
         }
     }
 
-    // The shared "iterate a JSON array, describe each entry for error reporting, deserialize it,
-    // and turn any failure into a warning instead of aborting the load" shape - duplicated across
-    // Components/Groups/Edges once Edges arrived as a third occurrence (the extraction was
-    // deliberately deferred until then). `onEntry` does whatever each entity kind needs with a
-    // successfully-parsed envelope (bind and add to the board, or - for Groups - stash it for a
-    // second, cross-referencing pass); anything `onEntry` throws is still caught here and reported
-    // the same way as a parse failure.
     private static void ParseEntries<TEnvelope>(
         JsonElement arrayElement,
         string idPropertyName,
@@ -308,8 +286,6 @@ public sealed class BoardJsonSerializer : IBoardSerializer
             }
             catch (Exception ex)
             {
-                // Deliberately broad: any failure to parse or bind one entity (or a duplicate Id
-                // added later by onEntry) must never abort the rest of the load.
                 warnings.Add(
                     new BoardDeserializeWarning(entity, $"Malformed entity: {ex.Message}")
                 );

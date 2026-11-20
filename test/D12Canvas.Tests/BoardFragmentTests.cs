@@ -4,9 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// What a copy carries and how a fragment is placed: selected instances closed over the edges
-// between them, every selected edge with any end it cannot keep floating, groups recursively and
-// the assets the copy refers to; every entity id new on the way out, asset ids kept.
 public class BoardFragmentTests
 {
     private const string PlainKey = "test-props";

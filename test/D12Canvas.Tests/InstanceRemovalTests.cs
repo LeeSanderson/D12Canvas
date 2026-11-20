@@ -4,8 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Removing instances and repairing the groups they belonged to is one history entry: undo brings
-// back the instances, the groups and every parent membership together.
 public class InstanceRemovalTests
 {
     private const string ComponentTypeKey = "test-props";

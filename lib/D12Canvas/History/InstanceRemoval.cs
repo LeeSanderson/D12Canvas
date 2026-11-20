@@ -2,11 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Every write that removes instances goes through here, so the group repair those removals make
-// necessary lands in the same history entry as the removals themselves. Only the groups the
-// removal touches (those holding a removed id, and their ancestors) are repaired; a group a host
-// broke through Board's mutators is left for the next load to repair. Board's mutators stay
-// plain; the repair is composed out of the existing group primitives.
 public static class InstanceRemoval
 {
     public static IReadOnlyList<ICommand> Compose(Board board, IEnumerable<Guid> instanceIds)

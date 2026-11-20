@@ -3,10 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Real Ctrl+Shift+Arrow presses, since only a real key shows the browser lets the chord through
-// and the stop's own focus handler takes the landing. On the probe board Target sits in Source's
-// row and LooseEnd in its column, with the edge leaving Source between Source and Target in the
-// ring.
 public sealed class DirectionalFocusProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

@@ -2,17 +2,8 @@ using VerifyTests;
 
 namespace D12Canvas.VisualTests;
 
-// Registers a tolerant PNG comparer with Verify so screenshot baselines survive imperceptible
-// rendering noise between hosts/runs - the same pinned Docker image produces byte-different but
-// visually-identical PNGs depending on which physical machine runs it, which Verify's default
-// byte-exact comparison can't tell apart from a real regression.
 public static class FuzzyPngComparer
 {
-    // Calibrated against 13 real "should match" pairs pulled from two separate GitHub Actions
-    // runs and the pre-existing committed baselines: every one of them measured as an *exact*
-    // 0.0% diff under PixelMatch's own default threshold. This tolerance is deliberately still
-    // well above that observed noise floor as headroom for slightly worse noise, while remaining
-    // orders of magnitude below what any real added/moved/changed visual element would produce.
     public const double MaxDiffPixelRatio = 0.001;
 
     public static void Register()
@@ -26,8 +17,6 @@ public static class FuzzyPngComparer
     private static CompareResult Compare(Stream received, Stream verified) =>
         Evaluate(Png.Decode(received), Png.Decode(verified));
 
-    // Split out from Compare so tests can exercise the actual pass/fail decision directly against
-    // decoded pixel buffers, without needing a PNG encoder just to round-trip a synthetic image.
     internal static CompareResult Evaluate(Png.Image received, Png.Image verified)
     {
         if (received.Width != verified.Width || received.Height != verified.Height)

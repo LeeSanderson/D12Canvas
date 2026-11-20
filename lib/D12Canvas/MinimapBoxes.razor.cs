@@ -3,9 +3,6 @@ using Microsoft.AspNetCore.Components;
 
 namespace D12Canvas;
 
-// The minimap's boxes, in board units under the minimap's one transformed wrapper, so a pan or a
-// reframe moves the wrapper and never re-renders a box. They render again only for a new board or
-// a new board revision.
 public partial class MinimapBoxes
 {
     private (Board? Board, int Revision) _rendered;

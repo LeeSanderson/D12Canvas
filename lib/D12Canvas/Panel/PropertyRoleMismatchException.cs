@@ -1,8 +1,5 @@
 namespace D12Canvas.Panel;
 
-// A property declares a role whose expected EditorKind or CLR type it does not match - thrown at
-// registration time, naming the offending type and property, so the mistake fails at startup
-// rather than merging a wrongly-shaped row into the panel or the bar.
 public sealed class PropertyRoleMismatchException : Exception
 {
     public EditableProperty Property { get; }

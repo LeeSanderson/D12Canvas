@@ -7,8 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Each shape type carries its own accessible name, so the ring reads as the list of names a
-// screen reader would announce on each Tab.
 public class DiagramCanvasEdgeTabStopTests : ComponentTestBase
 {
     private readonly Board _board = new();

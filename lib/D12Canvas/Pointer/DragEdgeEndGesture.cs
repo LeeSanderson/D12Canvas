@@ -2,16 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Pointer;
 
-// A primary press on a port span or a floating endpoint carries one end of an edge. A port span
-// pulls a new edge from its port unless an edge end is pinned to that port, which it carries; a
-// floating endpoint carries its own end. Each tick publishes one pending line from the end that
-// stays put to the pointer, naming the shape under the pointer as the drop target so its ports
-// show. The release resolves what lies under the pointer, topmost first: a port pins the end to
-// it, a shape's body attaches it as an auto endpoint, nothing at all leaves it floating at the
-// release point, and chrome, another edge or a locked shape in between is looked through. A locked
-// edge is never carried, so a port span with one pinned to it pulls a new edge. A drop on the
-// shape the other end is attached to changes nothing. A port span released before the drag
-// threshold is a quick create from that port.
 internal sealed class DragEdgeEndGesture : PointerGesture
 {
     private IEdgeEndpoint? _anchor;
@@ -148,7 +138,6 @@ internal sealed class DragEdgeEndGesture : PointerGesture
             && Context.Board?.GetComponent(entityId) is { Locked: false }
         );
 
-    // A port marker names a standard port by its PortId and a custom port by its id.
     private static IEdgeEndpoint? PortEndpoint(string role, Guid instanceId, string? part)
     {
         if (role != HitRole.Port)

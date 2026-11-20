@@ -12,8 +12,6 @@ public sealed class DragAndDropPlacementVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public DragAndDropPlacementVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -41,12 +39,6 @@ public sealed class DragAndDropPlacementVisualTests : IAsyncLifetime
     {
         var target = _page.Locator(".diagram-canvas");
 
-        // Dispatched rather than driven by a live Mouse.Down/Move gesture: Chromium doesn't
-        // repaint the page while an actual native HTML5 drag session is in flight, so a
-        // screenshot taken mid-gesture captures a stale frame even though the underlying
-        // DOM/CSS state is already correct. A synthetic dragover (with a real DataTransfer -
-        // Blazor's event processing silently no-ops without one) reaches the identical
-        // application state without that native-drag paint freeze.
         await _page.EvaluateAsync(
             """
             () => {

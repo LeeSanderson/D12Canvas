@@ -86,3 +86,7 @@ The router needs `Auto endpoint` (ADR 0027) to have a side to read. Until that s
 - **React Flow's gap-along-the-side curve offset**: kinks when the two sides are perpendicular.
 - **Avoiding every instance on the board**: a general routing problem that no reference tool solves for elbow connectors.
 - **Constraining which endpoints a style may use**: ADR 0027 already rejected it, and with a router that reads the side there is nothing left for it to protect.
+
+## Addendum (surfaced while moving code comments into ADRs)
+
+The custom-port row above is wrong about corners. `BorderPartition.SideOf` tests the vertical fraction first, so a corner belongs to Top or Bottom: a fraction of (1, 1) leaves Bottom, not Right. `EdgeRouter.SideOfFraction` routes from that side. ADR 0075 records the rule.

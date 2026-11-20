@@ -35,7 +35,6 @@ public static class ServiceCollectionExtensions
             return services;
         }
 
-        // The built-ins register before the host's types so the Palette lists them first.
         var options = new D12CanvasOptions();
         BuiltInComponents.RegisterAll(options);
         configure(options);

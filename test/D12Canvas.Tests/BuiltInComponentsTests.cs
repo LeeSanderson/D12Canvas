@@ -96,11 +96,6 @@ public class BuiltInComponentsTests
         Assert.Equal(Glyphs.Image, registration.Icon);
     }
 
-    // Every visual/style prop the four built-ins declare is panel-editable through one of the
-    // full built-in EditorKind set - Text content fields (StickyNote/Text's Text, Image's Url
-    // which is reserved for the Custom escape hatch) stay deliberately excluded. Each one also
-    // declares the role it plays, which is what lets a cross-type built-in selection share a row: a
-    // sticky note's Color is its background and plays Fill, while a text's Color plays TextColour.
     [Fact]
     public void RectangleEditablePropertiesCoverFillColorStrokeColorAndStrokeWidth()
     {
@@ -183,8 +178,6 @@ public class BuiltInComponentsTests
         );
     }
 
-    // Url may hold an asset reference in place of an ordinary URL, so the canvas resolves it
-    // before the Image ever sees it. No other built-in property holds stored content.
     [Fact]
     public void ImageUrlIsTheOnlyBuiltInAssetReference()
     {

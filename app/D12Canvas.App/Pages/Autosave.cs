@@ -2,8 +2,6 @@ namespace D12Canvas.App.Pages;
 
 public sealed record SaveStatus(string? Icon, string Text);
 
-// Delayed saves and the end of the saved notice come back through dispatch, the component's
-// InvokeAsync, so they run on the renderer's thread.
 public sealed class Autosave : IDisposable
 {
     private static readonly TimeSpan Debounce = TimeSpan.FromSeconds(1);
@@ -45,7 +43,6 @@ public sealed class Autosave : IDisposable
             (false, false) => new("cloud-check", "Saved"),
         };
 
-    // A burst of quick edits, several nudges say, ends in one save: each edit restarts the debounce.
     public void BoardChanged()
     {
         IsDirty = true;

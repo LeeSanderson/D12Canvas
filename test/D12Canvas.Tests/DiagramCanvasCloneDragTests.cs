@@ -107,8 +107,6 @@ public class DiagramCanvasCloneDragTests : ComponentTestBase
         Assert.Equal([edge], board.Edges);
     }
 
-    // A copied group shows selected through its own stop as a copied shape does through its
-    // container, and like that container it takes no focus until it is on the board.
     [Fact]
     public void MidCloneACopiedGroupHasItsOwnStopShownSelectedAndOutOfTheTabOrder()
     {

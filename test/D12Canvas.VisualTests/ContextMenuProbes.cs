@@ -4,10 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The menu dies on the next press, and what that press does depends on where it lands: inside the
-// canvas container it only closes the menu, outside it the host's own markup still acts. Keys
-// pressed in the menu stay in the menu. None of this is visible to bUnit, which never dispatches a
-// real event through the capture phase or up to the window listener.
 public sealed class ContextMenuProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -168,8 +164,6 @@ public sealed class ContextMenuProbes(PlaywrightFixture playwright, DemoAppFixtu
             $"menu {menu.X},{menu.Y} {menu.Width}x{menu.Height}; container "
             + $"{container.X},{container.Y} {container.Width}x{container.Height}; "
             + $"anchor {corner.X},{corner.Y}";
-        // The press point reaches the canvas rounded to a whole pixel, so the anchor may sit a
-        // pixel away from where the mouse was sent.
         Assert.True(menu.X + menu.Width <= corner.X + 2, $"the menu should open left: {boxes}");
         Assert.True(menu.Y + menu.Height <= corner.Y + 2, $"the menu should open up: {boxes}");
         foreach (var row in await Menu.Locator(".d12-context-menu-item").AllAsync())

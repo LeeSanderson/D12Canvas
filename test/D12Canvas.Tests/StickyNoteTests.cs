@@ -5,9 +5,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Sticky Note's own inline WYSIWYG text editor, rendered standalone (no ParentCanvas/InstanceId
-// cascaded) - so these cover the editor's own UI mechanics only. The actual Board/History commit
-// is covered end-to-end in DiagramCanvasInlineTextEditingTests.
 public class StickyNoteTests : ComponentTestBase
 {
     private readonly BunitJSModuleInterop _inlineEditorModule;

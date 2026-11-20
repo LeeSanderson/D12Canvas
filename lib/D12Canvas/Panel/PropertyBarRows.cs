@@ -6,10 +6,6 @@ using D12Canvas.Registration;
 
 namespace D12Canvas.Panel;
 
-// The two producers of property bar rows. Instance rows are the roles every selected instance's
-// type declares, each committing through the props batch; edge rows are the four edge roles, each
-// committing through the edge style. An instance role and an edge role never coincide, so a
-// selection holding both kinds has no row in common and gets none. Rows follow the role order.
 internal static class PropertyBarRows
 {
     public static IReadOnlyList<PropertyBarRow> For(
@@ -241,7 +237,6 @@ internal static class PropertyBarRows
 
     private static string RowId(PropertyRole role) => $"d12-property-bar-{role}";
 
-    // A control reports a string; a value that does not parse as the role's type commits nothing.
     private static bool TryConvert(
         object? raw,
         PropertyRoleDeclaration declaration,

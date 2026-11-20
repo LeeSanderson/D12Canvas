@@ -2,8 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Locking is a plain field write on an instance or an edge, the one command that acts on a locked
-// entity, since unlocking is how a lock ends.
 public sealed class ChangeLockedCommand : ICommand
 {
     private readonly Action<bool> _write;

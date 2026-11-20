@@ -3,10 +3,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Persistence;
 
-// Assets is omitted from the JSON entirely when null, so a board with no assets serialises
-// byte-for-byte as it did before the field existed, and defaults to null on read so a board saved
-// before it existed still deserializes - the same "field didn't exist yet" convention Groups and
-// Edges use.
 internal sealed record BoardEnvelope(
     int SchemaVersion,
     IReadOnlyList<ComponentInstanceEnvelope> Components,
@@ -18,10 +14,6 @@ internal sealed record BoardEnvelope(
 
 internal sealed record AssetEnvelope(string Id, string MimeType, byte[] Data);
 
-// CustomPorts defaults to null so a board saved before this property existed - missing it
-// entirely - still deserializes, same "field didn't exist yet" convention the Edge-level fields
-// below already rely on. A present-but-empty list and an absent property both map to "no custom
-// ports" (ComponentInstance's own ctor treats a null list the same as an empty one).
 internal sealed record ComponentInstanceEnvelope(
     Guid Id,
     string ComponentTypeKey,
@@ -36,23 +28,6 @@ internal readonly record struct PortDefEnvelope(Guid Id, double FractionX, doubl
 
 internal sealed record GroupEnvelope(Guid Id, IReadOnlyList<Guid> MemberIds);
 
-// An edge's endpoint round-trips as either an instance + standard port reference (PortEndpoint),
-// an instance + custom port reference (CustomPortEndpoint), or a board point (FloatingEndpoint) -
-// never a CLR-type discriminator, same convention as ComponentInstanceEnvelope's Props. Exactly
-// one combination of fields is populated; which one tells FromEndpointEnvelope which
-// IEdgeEndpoint shape to rebuild.
-//
-// RoutingStyle/SourceArrow/TargetArrow default to Edge's own defaults (Straight/None/Arrow) so a
-// board saved before these properties existed - missing them entirely - still deserializes, same
-// "field didn't exist yet" convention Groups/Edges themselves already use.
-//
-// Label defaults to null the same way - an edge saved before this property existed (or one that
-// simply never had a label added) has no "Label" property at all, and should still deserialize
-// with a null label rather than throwing.
-//
-// Color is omitted from the JSON when null, so a board with no coloured edges serialises
-// byte-for-byte as it did before the field existed, and an absent property reads as no colour.
-// Locked is omitted when false on an edge and on an instance alike, for the same reason.
 internal sealed record EdgeEnvelope(
     Guid Id,
     EdgeEndpointEnvelope Source,
@@ -65,10 +40,6 @@ internal sealed record EdgeEnvelope(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool Locked = false
 );
 
-// CustomPortId defaults to null (last positional, same "field didn't exist yet" tolerance the
-// rest of this envelope already relies on) so a board saved before this field existed still
-// deserializes every PortEndpoint/FloatingEndpoint it has unaffected. A ComponentId with no
-// PortId, CustomPortId or point is an AutoPortEndpoint, so that shape needed no field of its own.
 internal sealed record EdgeEndpointEnvelope(
     Guid? ComponentId,
     PortId? PortId,

@@ -3,12 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A primary press on an author's own content inside an instance belongs to the browser: the
-// listener takes no capture and tracks nothing, and C# hears only the press, which adds the
-// instance to the selection without taking anything out. An open inline editor is such content.
-// Content an author marked rather than a
-// control cannot take focus, so the browser would hand focus to the instance's tab stop and select
-// it outright; the listener prevents that press and focuses the canvas instead.
 public sealed class AuthorContentProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

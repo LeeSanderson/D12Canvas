@@ -8,9 +8,6 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// Canvas-rendered chrome: DiagramCanvas mounts it only while it should show and hands it the rows
-// and the selection's top edge in container pixels. The one thing the canvas cannot know is the
-// bar's own width, so the bar measures itself whenever its rows change and places itself from that.
 public partial class PropertyBar : IAsyncDisposable
 {
     internal const string ModulePath = "./_content/D12Canvas/PropertyBar.razor.js";
@@ -21,8 +18,6 @@ public partial class PropertyBar : IAsyncDisposable
     [Inject]
     private IServiceProvider Services { get; set; } = null!;
 
-    // A host that registers the canvas's services by hand rather than through AddD12Canvas still
-    // gets the default presets.
     private IReadOnlyList<ColourPreset> ColourPresets =>
         (Services.GetService(typeof(ColourPresetCatalog)) as ColourPresetCatalog)?.Presets
         ?? ColourPresetCatalog.Defaults;
@@ -50,8 +45,6 @@ public partial class PropertyBar : IAsyncDisposable
     [Parameter]
     public double ContainerHeight { get; set; }
 
-    // The canvas's own transform transition while a framing flight runs, so the bar travels with
-    // the content instead of arriving ahead of it.
     [Parameter]
     public TimeSpan FlightDuration { get; set; }
 
@@ -63,14 +56,8 @@ public partial class PropertyBar : IAsyncDisposable
     private (double Left, double Top) _shown;
     private string? _shownLayout;
 
-    // A row still mixed after an edit renders the same empty value as before, so Blazor would keep
-    // whatever was typed into it. Keying a mixed row on the edit count rebuilds it after every edit.
-    // A choice chip holds nothing typed and keeps its plain id, so a pick from a mixed row leaves
-    // the chip in place for the closing flyout to hand focus back to.
     private int _edits;
 
-    // The native picker opens on the input's value, and confirming that value fires no change, so
-    // a swatch with no single colour holds one nobody is likely to pick rather than black.
     private const string UnsetSwatchValue = "#010203";
 
     private const string UnlockOnlyLayout = "unlock";
@@ -80,17 +67,12 @@ public partial class PropertyBar : IAsyncDisposable
             ? UnlockOnlyLayout
             : string.Join("|", Rows.Select(row => $"{row.Id}:{row.Kind}"));
 
-    // A chip's width follows the value it shows, so the bar measures itself again whenever a shown
-    // value changes, not only when its rows do.
     private string MeasuredContent =>
         Locks.IsFull
             ? UnlockOnlyLayout
             : string.Join("|", Rows.Select(row => $"{row.Id}:{row.Kind}:{ChipValue(row)}"))
                 + (Locks.IsPartial ? $"|locks:{Locks.Fraction}" : "");
 
-    // Unlock replaces itself with the chips, so focus would fall to the page. Pressed from the
-    // keyboard, which a click's zero Detail tells apart, focus lands on the first chip instead. A
-    // pointer press leaves it, since focus inside the bar keeps the selection chrome hidden.
     private bool _focusFirstControlAfterUnlock;
 
     private async Task Unlock(MouseEventArgs args)
@@ -142,8 +124,6 @@ public partial class PropertyBar : IAsyncDisposable
         Reposition();
     }
 
-    // Once measured, a bar keeps its place through a move smaller than the minimum, as long as its
-    // rows are the same ones it was showing.
     private void Reposition()
     {
         var target = PropertyBarPlacement.Place(
@@ -202,9 +182,6 @@ public partial class PropertyBar : IAsyncDisposable
         }
     }
 
-    // The picker opens on the swatch's own value and the browser fires no change when a pick ends
-    // on that value, so the last colour the picker reported is held and lands when the swatch is
-    // left. A change commits it at once and drops the hold.
     private (string RowId, object? Value)? _heldPick;
 
     private void HoldPick(PropertyBarRow row, ChangeEventArgs args) =>
@@ -258,8 +235,6 @@ public partial class PropertyBar : IAsyncDisposable
         UseThemeColour(row);
     }
 
-    // A chip in the bar's second half opens its flyout leftwards from its own right edge, so the
-    // flyout of a chip near the bar's end stays over the bar rather than past it.
     private string FlyoutPlacement(PropertyBarRow row)
     {
         var index = Rows.ToList().FindIndex(candidate => candidate.Id == row.Id);

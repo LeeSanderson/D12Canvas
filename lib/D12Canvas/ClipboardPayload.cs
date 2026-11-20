@@ -6,9 +6,6 @@ using D12Canvas.Registration;
 
 namespace D12Canvas;
 
-// The clipboard carries a board envelope as plain text, recognised by its shape rather than by a
-// marker, so the text of a saved board file pastes as well as a copy does. Anything else that has
-// text in it becomes a text shape.
 internal static class ClipboardPayload
 {
     public const string TextComponentKey = "text";
@@ -35,8 +32,6 @@ internal static class ClipboardPayload
         }
     }
 
-    // A recognised board goes through the same tolerant load a saved file can, so one entity that
-    // cannot be bound costs that entity and a warning. Every id in the result is new.
     public static Read? From(string text, IBoardSerializer serializer, IComponentRegistry registry)
     {
         if (IsBoard(text))

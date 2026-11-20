@@ -6,9 +6,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The adaptive multi-layer grid - concurrent layers 10x apart in board-unit spacing, crossfading
-// via linear interpolation as zoom crosses each layer's legibility threshold so there's never a
-// discrete pop between them.
 public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
 {
     public DiagramCanvasAdaptiveGridTests()
@@ -62,7 +59,7 @@ public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
     {
         var canvas = Render<DiagramCanvas>();
 
-        ZoomOut(canvas, 5); // scale -> ~0.5, midway between layer 0 (20 units) and layer 1 (200 units)
+        ZoomOut(canvas, 5);
 
         var layers = canvas.FindAll(".grid-layer");
         Assert.Equal(2, layers.Count);
@@ -133,7 +130,7 @@ public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
         var style = layer.GetAttribute("style")!;
 
         Assert.Equal(20, ExtractBackgroundSize(style), precision: 6);
-        Assert.Contains("background-position: 15px 15px", style); // PositiveMod(-5, 20) == 15
+        Assert.Contains("background-position: 15px 15px", style);
     }
 
     [Fact]
@@ -141,13 +138,11 @@ public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
     {
         var canvas = Render<DiagramCanvas>();
 
-        ZoomOut(canvas, 30); // well past the point Scale clamps to its MinPositiveScale floor
+        ZoomOut(canvas, 30);
 
         var layer = Assert.Single(canvas.FindAll(".grid-layer"));
         var style = layer.GetAttribute("style")!;
 
-        // At the floor, this layer's on-screen spacing lands back at the same legible 20px the
-        // default zoom shows - the whole point of the adaptive grid over the old fixed one.
         Assert.Equal(20, ExtractBackgroundSize(style), precision: 3);
         Assert.Equal(1.0, ExtractOpacity(style), precision: 6);
     }
@@ -157,7 +152,7 @@ public class DiagramCanvasAdaptiveGridTests : ComponentTestBase
     {
         var canvas = Render<DiagramCanvas>();
 
-        ZoomIn(canvas, 200); // no built-in ceiling by default - scale keeps climbing past 10x
+        ZoomIn(canvas, 200);
 
         var styles = canvas.FindAll(".grid-layer").Select(l => l.GetAttribute("style")!).ToList();
 

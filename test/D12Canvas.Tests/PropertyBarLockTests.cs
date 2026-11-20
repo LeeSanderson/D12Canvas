@@ -11,8 +11,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A partly locked selection ends the property bar with a lock count; a fully locked one keeps the
-// bar where it would stand and offers only Unlock.
 public sealed class PropertyBarLockTests : ComponentTestBase
 {
     private readonly Board _board = new();
@@ -43,8 +41,6 @@ public sealed class PropertyBarLockTests : ComponentTestBase
             )
             .ReturnToOrigin();
 
-    // A right-click is the one pointer route that selects a locked shape; Escape then closes its
-    // menu, which hides the bar while it is open.
     private async Task<IRenderedComponent<DiagramCanvas>> RenderWithAGroupSelected(
         int lockedMembers
     )

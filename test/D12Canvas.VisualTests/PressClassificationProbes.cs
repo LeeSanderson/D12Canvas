@@ -3,9 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A middle-button press is dispatched straight at each marked element, so the walk starts from
-// exactly that element whatever lies on top of it, and the middle button is used because the
-// listener forwards it from every role and it changes nothing on release.
 public sealed class PressClassificationProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -179,9 +176,6 @@ public sealed class PressClassificationProbes(PlaywrightFixture playwright, Demo
         await ClearCallsAsync();
     }
 
-    // The press goes to the element itself, or to markup injected as its last child when the
-    // case needs content no registered component renders, and the release goes to the canvas,
-    // which holds capture by then.
     private async Task DispatchMiddleClickAtAsync(string selector, string? injectedChild)
     {
         await Page.EvaluateAsync(

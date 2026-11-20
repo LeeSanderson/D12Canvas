@@ -73,7 +73,7 @@ public class RemoveEdgeCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         Assert.Null(board.GetEdge(edge.Id));
     }

@@ -4,9 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A colour nobody chose is null and resolves from a board token in the component's own CSS; an
-// authored colour is emitted as an override custom property that the same rule prefers. Nothing
-// in C# knows which theme is live, so the swap happens entirely in CSS.
 public class ThemedDefaultTests : ComponentTestBase
 {
     [Fact]

@@ -3,19 +3,13 @@ using D12Canvas.Model;
 
 namespace D12Canvas;
 
-// One end of an edge as the router sees it: where it resolves, the side it leaves along, and the
-// bounds of the shape it is attached to (null for a floating end).
 internal readonly record struct RouteEnd(double X, double Y, PortId Side, Bounds? Shape)
 {
     public (double X, double Y) Point => (X, Y);
 }
 
-// Everything a route depends on. Two equal requests always give the same route, which is what
-// lets a route be cached until one of these changes.
 internal readonly record struct RouteRequest(EdgeRouting Style, RouteEnd Source, RouteEnd Target);
 
-// A routed edge. Points is the polyline for Straight and Orthogonal, and the start, both control
-// points and the end of the cubic for Curved.
 internal sealed class EdgeRoute
 {
     public EdgeRoute(RouteRequest request, IReadOnlyList<(double X, double Y)> points)
@@ -50,8 +44,6 @@ internal sealed class EdgeRoute
         IReadOnlyList<(double X, double Y)> points
     ) => HalfwayAlong(style == EdgeRouting.Curved ? Flattened(points) : points);
 
-    // Enough chords that halfway along them is within a fraction of a board unit of halfway along
-    // the curve for any edge a board holds.
     private const int CurveChords = 64;
 
     private static IReadOnlyList<(double X, double Y)> Flattened(
@@ -102,9 +94,6 @@ internal sealed class EdgeRoute
         Math.Sqrt((to.X - from.X) * (to.X - from.X) + (to.Y - from.Y) * (to.Y - from.Y));
 }
 
-// Draws an edge from its two ends. Orthogonal leaves each end along its side by the stub and takes
-// the cheapest orthogonal path clear of both connected shapes inflated by the stub, falling back to
-// the cheapest path that ignores them; Curved puts each control point on its end's normal.
 internal static class EdgeRouter
 {
     public const double Stub = DiagramCanvas.GridBaseSpacing;
@@ -128,8 +117,6 @@ internal static class EdgeRouter
             }
         );
 
-    // The side a floating end leaves along: whichever axis points more towards the other end, in
-    // that direction, a tie going horizontal.
     public static PortId PseudoSide((double X, double Y) from, (double X, double Y) towards)
     {
         var dx = towards.X - from.X;
@@ -142,8 +129,6 @@ internal static class EdgeRouter
         return dy >= 0 ? PortId.Bottom : PortId.Top;
     }
 
-    // The border a custom port's fraction lies on, by the border partition's rule, or the nearest
-    // border for a fraction inside the shape.
     public static PortId SideOfFraction(double fractionX, double fractionY) =>
         BorderPartition.SideOf(fractionX, fractionY)
         ?? AutoPortSide.Facing(new Bounds(0, 0, 1, 1), (fractionX, fractionY));
@@ -258,8 +243,6 @@ internal static class EdgeRouter
         }
     }
 
-    // Coordinates a path may run along on one axis, the gap between the shapes and the midpoint
-    // between the stubs first, so that among equally cheap paths the centred one wins.
     private static List<double> Lanes(
         double startStub,
         double endStub,
@@ -369,8 +352,6 @@ internal static class EdgeRouter
         return false;
     }
 
-    // How the run b-c turns from the run a-b: a zero cross product means it carries on in line,
-    // and then a negative dot product means it goes straight back.
     private static (double Cross, double Dot) Turn(
         (double X, double Y) a,
         (double X, double Y) b,
@@ -384,8 +365,6 @@ internal static class EdgeRouter
     private static List<(double X, double Y)> Reversed(IReadOnlyList<(double X, double Y)> path) =>
         Enumerable.Reverse(path).ToList();
 
-    // Drops repeated points and merges runs that carry on in the same direction; a run that
-    // turns straight back is kept, so DoublesBack can reject it.
     private static List<(double X, double Y)> Simplify(IEnumerable<(double X, double Y)> points)
     {
         var result = new List<(double X, double Y)>();

@@ -4,8 +4,6 @@ using D12Canvas.Registration;
 
 namespace D12Canvas.Tests;
 
-// The canvas-side seam a pointer gesture sees, replaced by plain state so a gesture can be driven
-// with presses, moves and a release and asked what it published and what it committed.
 internal sealed class FakeGestureContext : IGestureContext
 {
     public FakeGestureContext(Board board, ZoomPanTracker? zoomPan = null)

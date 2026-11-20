@@ -11,8 +11,6 @@ public sealed class EdgeLabelVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public EdgeLabelVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -47,9 +45,6 @@ public sealed class EdgeLabelVisualTests : IAsyncLifetime
         );
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(1);
 
-        // A straight line's box is centred on the line's own midpoint, so a double-click there
-        // lands on the line whatever its slope and adds the default (empty) Text label, opened
-        // for typing.
         var midpoint = await PortGestures.CentreOfAsync(_page.Locator(".edge-line"));
         await _page.Mouse.DblClickAsync(midpoint.X, midpoint.Y);
         await Expect(_page.Locator(".edge-label textarea.d12-text-editor")).ToBeFocusedAsync();

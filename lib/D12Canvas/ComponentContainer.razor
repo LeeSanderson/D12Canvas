@@ -18,8 +18,6 @@
         @ChildContent
     </div>
 
-    @* The border partition: each side's port spans and, on a selected shape, its resize spans.
-       The spans are the hit regions and draw nothing; the cursor is what tells them apart. *@
     @foreach (var span in _partition)
     {
         if (span.Kind == BorderSpanKind.Port)
@@ -34,7 +32,6 @@
         }
     }
 
-    @* Each port's dot, drawn where its span survives and wherever the keyboard pick highlights it. *@
     @foreach (var side in StandardPorts.All)
     {
         if (ShowsStandardPort(side))

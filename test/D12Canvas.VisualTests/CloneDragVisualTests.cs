@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The clone drag demo board: two rectangles side by side joined by an edge. Both are selected and
-// dragged down, and Alt pressed mid-drag puts copies of both and their edge under the pointer with
-// the selected look, while the originals show unselected where they were.
 public sealed class CloneDragVisualTests : IAsyncLifetime
 {
     private const string LeftId = "e0000000-0000-0000-0000-000000000001";
@@ -17,8 +14,6 @@ public sealed class CloneDragVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public CloneDragVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

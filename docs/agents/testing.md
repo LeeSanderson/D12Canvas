@@ -4,7 +4,7 @@ Two layers, per the [layered testing strategy](../../.scratch/d12canvas-next/iss
 
 ## Build
 
-`dotnet build` builds the whole solution. A `Directory.Build.props` pre-build target runs `dotnet csharpier --check .` and fails the build on anything unformatted - run `dotnet csharpier .` first whenever you're not sure the tree is clean.
+`dotnet build` builds the whole solution. `global.json` pins the SDK, and the bUnit job in `.github/workflows/ci.yml` names the same version in `dotnet-version`. Change both together. The visual-tests job gets that SDK from the pinned Playwright image. A `Directory.Build.props` pre-build target runs `dotnet csharpier --check .` and fails the build on anything unformatted - run `dotnet csharpier .` first whenever you're not sure the tree is clean.
 
 ## bUnit (component logic, markup, state)
 

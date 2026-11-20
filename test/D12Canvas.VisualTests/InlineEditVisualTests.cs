@@ -4,7 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A sticky note on a dark board, opened for editing by a double-press, its text all selected.
 public sealed class InlineEditVisualTests : IAsyncLifetime
 {
     private const string NoteId = "1d170000-0000-0000-0000-000000000001";
@@ -13,8 +12,6 @@ public sealed class InlineEditVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public InlineEditVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

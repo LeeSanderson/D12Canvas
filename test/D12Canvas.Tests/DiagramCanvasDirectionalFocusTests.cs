@@ -7,9 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The move lands through focusTabStopAt, which the browser turns into a real focus on the stop at
-// that index. These tests read the index back against the rendered stops and focus that stop the
-// way the browser would. DirectionalFocusProbes shows the real keys arriving.
 public class DiagramCanvasDirectionalFocusTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

@@ -139,10 +139,10 @@ public class HistoryTests
         );
 
         Assert.False(history.CanRedo);
-        history.Redo(); // no-op: the new gesture already abandoned the undone command
+        history.Redo();
 
-        Assert.Equal(new Bounds(0, 0, 50, 50), first.Bounds); // never reapplied
-        Assert.Equal(new Bounds(120, 10, 50, 50), second.Bounds); // unaffected by the no-op redo
+        Assert.Equal(new Bounds(0, 0, 50, 50), first.Bounds);
+        Assert.Equal(new Bounds(120, 10, 50, 50), second.Bounds);
     }
 
     [Fact]
@@ -165,8 +165,6 @@ public class HistoryTests
             new Bounds(0, 0, 10, 10)
         );
 
-        // Three gestures recorded against a capacity of 2 - the oldest entry (touching `oldest`)
-        // is dropped from the buffer before any undo happens.
         history.Do(
             new ChangeBoundsCommand(oldest, new Bounds(0, 0, 10, 10), new Bounds(1, 1, 10, 10))
         );
@@ -179,9 +177,9 @@ public class HistoryTests
 
         history.Undo();
         history.Undo();
-        history.Undo(); // nothing left to undo - the third gesture was already dropped
+        history.Undo();
 
-        Assert.Equal(new Bounds(1, 1, 10, 10), oldest.Bounds); // dropped before it could be undone
+        Assert.Equal(new Bounds(1, 1, 10, 10), oldest.Bounds);
         Assert.Equal(new Bounds(0, 0, 10, 10), middle.Bounds);
         Assert.Equal(new Bounds(0, 0, 10, 10), newest.Bounds);
     }

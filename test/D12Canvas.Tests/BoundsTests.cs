@@ -52,11 +52,11 @@ public class BoundsTests
     }
 
     [Theory]
-    [InlineData(0.5, 0, 60, 10)] // top center
-    [InlineData(1, 0.5, 110, 35)] // right center
-    [InlineData(0.5, 1, 60, 60)] // bottom center
-    [InlineData(0, 0.5, 10, 35)] // left center
-    [InlineData(0, 0, 10, 10)] // origin
+    [InlineData(0.5, 0, 60, 10)]
+    [InlineData(1, 0.5, 110, 35)]
+    [InlineData(0.5, 1, 60, 60)]
+    [InlineData(0, 0.5, 10, 35)]
+    [InlineData(0, 0, 10, 10)]
     public void PointAtFractionResolvesAFractionOfTheBox(
         double fractionX,
         double fractionY,

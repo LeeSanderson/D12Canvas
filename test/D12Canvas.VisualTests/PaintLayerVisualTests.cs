@@ -6,10 +6,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The paint layers demo board, at the view its initial fit chose, with board points placed on the
-// page through the content element's transform.
-// What the browser hit-tests at a point is the topmost painted element there, so each hit check
-// asserts paint order and hit order at once.
 public sealed class PaintLayerVisualTests : IAsyncLifetime
 {
     private const string CrossingId = "b0000000-0000-0000-0000-000000000003";
@@ -19,8 +15,6 @@ public sealed class PaintLayerVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PaintLayerVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

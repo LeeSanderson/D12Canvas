@@ -4,16 +4,10 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// The canvas owns the minimap's press as it owns every other: the minimap's listener reports it
-// here, and its moves, release and cancel arrive through the same entry points a press on the
-// board uses. The minimap's press never steps out of a group or touches the selection.
 public partial class DiagramCanvas
 {
-    // Where a press on the minimap sends focus, so Escape reaches the canvas while it pans.
     internal ElementReference MinimapFocusTarget => CanvasElement;
 
-    // False when another press already owns the pointer, in which case the minimap's press is
-    // dropped as any second press is.
     internal bool BeginMinimapPan(
         PointerPress press,
         Func<double, double, (double X, double Y)> toBoardPoint,

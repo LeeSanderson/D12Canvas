@@ -43,10 +43,6 @@
     private DiagramCanvas? _canvas;
     private readonly Board _board = new();
 
-    // DiagramCanvas is declared after Palette/PropertyPanel in the markup above, so its @ref isn't
-    // captured until after they've already received their first (null) Canvas parameter (see
-    // PlacementDemo.razor). Forcing one extra render pass lets both pick up the now-non-null
-    // reference.
     protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)

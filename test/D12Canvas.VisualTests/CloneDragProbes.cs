@@ -5,8 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Alt reaches a drag through the real keyboard, both held from the press and pressed or released
-// with the pointer still, which bUnit's direct calls never exercise.
 public sealed class CloneDragProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

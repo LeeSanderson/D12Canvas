@@ -4,8 +4,6 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// A quick create duplicates through the same fragment path as Ctrl+D, so every id on the copy is
-// fresh, but it never starts a duplicate run: its own chain is pressing the new node's side.
 public partial class DiagramCanvas
 {
     private const int QuickCreateGapCells = 2;

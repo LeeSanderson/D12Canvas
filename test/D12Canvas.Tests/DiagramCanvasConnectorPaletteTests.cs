@@ -8,10 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The built-in "Edge" palette entry - not a registry registration (Edge isn't a component
-// type) - flows through the exact same BeginPaletteDrag/ClickToAdd gesture plumbing every other
-// palette entry uses, but drops a new Edge with both endpoints floating instead of a
-// ComponentInstance.
 public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -86,8 +82,6 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         var board = new Board();
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
 
-        // Container is 800x600 (see ComponentTestBase.SetupDiagramCanvasJsModule) at scale 1 with
-        // no pan, so the viewport center in board coordinates is (400, 300).
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(DiagramCanvas.EdgePaletteKey));
 
         var edge = Assert.Single(board.Edges);
@@ -95,9 +89,6 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         Assert.Equal(new FloatingEndpoint(440, 300), edge.Target);
     }
 
-    // The cascade counter is shared, global, and never resets across gesture kinds - a
-    // click-to-add connector right after a click-to-add shape still bumps the same counter, so
-    // neither stacks invisibly on the other.
     [Fact]
     public async Task ConsecutiveClickToAddsCascadeTheConnectorPlacementTooSharingTheSameCounterAsComponents()
     {
@@ -113,8 +104,6 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         Assert.Equal(new FloatingEndpoint(460, 320), edge.Target);
     }
 
-    // A connector has no tab stop of its own, so unlike a component placement this leaves no
-    // instance selected and makes no focusTabStopAt call.
     [Fact]
     public async Task ClickToAddingAConnectorSelectsAndFocusesNothing()
     {
@@ -143,14 +132,11 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         Assert.Single(board.Edges);
     }
 
-    // The reattach gesture, exercised end-to-end starting from a connector-dropped edge rather
-    // than a port-drag-created one - the mechanics are identical either way, since both endpoints
-    // are already ordinary FloatingEndpoints once the edge exists.
     [Fact]
     public void BothFloatingEndsOfADroppedConnectorCanLaterBeAttachedToAPort()
     {
         var board = new Board();
-        var target = AddInstance(board, 500, 400); // left port at (500, 425)
+        var target = AddInstance(board, 500, 400);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.ReturnToOrigin();
 
@@ -158,8 +144,6 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
         Assert.Single(board.Edges);
 
-        // FloatingEndpoints() yields an edge's source before its target (DiagramCanvas.razor) - the
-        // dropped connector's target end sits at (340, 250).
         var markers = canvas.FindAll(".floating-endpoint");
         Assert.Equal(2, markers.Count);
         var targetMarker = markers[1];
@@ -170,7 +154,7 @@ public class DiagramCanvasConnectorPaletteTests : ComponentTestBase
 
         var edge = Assert.Single(board.Edges);
         Assert.Equal(new PortEndpoint(target.Id, PortId.Left), edge.Target);
-        Assert.Equal(new FloatingEndpoint(260, 250), edge.Source); // the other end is left untouched
+        Assert.Equal(new FloatingEndpoint(260, 250), edge.Source);
         Assert.Single(canvas.FindAll(".floating-endpoint"));
     }
 }

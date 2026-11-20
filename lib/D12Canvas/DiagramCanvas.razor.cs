@@ -17,9 +17,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Inject]
     private IComponentRegistry Registry { get; set; } = null!;
 
-    // Sized to absorb a fast pan: moves reach the canvas once per animation frame, so the pointer
-    // can travel well past this before the next windowed re-render lands, but a much larger
-    // margin just inflates mount/unmount cost for no visible benefit.
     public const double DefaultOverscan = 200;
 
     [Parameter]
@@ -34,25 +31,17 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Parameter]
     public double? MaxZoom { get; set; }
 
-    // Small enough that no built-in's default size ever crosses it at a normal (near-1.0) zoom
-    // level - it only bites once zooming out far enough actually shrinks an instance past
-    // legibility.
     public const double DefaultLodSizeThreshold = 32;
 
     [Parameter]
     public double LodSizeThreshold { get; set; } = DefaultLodSizeThreshold;
 
-    // Not persisted. OnToggleSnapToGridPressed flips it directly and notifies SnapToGridChanged,
-    // so a host using @bind-SnapToGrid stays in sync with the Ctrl+' shortcut.
     [Parameter]
     public bool SnapToGrid { get; set; } = true;
 
     [Parameter]
     public EventCallback<bool> SnapToGridChanged { get; set; }
 
-    // Aligns what a move or resize carries with the edges and centres of the shapes on screen,
-    // drawing a guide along each match. Independent of SnapToGrid: where both are on, object
-    // snapping takes any axis it matches and the grid fills the other.
     [Parameter]
     public bool ObjectSnapping { get; set; }
 
@@ -62,8 +51,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     [Parameter]
     public bool EnableSnapToGridShortcut { get; set; } = true;
 
-    // Decides what a plain wheel means, whether Shift binds and whether the wheel's transform
-    // eases. The library renders no control for it and remembers nothing; that is the host's.
     [Parameter]
     public WheelDeviceProfile WheelDeviceProfile { get; set; } = WheelDeviceProfile.Auto;
 
@@ -74,9 +61,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     public EventCallback<ZoomPanChangedEventArgs> OnZoomOrPanChanged { get; set; }
     public event EventHandler<ZoomPanChangedEventArgs>? ZoomOrPanChanged;
 
-    // Sibling chrome such as the property panel re-renders on this, since Blazor's auto-rerender
-    // only covers this component's own tree. Undo and redo raise it too: they can change what the
-    // panel shows for an unchanged selection.
     public event EventHandler? SelectionChanged;
 
     private void NotifySelectionChanged()
@@ -99,10 +83,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
-    // Every component instance under the selection, a selected group contributing its members
-    // recursively, so there is never a subset of the selection the panel would edit silently. A
-    // selected edge contributes nothing here and is read through SelectedEdges. One instance is
-    // the "edit exactly one" case; 2+ (same type or cross-type) is the bulk-edit case.
     public IReadOnlyList<ComponentInstance> SelectedComponents => ResolvedSelection();
 
     public IReadOnlyList<Edge> SelectedEdges =>
@@ -110,39 +90,24 @@ public partial class DiagramCanvas : IAsyncDisposable
             ? Array.Empty<Edge>()
             : _selectedEdgeIds.Select(Board.GetEdge).OfType<Edge>().ToList();
 
-    // Blazor's DragEventArgs.DataTransfer has no SetData/GetData, so Palette stashes the dragged
-    // type here through BeginPaletteDrag for HandleDrop to read back.
     private string? _pendingPaletteDragKey;
     private bool _isDragOverBoard;
 
-    // Edge is not a registered component type, so the Palette's Edge button has no registry
-    // key. This sentinel goes through the same palette plumbing, and PlaceComponent routes it to
-    // PlaceConnector.
     internal const string EdgePaletteKey = "__d12-edge__";
 
     public void BeginPaletteDrag(string componentTypeKey) =>
         _pendingPaletteDragKey = componentTypeKey;
 
-    // Click-to-add places at the viewport centre, cascading each successive click so repeated
-    // adds don't stack exactly. The counter is global and never resets: there is no placement
-    // session to reset it on.
     private const double ClickToAddCascadeStep = 20;
     private int _clickToAddCascadeCount;
 
-    // Selection is transient view state - it lives here, never on Board, and is never
-    // serialized or tracked by undo/redo. Two parallel sets, because instance, group and edge ids are all bare Guids that only Board can
-    // tell apart, and an edge id must never reach group expansion.
     private readonly HashSet<Guid> _selectedInstanceIds = new();
     private readonly HashSet<Guid> _selectedEdgeIds = new();
 
-    // The entered group is the last id; each earlier id is the group the next one was entered
-    // from, kept so the scope can fall back to the nearest one that still exists.
     private readonly List<Guid> _enteredGroupIds = new();
 
     private Guid? EnteredGroupId => _enteredGroupIds.Count > 0 ? _enteredGroupIds[^1] : null;
 
-    // Anchored in container-relative pixels, not board space, so the menu doesn't pan or zoom
-    // with the board.
     private sealed record ContextMenuState(
         double X,
         double Y,
@@ -152,25 +117,17 @@ public partial class DiagramCanvas : IAsyncDisposable
         CustomPortEndpoint? PortToRemove = null
     );
 
-    // Read once when the listeners start, for the pointer path's Ctrl+click and for shortcut hints.
     private bool _applePlatform;
     private Dictionary<string, string>? _keyLabels;
 
     private ContextMenuState? _contextMenu;
 
-    // Session-scoped, in-memory undo/redo - lives here, not on Board, for
-    // the same reason selection does; never serialized, never survives a reload.
     private readonly CommandHistory _history = new();
 
     private readonly ZoomPanTracker _zoomPanTracker = new ZoomPanTracker();
 
     public ZoomPanTracker ZoomPanTracker => _zoomPanTracker;
 
-    // Every press the browser-side listener forwards resolves to exactly one pointer gesture,
-    // chosen here once the interop hop lands because the choice needs the selection, and that
-    // gesture owns the pointer until its claiming button comes up. Its identity never changes
-    // mid-press, only its phase. The selection and the entered group as they stood before the
-    // press stepped out of anything are kept so a cancel can put both back.
     private PointerGesture? _activeGesture;
     private PointerMove? _lastPointer;
     private PressScope? _pressScope;
@@ -192,28 +149,14 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private readonly EdgeRouteCache _routes = new();
 
-    // The participants of the live gesture that have been mounted at some point during it, each
-    // with the placeholder state it was mounted with. Mounting only grows until release, so an
-    // instance carried past the viewport edge stays in the user's hand, and a placeholder never
-    // swaps for the full component mid-gesture or back.
     private readonly Dictionary<Guid, bool> _stickyParticipants = new();
 
-    // The full component mounted for each instance, kept so the canvas can ask one to begin an
-    // inline edit. A remount overwrites its entry, and an entry goes once its instance leaves the
-    // board.
     private readonly Dictionary<Guid, DynamicComponent> _mountedComponents = new();
 
-    // The label component mounted for each labelled edge, keyed by edge id, kept so a double-press
-    // on a label can open its editor.
     private readonly Dictionary<Guid, DynamicComponent> _mountedLabels = new();
 
     private LiveGeometry Live => new(Board!, _preview);
 
-    // Keyboard connector attachment. The picked port is held as a real endpoint, never a
-    // FloatingEndpoint, so OnEnterPressed can hand it straight to a new Edge.
-    // _pendingConnectorSource is armed by the first Enter and survives the Tab navigation to the
-    // target. Native Tab is never intercepted, so FocusEntity clears stale picking state, since
-    // every focus change passes through it.
     private Guid? _portFocusInstanceId;
     private IEdgeEndpoint _portFocusEndpoint = new PortEndpoint(Guid.Empty, PortId.Top);
     private IEdgeEndpoint? _pendingConnectorSource;
@@ -225,31 +168,18 @@ public partial class DiagramCanvas : IAsyncDisposable
     private IJSObjectReference? _jsModule;
     private IJSObjectReference? _pointerListener;
 
-    // The listener that holds the live press, which is the minimap's for a MinimapPan.
     private IJSObjectReference? _pressListener;
 
-    // How long the content's transform eases toward the viewport's last write: the wheel device's
-    // ambient duration when a wheel made that write, the framing flight's for a viewport command,
-    // and nothing for any other input.
     private TimeSpan _ambientTransition = TimeSpan.Zero;
     private bool _applyingWheel;
     private (double Scale, double PanX, double PanY) _lastTransform = (1, 0, 0);
 
-    // The new group's tab stop doesn't exist in the DOM until the grouping render commits, so
-    // focus waits for OnAfterRenderAsync.
     private bool _pendingGroupFocus;
 
-    // Keyed by id rather than index: the target's index among tab stops isn't known until the
-    // render that mounts its stop commits.
     private Guid? _pendingFocusId;
 
-    // Tracked separately from the selection because inside additive traversal focus moves
-    // without selecting.
     private Guid? _focusedTabStopId;
 
-    // Additive traversal: started by Space on a focused stop, and while it is on a focus landing
-    // moves focus only. Every press, Escape, Enter on a group stop, focus leaving the container
-    // and a command handing focus to a target of its choosing ends it.
     private bool _additiveTraversal;
 
     protected override void OnInitialized()
@@ -259,8 +189,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         _dotNetObjectRef = DotNetObjectReference.Create(this);
     }
 
-    // A host replacing the Board reference mid-press cancels the gesture without restoring the
-    // selection snapshot, which names entities in a model that is gone.
     protected override void OnParametersSet()
     {
         _zoomPanTracker.SetZoomLimits(MinZoom, MaxZoom);
@@ -279,8 +207,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // Chrome wired to this canvas by reference, such as the minimap, hears of a new Board here,
-    // since a swap that leaves the viewport where it was raises no other event.
     internal event EventHandler? BoardReplaced;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -397,10 +323,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // The four pointer entry points. The listener has already classified the press and taken the
-    // synchronous decisions; what arrives here is a press whose owner this canvas chooses, moves
-    // that are real drags (the listener never forwards one below the threshold), and the one
-    // release or interruption that ends the press.
     [JSInvokable]
     public void OnPointerPressed(PointerPress press)
     {
@@ -468,8 +390,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         _history.Lock();
     }
 
-    // The board has the last word on the lock the listener read from the markup. A primary press
-    // on a locked entity is a press on empty canvas, so it steps out and marquees as one would.
     private PointerPress WithLockRead(PointerPress press)
     {
         var locked = press.Locked || press.EntityId is { } id && IsLocked(id);
@@ -530,9 +450,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // A live gesture keeps what the pointer holds under the pointer: it runs again from the
-    // pointer's last position, and a press the change promoted out of pointing starts having its
-    // moves forwarded by the listener.
     private void RunGestureUnderMovedViewport()
     {
         if (
@@ -546,8 +463,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // History unlocks before the gesture acts on its release, so the release is the one write the
-    // board accepts while the gesture still owns it, and the preview it commits is dropped after.
     [JSInvokable]
     public void OnPointerReleased(PointerRelease release)
     {
@@ -562,8 +477,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // pointercancel, a lost capture and a window blur all mean the claiming release will never
-    // arrive on this page, so the gesture is cancelled and the press ends with it.
     [JSInvokable]
     public void OnPointerCancelled(string reason)
     {
@@ -577,13 +490,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // While any gesture owns the press, in any phase, nothing writes the board except that
-    // gesture's release and no keyboard command changes the selection.
     private bool PressOwnsBoard => _activeGesture is not null;
 
-    // Cancel is three canvas-level steps and no gesture implements any of them: drop the preview,
-    // restore the selection taken at press, mark the gesture cancelled. The viewport is never
-    // restored. A cancelled gesture keeps owning the press until its button comes up.
     private void CancelActiveGesture(bool restoreSelection)
     {
         if (_activeGesture is null || _activeGesture.Phase == GesturePhase.Cancelled)
@@ -604,8 +512,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         _activeGesture.MarkCancelled();
     }
 
-    // Callers often build the new sets out of the current ones, so both are materialised before
-    // either set is cleared.
     private void SetSelection(IEnumerable<Guid> instanceIds, IEnumerable<Guid> edgeIds)
     {
         var instances = instanceIds.ToList();
@@ -630,9 +536,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         CommitEditsEndedDuringPress();
     }
 
-    // A participant enters the sticky set the first time its live bounds are inside the viewport
-    // plus overscan, which for one already on screen is the press itself, and its placeholder
-    // state is resolved then from its committed bounds and held until release.
     private void PublishPreview(IReadOnlyDictionary<Guid, Bounds> boundsOverrides)
     {
         _preview.Publish(boundsOverrides);
@@ -655,8 +558,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // Committed bounds are still the press-time values here, since nothing writes Board
-    // mid-gesture, so each command's before-value comes straight off the field.
     private void CommitPreview()
     {
         if (Board is null)
@@ -716,8 +617,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // The one focus write per press lands here. The keyboard's anchor goes null with it, since a
-    // press invalidates whichever stop the keyboard was on and any port pick in progress there.
     private void HandleCanvasFocus()
     {
         EndPortPlacementOnFocus(null);
@@ -882,17 +781,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // With snap-to-grid off a nudge unit is one screen pixel (1 / Scale board units); with it on
-    // a unit is one dominant grid line. Only an empty selection falls back to the arrow-key pan; a
-    // selection with nothing to move (an edge whose ends are all attached) makes the key a no-op.
-    // PanStep is in screen pixels, because ZoomPanTracker's pan is, so a pan press covers the same
-    // screen distance at any zoom.
     private const double NudgeStep = 1;
     private const double NudgeStepCoarse = 10;
     private const double PanStep = 50;
 
-    // Extended by the repeat keydowns of a held arrow key and cleared on keyup, so the next press
-    // starts a fresh undo entry.
     private NudgeCommand? _activeNudgeCommand;
 
     [JSInvokable]
@@ -908,7 +800,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        // A custom port is reached via Space instead (OnSpacePressed).
         if (_portFocusInstanceId is { } focusedInstanceId)
         {
             if (PortIdForArrow(code) is { } portId)
@@ -1009,8 +900,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             )
             : coordinate + direction * ScreenNudgeStep(coarse);
 
-    // Read off the current geometry so each press in a held burst steps from where the last one
-    // landed. Null when nothing would move.
     private static Bounds? NudgeAnchor(
         IReadOnlyList<ComponentInstance> targets,
         IReadOnlyList<Edge> edges
@@ -1044,8 +933,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private const double GridLineTolerance = 1e-9;
 
-    // A coordinate already on a line counts as on it, within a tolerance that absorbs
-    // floating-point drift, so it moves a whole spacing rather than landing back where it started.
     private static double NextGridLine(
         double coordinate,
         double direction,
@@ -1073,7 +960,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             _ => (0, 0),
         };
 
-    // An arrow key moves the viewport in the pressed direction, so the content pans the other way.
     private void PanFor(string code)
     {
         var (dirX, dirY) = ArrowDirection(code);
@@ -1081,15 +967,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // One screen pixel at any zoom. Shift flips the anchor rather than coarsening the step, so
-    // there is no coarse value.
     private const double ResizeStep = 1;
 
-    // Coalesces a held Alt+Arrow burst like _activeNudgeCommand.
     private ResizeStepCommand? _activeResizeCommand;
 
-    // Single instance only: a multi-selection or a selected group has no keyboard resize and is
-    // a no-op, as is a port pick in progress.
     [JSInvokable]
     public void OnAltArrowKeyPressed(string code, bool shiftKey)
     {
@@ -1116,8 +997,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
         var (deltaX, deltaY) = ResizeStepDeltaFor(code, _zoomPanTracker.Scale);
 
-        // Matches also checks direction: a Shift toggle mid-burst flips the anchor, so it must
-        // start a fresh entry.
         if (
             _activeResizeCommand is not null
             && ReferenceEquals(_history.PeekUndo, _activeResizeCommand)
@@ -1135,8 +1014,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // The edge on the arrow's side grows outward; with Shift that edge is the anchor and the
-    // opposite edge moves toward it.
     private static ResizeDirection? ResizeDirectionFor(string code, bool shiftKey) =>
         code switch
         {
@@ -1147,7 +1024,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             _ => null,
         };
 
-    // The sign is fixed per arrow key; Shift only changes which edge it applies to.
     private static (double X, double Y) ResizeStepDeltaFor(string code, double scale)
     {
         var step = ResizeStep / scale;
@@ -1170,13 +1046,6 @@ public partial class DiagramCanvas : IAsyncDisposable
                 .Cast<ComponentInstance>()
                 .ToList();
 
-    // Escape takes one stage per press, newest first, so one Escape never throws away more than
-    // it meant to: cancel the pointer gesture that owns the press (a second Escape mid-press does
-    // nothing, because the cancelled gesture still owns the pointer until its button comes up),
-    // then close the context menu, then end a half-built keyboard connection, whether still
-    // mid-pick or with an armed source waiting for a target, then end additive traversal, keeping
-    // the selection, then step out of the entered group, selecting the group just left and
-    // handing focus to its stop when the keyboard was inside it, and last clear the selection.
     [JSInvokable]
     public void OnEscapePressed()
     {
@@ -1221,11 +1090,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Enter on a group's tab stop enters the group; otherwise it drives keyboard connector
-    // attachment. The first Enter while picking arms the source and leaves picking so Tab can
-    // reach the target; the second completes the connection like a connector drop, so landing
-    // back on the source instance creates no edge. The JS listener only forwards Enter from a
-    // component container or group tab stop, so a Palette button's own Enter is never taken.
     [JSInvokable]
     public void OnEnterPressed()
     {
@@ -1270,7 +1134,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        // Other commands can run between arming and confirming, so the source may be gone.
         if (
             sourceEndpoint.ComponentId is { } sourceComponentId
             && Board.GetComponent(sourceComponentId) is not null
@@ -1285,8 +1148,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // An armed source stays highlighted during the Tab navigation to the target, so a keyboard
-    // user can still see where the connection started.
     private IEdgeEndpoint? FocusedPortEndpointFor(Guid instanceId)
     {
         if (_portFocusInstanceId == instanceId)
@@ -1305,10 +1166,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     private Guid? FocusedCustomPortIdFor(Guid instanceId) =>
         FocusedPortEndpointFor(instanceId) is CustomPortEndpoint custom ? custom.PortId : null;
 
-    // Space on a focused stop adds it to the selection, never removing it, and starts additive
-    // traversal; inside the mode it toggles the focused stop through the same toggle a Shift
-    // press uses. While picking a port it cycles ports instead, the only way to reach a custom
-    // port.
     [JSInvokable]
     public void OnSpacePressed()
     {
@@ -1354,7 +1211,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // IndexOf relies on the endpoints' record structural equality.
     private void CyclePortFocus(Guid instanceId)
     {
         if (Board?.GetComponent(instanceId) is not { } instance)
@@ -1372,10 +1228,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Removes exactly what Cut would carry: the unlocked selection, every selected edge and every
-    // edge between two deleted instances, with the group edits the removal forces, in one undo
-    // entry. An edge with only one end on a deleted instance stays, and whatever locked part of
-    // the selection is left stays selected. While port picking it acts on the highlighted port.
     [JSInvokable]
     public void OnDeletePressed()
     {
@@ -1407,8 +1259,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // After a removal the selection holds what is still on the board, which is what the removal
-    // left because it was locked.
     private void KeepSurvivingSelection() =>
         SetSelection(
             _selectedInstanceIds.Where(id =>
@@ -1417,9 +1267,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             _selectedEdgeIds.Where(id => Board?.GetEdge(id) is not null)
         );
 
-    // Ctrl+A selects every top-level entity, a grouped instance as its outermost group, and every
-    // edge on the board. With a group entered it selects that group's direct members instead.
-    // Nothing locked is taken, a fully locked group included.
     [JSInvokable]
     public void OnSelectAllPressed()
     {
@@ -1446,9 +1293,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // A selected group is carried over rather than flattened, so grouping it nests it. Focus
-    // moves to the new group's tab stop. A selected edge cannot be a group member and stays
-    // selected beside the new group.
     [JSInvokable]
     public void OnGroupPressed()
     {
@@ -1467,7 +1311,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Dissolves only the outer level: a nested group among the members stays grouped.
     [JSInvokable]
     public void OnUngroupPressed()
     {
@@ -1502,8 +1345,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Selection is not tracked by history, but NotifySelectionChanged still fires: an undone or
-    // redone edit can change the selected instance's Props under the property panel.
     [JSInvokable]
     public void OnUndoPressed()
     {
@@ -1530,7 +1371,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // A selected group's members are reordered independently, like any multi-selection.
     [JSInvokable]
     public void OnBringToFrontPressed() => RestackSelection(toFront: true);
 
@@ -1545,8 +1385,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     public void OnSendBackwardPressed() =>
         ApplyZIndexChange(instance => Board!.ZIndexBelow(instance.ZIndex));
 
-    // Disabling the chord leaves OnToggleSnapToGridPressed ungated for any other caller. Port placement owns the
-    // keyboard, and its step depends on snap, so the chord does nothing while placing.
     [JSInvokable]
     public void OnSnapToGridChordPressed()
     {
@@ -1563,8 +1401,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // No chord reaches this: object snapping is a set-and-forget preference, and Ctrl already
-    // frees a single drag from it.
     public void OnToggleObjectSnappingPressed()
     {
         ObjectSnapping = !ObjectSnapping;
@@ -1572,8 +1408,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Each selected instance gets its own consecutive value from the board's extreme, in original
-    // order, so the selection's relative order survives the move.
     private void RestackSelection(bool toFront)
     {
         if (Board is null || PressOwnsBoard || PlacingPort)
@@ -1611,8 +1445,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // The rule is evaluated against the board before any of these writes, so members of a
-    // multi-selection never see each other's changes.
     private void ApplyZIndexChange(Func<ComponentInstance, int?> computeNewZIndex)
     {
         if (Board is null || PressOwnsBoard || PlacingPort)
@@ -1678,7 +1510,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    // Inside an entered group, grouping every direct member would only wrap the group in itself.
     private bool CanGroupSelection =>
         _selectedInstanceIds.Count >= 2
         && !(
@@ -1692,10 +1523,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private bool CanArrangeSelection => UnlockedSelection().Count > 0;
 
-    // Shift+F10 or the ContextMenu key, once the listener's Menu verdict gave the request to the
-    // canvas. The keyboard has no press target, so the selection decides the set, and the menu
-    // draws at the bottom-left of the selection's on-screen box, or at the viewport centre for the
-    // canvas set.
     [JSInvokable]
     public void OnContextMenuKeyPressed()
     {
@@ -1758,8 +1585,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Closes the menu first so a command that itself calls StateHasChanged (every OnXPressed
-    // does) never re-renders with a stale menu still open.
     private async Task InvokeFromContextMenu(ContextMenuCommand command)
     {
         var menu = _contextMenu;
@@ -1837,8 +1662,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         action();
     }
 
-    // A selection entry can be a group id; flattening to instance ids lets a selected group go
-    // through the same move, resize and delete paths as any multi-selection.
     private HashSet<Guid> ExpandedSelection()
     {
         var result = new HashSet<Guid>();
@@ -1866,18 +1689,14 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private bool IsSelected(Guid instanceId) => ShownSelection().Contains(instanceId);
 
-    // What draws as selected: the selection, or a clone drag's copies while they are in the hand.
     private HashSet<Guid> ShownSelection() =>
         PendingCopies is { } copies
             ? copies.Components.Select(copy => copy.Id).ToHashSet()
             : ExpandedSelection();
 
-    // Reads the unexpanded set: ExpandedSelection never contains a group's own id.
     private bool IsGroupSelected(Guid groupId) =>
         PendingCopies is null && _selectedInstanceIds.Contains(groupId);
 
-    // Suppresses a container's own resize handles in favour of the shared overlay's. A selected
-    // group of 2+ members counts as a multi-selection.
     private bool IsMultiSelected(Guid instanceId)
     {
         var expanded = ShownSelection();
@@ -1886,8 +1705,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private bool HasMultiMemberSelection => ShownSelection().Count > 1;
 
-    // The ancestor of an entity, or the entity itself, that is a direct member of the entered
-    // group, or the outermost one when no group is entered or the entity lies outside it.
     private Guid EffectiveSelectionId(Guid id)
     {
         if (Board is null)
@@ -1904,15 +1721,10 @@ public partial class DiagramCanvas : IAsyncDisposable
         return current;
     }
 
-    // Every instance and edge on the board is content, and content keeps its hit region at every
-    // zoom, a placeholder included, unless it is locked. Primary-press participation is decided
-    // here and nowhere else; keyboard reachability never reads it.
     private bool HasHitRegion(Guid entityId) =>
         (Board?.GetComponent(entityId) is not null || Board?.GetEdge(entityId) is not null)
         && !IsLocked(entityId);
 
-    // A clone drag's copies are drawn before they are on the board and carry no hit marker; a
-    // locked instance keeps its marker, so a secondary press still reaches it.
     private bool IsOnBoard(Guid instanceId) => Board?.GetComponent(instanceId) is not null;
 
     private bool IsInScope(Guid id) =>
@@ -1935,8 +1747,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         return false;
     }
 
-    // Top-level, or a direct member of the entered group. Content inside anything else answers a
-    // press as its instance, and only an addressable entity has a tab stop of its own.
     private bool IsAddressable(Guid id) =>
         Board?.FindParentGroup(id) is not { } parent || parent.Id == EnteredGroupId;
 
@@ -1948,8 +1758,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // The group's single tab stop gives way to stops for its direct members, and focus moves to
-    // the first of them in reading order, which selects it.
     private void EnterGroupFromKeyboard(Guid groupId)
     {
         EnterGroup(groupId);
@@ -1969,9 +1777,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Rule for a press: one on an entity outside the entered group steps out until the entity is
-    // inside it, one on empty canvas steps out until the press point lies inside the entered
-    // group's bounds, and one on an edge, which no group holds, steps all the way out.
     private void StepOutForPress(PointerPress press)
     {
         if (EnteredGroupId is null || Board is null)
@@ -2001,7 +1806,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // A locked entity is left out, as a primary press would pass it by.
     private IReadOnlyList<HitStackEntry> HitStackOf(PointerPress press)
     {
         if (Board is null || press.Hits is null)
@@ -2035,9 +1839,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         return entries;
     }
 
-    // What a press on the entity selects once it has stepped out as far as it needs: the ancestor,
-    // or the entity itself, whose parent is the deepest entered group holding it, or the outermost
-    // one when no entered group holds it.
     private Guid PressedSelectionId(Guid id)
     {
         var current = id;
@@ -2087,16 +1888,12 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // After the scope changes level, every selected id becomes its ancestor at the new level.
     private void ResolveSelectionToScope() =>
         SetSelection(
             _selectedInstanceIds.Select(EffectiveSelectionId).Distinct(),
             _selectedEdgeIds
         );
 
-    // The scope cannot outlive its group: an undo, a delete or an ungroup that removes an entered
-    // group, or moves it out of the group it was entered from, falls back to the nearest one still
-    // in place.
     private void ReconcileEnteredGroups()
     {
         if (Board is null)
@@ -2118,7 +1915,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StepOutWhile(_ => _enteredGroupIds.Count > intact);
     }
 
-    // The toggle leaves the selected edges as they are; the collapse clears them.
     private void SelectComponent(Guid instanceId, bool addToSelection)
     {
         StepOutWhile(enteredId => !IsInside(instanceId, enteredId));
@@ -2137,7 +1933,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         SetSelection([effectiveId], []);
     }
 
-    // The caller is trusted to have already skipped a no-op edit.
     public void CommitPropsChange(Guid instanceId, object before, object after)
     {
         var instance = ResolvePropsEntity(instanceId);
@@ -2151,8 +1946,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // One undo entry for the whole bulk edit. The caller is trusted to have already skipped any
-    // instance whose value wouldn't change.
     public void CommitPropsChangeBatch(IReadOnlyList<PropsChange> changes)
     {
         var commands = new List<ICommand>();
@@ -2179,12 +1972,9 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // An edge's label lives on its edge, not in Board.Components. A locked instance, or the label
-    // of a locked edge, resolves to nothing, so no props edit reaches it.
     private ComponentInstance? ResolvePropsEntity(Guid id) =>
         IsPropsEntityLocked(id) ? null : Board?.GetComponent(id) ?? Board?.FindEdgeLabel(id);
 
-    // No panel UI calls this yet; tests exercise it directly.
     public void CommitEdgeStyleChange(Guid edgeId, EdgeStyle before, EdgeStyle after)
     {
         var edge = Board?.GetEdge(edgeId);
@@ -2197,11 +1987,8 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // Registered by BuiltInComponents.RegisterAll.
     private const string DefaultEdgeLabelComponentTypeKey = "text";
 
-    // A double-press on the line never clobbers an existing label. The label's Bounds.X/Y are
-    // never read again (see EdgeLabelStyle); only its size matters.
     private void AddEdgeLabel(Guid edgeId)
     {
         var edge = Board?.GetEdge(edgeId);
@@ -2223,9 +2010,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         BeginLabelEdit(edgeId);
     }
 
-    // Positioned from the live route, so the label's own Bounds.X/Y are ignored. While a connector
-    // drag carries one of this edge's ends, the label follows the pending route so it doesn't
-    // detach and freeze mid-drag.
     private string? EdgeLabelStyle(Edge edge)
     {
         if (edge.Label is null)
@@ -2250,21 +2034,13 @@ public partial class DiagramCanvas : IAsyncDisposable
         return new Bounds(midX - width / 2, midY - height / 2, width, height);
     }
 
-    // The registered TComponent's props parameter is a fixed contract:
-    // [Parameter] public TProps Props { get; set; }
     private const string PropsParameterName = "Props";
 
     private readonly AssetReferenceResolver _assetReferenceResolver = new();
 
-    // The props object a component actually binds, with any asset reference already swapped for
-    // its data: URI. The same object goes to the ComponentContainer's Props parameter, so an
-    // asset arriving after the first render changes what the container compares and it re-renders
-    // its child; an unchanged, already-resolved props object is the same cached copy both times.
     private object BoundProps(ComponentInstance instance, ComponentRegistration registration) =>
         _assetReferenceResolver.Resolve(instance, registration, Board!);
 
-    // The inverse at the commit point: a component edits the props it was bound with, so a
-    // declared reference comes back as a data URI unless it is put back here.
     private (object Before, object After) UnresolvedForCommit(
         ComponentInstance instance,
         object before,
@@ -2281,10 +2057,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static IDictionary<string, object> ComponentParameters(object boundProps) =>
         new Dictionary<string, object> { [PropsParameterName] = boundProps };
 
-    // Recomputed whenever DiagramCanvas re-renders, which pointer moves drive at most once per
-    // animation frame - never a per-frame timer - so the mounted window follows the same cadence.
-    // Windowing reads committed bounds, so a non-participant never mounts or unmounts because of
-    // a gesture, and the live gesture's sticky participants are added on top.
     private IReadOnlyCollection<ComponentInstance> VisibleComponents
     {
         get
@@ -2312,13 +2084,9 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // The larger dimension, so a thin-but-wide shape such as a divider isn't placeholdered at a
-    // normal zoom.
     private bool IsBelowLodThreshold(Bounds bounds) =>
         Math.Max(bounds.Width, bounds.Height) * _zoomPanTracker.Scale < LodSizeThreshold;
 
-    // Decided from committed bounds, and frozen for a participant of the live gesture, so the
-    // author's component tree is never mounted or unmounted while the user is holding it.
     private bool IsPlaceholder(ComponentInstance instance) =>
         _stickyParticipants.TryGetValue(instance.Id, out var frozen)
             ? frozen
@@ -2327,13 +2095,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static string LodPlaceholderStyle(Bounds bounds, int zIndex) =>
         $"left: {bounds.X}px; top: {bounds.Y}px; width: {bounds.Width}px; height: {bounds.Height}px; z-index: {zIndex};";
 
-    // A non-addressable instance is listed so it still paints, but has no tab stop of its own.
-    // Ordered by on-screen position, Y then X, so native Tab follows reading order with no
-    // keyboard interception. Only what is mounted (viewport plus overscan) has a stop.
-    //
-    // An edge's stop comes directly after the stop its source resolves to, edges sharing that
-    // anchor in their targets' reading order; a floating source sorts as a stop of its own at its
-    // point. No edge has a stop while a group is entered, since an edge is never a member.
     private readonly record struct TabStop(
         ComponentInstance? Instance,
         Group? Group,
@@ -2435,7 +2196,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     private string EdgeAccessibleLabel(Edge edge) =>
         $"Connector from {EndAccessibleName(edge, isSource: true)} to {EndAccessibleName(edge, isSource: false)}";
 
-    // The stop an attached end resolves to, as a press on its component would select it.
     private Guid? EndEntityId(Edge edge, bool isSource) =>
         Live.EndpointOf(edge, isSource).ComponentId is { } componentId
             ? EffectiveSelectionId(componentId)
@@ -2454,12 +2214,9 @@ public partial class DiagramCanvas : IAsyncDisposable
             : "unattached end";
     }
 
-    // An addressable group has one stop until it is entered, when its members' stops replace it.
     private bool HasGroupTabStop(Group group) =>
         IsAddressable(group.Id) && !_enteredGroupIds.Contains(group.Id);
 
-    // Skips what native Tab skips (a non-addressable member, an LOD placeholder), keeping
-    // focusTabStopAt's index in step with the rendered stops.
     private List<Guid> FocusableTabStopIds() =>
         FocusableTabStops().Select(stop => stop.Id).ToList();
 
@@ -2471,9 +2228,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             )
             .ToList();
 
-    // A focus move like Tab: it lands through focusTabStopAt so the stop's own @onfocus decides
-    // whether it selects. An edge is never a target, because its stop's box can sit far from both
-    // of its ends.
     [JSInvokable]
     public async Task OnDirectionalFocusPressed(string code)
     {
@@ -2541,15 +2295,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             : null;
     }
 
-    // Reached only through a tab stop's @onfocus. Landing focus selects outright, except inside
-    // additive traversal, where it moves focus only.
     private void FocusEntity(Guid id)
     {
         EndPortPlacementOnFocus(id);
         _focusedTabStopId = id;
 
-        // Port picking never moves DOM focus itself, so this never clears a pick in progress on
-        // the same instance.
         _portFocusInstanceId = null;
 
         if (_additiveTraversal)
@@ -2569,7 +2319,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private const double EnteredGroupOutlineGap = 4;
 
-    // Around the innermost entered group only, on its live bounds so it follows a member in flight.
     private string? EnteredGroupOutlineStyle()
     {
         if (
@@ -2586,9 +2335,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     private const double SpacingGuideCapHalfLength = 4;
 
-    // An alignment guide spans the whole viewport; a spacing guide runs across its gap with a cap
-    // at each end, the caps sized in screen pixels since a stroke's non-scaling width does nothing
-    // for a segment's length.
     private IEnumerable<(string Kind, double X1, double Y1, double X2, double Y2)> GuideSegments()
     {
         var viewport = _zoomPanTracker.Viewport;
@@ -2674,8 +2420,6 @@ public partial class DiagramCanvas : IAsyncDisposable
                 holder.GetComponent(id) is not null || holder.GetGroup(id) is not null
             );
 
-    // While a connector drag is drawing its line every port is shown and hittable, so the drop can
-    // find the one under the pointer; hover cannot do that while the canvas holds the capture.
     private string CanvasCssClass =>
         "diagram-canvas"
         + (_isDragOverBoard ? " drag-over" : "")
@@ -2693,14 +2437,11 @@ public partial class DiagramCanvas : IAsyncDisposable
             ? $" transition: transform {_ambientTransition.TotalMilliseconds}ms ease-out;"
             : "";
 
-    // In board units: layer 0's spacing, and its on-screen spacing at scale 1.0.
     internal const double GridBaseSpacing = 20;
     private const int GridSpacingStep = 10;
 
     private readonly record struct GridLayer(int Level, double Opacity);
 
-    // `level` is the fractional layer whose on-screen spacing equals GridBaseSpacing at the
-    // current scale, split into the lower integer layer and the upper layer's blend weight.
     private (int LowerLevel, double UpperWeight) GridLevelSplit()
     {
         var level = -Math.Log10(_zoomPanTracker.Scale);
@@ -2708,8 +2449,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         return (lowerLevel, level - lowerLevel);
     }
 
-    // Two adjacent layers crossfade, like mip-level blending, so zooming doesn't pop between
-    // 10x-apart grids.
     private IEnumerable<GridLayer> VisibleGridLayers()
     {
         var (lowerLevel, upperWeight) = GridLevelSplit();
@@ -2721,7 +2460,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // The more opaque of the two visible layers; a tie favours the lower one.
     private double DominantGridSpacing()
     {
         var (lowerLevel, upperWeight) = GridLevelSplit();
@@ -2746,9 +2484,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         return bounds with { X = x, Y = y };
     }
 
-    // Grid layers sit outside canvas-content so they cover the whole viewport at any pan, which
-    // means they don't get its transform. PositiveMod keeps the pattern's phase locked to board
-    // coordinate 0.
     private string GridLayerStyle(GridLayer layer)
     {
         var boardSpacing = GridBaseSpacing * Math.Pow(GridSpacingStep, layer.Level);
@@ -2761,8 +2496,6 @@ public partial class DiagramCanvas : IAsyncDisposable
     private static double PositiveMod(double value, double modulus) =>
         ((value % modulus) + modulus) % modulus;
 
-    // The pointer gestures pass an origin of zero, since their coordinates arrive
-    // container-relative.
     private (double X, double Y) ToBoardPoint(
         (double ClientX, double ClientY) client,
         (double Left, double Top) containerOrigin
@@ -2798,8 +2531,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    // Cached on its inputs, so a render that moved nothing the edge depends on (a pan, a zoom, a
-    // drag elsewhere) routes nothing.
     private EdgeRoute? RouteOf(Edge edge)
     {
         if (Board is null || Live.RouteRequestOf(edge) is not { } request)
@@ -2812,9 +2543,6 @@ public partial class DiagramCanvas : IAsyncDisposable
 
     internal int RoutesComputed => _routes.RoutesComputed;
 
-    // The route a connector drag draws, between the end that stays put and the pointer. A new
-    // edge is straight; a carried end of an existing edge routes in that edge's own style with
-    // the pointer as a floating end, standing in for the edge while it is drawn.
     private EdgeRoute? PendingEdgeRoute()
     {
         if (Board is null || _preview.PendingEdge is not { } pending)
@@ -2892,7 +2620,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // Matches ComponentContainer's own default Width/Height.
     private const double FallbackWidth = 200;
     private const double FallbackHeight = 150;
 
@@ -2908,8 +2635,6 @@ public partial class DiagramCanvas : IAsyncDisposable
             return;
         }
 
-        // Fetched fresh rather than reused from first render: the container can move on the page
-        // (scroll, sibling layout changes) without firing the resize listener that only tracks size.
         var containerRect = await _jsModule!.InvokeAsync<Dictionary<string, double>>(
             "getContainerDimensions",
             ContainerElement
@@ -2925,19 +2650,13 @@ public partial class DiagramCanvas : IAsyncDisposable
         StateHasChanged();
     }
 
-    // A palette button's Enter/Space also lands here. Focus moves to the placed instance because
-    // a keyboard user has no other way to reach it.
     public void ClickToAdd(string componentTypeKey)
     {
-        // The add would be refused, and the selection must not move to an instance that was
-        // never placed.
         if (Board is null || PressOwnsBoard)
         {
             return;
         }
 
-        // Before the container is measured the viewport centre is unknown, so the click waits for
-        // the measurement rather than landing on the board origin or being lost.
         if (!_zoomPanTracker.HasKnownContainerSize)
         {
             _clicksAwaitingMeasurement.Add(componentTypeKey);
@@ -2981,8 +2700,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         }
     }
 
-    // Callers are trusted to have already checked Board is non-null. Null for a Connector, which
-    // produces an Edge instead.
     private ComponentInstance? PlaceComponent(
         string componentTypeKey,
         double centerX,
@@ -3000,7 +2717,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         return instance;
     }
 
-    // A fixed-length segment rather than a point, so the new edge is visible and grabbable.
     private const double ConnectorDefaultHalfLength = 40;
 
     private void PlaceConnector(double centerX, double centerY)
@@ -3034,8 +2750,6 @@ public partial class DiagramCanvas : IAsyncDisposable
         );
     }
 
-    // A change that leaves the transform as it was, such as the container reporting the size it
-    // already had, moves no content, so it ends no flight and drops no transition.
     private void OnZoomPanChanged(object? sender, ZoomPanChangedEventArgs e)
     {
         var transform = (_zoomPanTracker.Scale, _zoomPanTracker.PanX, _zoomPanTracker.PanY);

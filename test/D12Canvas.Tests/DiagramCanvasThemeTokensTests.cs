@@ -101,10 +101,6 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         Assert.DoesNotContain("rgba(", placeholder);
     }
 
-    // The board tokens are what a built-in paints when its colour prop is null. They are declared
-    // beside the chrome tokens in every block, with light values equal to the literals they
-    // replaced, and stay separate from --d12-text so a host retuning its chrome label colour
-    // does not silently recolour every text instance on every board.
     [Theory]
     [InlineData(".diagram-container {")]
     [InlineData("@media (prefers-color-scheme: dark)")]
@@ -131,10 +127,6 @@ public class DiagramCanvasThemeTokensTests : ComponentTestBase
         Assert.Contains("--d12-board-stroke: #333333", rootRule);
     }
 
-    // The connector drag-preview's green is a deliberate departure from the shared accent (which
-    // already means "selected") - an escape hatch for an element that genuinely needs to diverge,
-    // routed through its own custom property rather than a bare literal so it still counts as
-    // "reading a token."
     [Fact]
     public void ConnectorDragPreviewReadsItsOwnEscapeHatchTokenExclusively()
     {

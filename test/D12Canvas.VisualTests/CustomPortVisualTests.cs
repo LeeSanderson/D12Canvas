@@ -15,8 +15,6 @@ public sealed class CustomPortVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public CustomPortVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -42,8 +40,6 @@ public sealed class CustomPortVisualTests : IAsyncLifetime
     private ILocator Instance(string id) =>
         _page.Locator($".component-container[data-d12-entity='{id}']");
 
-    // The crowded rectangle's custom port at 0.8 along its top side, dragged to the large
-    // rectangle's left port: pulled and pinned exactly as a standard port is.
     [Fact]
     public async Task InstanceWithACustomPortAndAttachedEdge_MatchesBaseline()
     {

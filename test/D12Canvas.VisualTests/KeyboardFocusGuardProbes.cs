@@ -1,9 +1,5 @@
 namespace D12Canvas.VisualTests;
 
-// The keydown listener sits on window, so its focus guard decides whether a key pressed somewhere
-// on the host page reaches the canvas. Every probe presses PageDown away from any editable
-// element, so the row's typing guard never fires and whether OnZoomOut arrives is the focus
-// guard's answer alone.
 public sealed class KeyboardFocusGuardProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

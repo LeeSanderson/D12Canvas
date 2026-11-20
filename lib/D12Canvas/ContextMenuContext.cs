@@ -1,7 +1,5 @@
 namespace D12Canvas;
 
-// Which content set a menu shows: the object menu when the opening press hit an entity, the
-// canvas menu when it hit bare canvas.
 public enum ContextMenuSet
 {
     Object,
@@ -45,19 +43,6 @@ public enum ContextMenuCommand
     ZoomTo100Percent,
 }
 
-// What DiagramCanvas resolved at the moment a menu opened: everything a row needs to decide
-// whether it is eligible, how it reads and which hint it shows, so the menu itself reads nothing
-// from the board. AsyncClipboard is whether the browser offers the clipboard to a click, which it
-// does only in a secure context; without it the clipboard rows are left out and the keys still
-// work. CanChangePicture is whether every selected entity is an image. CanAlign and
-// CanDistribute count the selection's instances and groups, never its edges. CanDelete and CanCut
-// are whether a delete would remove anything, which nothing locked is. SelectionLocked is whether
-// every top-level selected entity is locked, which makes the lock row read Unlock. CanUnlockAll is
-// whether anything on the board is locked. CanAddPortHere is whether the press that opened the menu
-// landed on a side's resize span or a standard port's span of the one selected instance, which
-// names a side and a fraction; CanPlacePort is whether a menu opened from the keyboard is on one
-// selected unlocked instance. CanRemovePort is whether the press landed on a custom port's span
-// of that instance and no edge pinned to the port is locked.
 public sealed record ContextMenuContext(
     ContextMenuSet Set,
     bool CanGroup = false,

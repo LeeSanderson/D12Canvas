@@ -4,11 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Connector drags and edge presses in a real browser. The canvas holds the pointer capture for the
-// whole drag, so the drop is resolved from what lies under the release point rather than from the
-// release's own target, and a target's ports show only once the drag is over it; these check that
-// a drop on another shape's port still pins, that the drag ends wherever it is released, and that an edge
-// stays hittable when its drawn line is far thinner than a pixel.
 public sealed class ConnectorDragProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -19,8 +14,6 @@ public sealed class ConnectorDragProbes(PlaywrightFixture playwright, DemoAppFix
     private ILocator Instance(string id) =>
         Page.Locator($".component-container[data-d12-entity='{id}']");
 
-    // Ports show on a selected shape, so the loose-end rectangle is selected before the pointer
-    // moves onto one of its ports.
     private async Task<(float X, float Y)> HoverLooseEndPortAsync(string part)
     {
         var port = await PortGestures.SelectAndAimAtPortAsync(Instance(LooseEndId), part);
@@ -28,8 +21,6 @@ public sealed class ConnectorDragProbes(PlaywrightFixture playwright, DemoAppFix
         return port;
     }
 
-    // The content's transform eases over a tenth of a second, so a position read straight after a
-    // zoom can be mid-way.
     private async Task<LocatorBoundingBoxResult> SettledBoxAsync(ILocator locator)
     {
         var previous = await locator.BoundingBoxAsync();
@@ -101,9 +92,6 @@ public sealed class ConnectorDragProbes(PlaywrightFixture playwright, DemoAppFix
         await Expect(Page.Locator(".connector-drag-preview")).ToHaveCountAsync(0);
     }
 
-    // Zoomed out the drawn line is under a pixel wide, and a click a few pixels off it still lands
-    // in its hit region. The labelled edge runs from (200, 90) to (360, 90) on the board with its
-    // label over the middle, so the click aims at (225, 90), clear of both the label and the shape.
     [Fact]
     public async Task AClickBesideAnEdgesLineSelectsItWhenZoomedOut()
     {

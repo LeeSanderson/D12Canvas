@@ -3,10 +3,6 @@ using System.Text;
 
 namespace D12Canvas.VisualTests;
 
-// Minimal, dependency-free PNG decoder - just enough to read the 8-bit, non-interlaced RGB/RGBA
-// screenshots Chromium/Playwright actually produce, since PixelMatch needs raw pixels rather than
-// PNG bytes. Deliberately narrow: throws on anything outside that (palettes, 16-bit depth,
-// interlacing) instead of silently producing wrong pixels.
 public static class Png
 {
     private static readonly byte[] Signature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -61,7 +57,7 @@ public static class Png
                     continue;
             }
 
-            pos = chunkStart + length + 4; // +4 skips the trailing CRC
+            pos = chunkStart + length + 4;
         }
 
         if (bitDepth != 8)
@@ -78,8 +74,8 @@ public static class Png
 
         var channels = colorType switch
         {
-            2 => 3, // RGB
-            6 => 4, // RGBA
+            2 => 3,
+            6 => 4,
             _ => throw new NotSupportedException(
                 $"Unsupported PNG color type: {colorType} (only RGB/RGBA truecolor is supported)."
             ),
@@ -126,28 +122,26 @@ public static class Png
         return new Image(rgba, width, height);
     }
 
-    // PNG scanline filters (spec section 9) undo a per-byte prediction against the raw pixel to
-    // the left/above/above-left, in that priority order (Paeth picks whichever predicts best).
     private static void Unfilter(byte filterType, byte[] cur, byte[] prev, int channels)
     {
         var length = cur.Length;
         switch (filterType)
         {
-            case 0: // None
+            case 0:
                 break;
-            case 1: // Sub
+            case 1:
                 for (var i = channels; i < length; i++)
                 {
                     cur[i] = (byte)(cur[i] + cur[i - channels]);
                 }
                 break;
-            case 2: // Up
+            case 2:
                 for (var i = 0; i < length; i++)
                 {
                     cur[i] = (byte)(cur[i] + prev[i]);
                 }
                 break;
-            case 3: // Average
+            case 3:
                 for (var i = 0; i < length; i++)
                 {
                     int a = i >= channels ? cur[i - channels] : 0;
@@ -155,7 +149,7 @@ public static class Png
                     cur[i] = (byte)(cur[i] + (a + b) / 2);
                 }
                 break;
-            case 4: // Paeth
+            case 4:
                 for (var i = 0; i < length; i++)
                 {
                     int a = i >= channels ? cur[i - channels] : 0;

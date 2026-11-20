@@ -8,18 +8,8 @@ public enum GlyphPaint
     AccentFill,
 }
 
-/// <summary>
-/// One SVG path of a <see cref="Glyph"/>, drawn on the 16-unit grid and painted as
-/// <paramref name="Paint"/> says.
-/// </summary>
 public sealed record GlyphPart(string Data, GlyphPaint Paint = GlyphPaint.Stroke);
 
-/// <summary>
-/// A named drawing on the library's 16-unit grid, rendered by <see cref="D12Icon"/>. Build one
-/// from path data to give a custom component type or option a drawing that fits the
-/// <see cref="Glyphs"/> set: 1.5 stroke, round caps and joins, every coordinate inside the 1 to 15
-/// box.
-/// </summary>
 public sealed record Glyph
 {
     public Glyph(params IEnumerable<GlyphPart> parts)

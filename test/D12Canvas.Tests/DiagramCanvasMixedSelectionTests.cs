@@ -7,9 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Edges and shapes share one selection. Shift+click on an edge toggles it, a marquee takes an edge
-// by closure over what it selected, Ctrl+A takes every top-level entity and every edge, a move
-// carries a selected edge's floating ends, and a command that cannot act on an edge skips it.
 public class DiagramCanvasMixedSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

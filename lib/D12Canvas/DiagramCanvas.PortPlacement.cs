@@ -4,11 +4,6 @@ using D12Canvas.Pointer;
 
 namespace D12Canvas;
 
-// Two routes add a custom port. The pointer's Add port here row adds one where the menu's press
-// landed on a side's resize span or a standard port's span. The keyboard's Add port… row starts
-// placement: a provisional port that only the arrows, Enter and Escape act on, held here and never
-// written to the board until Enter.
-// Placement ends when focus leaves the instance's stop, so it is only ever live on the focused one.
 public partial class DiagramCanvas
 {
     private sealed record PortPlacementState(Guid InstanceId, ProvisionalPort Port);
@@ -26,8 +21,6 @@ public partial class DiagramCanvas
             ? instance
             : null;
 
-    // Placement ends when focus leaves the instance's stop, so it starts only on an instance whose
-    // stop can take focus; a placeholder below the LOD cutoff has none.
     private ComponentInstance? PlaceablePortTarget() =>
         SinglePortTarget() is { } instance && FocusableTabStopIds().Contains(instance.Id)
             ? instance
@@ -59,7 +52,6 @@ public partial class DiagramCanvas
         return new PortAtPress(instance.Id, new PortDef(fractionX, fractionY));
     }
 
-    // A custom port's span gives no side, so Add port here never shows there; Remove port does.
     private static PortId? PressedSide(PointerPress press) =>
         press.Role switch
         {
@@ -88,8 +80,6 @@ public partial class DiagramCanvas
         StateHasChanged();
     }
 
-    // Focus goes to the instance's stop, since a menu opened with focus on the canvas would
-    // otherwise leave the keys that place the port somewhere Enter does not reach.
     private void BeginPortPlacement()
     {
         if (Board is null || PressOwnsBoard || PlaceablePortTarget() is not { } instance)
@@ -144,9 +134,6 @@ public partial class DiagramCanvas
         StateHasChanged();
     }
 
-    // Focus landing anywhere but the instance's stop ends placement. A landing on the canvas ends
-    // it only once the stop has held focus, because the menu that started placement hands focus
-    // back to wherever it was at the keydown, the canvas included, before focus reaches the stop.
     private void EndPortPlacementOnFocus(Guid? landedOn)
     {
         if (_portPlacement is not { } placement || landedOn == placement.InstanceId)

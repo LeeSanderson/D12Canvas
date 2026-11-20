@@ -289,8 +289,6 @@ public class DiagramCanvasPropertyBarTests : ComponentTestBase
         Assert.NotEmpty(canvas.FindAll(".edge-halo"));
     }
 
-    // A themed swatch opens on the colour it holds, and the browser fires no change when the pick
-    // ends on that colour, so the last colour the picker reported lands when the swatch is left.
     [Fact]
     public void PickingTheColourAThemedSwatchHoldsStillRecolours()
     {

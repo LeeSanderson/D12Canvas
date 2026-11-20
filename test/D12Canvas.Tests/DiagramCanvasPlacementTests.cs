@@ -82,7 +82,7 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
-        await canvas.Pan(from: (100, 100), to: (50, 40)); // pans by (-50, -60)
+        await canvas.Pan(from: (100, 100), to: (50, 40));
 
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
@@ -100,13 +100,11 @@ public class DiagramCanvasPlacementTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
-        canvas.ZoomIn(); // zooms to scale 1.1
+        canvas.ZoomIn();
 
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 300, ClientY = 250 });
 
-        // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the
-        // decimal literal 1.1, so this can't disagree with production code over double rounding.
         var scale = 1.0 + 0.1;
         var instance = Assert.Single(board.Components);
         Assert.Equal(300 / scale - 60, instance.Bounds.X, precision: 10);

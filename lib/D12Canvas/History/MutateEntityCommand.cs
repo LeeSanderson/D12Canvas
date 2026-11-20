@@ -2,9 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// A generic swap for a component instance's opaque, boxed Props - because Props is only ever
-// resolved via a registry lookup, no per-component-type undo logic is possible or needed here,
-// unlike ChangeBoundsCommand which knows Bounds's own shape.
 public sealed class MutateEntityCommand : ICommand
 {
     private readonly ComponentInstance _instance;

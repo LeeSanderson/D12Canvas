@@ -5,16 +5,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A shape held mid-drag or mid-resize is drawn where the gesture preview puts it, and the edge
-// attached to it follows rather than waiting for release. A cold drag is selected by its press.
 public sealed class LiveGeometryVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public LiveGeometryVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -37,8 +33,6 @@ public sealed class LiveGeometryVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // The seeded board's Rectangle sits directly above its Sticky Note, so its bottom port to the
-    // note's top port is a short, deterministic connector drag.
     private async Task ConnectRectangleToStickyNoteAsync()
     {
         await PortGestures.ConnectAsync(

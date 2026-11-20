@@ -6,10 +6,6 @@ public sealed record DissolvedGroup(Group Group, Guid SurvivorId);
 
 public sealed record GroupReplacement(Group Before, Group After);
 
-// The repaired shape of a set of groups once some of their member ids stopped resolving: which
-// groups are replaced by a copy with fewer members, which leave the board and why. The planner
-// never touches a Board; the delete composition turns a plan into commands and the load paths
-// write it straight onto the board being built.
 public sealed class GroupRepairPlan
 {
     public GroupRepairPlan(
@@ -129,8 +125,6 @@ public static class GroupRepair
         return new GroupRepairPlan(replaced, missingMembers, emptied, dissolved);
     }
 
-    // A parent settles after its children, so the survivor it reports is the one that is still on
-    // the board once the whole plan has run.
     private static bool HasUndersizedChild(
         Dictionary<Guid, List<Guid>> membersByGroupId,
         Guid groupId,
@@ -142,8 +136,6 @@ public static class GroupRepair
             && childMembers.Count < 2
         );
 
-    // A membership cycle in a hand-written file would otherwise defer forever; after one pass
-    // over every group the deferral gives up and the group is processed as it stands.
     private static bool Defer(Dictionary<Guid, int> deferrals, Guid groupId)
     {
         var count = deferrals.GetValueOrDefault(groupId) + 1;

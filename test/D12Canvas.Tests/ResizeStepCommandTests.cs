@@ -89,9 +89,6 @@ public class ResizeStepCommandTests
         Assert.Equal(new Bounds(100, 100, 203, 150), instance.Bounds);
     }
 
-    // The anchor edge (Right, here) must stay exactly fixed across an accumulated burst, not just
-    // a single step - proving Extend re-derives from the original bounds rather than compounding
-    // rounding/drift step over step.
     [Fact]
     public void TheAnchorEdgeStaysExactlyFixedAcrossAnAccumulatedBurst()
     {

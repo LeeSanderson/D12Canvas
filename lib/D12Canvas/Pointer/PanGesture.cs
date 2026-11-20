@@ -1,14 +1,5 @@
 namespace D12Canvas.Pointer;
 
-// The secondary and middle buttons pan whatever they land on, bar a secondary press whose Menu
-// verdict went to the browser. The pan holds the board point that was under the press under the
-// pointer, so a dropped frame costs nothing and a wheel zoom about the pointer composes with it
-// untouched. Any other viewport change re-anchors to the board point
-// now under the pointer, so the viewport's movement and the hand's add up. A secondary release that
-// never crossed the threshold is the context menu: it resolves the selection at that moment, so a
-// right-drag pan never wipes the selection or leaves the entered group as a side effect, and opens
-// the menu at the press point.
-// A middle click does nothing. The viewport is never restored on cancel.
 internal sealed class PanGesture : PointerGesture
 {
     private (double X, double Y) _grabbed;
@@ -42,8 +33,6 @@ internal sealed class PanGesture : PointerGesture
         Context.OpenContextMenuAt(Press);
     }
 
-    // One predicate: does the pressed entity, resolved outward to its group, belong to the current
-    // selection? Yes preserves, no replaces, no entity at all clears.
     private void ResolveSelectionForMenu()
     {
         switch (Press.Role)

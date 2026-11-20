@@ -63,9 +63,6 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
     {
         RegisterTestComponent();
         var board = new Board();
-        // 50x50, not the smaller size used elsewhere in this file - below the default LOD
-        // threshold an instance renders as a placeholder div instead, which isn't this test's
-        // concern (see DiagramCanvasLodPlaceholderTests).
         board.AddComponent(
             new ComponentInstance(ComponentTypeKey, new TestProps("a"), new Bounds(0, 0, 50, 50))
         );
@@ -211,9 +208,6 @@ public class DiagramCanvasBoardRenderingTests : ComponentTestBase
         Assert.Single(canvas.FindAll(".component-container"));
     }
 
-    // No fixed board extent: an instance placed and panned to well past the old prototype's
-    // 3000x3000 boundary (and the pan distance the old extent-based clamp would have capped at)
-    // still mounts once brought into view.
     [Fact]
     public async Task AnInstanceFarBeyondTheOldFixedExtentStillMountsOncePannedIntoView()
     {

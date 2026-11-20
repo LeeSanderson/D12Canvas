@@ -4,8 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Nine sticky notes, one per pairing of horizontal and vertical alignment, beside a short note
-// whose text runs past its bottom edge.
 public sealed class StickyNoteAlignmentVisualTests : IAsyncLifetime
 {
     private const string OverflowNoteId = "a1170000-0000-0000-0000-000000000099";
@@ -14,8 +12,6 @@ public sealed class StickyNoteAlignmentVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public StickyNoteAlignmentVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

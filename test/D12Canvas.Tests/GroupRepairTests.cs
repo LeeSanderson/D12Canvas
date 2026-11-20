@@ -3,9 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A live group's member ids always resolve, and a group always has two or more members. The
-// planner works out the repaired shape of a set of groups against whatever instance ids still
-// resolve; the delete composition and both load paths then write that shape.
 public class GroupRepairTests
 {
     private const string ComponentTypeKey = "test-props";

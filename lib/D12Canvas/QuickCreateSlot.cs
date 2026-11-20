@@ -2,8 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas;
 
-// Each step moves the box a whole gap further from the source, away from every obstacle it has
-// passed, so the search ends once the box is clear of them all.
 internal static class QuickCreateSlot
 {
     public static Bounds For(

@@ -47,8 +47,6 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
 
-        // Container is 800x600 (see ComponentTestBase.SetupDiagramCanvasJsModule) at scale 1 with
-        // no pan, so the viewport center in board coordinates is (400, 300).
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 
         var instance = Assert.Single(board.Components);
@@ -81,13 +79,11 @@ public class DiagramCanvasClickToAddTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
 
-        canvas.ZoomIn(); // zooms to scale 1.1
-        await canvas.Pan(from: (100, 100), to: (50, 40)); // pans by (-50, -60)
+        canvas.ZoomIn();
+        await canvas.Pan(from: (100, 100), to: (50, 40));
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 
-        // Same viewport math ZoomPanTracker.Viewport already uses (and is unit-tested against
-        // directly): center = (-PanX / Scale + ContainerWidth / Scale / 2, likewise for Y).
         var scale = 1.0 + 0.1;
         var centerX = -(-50) / scale + 800 / scale / 2;
         var centerY = -(-60) / scale + 600 / scale / 2;

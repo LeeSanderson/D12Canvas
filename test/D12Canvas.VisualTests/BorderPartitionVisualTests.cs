@@ -3,11 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The border partition demo board: a small rectangle at the origin, one with six custom ports
-// crowding its top side, and a large one. The partition itself is never drawn, so these show the
-// dots and corner handles it leaves: on the crowded side, the ports squeezed below the floor are
-// gone and the standard port keeps its place; zoomed out past a quarter, the dots and handles stop
-// shrinking.
 public sealed class BorderPartitionVisualTests : IAsyncLifetime
 {
     private const string CrowdedId = "b0000000-0000-0000-0000-000000000002";
@@ -17,8 +12,6 @@ public sealed class BorderPartitionVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public BorderPartitionVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -62,7 +55,6 @@ public sealed class BorderPartitionVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    // The board opens fitted just below 100%; from 100%, eight zoom-out steps land at a fifth.
     [Fact]
     public async Task SelectedShapeBelowAQuarterZoom_MatchesBaseline()
     {

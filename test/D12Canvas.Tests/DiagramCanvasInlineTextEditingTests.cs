@@ -11,9 +11,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The canvas starts every inline edit, and the editor ends it with one CommitInlineEdit call.
-// Exercised through the real DiagramCanvas/ComponentContainer/built-in stack, since that is where
-// the ParentCanvas and InstanceId cascading values reach the editor.
 public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
 {
     private readonly Board _board = new();
@@ -253,8 +250,6 @@ public class DiagramCanvasInlineTextEditingTests : ComponentTestBase
         Assert.Contains("Original", canvas.Find("p.d12-sticky-note-text").TextContent);
     }
 
-    // The press that blurs the editor can reach the canvas before the blur does, so the edit ends
-    // while that press owns the board. It lands once the press ends rather than being lost.
     [Fact]
     public async Task ABlurThatArrivesWhileAPressIsHeldCommitsWhenThePressEnds()
     {

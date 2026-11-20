@@ -2,9 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Tests;
 
-// One saved board that needs every kind of group repair at once: a group with a member id that
-// resolves to nothing, a group whose members are all gone, and a hand-written one-member group
-// nested inside a parent. Both load paths must turn it into the same board.
 internal static class GroupRepairFixtures
 {
     public const string LeafA = "11111111-1111-1111-1111-111111111111";

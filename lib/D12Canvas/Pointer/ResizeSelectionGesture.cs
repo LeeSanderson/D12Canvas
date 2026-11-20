@@ -2,18 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Pointer;
 
-// A primary press on a shape's resize handle or on one of the selection box's handles. A single
-// shape and a multi-selection are one gesture: every tick resizes the selection's bounding box by
-// the board-space distance from the press, with the edge opposite the handle anchored, and scales
-// each member exactly inside it. While Alt is held the box's centre is anchored instead and the
-// opposite edge mirrors the handle; Alt is read from every move and each move recomputes from the
-// start box, so a toggle keeps the handle under the pointer and the opposite edge jumps. The edges
-// that move snap, never below the minimum size, which a multi-selection raises so no member
-// shrinks past the floor: per axis, object snapping takes a moving edge to a neighbour's edge or
-// centre where it matches and the grid rounds it where it does not, and under a centre resize
-// whichever of the two edges needs the smaller correction wins. Nothing snaps while Ctrl is held,
-// read from every move. Shift does nothing here, kept free for preserve-aspect-ratio. An active
-// release commits what was last published; a click changes nothing.
 internal sealed class ResizeSelectionGesture : PointerGesture
 {
     private readonly (double X, double Y) _pressPoint;
@@ -33,8 +21,6 @@ internal sealed class ResizeSelectionGesture : PointerGesture
         _direction = DirectionOf(press.Part);
     }
 
-    // A shape's own handles only show while it is the whole selection, so pressing one outside
-    // the selection resizes that shape alone.
     protected override void OnPress()
     {
         if (Press.EntityId is { } entityId)
@@ -152,11 +138,6 @@ internal sealed class ResizeSelectionGesture : PointerGesture
         Context.PublishGuides(guides);
     }
 
-    // The edges moving on this axis, matched from where the pointer put them before any grid
-    // rounding, so object snapping replaces the grid on the axis where it fires. The nearest match
-    // wins; under a centre resize the other edge moves the same amount the opposite way. A match
-    // that would take the box below its minimum size is clamped to the minimum after the snap,
-    // and draws no guide since the edge stops short of it.
     private (Bounds Box, AxisSnap? Held) SnapEdges(
         Bounds box,
         Bounds unsnapped,
@@ -228,8 +209,6 @@ internal sealed class ResizeSelectionGesture : PointerGesture
 
     protected override void OnClick(PointerRelease release) { }
 
-    // With a locked member in the selection the box under the pointer is the frame being dragged,
-    // which a locked member left at its size may stick out of until the release re-derives it.
     private void PublishScaledTo(Bounds box)
     {
         Context.PublishPreview(

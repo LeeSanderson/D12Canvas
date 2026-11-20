@@ -48,8 +48,6 @@ app.MapPost(
 
 app.Run();
 
-// The backlog belongs to the repository the server was started from, found by its solution file,
-// so it lands in the same folder however the server is launched.
 static string RepositoryRoot(string start)
 {
     for (

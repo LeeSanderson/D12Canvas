@@ -49,7 +49,6 @@ export async function readClipboardImage() {
             }
         }
     } catch {
-        // Refused or unavailable: the caller says there was no image to paste.
     }
 
     return null;

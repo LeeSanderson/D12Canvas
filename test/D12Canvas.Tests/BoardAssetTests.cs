@@ -5,8 +5,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Binary content enters a board through AddAsset alone, is held once per distinct content, and is
-// referenced from props by the string AddAsset hands back.
 public class BoardAssetTests
 {
     private static readonly byte[] PngBytes = AssetTestComponent.PngBytes;

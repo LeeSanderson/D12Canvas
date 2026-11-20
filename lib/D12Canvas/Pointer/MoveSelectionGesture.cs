@@ -2,24 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Pointer;
 
-// A primary press on an instance or on the selection box. Pressing an entity outside the
-// selection selects it at once, or appends it under Shift, so the drag has something to move;
-// pressing a member leaves the selection alone until release, where a click collapses to that
-// member or, under Shift, toggles it out. A click on the selection box does the same with the
-// topmost entity beneath it, and an Alt click selects the next entity down the hit stack from the
-// one selected before the press. Every tick publishes the whole selection translated by
-// the board-space distance from the press point, snapped as one rigid body: object snapping aligns
-// its instances' bounding box with the shapes around it where it matches, the grid rounds the
-// box's top-left on any axis it did not, the motion is straightened to one axis while Shift is
-// held and left unsnapped while Ctrl is, and an active release commits exactly what was last
-// published. A selected edge's floating ends take the same delta; its attached ends follow their
-// components and have nothing of their own to publish.
-//
-// Holding Alt makes it a clone drag: the delta is published onto a copy of the selection, held in
-// the preview's pending fragment, and the originals stay where they are as snap candidates. Alt is
-// read on every move, so letting go of it puts the delta back on the originals. The copy is built
-// on the first move that wants it, so an Alt click builds nothing, and is kept for the rest of the
-// press, so toggling Alt shows the same copy each time.
 internal sealed class MoveSelectionGesture : PointerGesture
 {
     private readonly (double X, double Y) _pressPoint;
@@ -74,16 +56,10 @@ internal sealed class MoveSelectionGesture : PointerGesture
         PublishTranslatedBy(0, 0);
     }
 
-    // What the pointer drags: the unlocked members, which are what a move carries, or the whole
-    // copy while cloning, since a locked member's copy follows the pointer too.
     private Bounds Box => _carriedCopies is null ? _movedBox : _wholeBox;
 
     private (double X, double Y) Origin => (Box.X, Box.Y);
 
-    // Shift holds the axis the press-anchored delta has moved least along. That axis is never
-    // snapped, since rounding it would move the selection along the axis just locked. On each free
-    // axis object snapping takes the axis where it matches and the grid fills it where it does not;
-    // Ctrl suppresses both, and a fast pointer stands object snapping down and drops what it held.
     protected override void OnMove(PointerMove move)
     {
         var current = Context.ToBoardPoint(move.X, move.Y);
@@ -141,10 +117,6 @@ internal sealed class MoveSelectionGesture : PointerGesture
         Context.PublishGuides(guides);
     }
 
-    // The second pass, from where the selection now stands. An axis whose match leaves nothing to
-    // draw there, which happens when the other axis's snap carried the selection out of the row an
-    // equal-spacing match was found in, gives the axis back to the grid rather than correcting it
-    // silently.
     private IReadOnlyList<SnapGuide> GuidesAlong(
         SnapAxis axis,
         AxisSnap? held,
@@ -181,11 +153,6 @@ internal sealed class MoveSelectionGesture : PointerGesture
 
     protected override void OnRelease(PointerRelease release) => Context.CommitPreview();
 
-    // An Alt click cycles whatever its press count, so quick Alt clicks keep stepping down. A
-    // double-click on a member of a group that is not entered, or on the selection box over one,
-    // steps one level inside that group and selects the member's ancestor at the new level. On an
-    // addressable instance it leaves the selection as the first click of the pair left it and asks
-    // the instance to edit.
     protected override void OnClick(PointerRelease release)
     {
         if (TrySelectNextInHitStack())
@@ -228,8 +195,6 @@ internal sealed class MoveSelectionGesture : PointerGesture
         }
     }
 
-    // The topmost entity beneath the box stands in for the pressed entity: a click collapses to
-    // it, or under Shift toggles it. With nothing beneath, the selection stays.
     private void ClickThroughSelectionBox()
     {
         if (Context.HitStackOf(Press) is not [var beneath, ..])
@@ -247,8 +212,6 @@ internal sealed class MoveSelectionGesture : PointerGesture
         }
     }
 
-    // The selection box covers the members of a selected group, so a double-press there means the
-    // topmost selected instance under the pointer.
     private Guid? ParticipantUnderPress() =>
         _participants
             .Where(participant => participant.Bounds.Contains(_pressPoint.X, _pressPoint.Y))
@@ -264,8 +227,6 @@ internal sealed class MoveSelectionGesture : PointerGesture
         }
     }
 
-    // Enters the group that holds the entity one level below the current scope, then selects the
-    // entity's ancestor at the new level, which the scope change has just made addressable.
     private bool TryEnterContainingGroup(Guid entityId)
     {
         var effectiveId = Context.EffectiveSelectionId(entityId);
@@ -294,8 +255,6 @@ internal sealed class MoveSelectionGesture : PointerGesture
 
     private Board? Copies() => _copies ??= Context.CopyOfSelection();
 
-    // A clone's originals are not carried, so they stay on the board as candidates; its copies are
-    // not on the board at all, so they never are.
     private IReadOnlyCollection<Guid> CarriedIds() =>
         _carriedCopies is { } copies
             ? copies.Components.Select(copy => copy.Id).ToList()

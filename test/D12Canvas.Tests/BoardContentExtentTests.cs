@@ -3,9 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The content extent is every instance's committed bounds unioned with every edge end that
-// resolves. Restricted to some instances and edges, the same computation is what framing a
-// selection measures.
 public class BoardContentExtentTests
 {
     private static ComponentInstance AddInstance(Board board, Bounds bounds)

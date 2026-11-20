@@ -8,14 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A multi-selection (2+) moves and resizes as a single bounding-box unit. The bounding box is
-// computed over every selected member and rendered (with its own resize handles) whenever 2+ are
-// selected; individual members' own resize handles are suppressed for that same reason
-// (DiagramCanvasResizeTests/ComponentContainerTests cover their single-select case). A move can
-// start either by dragging one of the selected members directly, or by dragging the bounding box
-// itself, which is the hit target anywhere inside the selection's bounds - either way every
-// member moves by the same delta, and the whole gesture (move or resize) commits to Board exactly
-// once, on release.
 public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -130,8 +122,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         SelectBoth(canvas);
 
-        // (150, 25) sits inside the combined bounding box (0,0)-(350,50) but isn't over either
-        // instance; the box itself is the hit target there.
         canvas.PressOn(
             canvas.Find(".selection-bounding-box"),
             (150, 25),
@@ -168,9 +158,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         );
         canvas.MoveTo((200, 75));
 
-        // Mid-drag: this isn't a pan, and no marquee was drawn - the whole gesture instead lives
-        // in the gesture preview each member's own style reflects; Board's own
-        // Bounds haven't been touched yet.
         Assert.Empty(canvas.FindAll(".marquee-select"));
         Assert.Contains(
             "translate(0px, 0px)",
@@ -200,7 +187,7 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
 
-        canvas.ZoomIn(); // zooms to scale 1.1
+        canvas.ZoomIn();
         SelectBoth(canvas);
 
         canvas.PressOn(
@@ -211,8 +198,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         canvas.MoveTo((194, 47));
         canvas.ReleaseAt((194, 47));
 
-        // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the
-        // decimal literal 1.1, so this can't disagree with production code over double rounding.
         var scale = 1.0 + 0.1;
         Assert.Equal(44 / scale, first.Bounds.X, precision: 10);
         Assert.Equal(22 / scale, first.Bounds.Y, precision: 10);
@@ -232,7 +217,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         SelectBoth(canvas);
 
-        // Combined bbox starts at (0,0,200,50). Growing it to (0,0,300,100) scales x1.5/x2.
         canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (400, 250));
 
         Assert.Equal(new Bounds(0, 0, 75, 100), first.Bounds);
@@ -251,9 +235,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         SelectBoth(canvas);
 
-        // Combined bbox starts at (0,0,200,50), bottom-right corner (200,50). Dragging the
-        // top-left handle outward (up-and-left) grows the bbox to (-20,-10,220,60) - the
-        // opposite (bottom-right) corner must stay at exactly (200,50).
         canvas.DragHandle(canvas.Find(".group-resize-handle.top-left"), (300, 200), (280, 190));
 
         Assert.Equal(-20, first.Bounds.X, precision: 10);
@@ -306,13 +287,11 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
 
-        canvas.ZoomIn(); // zooms to scale 1.1
+        canvas.ZoomIn();
         SelectBoth(canvas);
 
         canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (344, 222));
 
-        // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the
-        // decimal literal 1.1, so this can't disagree with production code over double rounding.
         var scale = 1.0 + 0.1;
         var deltaX = 44 / scale;
         var deltaY = 22 / scale;
@@ -338,9 +317,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
 
         SelectBoth(canvas);
 
-        // Both members already sit at the 50x50 floor a lone instance's own resize handles
-        // enforce. A large inward drag must be fully absorbed by the group resize's own clamp
-        // rather than proportionally scaling either member smaller than that.
         canvas.DragHandle(
             canvas.Find(".group-resize-handle.bottom-right"),
             (300, 200),
@@ -351,8 +327,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 0, 50, 50), second.Bounds);
     }
 
-    // The box is a hit target in its own right: a press anywhere inside the multi-selection's
-    // bounds lands on it, not on whatever sits beneath, which is what lets it start the move.
     [Fact]
     public void TheSelectionBoxIsASolidHitTargetCarryingItsRole()
     {
@@ -416,8 +390,6 @@ public class DiagramCanvasMultiSelectionMoveResizeTests : ComponentTestBase
         Assert.Empty(canvas.FindAll(".component-container .resize-handle"));
         Assert.Equal(8, canvas.FindAll(".group-resize-handle").Count);
 
-        // A plain click collapses the selection down to just this one - its own handles should
-        // reappear, and the group overlay should disappear.
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
 
         Assert.Empty(canvas.FindAll(".selection-bounding-box"));

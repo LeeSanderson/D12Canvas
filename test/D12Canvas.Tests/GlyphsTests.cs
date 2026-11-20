@@ -81,7 +81,6 @@ public class GlyphsTests
 
 internal readonly record struct PathPoint(double X, double Y);
 
-// Arc radii and flags are not coordinates, so only an arc's endpoint is returned.
 internal static class PathCoordinates
 {
     public static IReadOnlyList<PathPoint> Of(string data)

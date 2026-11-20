@@ -7,10 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// LOD placeholder: below a host-configurable on-screen-size threshold, a component instance
-// renders a generic placeholder (built from its registration's DisplayName and glyph) instead of
-// mounting its full ComponentContainer/DynamicComponent tree. The placeholder is still a hit
-// target, so a zoomed-out board stays reachable by click and marquee.
 public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -199,8 +195,6 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         Assert.Single(canvas.FindAll(".component-container"));
 
-        // Default threshold is 32; the larger dimension (50) crosses it once scale drops below
-        // 0.64 - four zoom-out notches (-0.1 each) lands at 0.6.
         for (var i = 0; i < 4; i++)
         {
             canvas.ZoomOut();
@@ -239,7 +233,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         RegisterTestComponent();
         var board = new Board();
         AddInstance(board, new Bounds(0, 0, 60, 60));
-        AddInstance(board, new Bounds(50, 0, 10, 10)); // below threshold - excluded from tab stops
+        AddInstance(board, new Bounds(50, 0, 10, 10));
         var first = AddInstance(board, new Bounds(200, 0, 60, 60));
         var second = AddInstance(board, new Bounds(300, 0, 60, 60));
         board.AddGroup(new Group([first.Id, second.Id]));
@@ -260,7 +254,7 @@ public class DiagramCanvasLodPlaceholderTests : ComponentTestBase
         RegisterTestComponent();
         var board = new Board();
         AddInstance(board, new Bounds(0, 0, 60, 60));
-        AddInstance(board, new Bounds(100, 0, 10, 10)); // below threshold
+        AddInstance(board, new Bounds(100, 0, 10, 10));
 
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.ReturnToOrigin();

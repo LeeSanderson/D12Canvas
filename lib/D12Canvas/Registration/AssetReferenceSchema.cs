@@ -3,9 +3,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Registration;
 
-// Finds the [AssetReference] properties of a TProps type in the same registration-time pass that
-// finds its [PanelEditable] ones, so a bad declaration fails where it is written, and reads the
-// references a props object currently holds through them.
 public static class AssetReferenceSchema
 {
     public static IReadOnlyList<PropertyInfo> DiscoverFrom(Type propsType)
@@ -29,8 +26,6 @@ public static class AssetReferenceSchema
         return properties;
     }
 
-    // Every declared property of the registration whose value in these props is a reference,
-    // paired with the asset id it names. A declared property holding an ordinary URL is skipped.
     public static IEnumerable<(PropertyInfo Property, string AssetId)> ReferencesIn(
         ComponentRegistration registration,
         object props

@@ -11,8 +11,6 @@ public sealed class MarqueeVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public MarqueeVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -35,9 +33,6 @@ public sealed class MarqueeVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Click-to-adds both palette entries so they land close together (viewport-centre plus the
-    // small cascading placement offset), then returns a point above/left of both and a point
-    // below/right of both, ready to drag a marquee across the pair.
     private async Task<((float X, float Y) From, (float X, float Y) To)> PlaceTwoInstances()
     {
         await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
@@ -66,8 +61,6 @@ public sealed class MarqueeVisualTests : IAsyncLifetime
     {
         var (from, to) = await PlaceTwoInstances();
 
-        // A plain primary drag on empty canvas draws the marquee, driven with the same real
-        // Mouse.Down/Move technique DragMoveVisualTests uses.
         await _page.Mouse.MoveAsync(from.X, from.Y);
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync(to.X, to.Y);

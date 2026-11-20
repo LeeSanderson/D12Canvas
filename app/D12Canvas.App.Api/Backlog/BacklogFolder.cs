@@ -4,9 +4,6 @@ using D12Canvas.App.Shared.Suggestions;
 
 namespace D12Canvas.App.Api.Backlog;
 
-// Each suggestion is NNN-slug.md, plus NNN-slug.<ext> beside it when a screenshot came with it.
-// NNN is one past the highest number any entry in the folder already starts with, so numbers keep
-// rising after a file is deleted or renamed by hand.
 public sealed partial class BacklogFolder(string directory)
 {
     public const int MaxTitleLength = 120;

@@ -6,8 +6,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Board -> versioned JSON envelope -> Board. Props round-trip via two-phase deserialize
-// (registry-resolved bind by ComponentTypeKey), never a CLR-type discriminator.
 public class BoardJsonSerializerTests
 {
     private const string TestComponentKey = "test-props";
@@ -111,8 +109,6 @@ public class BoardJsonSerializerTests
         Assert.DoesNotContain(typeof(TestProps).AssemblyQualifiedName!, json);
     }
 
-    // A custom port round-trips alongside the rest of ComponentInstance's own envelope - not a
-    // separate Board array, since it's instance-scoped state, not a first-class board entity.
     [Fact]
     public void SerializeIncludesAnInstancesCustomPorts()
     {
@@ -156,8 +152,6 @@ public class BoardJsonSerializerTests
         Assert.Equal(new[] { port }, restoredInstance!.CustomPorts);
     }
 
-    // A board saved before this property existed has no "CustomPorts" on its components at all -
-    // same "field didn't exist yet" tolerance every other envelope addition relies on.
     [Fact]
     public void DeserializeDefaultsAnOlderInstanceMissingCustomPortsToAnEmptyList()
     {
@@ -233,8 +227,6 @@ public class BoardJsonSerializerTests
         );
     }
 
-    // Groups join the envelope alongside Components, round-tripping identity and MemberIds -
-    // including membership that nests one Group inside another.
     [Fact]
     public void SerializeProducesAnEnvelopeWithAGroupsArray()
     {
@@ -358,10 +350,6 @@ public class BoardJsonSerializerTests
         Assert.Same(foundViaFirst, foundViaSecond);
     }
 
-    // Strict deserialize repairs group membership exactly as the partial path does and never
-    // throws over it: a member id that resolves to nothing is dropped, a group left with no
-    // members is removed, and a group left with one is dissolved into its parent. Only the
-    // partial path (BoardJsonSerializerPartialDeserializeTests) reports the repairs as warnings.
     [Fact]
     public void StrictDeserializeRemovesAGroupWhoseOnlyMemberIsMissingWithoutThrowing()
     {
@@ -397,8 +385,6 @@ public class BoardJsonSerializerTests
         Assert.Equal(4, strict.Components.Count);
     }
 
-    // Edges join the envelope alongside Components and Groups. Attached endpoints round-trip as
-    // instance + port references; floating endpoints as board points.
     [Fact]
     public void SerializeProducesAnEnvelopeWithAnEdgesArray()
     {
@@ -485,9 +471,6 @@ public class BoardJsonSerializerTests
         Assert.Equal(new FloatingEndpoint(123, 456), restoredEdge!.Target);
     }
 
-    // RoutingStyle/SourceArrow/TargetArrow round-trip through the same envelope, including
-    // non-default values - proving the round-trip isn't just an artifact of every edge happening
-    // to keep its default style.
     [Fact]
     public void DeserializeRebuildsAnEdgesNonDefaultRoutingAndArrowStyles()
     {
@@ -523,10 +506,6 @@ public class BoardJsonSerializerTests
         Assert.Equal(ArrowStyle.None, restoredEdge.TargetArrow);
     }
 
-    // A board saved before these properties existed has no RoutingStyle/SourceArrow/TargetArrow
-    // in its JSON at all - same "field didn't exist yet" tolerance Groups/Edges themselves
-    // already rely on (BoardEnvelope.Groups/Edges being nullable). Every edge from such a board
-    // should come back with Edge's own defaults, not throw or leave a null style.
     [Fact]
     public void DeserializeDefaultsAnOlderEdgesMissingRoutingAndArrowStylesToTheAdr0005Defaults()
     {
@@ -602,10 +581,6 @@ public class BoardJsonSerializerTests
         Assert.Equal("#e5246b", serializer.DeserializePartial(json).Board.GetEdge(edge.Id)!.Color);
     }
 
-    // An edge's embedded Label round-trips through the same envelope as an ordinary
-    // ComponentInstanceEnvelope (Props/Bounds/ComponentTypeKey) - it's not a separate
-    // Board.Components entry, so it isn't in the Components array at all, just nested on its
-    // owning edge.
     [Fact]
     public void SerializeIncludesTheEdgesLabelWhenPresent()
     {
@@ -701,8 +676,6 @@ public class BoardJsonSerializerTests
         Assert.Null(restoredEdge!.Label);
     }
 
-    // A board saved before this property existed has no "Label" on its edges at all - same
-    // "field didn't exist yet" tolerance RoutingStyle/SourceArrow/TargetArrow already rely on.
     [Fact]
     public void DeserializeDefaultsAnOlderEdgesMissingLabelToNull()
     {
@@ -761,9 +734,6 @@ public class BoardJsonSerializerTests
         Assert.Equal(restoredFirst.Bounds.PointAtFraction(1, 0.5), sourcePoint);
     }
 
-    // An edge attached to a custom port round-trips exactly like one attached to a standard port
-    // - same envelope shape, distinguished by which field pair is populated (see
-    // EdgeEndpointEnvelope), and still tracks its instance's Bounds afterwards.
     [Fact]
     public void ACustomPortAttachedEdgeRoundTripsAndStaysAttached()
     {
@@ -887,8 +857,6 @@ public class BoardJsonSerializerTests
         Assert.Contains("66666666-6666-6666-6666-666666666666", warning.Reason);
     }
 
-    // A board saved before auto endpoints existed has floating ends that happen to sit inside a
-    // shape. They stay floating on load: the shape is not adopted as an auto attachment.
     [Fact]
     public void ABoardSavedUnderTheCurrentSchemaLoadsUnchangedThroughBothPaths()
     {
@@ -959,10 +927,6 @@ public class BoardJsonSerializerTests
         }
     }
 
-    // Strict deserialize does no referential-integrity checking for Edges - unlike Groups, a
-    // dangling endpoint componentId is loaded as-is, since an endpoint is a reference the edge
-    // model already allows to resolve to nothing. Only the tolerant partial path turns this into
-    // a warning.
     [Fact]
     public void StrictDeserializeLoadsAnEdgeWithAMissingEndpointInstanceWithoutThrowing()
     {

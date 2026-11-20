@@ -45,7 +45,7 @@ public class AddCustomPortCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         Assert.Equal(new[] { port }, instance.CustomPorts);
     }

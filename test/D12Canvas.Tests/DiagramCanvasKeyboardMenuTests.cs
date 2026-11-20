@@ -7,10 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Shift+F10 and the ContextMenu key reach the canvas as one call once the listener has given the
-// request to the canvas. With no press target, the selection decides the set and the anchor: the
-// object set at the bottom-left of the selection's on-screen box, or the canvas set at the
-// viewport centre. A secondary press the browser kept by its Menu verdict opens nothing.
 public class DiagramCanvasKeyboardMenuTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

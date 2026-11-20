@@ -20,9 +20,6 @@ public sealed class D12CanvasOptions
 
     internal ColourPresetCatalog ColourPresetCatalog { get; }
 
-    // The swatches every colour role offers in the Property bar's colour flyout, in order. An
-    // empty list removes the grid. Setting a null list, or a preset whose Hex is not #RRGGBB,
-    // throws.
     public IReadOnlyList<ColourPreset> ColourPresets
     {
         get => ColourPresetCatalog.Presets;

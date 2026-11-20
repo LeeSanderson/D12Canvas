@@ -1,8 +1,5 @@
 namespace D12Canvas.Model;
 
-// Which standard port an auto endpoint attaches at: the side that the line from the bounds' centre
-// to the aimed-at point crosses, or, for a point inside the bounds, the side nearest it. A tie
-// goes to the side listed first in StandardPorts.All.
 public static class AutoPortSide
 {
     public static PortId Facing(Bounds bounds, (double X, double Y) aimedAt)

@@ -4,11 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The locking demo board: a free rectangle beside a locked one, with the property panel. A
-// right-click on the locked one selects it, its menu reads Unlock, and the panel shows its fields
-// disabled with the unlock control live. Once the menu closes, the property bar holds only Unlock;
-// with the free rectangle added to the selection it shows its chips and ends with the lock count,
-// and the panel opens with a line saying a recolour skips the locked one.
 public sealed class LockingVisualTests : IAsyncLifetime
 {
     private const string FreeId = "10c00000-0000-0000-0000-000000000001";
@@ -18,8 +13,6 @@ public sealed class LockingVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public LockingVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

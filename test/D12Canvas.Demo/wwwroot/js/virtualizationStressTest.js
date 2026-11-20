@@ -1,7 +1,3 @@
-// FPS/DOM-count HUD for the virtualization stress test dev tool. Runs its own
-// requestAnimationFrame loop so the reading reflects real browser frame pacing,
-// independent of Blazor's render cycle.
-
 let rafId = null;
 
 export function startMonitor(hudElement, mountedSelector) {

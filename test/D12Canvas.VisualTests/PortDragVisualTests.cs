@@ -11,8 +11,6 @@ public sealed class PortDragVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PortDragVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -42,10 +40,6 @@ public sealed class PortDragVisualTests : IAsyncLifetime
 
     private ILocator StickyNote => _page.Locator(".component-container[aria-label='Sticky Note']");
 
-    // The seeded board's Rectangle sits directly above its Sticky Note (a 40px board-space gap), so
-    // the Rectangle's bottom port, pressed once the Rectangle is selected, is a short drag from the
-    // note. Stops halfway to the note's top edge, so this is unambiguously the in-progress preview
-    // and not the completed edge.
     private async Task DragHalfwayFromRectangleToStickyNote()
     {
         var from = await PortGestures.SelectAndAimAtPortAsync(Rectangle, "Bottom");
@@ -83,8 +77,6 @@ public sealed class PortDragVisualTests : IAsyncLifetime
         await _page.Mouse.UpAsync();
     }
 
-    // Grabbing a port an end is pinned to carries that end: the pending line, from the end that
-    // stays put to the pointer, is the only thing drawing the edge.
     [Fact]
     public async Task CarryingAnAttachedEndMidGesture_MatchesBaseline()
     {
@@ -99,7 +91,6 @@ public sealed class PortDragVisualTests : IAsyncLifetime
         await _page.Mouse.MoveAsync(carriedTo.X, carriedTo.Y, new() { Steps = 4 });
 
         await Expect(_page.Locator(".edge-line")).ToHaveCountAsync(0);
-        // The line's box takes in its stroke, so its end sits a couple of pixels past the pointer.
         await GestureWaits.UntilBoxAsync(
             _page.Locator(".connector-drag-preview"),
             box => Math.Abs(box.X + box.Width - carriedTo.X) < 4,

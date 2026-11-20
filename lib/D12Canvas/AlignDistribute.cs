@@ -22,9 +22,6 @@ internal enum DistributeAxis
     Vertical,
 }
 
-// Both computations work on whole entities, so a group is handed in as one box and comes back as
-// one delta for its members to share. A grid spacing of null means snap is off. An entity left
-// where it is gets no delta, so a satisfied arrangement produces nothing to record.
 internal static class AlignDistribute
 {
     public const int AlignThreshold = 2;
@@ -32,9 +29,6 @@ internal static class AlignDistribute
 
     private const double Tolerance = 1e-9;
 
-    // The target is the selection box's own edge or centre line, snapped as a single coordinate,
-    // and every entity's matching line is then set to exactly that value. Snapping each result
-    // instead would pull centre and right alignment apart wherever widths differ.
     public static IReadOnlyList<ArrangeDelta> Align(
         IReadOnlyList<ArrangedEntity> entities,
         AlignEdge edge,
@@ -58,9 +52,6 @@ internal static class AlignDistribute
         );
     }
 
-    // Entities are ordered by their centre on the axis and the whitespace between neighbours made
-    // equal. The first entity never moves. With snap off the last stays too; with it on the gap is
-    // a whole number of grid steps, never zero when the ideal gap is positive, so the last drifts.
     public static IReadOnlyList<ArrangeDelta> Distribute(
         IReadOnlyList<ArrangedEntity> entities,
         DistributeAxis axis,
@@ -111,7 +102,6 @@ internal static class AlignDistribute
     private static double Snap(double coordinate, double? gridSpacing) =>
         gridSpacing is { } spacing ? GridSnap.NearestLine(coordinate, spacing) : coordinate;
 
-    // Without the clamp a row of small gaps would round to zero and distribute would pack.
     private static double SnapGap(double idealGap, double? gridSpacing)
     {
         if (gridSpacing is not { } spacing)

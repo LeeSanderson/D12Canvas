@@ -4,9 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The image routes demo board on a dark theme: an empty image showing its placeholder beside a
-// filled one, the property panel's picture editor for a selected image, and the object menu's
-// two image rows.
 public sealed class ImageRoutesVisualTests : IAsyncLifetime
 {
     private const string EmptyImageId = "f0000000-0000-0000-0000-000000000001";
@@ -15,8 +12,6 @@ public sealed class ImageRoutesVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public ImageRoutesVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

@@ -3,8 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The minimap floats over the board, so it declares the raised values and color-scheme on its own
-// root in the same four blocks Palette and PropertyPanel use, and everything it draws reads them.
 public class MinimapThemeTokensTests : ComponentTestBase
 {
     public MinimapThemeTokensTests()

@@ -4,9 +4,6 @@ using D12Canvas.Pointer;
 
 namespace D12Canvas;
 
-// Two routes remove a custom port: the pointer's Remove port row, shown when the menu's press
-// landed on a custom port's span, and Delete while port picking highlights a custom port. Both
-// go through CustomPortRemoval, which turns every end pinned to the port into an auto endpoint.
 public partial class DiagramCanvas
 {
     private CustomPortEndpoint? RemovablePortAtPress(PointerPress press) =>
@@ -43,8 +40,6 @@ public partial class DiagramCanvas
         }
     }
 
-    // While port picking, Delete removes the highlighted custom port and does nothing else, so it
-    // never deletes the instance being picked on. The pick stays open on the auto stage.
     private void DeleteDuringPortPicking()
     {
         if (_portFocusEndpoint is CustomPortEndpoint custom)

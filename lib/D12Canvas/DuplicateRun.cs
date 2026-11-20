@@ -1,8 +1,5 @@
 namespace D12Canvas;
 
-// The offset is measured from the source's top-left as captured when the last duplicate was made,
-// against wherever the copies' top-left is now, so it is read from the board and no gesture has
-// to report a move.
 internal sealed class DuplicateRun
 {
     public const double FirstStep = PasteCascade.Step;
@@ -30,8 +27,6 @@ internal sealed class DuplicateRun
         (double X, double Y) sourceTopLeft
     ) => _last = new LastDuplicate(instanceIds.ToHashSet(), edgeIds.ToHashSet(), sourceTopLeft);
 
-    // A selection that leaves the last duplicate's output ends the run for good, even if the same
-    // set is selected again later.
     public void SelectionChanged(
         IReadOnlySet<Guid> selectedInstanceIds,
         IReadOnlySet<Guid> selectedEdgeIds
@@ -43,8 +38,6 @@ internal sealed class DuplicateRun
         }
     }
 
-    // Undoing the duplicate leaves its ids in the selection with nothing behind them, and a redo
-    // would bring them back still selected, so the run ends as soon as any copy stops existing.
     public void BoardChanged(Func<Guid, bool> exists)
     {
         if (_last is { } last && !last.InstanceIds.Concat(last.EdgeIds).All(exists))

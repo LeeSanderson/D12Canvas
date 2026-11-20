@@ -38,8 +38,6 @@
 </style>
 
 @code {
-    // A curated preset list - the point of this demo is the escape hatch itself (a swatch picker
-    // the built-in EditorKind set can't express), not an exhaustive color grid.
     private static readonly string[] Swatches =
     {
         "#ffd966",
@@ -51,9 +49,6 @@
     [Parameter]
     public CustomEditorContext Context { get; set; } = null!;
 
-    // Wraps this component behind a plain RenderFragment<CustomEditorContext> - what
-    // EditableProperty.CustomEditor actually needs - so Program.cs's registration call only
-    // references this static factory, not RenderTreeBuilder internals.
     public static RenderFragment<CustomEditorContext> Editor =>
         context => builder =>
         {

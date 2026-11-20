@@ -3,7 +3,6 @@ using D12Canvas.Registration;
 
 namespace D12Canvas.Demo;
 
-// Enough host types to fill the Palette rail and send the rest to its "More components" flyout.
 internal static class DemoShapes
 {
     private static readonly (string Key, string Name, string Category, string Path)[] Shapes =

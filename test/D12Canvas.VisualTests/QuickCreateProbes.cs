@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A real click on a port, the real Ctrl+Arrow chord and the focus the browser lands on, none of
-// which bUnit's direct calls exercise. At the default zoom the copy sits two grid cells, 40px,
-// past the pressed side.
 public sealed class QuickCreateProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

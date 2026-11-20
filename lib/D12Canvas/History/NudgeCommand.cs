@@ -2,10 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Backs arrow-key nudge - moves one or more instances, and the floating ends of selected edges, by
-// a board-space delta. Unlike ChangeBoundsCommand's fixed before/after, Extend grows this same
-// command's accumulated delta in place - DiagramCanvas calls it for every repeat keydown of a held
-// arrow key, so one press-to-release span becomes one history entry instead of one per repeat event.
 public sealed class NudgeCommand : ICommand
 {
     private readonly IReadOnlyList<ComponentInstance> _targets;

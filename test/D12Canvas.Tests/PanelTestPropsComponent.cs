@@ -4,14 +4,6 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace D12Canvas.Tests;
 
-// A second props type alongside TestProps: PropertyPanelTests needs one shape that carries a
-// Text-type *content* field (Content, no attribute - excluded from the panel, like StickyNote's
-// Text), plus one field per EditorKind the panel supports (Label/Count, Tint/Flag/Mode,
-// CustomValue), all at once. Trailing defaults keep every earlier call site intact. CustomValue
-// carries no [PanelEditable] - a Custom-kind property can only come from the registration
-// builder, so PropertyPanelTests wires it in itself. Tint declares the Fill role -
-// PanelTestPropsSecondary.AccentColor declares the same one, standing in for two distinct
-// component types whose differently-named properties play one role in cross-type editing.
 internal sealed record PanelTestProps(
     string Content,
     [property: PanelEditable(EditorKind.Text)] string Label,

@@ -7,10 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The wheel's meaning follows the wheel device profile: a mouse wheel zooms about the pointer and
-// a trackpad swipe pans, Ctrl zooms on both, Alt pans on both and Shift pans horizontally on a
-// mouse only. Auto takes the device from the granularity the listener classified the wheel
-// gesture with. No wheel change enters history.
 public class DiagramCanvasWheelTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

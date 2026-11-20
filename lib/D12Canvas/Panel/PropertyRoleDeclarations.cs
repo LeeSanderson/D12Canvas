@@ -2,8 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Panel;
 
-// Validation runs a property against its own role's declaration rather than against whatever
-// other type happens to be registered, so a wrong role fails on the registration that carries it.
 public static class PropertyRoleDeclarations
 {
     public static PropertyRoleDeclaration For(PropertyRole role) =>

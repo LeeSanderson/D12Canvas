@@ -4,9 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The entered group demo board: an outer group of one rectangle and a nested group of two, and
-// one rectangle outside them. A double-click on the outer group's rectangle enters that group and
-// selects the rectangle, and the dashed outline marks the outer group.
 public sealed class EnteredGroupVisualTests : IAsyncLifetime
 {
     private const string FirstId = "c0000000-0000-0000-0000-000000000001";
@@ -16,8 +13,6 @@ public sealed class EnteredGroupVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public EnteredGroupVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

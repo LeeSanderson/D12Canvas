@@ -5,9 +5,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Text's own inline WYSIWYG text editor, rendered standalone (no ParentCanvas/InstanceId
-// cascaded) - so these cover the editor's own UI mechanics only. The actual Board/History commit
-// is covered end-to-end in DiagramCanvasInlineTextEditingTests.
 public class TextTests : ComponentTestBase
 {
     private readonly BunitJSModuleInterop _inlineEditorModule;
@@ -54,8 +51,6 @@ public class TextTests : ComponentTestBase
         Assert.Contains("text-align: center", style);
     }
 
-    // The default props carry no colour, so nothing colour-related is emitted inline and the
-    // board text token paints it (see ThemedDefaultTests).
     [Fact]
     public void RendersWithItsDefaultPropsWhenNoneSupplied()
     {

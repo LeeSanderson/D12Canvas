@@ -2,9 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas;
 
-// A clone drag's copies are real entities held in the gesture preview until release: they render
-// as committed ones do, with the selected look the originals give up while the copies are in the
-// user's hand, and the release adds those same objects, so nothing on screen is rebuilt.
 public partial class DiagramCanvas
 {
     private Board? PendingCopies => _preview.PendingFragment;
@@ -21,8 +18,6 @@ public partial class DiagramCanvas
         return copies;
     }
 
-    // The run's source is where the copies started, which is where the originals stand, so a
-    // Ctrl+D straight after the drop repeats the drag's offset.
     private void CommitClone(Board copies)
     {
         if (BoardFragment.Extent(copies) is not { } source)
@@ -57,10 +52,6 @@ public partial class DiagramCanvas
         : PendingCopies is { } copies ? Board.Edges.Concat(copies.Edges)
         : Board.Edges;
 
-    // Every copy mounts whatever windowing says, since windowing reads committed bounds and the
-    // copies have none yet. A copied top-level group renders its stop too, as the copied shapes
-    // render their containers, so it can show selected; none of them takes focus until it is on
-    // the board.
     private IEnumerable<TabStop> RenderedStops() =>
         PendingCopies is { } copies
             ? OrderedTabStops().Concat(CopyStops(copies))

@@ -1,8 +1,5 @@
 namespace D12Canvas.Model;
 
-// A custom port an end user adds to a specific instance at runtime - the same fractional border
-// representation as a standard port (StandardPorts.FractionOf), just user-authored and
-// instance-scoped (ComponentInstance.CustomPorts) rather than automatic and type-scoped.
 public readonly record struct PortDef(Guid Id, double FractionX, double FractionY)
 {
     public PortDef(double fractionX, double fractionY)

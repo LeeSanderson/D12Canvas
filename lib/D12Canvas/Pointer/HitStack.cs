@@ -1,16 +1,9 @@
 namespace D12Canvas.Pointer;
 
-// One entity under a point, resolved as a press on it would select it.
 internal readonly record struct HitStackEntry(Guid Id, bool IsEdge);
 
-// Every entity under the press point, topmost first in the paint order the browser reports. Read
-// for two click outcomes only and never for the role the press classified to.
 internal static class HitStack
 {
-    // The entry below the one selected before the press, wrapping from the bottom to the top, or
-    // the entry below the top when the press did not start from a single entry of this stack.
-    // The selection from before the press is resolved to the level the press stepped out to, so
-    // a member selected inside a group the press left is found as that group.
     public static HitStackEntry? NextBelow(
         IReadOnlyList<HitStackEntry> stack,
         SelectionSnapshot before,

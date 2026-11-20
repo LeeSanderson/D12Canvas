@@ -1,22 +1,7 @@
 namespace D12Canvas.VisualTests;
 
-// A .NET port of mapbox/pixelmatch v7.2.0 (https://github.com/mapbox/pixelmatch), ported to
-// absorb sub-pixel rendering noise between visually-identical screenshots: running the exact same
-// pinned Docker image on different physical CI hardware produces byte-different but
-// visually-identical PNGs, which Verify's default byte-exact comparison can't tell apart from a
-// real regression.
-//
-// Faithful to upstream's actual comparison decision (the OKLab/HyAB color-difference metric and
-// anti-aliasing detector) but deliberately drops the parts that only exist to render a
-// highlighted diff *image* (the `output`/`diffMask`/`windowSize` options) - callers here only need
-// a pass/fail pixel count, not a rendered diff. Upstream's module-level color cache is replaced
-// with a cache local to each Compare call, since xUnit runs test collections in parallel and a
-// shared mutable cache would race across threads.
 public static class PixelMatch
 {
-    // A struct's implicit parameterless constructor (all fields zero) takes priority over a
-    // primary constructor's default arguments when called with zero args - `new Options()` would
-    // NOT give Threshold=0.1 the way it looks like it should. `Default` sidesteps that gotcha.
     public readonly record struct Options(
         double Threshold,
         bool IncludeAntiAliasing,
@@ -30,10 +15,8 @@ public static class PixelMatch
         );
     }
 
-    // sRGB [0..255] -> linear [0..1], padded with a 257th entry so linLUT can always interpolate.
     private static readonly double[] Lin = BuildLinearLut();
 
-    // Premultiplied LMS matrix contributions for opaque sRGB byte values.
     private static readonly double[] LR = new double[256];
     private static readonly double[] LG = new double[256];
     private static readonly double[] LB = new double[256];
@@ -90,7 +73,6 @@ public static class PixelMatch
         return cbrt;
     }
 
-    /// <summary>Returns the number of pixels that differ by more than a rendering-noise/anti-aliasing amount.</summary>
     public static int Compare(
         byte[] img1,
         byte[] img2,
@@ -169,10 +151,6 @@ public static class PixelMatch
         return packed;
     }
 
-    // Based on "Anti-aliased Pixel and Intensity Slope Detector" (V. Vysniauskas, 2009): a pixel
-    // is anti-aliasing if it sits on a monotonic brightness ramp between two neighbors that each
-    // have 3+ identical siblings in both images (i.e. neighbors that are themselves flat regions,
-    // not part of the same edge).
     private static bool Antialiased(
         byte[] img,
         int x1,
@@ -280,8 +258,6 @@ public static class PixelMatch
         return false;
     }
 
-    // Cheap, monotonic Rec.601-luma brightness delta used only to find the intensity ramp
-    // direction for AA detection - intentionally not the OKLab metric ColorDelta uses below.
     private static double BrightnessDelta(byte[] img, int m, int r1, int g1, int b1, int a1)
     {
         int r2 = img[m],
@@ -311,7 +287,6 @@ public static class PixelMatch
         return dr * 0.29889531 + dg * 0.58662247 + db * 0.11448223;
     }
 
-    /// <summary>0 if the two pixels' OKLab HyAB distance is within maxDelta, otherwise ±1 (negative if the img2 pixel is darker).</summary>
     private static int ColorDelta(
         byte[] img1,
         byte[] img2,
@@ -425,9 +400,6 @@ public static class PixelMatch
         return OklabHyabDelta(lrr1 - lrr2, l1 - l2, m1 - m2, s1 - s2, maxDelta);
     }
 
-    // HyAB distance = |dLr| + sqrt(da^2 + db^2). Avoids the sqrt: it stays below maxDelta iff
-    // |dLr| <= maxDelta and da^2 + db^2 <= (maxDelta - |dLr|)^2. Only the sign of the result is
-    // otherwise used (encodes whether img1's pixel is lighter or darker).
     private static int OklabHyabDelta(double dLr, double dl, double dm, double ds, double maxDelta)
     {
         var rest = maxDelta - Math.Abs(dLr);
@@ -450,21 +422,16 @@ public static class PixelMatch
         return 0.5 * (x + Math.Sqrt(x * x + 4 * ToeK2 * ToeK3 * l));
     }
 
-    // sRGB->linear for a fractional [0..255] channel value via linear interpolation of Lin.
     private static double LinLut(double x)
     {
         var i = (int)x;
         return Lin[i] + (Lin[i + 1] - Lin[i]) * (x - i);
     }
 
-    // Cube root over [0..1] via lookup table with linear interpolation.
     private static double CbrtLut(double x)
     {
         var t = x * CbrtN;
         var i = (int)t;
-        // Clamps for floating-point x slightly outside [0,1] (e.g. underflow near black) -
-        // upstream's JS would silently produce NaN from an out-of-bounds array read instead of
-        // throwing, so this keeps the same "never crashes" behavior without changing normal results.
         i = Math.Clamp(i, 0, CbrtN);
         return Cbrt[i] + (Cbrt[i + 1] - Cbrt[i]) * (t - i);
     }

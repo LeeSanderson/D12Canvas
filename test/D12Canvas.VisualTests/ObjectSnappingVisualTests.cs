@@ -4,10 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The object snapping demo board: two rectangles on a row with a gap between them, and a third
-// below them that the tests drag up beside the row. Snapping is help for a careful hand, so each
-// drag arrives with one long jump, which the canvas sees as a fast pointer, and then settles with a
-// small step after a pause.
 public sealed class ObjectSnappingVisualTests : IAsyncLifetime
 {
     private const string MoverId = "c0000000-0000-0000-0000-000000000003";
@@ -16,8 +12,6 @@ public sealed class ObjectSnappingVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public ObjectSnappingVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -42,8 +36,6 @@ public sealed class ObjectSnappingVisualTests : IAsyncLifetime
 
     private ILocator Mover => _page.Locator($".component-container[data-d12-entity='{MoverId}']");
 
-    // Presses the mover's centre and flings it far to the right and back in two long jumps, ending
-    // one board unit short of where a careful hand would stop.
     private async Task<(float X, float Y)> FlingTheMoverBesideTheRowAsync()
     {
         var box = await Mover.BoundingBoxAsync();

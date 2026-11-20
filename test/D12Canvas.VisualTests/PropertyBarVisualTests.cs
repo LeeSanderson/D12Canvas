@@ -4,11 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The property bar demo on a light and a dark pane: a selected rectangle's bar centred above it, a
-// mixed fill across two rectangles, a selected edge's bar, a shape along the top whose bar slides
-// along the container's edge, the selection chrome hidden while the pointer is on a bar, an
-// edge's routing chip with its option flyout open once the edge is framed, and its colour chip
-// with the preset grid open on a colour picked from it.
 public sealed class PropertyBarVisualTests : IAsyncLifetime
 {
     internal const string TopRectangleId = "b0a00000-0000-0000-0000-000000000001";
@@ -19,8 +14,6 @@ public sealed class PropertyBarVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PropertyBarVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -136,8 +129,6 @@ public sealed class PropertyBarVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    // The edge sits along the bottom of the pane, so it is framed first to leave the flyout room
-    // below the bar.
     private async Task OpenTheRoutingFlyoutAsync(string theme)
     {
         await SelectEdgeAsync(_page, theme);
@@ -167,7 +158,6 @@ public sealed class PropertyBarVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    // Blue is picked from the grid first, so the reopened grid shows a checked swatch.
     private async Task OpenTheColourFlyoutOnAPresetAsync(string theme)
     {
         await SelectEdgeAsync(_page, theme);

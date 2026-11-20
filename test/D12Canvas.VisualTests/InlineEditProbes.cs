@@ -3,8 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The real browser paths into and out of an inline edit: a double-press, F2, the palette's
-// click, Enter and drop, Escape and blur.
 public sealed class InlineEditProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -115,7 +113,6 @@ public sealed class InlineEditProbes(PlaywrightFixture playwright, DemoAppFixtur
     [Fact]
     public async Task ADoublePressOnANoteHalfOffScreen_PansItFullyIntoViewBeforeEditing()
     {
-        // The board opens fitted, so the note is first pushed off the right edge by a pan.
         var above = await PagePointOnCanvasAsync(300, 10);
         await Page.Mouse.ClickAsync(above.X, above.Y);
         await Page.Keyboard.PressAsync("ArrowLeft");

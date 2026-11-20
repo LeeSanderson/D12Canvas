@@ -2,8 +2,6 @@ using Microsoft.Playwright;
 
 namespace D12Canvas.VisualTests;
 
-// Each case starts a middle-button pan, ends the press one way, then lets the button up and
-// checks that a pointer with no button held moves nothing.
 public sealed class ReleaseChannelProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -63,8 +61,6 @@ public sealed class ReleaseChannelProbes(PlaywrightFixture playwright, DemoAppFi
         await ExpectNothingRespondsToAButtonlessMoveAsync();
     }
 
-    // The browser still holds the button after a cancel, so it is let up before the check, and
-    // that release must reach no one either.
     private async Task ExpectCancelledByAsync(string channel)
     {
         await SettleAsync();

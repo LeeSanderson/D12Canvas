@@ -4,9 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The real keys and the real right-click that remove a custom port. The left shape has one custom
-// port a quarter down its right side, with an edge pinned to it running to the neighbour. Port
-// picking's Space cycle starts at auto, then Top, Right, Bottom, Left, then the custom port.
 public sealed class PortRemovalProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

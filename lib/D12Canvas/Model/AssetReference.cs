@@ -2,8 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace D12Canvas.Model;
 
-// How a declared props property points at an Asset: the literal prefix followed by the asset id.
-// The prefix is what tells a reference apart from an ordinary URL held in the same property.
 public static class AssetReference
 {
     public const string Prefix = "asset:";

@@ -5,18 +5,8 @@ using D12Canvas.Registration;
 
 namespace D12Canvas;
 
-// A standalone Board holding a copy of part of another: what a copy writes to the clipboard, and
-// the copy a duplicate places. Its instances, groups and edges are new objects, so placing one
-// never moves or rewires the originals; props records are immutable and are shared.
 internal static class BoardFragment
 {
-    // The selected instances and groups, a group carrying its members recursively, the edges
-    // interior to them, every selected edge, and every asset the copied instances refer to. An end
-    // of a selected edge on an instance outside the copy floats at where it resolves now; an edge
-    // nobody selected travels only when both ends are on copied instances. Every copy keeps its
-    // Locked flag. Without locked entities, as a cut carries, a locked instance or selected edge
-    // stays behind and a copied group left with fewer than two members is repaired as a delete
-    // would repair it.
     public static Board Of(
         Board board,
         IEnumerable<Guid> selectedIds,
@@ -169,9 +159,6 @@ internal static class BoardFragment
             edge.Locked
         );
 
-    // A copy of the fragment in which every entity id is new: instances, groups and the member
-    // lists naming them, edges, the instance each attached end names, every custom port and the
-    // custom-port ends naming it, and each edge label. Asset ids are content hashes and are kept.
     public static Board WithFreshIds(Board fragment)
     {
         var instanceIds = fragment.Components.ToDictionary(instance => instance.Id, _ => NewId());
@@ -279,9 +266,6 @@ internal static class BoardFragment
         };
     }
 
-    // Removes every edge with an attached end naming an instance the fragment does not hold, which
-    // after a copy only happens when an instance's type could not be bound on the way in. A
-    // floating end always passes.
     public static IReadOnlyList<Edge> DropEdgesWithMissingEnds(Board fragment)
     {
         var dropped = fragment
@@ -299,12 +283,8 @@ internal static class BoardFragment
         return dropped;
     }
 
-    // Every instance's bounds unioned with every end that resolves, so a fragment holding only
-    // edges still has a box to place by.
     public static Bounds? Extent(Board fragment) => fragment.ContentExtent();
 
-    // Moves the fragment as one rigid body. A label is placed from its edge's route, so only its
-    // size is ever read and it needs no move of its own.
     public static void Translate(Board fragment, double dx, double dy)
     {
         foreach (var instance in fragment.Components)
@@ -328,9 +308,6 @@ internal static class BoardFragment
             ? new FloatingEndpoint(floating.X + dx, floating.Y + dy)
             : end;
 
-    // One history entry adding the fragment to the board, above everything already there with the
-    // fragment's own stacking order kept. The fragment's entities become the board's, so a
-    // fragment is placed once.
     public static Placement PlaceOnto(Board board, Board fragment)
     {
         StackAbove(board, fragment);
@@ -370,9 +347,6 @@ internal static class BoardFragment
         );
     }
 
-    // Restacks the fragment directly above everything on the board, keeping its own order. Doing it
-    // again against the same board changes nothing, so a clone drag's copies can be stacked while
-    // they are still in the user's hand and placed unchanged at release.
     public static void StackAbove(Board board, Board fragment)
     {
         var baseZIndex = board.NextZIndex();
@@ -388,8 +362,6 @@ internal static class BoardFragment
         }
     }
 
-    // An asset whose id is not the hash of its bytes is refused, since the board's table is keyed
-    // by content and a mislabelled entry would later stand in for different bytes.
     public sealed record Placement(
         ICommand Command,
         IReadOnlyList<Guid> TopLevelIds,

@@ -8,9 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Ctrl+G promotes a 2+ selection into a persistent Group entity, which becomes the new selection;
-// Ctrl+Shift+G dissolves it back. Once a Group exists, clicking any one of its members selects
-// the whole group as a unit - selection and group membership converge.
 public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -110,8 +107,6 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         await canvas.ClickCanvas(400, 400);
 
-        // A plain click on just the second member - not shift-click - still selects both, since
-        // it now belongs to a Group.
         canvas.ClickOn(canvas.FindAll(".component-container")[1]);
 
         var containers = canvas.FindAll(".component-container");
@@ -203,7 +198,6 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
 
         Assert.Single(board.Groups);
 
-        // Clicking one member alone once again selects both, since the group is back.
         await canvas.ClickCanvas(400, 400);
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         var containers = canvas.FindAll(".component-container");
@@ -223,8 +217,6 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         var innerGroup = Assert.Single(board.Groups);
 
-        // The inner group is now the whole selection; shift-click the third (ungrouped) instance
-        // to add it alongside the group.
         canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
@@ -235,12 +227,9 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
             new HashSet<Guid> { innerGroup.Id, third.Id },
             outerGroup.MemberIds.ToHashSet()
         );
-        // The inner group survives unchanged, nested inside the outer one.
         Assert.NotNull(board.GetGroup(innerGroup.Id));
     }
 
-    // A host can still break group membership through Board's plain mutators; the canvas renders
-    // such a group without throwing and its accessible label counts only the members that resolve.
     [Fact]
     public void AGroupsAccessibleLabelCountsOnlyTheMembersThatResolve()
     {
@@ -267,15 +256,12 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        // The outer (nesting) group is the whole selection right now - ungroup dissolves only it.
         await canvas.InvokeAsync(() => canvas.Instance.OnUngroupPressed());
 
         var remaining = Assert.Single(board.Groups);
         Assert.Equal(innerGroup.Id, remaining.Id);
         Assert.Equal(new HashSet<Guid> { first.Id, second.Id }, remaining.MemberIds.ToHashSet());
 
-        // The inner group still converges selection on click; the third instance (a former outer
-        // member, never itself grouped) is independently selectable again.
         await canvas.ClickCanvas(400, 400);
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         var containers = canvas.FindAll(".component-container");
@@ -295,22 +281,16 @@ public class DiagramCanvasGroupUngroupTests : ComponentTestBase
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         Assert.Single(board.Groups);
-        // Selection is now the group alone; shift-click the third (ungrouped) instance to select
-        // the group *and* a plain, non-grouped instance together.
         canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUngroupPressed());
 
         Assert.Empty(board.Groups);
-        // Every former member of the dissolved group, plus the untouched loose instance, is still
-        // part of the selection right after ungroup.
         var containers = canvas.FindAll(".component-container");
         Assert.Equal("true", containers[0].GetAttribute("aria-selected"));
         Assert.Equal("true", containers[1].GetAttribute("aria-selected"));
         Assert.Equal("true", containers[2].GetAttribute("aria-selected"));
 
-        // And the three are now independently selectable - clicking just the loose instance
-        // selects only it.
         await canvas.ClickCanvas(400, 400);
         canvas.ClickOn(canvas.FindAll(".component-container")[2]);
         containers = canvas.FindAll(".component-container");

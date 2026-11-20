@@ -47,9 +47,6 @@
 </style>
 
 @code {
-    // Two boards, not one shared instance, so each pane's DiagramCanvas is a fully independent
-    // mount - proving simultaneous, per-instance theming rather than relying on any state the two
-    // panes might otherwise share.
     private readonly Board _lightBoard = new();
     private readonly Board _darkBoard = new();
 }

@@ -49,7 +49,6 @@
 
     private IJSObjectReference? _module;
 
-    // Cancelling the picker, or picking a file the browser cannot decode, commits nothing.
     private async Task ChooseFile()
     {
         if (Context.AddAsset is not { } addAsset)

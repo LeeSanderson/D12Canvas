@@ -5,17 +5,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The grid and selection marquee are the first consumers of the shared theme-token layer: a light
-// default, a dark default (driven by prefers-color-scheme), and a data-d12-theme override that
-// takes precedence over the OS preference.
 public sealed class ThemeVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public ThemeVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -41,8 +36,6 @@ public sealed class ThemeVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".d12-palette-entry")).ToHaveCountAsync(8);
     }
 
-    // Places two instances close together and returns a from/to pair spanning both, ready to drag
-    // a marquee across them - same technique MarqueeVisualTests already uses.
     private async Task<((float X, float Y) From, (float X, float Y) To)> PlaceTwoInstances()
     {
         await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();

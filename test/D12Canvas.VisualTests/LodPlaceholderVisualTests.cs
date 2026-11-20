@@ -5,16 +5,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A dense, zoomed-out board swaps every instance's full component tree for the generic LOD
-// placeholder once its on-screen size drops below the default threshold.
 public sealed class LodPlaceholderVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public LodPlaceholderVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -40,9 +36,6 @@ public sealed class LodPlaceholderVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".component-container")).ToHaveCountAsync(7);
     }
 
-    // Board demo's largest instance is 240x180 (the image built-in) - its larger dimension
-    // crosses the default 32px LOD threshold once scale drops below 32/240 (~0.133). Nine
-    // zoom-out notches (-0.1 each) lands at 0.1, well past that for every seeded instance.
     private async Task ZoomOutUntilEveryInstanceIsBelowLodThreshold()
     {
         await _page

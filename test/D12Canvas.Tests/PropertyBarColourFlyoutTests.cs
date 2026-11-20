@@ -11,9 +11,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A colour role in the property bar is a menu button whose flyout holds the configured preset
-// swatches, then "Theme colour" when every target can hold null, then "Custom…" for the native
-// picker. One preset list serves every colour role, a host's own included.
 public sealed class PropertyBarColourFlyoutTests : ComponentTestBase
 {
     private const string HostTypeKey = "colour-flyout-host";

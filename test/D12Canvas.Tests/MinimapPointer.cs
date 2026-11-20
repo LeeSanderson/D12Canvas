@@ -3,9 +3,6 @@ using D12Canvas.Pointer;
 
 namespace D12Canvas.Tests;
 
-// Drives a rendered Minimap through the entry points its pointer listener calls, with points
-// relative to the minimap as that listener delivers them. The listener only ever reports the
-// primary button for the minimap.
 internal static class MinimapPointer
 {
     public static Task Press(this IRenderedComponent<Minimap> minimap, double x, double y) =>

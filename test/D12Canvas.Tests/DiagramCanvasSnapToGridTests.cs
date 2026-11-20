@@ -9,9 +9,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Snap-to-grid: an off-by-default, ephemeral toggle (never on Board) that snaps placement and
-// single-instance drag-move to whichever grid layer is currently visually dominant - see
-// DiagramCanvasAdaptiveGridTests for the layer-blend math the snap spacing itself reuses.
 public class DiagramCanvasSnapToGridTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -122,8 +119,6 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, true)
         );
 
-        // Pans by (-7, -13): the raw (unsnapped) top-left corner would land at (347, 273) - both
-        // off the default zoom's 20-unit grid.
         await canvas.Pan(from: (100, 100), to: (93, 87));
 
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
@@ -141,8 +136,6 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
         );
         canvas.Instance.BeginPaletteDrag(ComponentTypeKey);
 
-        // Drop point (307, 213): the raw (unsnapped) top-left corner would land at (247, 173) -
-        // both off the default zoom's 20-unit grid.
         canvas.Find(".diagram-canvas").Drop(new DragEventArgs { ClientX = 307, ClientY = 213 });
 
         var instance = Assert.Single(board.Components);
@@ -157,7 +150,7 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, true)
         );
 
-        for (var i = 0; i < 9; i++) // scale 1.0 -> 0.1, exactly layer 1 dominant (200-unit spacing)
+        for (var i = 0; i < 9; i++)
         {
             canvas.ZoomOut();
         }
@@ -184,16 +177,11 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
         );
 
         canvas.ClickOn(canvas.Find(".component-container"));
-        // Raw delta (33, -4) would land the instance at (133, 96) - both off the 20-unit grid.
         canvas.DragOn(canvas.Find(".component-container"), (300, 200), (333, 196));
 
         Assert.Equal(new Bounds(140, 100, 50, 50), instance.Bounds);
     }
 
-    // A real (non-zero) drag can still snap right back to the instance's own current position -
-    // that must not push a no-op entry onto the undo stack. Proven by pushing a second such
-    // "reverting" move after a genuine one, then checking a single undo returns all the way to the
-    // pre-move bounds rather than stopping at the (unchanged) intermediate position.
     [Fact]
     public async Task ASnapThatRevertsToTheCurrentPositionDoesNotAddAnUndoEntry()
     {
@@ -210,11 +198,9 @@ public class DiagramCanvasSnapToGridTests : ComponentTestBase
         );
 
         canvas.ClickOn(canvas.Find(".component-container"));
-        // -> snaps to (140, 100)
         canvas.DragOn(canvas.Find(".component-container"), (300, 200), (333, 196));
         Assert.Equal(new Bounds(140, 100, 50, 50), instance.Bounds);
 
-        // Raw delta (5, 3) would land at (145, 103), which snaps right back to (140, 100).
         canvas.DragOn(canvas.Find(".component-container"), (400, 400), (405, 403));
         Assert.Equal(new Bounds(140, 100, 50, 50), instance.Bounds);
 

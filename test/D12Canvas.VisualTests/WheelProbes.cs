@@ -2,9 +2,6 @@ using Microsoft.Playwright;
 
 namespace D12Canvas.VisualTests;
 
-// The wheel listener on the container cancels every wheel event over the canvas, and classifies a
-// wheel gesture's granularity once, at its start, holding it until the run goes idle. The waits
-// sit well clear of the idle boundary on either side rather than locating it.
 public sealed class WheelProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -78,8 +75,6 @@ public sealed class WheelProbes(PlaywrightFixture playwright, DemoAppFixture dem
     }
 }
 
-// Pinned to the trackpad so a plain wheel pans with no easing, which moves what the pointer holds
-// on the board and settles on screen within the frame.
 public sealed class WheelUnderAPressProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

@@ -14,10 +14,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A Dropdown whose every option has a glyph is drawn as a radio group of labelled tiles. The
-// built-in text properties get them, and so does a host property that sets OptionGlyphs through
-// the builder's EditableProperties override; a Dropdown without a glyph for every option stays a
-// <select>.
 public sealed class PropertyPanelTileTests : ComponentTestBase
 {
     private const string HostTypeKey = "tile-test-host";

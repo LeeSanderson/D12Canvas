@@ -1,10 +1,5 @@
 namespace D12Canvas.Model;
 
-// Identifies which port on an instance a connector-drag gesture started from - one of the four
-// automatic standard ports, or one of the instance's own runtime-added custom ports. A closed
-// union (rather than two separate StartPortDrag overloads propagating all the way through
-// DiagramCanvas) so the rest of the gesture doesn't need its own branch until the moment it builds
-// the actual IEdgeEndpoint, via ToEndpoint.
 public readonly struct PortRef
 {
     private readonly PortId? _standardPortId;

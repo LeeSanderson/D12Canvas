@@ -8,9 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The two routes that remove a custom port: the pointer's Remove port row on a custom port's
-// span, and Delete while port picking highlights a custom port. The real key path is in
-// PortRemovalProbes.
 public class DiagramCanvasPortRemovalTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

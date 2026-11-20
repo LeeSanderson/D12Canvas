@@ -2,8 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas;
 
-// Each edge's last route, kept until its request changes. Pan and zoom change no request, so they
-// route nothing.
 internal sealed class EdgeRouteCache
 {
     private readonly Dictionary<Guid, EdgeRoute> _routes = new();

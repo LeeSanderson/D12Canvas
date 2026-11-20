@@ -4,9 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A press on author content selects its instance if the selection does not already hold it. A
-// control inside an edge's label belongs to the edge, which is not an instance, so a press there
-// leaves the selection as it was.
 public class NativeGestureTests
 {
     [Fact]

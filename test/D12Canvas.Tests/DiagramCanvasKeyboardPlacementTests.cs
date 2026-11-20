@@ -8,12 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Keyboard placement: a palette button's Enter/Space activation reaches the exact same
-// ClickToAdd a mouse click does (native button semantics synthesize the same click event either
-// way), so there's no separate keyboard entry point to exercise here. What these tests cover is
-// what ClickToAdd now does beyond placement itself - selecting the newly placed instance and
-// moving real DOM focus to it - which a mouse click-to-add never needed, since a mouse click
-// leaves the pointer sitting right on top of whatever it just placed.
 public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -78,9 +72,6 @@ public class DiagramCanvasKeyboardPlacementTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
         await canvas.InvokeAsync(() => canvas.Instance.ClickToAdd(ComponentTypeKey));
 
-        // The cascade offset moves each successive instance down and to the right, so reading
-        // order (top-to-bottom) leaves the first-placed instance at index 0 and the
-        // second-placed (now selected) one at index 1.
         var containers = canvas.FindAll(".component-container");
         Assert.Null(containers[0].GetAttribute("aria-selected"));
         Assert.Equal("true", containers[1].GetAttribute("aria-selected"));

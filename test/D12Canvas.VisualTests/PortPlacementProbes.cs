@@ -5,10 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The real keys of a keyboard port placement, from Shift+F10 through the menu's own Enter to the
-// arrows and the Enter that adds the port, and the right-click on a border that adds one where it
-// landed. The left shape is 240 by 120 at (120, 120); under the default snap its placement starts
-// at x 180, a quarter along the top, and each arrow moves one 20px grid line.
 public sealed class PortPlacementProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

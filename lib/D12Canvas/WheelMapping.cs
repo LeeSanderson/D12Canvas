@@ -6,10 +6,6 @@ internal sealed record WheelZoom(double X, double Y, double Factor) : WheelActio
 
 internal sealed record WheelPan(double DeltaX, double DeltaY) : WheelAction;
 
-// What a wheel event means on a device. Ctrl or Cmd zooms on both, and a pinch arrives that way.
-// Alt pans both axes on both, which on a mouse is the vertical pan. A plain wheel zooms on a mouse
-// and pans on a trackpad, and Shift pans horizontally on a mouse only, since a trackpad already
-// pans both axes at once. Zoom is multiplicative, so a fine delta gives a fine factor.
 internal static class WheelMapping
 {
     private const double ZoomDamping = 600;
@@ -46,7 +42,6 @@ internal static class WheelMapping
     private static WheelZoom ZoomAboutPointer(WheelInput input) =>
         new(input.X, input.Y, Math.Exp(-input.DeltaY / ZoomDamping));
 
-    // Smoothing interpolates coarse discrete steps; on fine input it is only lag.
     public static TimeSpan AmbientTransitionFor(WheelDeviceProfile device) =>
         device == WheelDeviceProfile.Mouse ? TimeSpan.FromMilliseconds(100) : TimeSpan.Zero;
 }

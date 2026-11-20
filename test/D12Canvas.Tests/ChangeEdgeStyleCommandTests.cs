@@ -112,7 +112,7 @@ public class ChangeEdgeStyleCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         Assert.Equal(EdgeRouting.Curved, edge.RoutingStyle);
         Assert.Equal(ArrowStyle.Arrow, edge.SourceArrow);

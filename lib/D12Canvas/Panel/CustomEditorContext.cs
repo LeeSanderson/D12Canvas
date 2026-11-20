@@ -1,15 +1,5 @@
 namespace D12Canvas.Panel;
 
-// What a Custom-kind editor's RenderFragment receives - the property's current value, already
-// unwrapped from Props via reflection (the same value every other EditorKind's control works off),
-// plus a commit callback bound to that property. A Custom editor already produces a CLR-typed
-// value itself, so Commit bypasses PropertyPanel's string-shaped ConvertValue path entirely.
-// AddAsset stores bytes on the canvas's board and returns the reference to commit, for an editor
-// whose value is a file; it is null while the panel has no board to store them on. Disabled is
-// true while every instance the field edits is locked, when the editor should offer no edit.
-// IsMixed is true when the field's targets disagree; Value is then null, which is also what a
-// themed colour holds, so IsMixed is how an editor tells the two apart. Commit still writes the
-// value to every target.
 public sealed record CustomEditorContext(
     object? Value,
     Action<object?> Commit,

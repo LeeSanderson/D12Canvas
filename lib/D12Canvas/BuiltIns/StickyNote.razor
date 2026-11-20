@@ -78,11 +78,8 @@
             InlineStyleValue.Declaration("text-align", Props.TextAlign)
         );
 
-    // A pre-wrap paragraph drops the empty line after a final newline that a textarea shows, so
-    // the doubled newline keeps the text where the editor had it.
     private string DisplayedText => Props.Text.EndsWith('\n') ? Props.Text + "\n" : Props.Text;
 
-    // Safe alignment keeps the first line of text taller than the note at its top edge.
     private string JustifyContent =>
         Props.VerticalAlign switch
         {
@@ -101,8 +98,6 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // BeginEdit can arrive while this component's after-render from an earlier render in the
-        // same batch is still to run, before the editor itself has rendered.
         if (_focusPending && _editorRef.Id is not null)
         {
             _focusPending = false;
@@ -121,8 +116,6 @@
 
     private void HandleEditorBlur() => EndEdit(returnFocus: false);
 
-    // Escape removes the editor from the DOM, and the browser may then fire a blur for it, which
-    // must not end the same edit a second time.
     private void EndEdit(bool returnFocus)
     {
         if (!_isEditing)

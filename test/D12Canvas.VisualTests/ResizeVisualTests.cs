@@ -11,8 +11,6 @@ public sealed class ResizeVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public ResizeVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -65,8 +63,6 @@ public sealed class ResizeVisualTests : IAsyncLifetime
         var start = await target.BoundingBoxAsync();
         Assert.NotNull(start);
 
-        // A plain mouse drag (not native HTML5 drag-and-drop) - Chromium repaints normally while
-        // it's in flight, matching DragMoveVisualTests' own approach.
         await _page.Mouse.MoveAsync((float)handleX, (float)handleY);
         await _page.Mouse.DownAsync();
         await _page.Mouse.MoveAsync((float)(handleX + 80), (float)(handleY + 40));

@@ -11,8 +11,6 @@ public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public ZIndexLayeringVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -35,10 +33,6 @@ public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Click-to-adds the first palette entry and selects it while it's still the board's only
-    // instance - avoiding any risk of a click landing on the second instance instead once it's
-    // placed on top (new-on-top by default) - then click-to-adds a second, different entry so the
-    // two overlap (the cascading +20,+20 offset).
     private async Task PlaceTwoOverlappingInstancesWithTheFirstSelected()
     {
         await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
@@ -67,8 +61,6 @@ public sealed class ZIndexLayeringVisualTests : IAsyncLifetime
 
         await _page.Keyboard.PressAsync("Control+Shift+]");
 
-        // Confirms the shortcut actually reordered the stack (not just that some screenshot was
-        // taken) - the selected instance's own z-index must now exceed the other's.
         var selectedZIndex = await ZIndexOf(
             _page.Locator(".component-container[aria-selected='true']")
         );

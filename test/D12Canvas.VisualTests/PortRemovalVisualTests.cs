@@ -4,8 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The port removal demo's left rectangle with its object menu opened by a right-click on its
-// custom port's span, showing Remove port where Add port here would otherwise be.
 public sealed class PortRemovalVisualTests : IAsyncLifetime
 {
     private const string ShapeId = "9e000000-0000-0000-0000-000000000001";
@@ -15,8 +13,6 @@ public sealed class PortRemovalVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PortRemovalVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

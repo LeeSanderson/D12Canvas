@@ -4,10 +4,6 @@ using D12Canvas.Pointer;
 
 namespace D12Canvas.Tests;
 
-// Drives a rendered DiagramCanvas through the four public pointer entry points the browser-side
-// listener calls, with the coordinates already container-relative as that listener delivers them.
-// A press on bare canvas is the `canvas` role; a press on an entity names its role and id. The
-// drag threshold lives in the listener, so a move here is always a real drag.
 internal static class CanvasPointer
 {
     public static Task Press(
@@ -85,7 +81,6 @@ internal static class CanvasPointer
         await canvas.Release(to.X, to.Y, button);
     }
 
-    // The middle button pans whatever it lands on, so it is the pan the tests reach for.
     public static Task Pan(
         this IRenderedComponent<DiagramCanvas> canvas,
         (double X, double Y) from,
@@ -99,8 +94,6 @@ internal static class CanvasPointer
         bool shift = false
     ) => canvas.Drag(from, to, PointerPress.PrimaryButton, shift);
 
-    // A primary click on a rendered instance or LOD placeholder, as the listener reports it: the
-    // `instance` role and the entity the element carries. Synchronous, like bUnit's own Click().
     public static void ClickOn(
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement instanceElement,
@@ -128,8 +121,6 @@ internal static class CanvasPointer
             .GetAwaiter()
             .GetResult();
 
-    // A primary drag that starts on a rendered instance, from one container-relative point to
-    // another, released where it ends.
     public static void DragOn(
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement instanceElement,
@@ -178,8 +169,6 @@ internal static class CanvasPointer
         (double X, double Y) at
     ) => canvas.Release(at.X, at.Y).GetAwaiter().GetResult();
 
-    // The multi-selection's box, pressed and dragged as the listener reports it: the
-    // `selection-bounds` role with no entity.
     public static void DragSelectionBox(
         this IRenderedComponent<DiagramCanvas> canvas,
         (double X, double Y) from,
@@ -191,8 +180,6 @@ internal static class CanvasPointer
         canvas.ReleaseAt(to);
     }
 
-    // A primary press on a resize handle, a shape's own or the selection box's, as the listener
-    // reports it: the handle's role and part, and the entity of the shape it sits on, if any.
     public static void PressHandle(
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement handle,
@@ -222,8 +209,6 @@ internal static class CanvasPointer
         canvas.ReleaseAt(to);
     }
 
-    // A primary press on any marked element, as the listener reports it: the element's role and
-    // part, and the entity of its nearest marked ancestor, if any.
     public static void PressElement(
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement element,
@@ -245,9 +230,6 @@ internal static class CanvasPointer
         canvas.InvokeAsync(() => canvas.Instance.OnPointerPressed(press)).GetAwaiter().GetResult();
     }
 
-    // A release with what lies under it, as the listener reports it for a press that carries an
-    // edge end: the element the pointer is over and each marked ancestor, topmost first. No
-    // element means the release is over empty canvas.
     public static void ReleaseOver(
         this IRenderedComponent<DiagramCanvas> canvas,
         (double X, double Y) at,
@@ -286,8 +268,6 @@ internal static class CanvasPointer
         canvas.ClickElement(element, pressCount: 2, at: at);
     }
 
-    // A move that reports what lies under it, as the listener does while a press carries an edge
-    // end: the element the pointer is over and each marked ancestor, topmost first.
     public static void MoveOver(
         this IRenderedComponent<DiagramCanvas> canvas,
         (double X, double Y) to,
@@ -306,8 +286,6 @@ internal static class CanvasPointer
             .GetAwaiter()
             .GetResult();
 
-    // A connector drag from a port span or floating endpoint, moved and dropped over an element
-    // or, with none, over empty canvas.
     public static void DragConnector(
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement from,
@@ -321,8 +299,6 @@ internal static class CanvasPointer
         canvas.ReleaseOver(end, over);
     }
 
-    // A connector drag onto another shape's port: the pointer arrives over the shape's body, which
-    // makes it the drop target and shows its ports, and is released on the port span it then has.
     public static void DragConnectorToPort(
         this IRenderedComponent<DiagramCanvas> canvas,
         IElement from,
@@ -337,8 +313,6 @@ internal static class CanvasPointer
         canvas.ReleaseOver(end, canvas.PortSpanOf(targetId, part));
     }
 
-    // A press and a release on a port as the listener reports them, for tests about what a
-    // connector drag does rather than about which ports are showing.
     public static void PressPort(
         this IRenderedComponent<DiagramCanvas> canvas,
         Guid instanceId,
@@ -374,8 +348,6 @@ internal static class CanvasPointer
     public static IElement ContainerOf(this IRenderedComponent<DiagramCanvas> canvas, Guid id) =>
         canvas.Find($".component-container[data-d12-entity='{id}']");
 
-    // The hit region of one port on a shape whose ports are showing: a standard port by its
-    // PortId, a custom port by its id.
     public static IElement PortSpanOf(
         this IRenderedComponent<DiagramCanvas> canvas,
         Guid instanceId,
@@ -385,7 +357,6 @@ internal static class CanvasPointer
             $".component-container[data-d12-entity='{instanceId}'] .port-span[data-d12-part='{part}']"
         );
 
-    // Selects the shape, which shows its ports, and gives back the hit region of one of them.
     public static IElement SelectedPortSpan(
         this IRenderedComponent<DiagramCanvas> canvas,
         Guid instanceId,

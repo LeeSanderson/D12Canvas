@@ -8,11 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Per-edge routing style (straight/orthogonal/curved) and arrowheads (none/start/end/both), never
-// board-wide. Straight stays a <line> (preserving the x1/y1/x2/y2 contract other tests already
-// depend on, e.g. DiagramCanvasPortDragTests); Orthogonal/Curved render as a <path> with a
-// computed `d`. Arrowheads are SVG <marker> refs on marker-start/marker-end to one shared marker
-// filled from the line's own stroke, so selection, which only adds a halo, never changes them.
 public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -164,7 +159,6 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
         Assert.Equal("path", edge.TagName, ignoreCase: true);
         var d = edge.GetAttribute("d");
         Assert.NotNull(d);
-        // source port: right of (100,100,50,50) = (150,125); target port: left of (300,200,50,50) = (300,225)
         Assert.Equal("M 150 125 L 225 125 L 225 225 L 300 225", d);
     }
 
@@ -185,7 +179,6 @@ public class DiagramCanvasEdgeRoutingAndArrowheadsTests : ComponentTestBase
         Assert.Equal("path", edge.TagName, ignoreCase: true);
         var d = edge.GetAttribute("d");
         Assert.NotNull(d);
-        // Each control point sits on its port's normal, four tenths of the end-to-end distance out.
         var offset = 0.4 * Math.Sqrt(150 * 150 + 100 * 100);
         var outOfSource = (150 + offset).ToString(CultureInfo.InvariantCulture);
         var outOfTarget = (300 - offset).ToString(CultureInfo.InvariantCulture);

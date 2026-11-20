@@ -5,11 +5,6 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// Host-placed chrome showing every instance as a plain box and the canvas's viewport as a rect,
-// mapped from the union of the content extent and that viewport by the minimap's own tracker,
-// through the same framing the viewport commands use. A press here is the canvas's MinimapPan,
-// reported through the shared pointer listener with classification off. While it is held the
-// mapping stands still, so the board point under the pointer cannot slide as the viewport moves.
 public partial class Minimap : IAsyncDisposable
 {
     [Inject]
@@ -30,7 +25,6 @@ public partial class Minimap : IAsyncDisposable
     private (Board Board, int Revision, Bounds? Extent)? _extent;
     private bool _disposed;
 
-    // The canvas holding this minimap's press, which keeps the mapping still until it ends.
     private DiagramCanvas? _panningOn;
 
     private bool Panning => _panningOn is not null;
@@ -158,7 +152,6 @@ public partial class Minimap : IAsyncDisposable
     public void OnPointerCancelled(string reason) =>
         EndPress(canvas => canvas.OnPointerCancelled(reason));
 
-    // The map is let go before the canvas hears the end, so a click's flight reframes it.
     private void EndPress(Action<DiagramCanvas> tellCanvas)
     {
         if (_panningOn is not { } canvas)
@@ -172,8 +165,6 @@ public partial class Minimap : IAsyncDisposable
         StateHasChanged();
     }
 
-    // The listener going away ends its press without a release, so the canvas cancels it rather
-    // than holding the board for a release that will never arrive.
     private void AbandonPress()
     {
         if (_panningOn is { } canvas)

@@ -11,8 +11,6 @@ public sealed class ConnectorPaletteEntryVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public ConnectorPaletteEntryVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -41,10 +39,6 @@ public sealed class ConnectorPaletteEntryVisualTests : IAsyncLifetime
         var source = _page.Locator(".d12-palette-edge[aria-label='Edge']");
         var target = _page.Locator(".diagram-canvas");
 
-        // Centered rather than nearer the container's edge: with the nav sidebar and palette
-        // panel both sharing the page, .diagram-canvas's own viewport is narrower than the page
-        // itself, and the dropped edge extends ConnectorDefaultHalfLength (40px) either side of
-        // the drop point - a point too close to an edge would push one endpoint off-frame.
         await source.DragToAsync(
             target,
             new LocatorDragToOptions

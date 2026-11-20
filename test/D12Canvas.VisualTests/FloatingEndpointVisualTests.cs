@@ -11,8 +11,6 @@ public sealed class FloatingEndpointVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public FloatingEndpointVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -41,12 +39,6 @@ public sealed class FloatingEndpointVisualTests : IAsyncLifetime
         var rectangle = _page.Locator(".component-container[aria-label='Rectangle']");
         var from = await PortGestures.SelectAndAimAtPortAsync(rectangle, "Bottom");
 
-        // The seeded board (BoardDemo.razor) has nothing at board-space x < 120 - every seeded
-        // instance starts at x >= 120. At this page's untouched default pan (0,0) and scale (1),
-        // board space maps directly onto page space offset only by the container's own page
-        // position, so a point 60px right of the container's own left edge is guaranteed to land
-        // on empty canvas regardless of y, without needing to reason about every instance's exact
-        // bounds individually.
         var containerBox = await _page.Locator(".diagram-canvas").BoundingBoxAsync();
         Assert.NotNull(containerBox);
         var to = (X: containerBox!.X + 60, Y: containerBox.Y + 300);

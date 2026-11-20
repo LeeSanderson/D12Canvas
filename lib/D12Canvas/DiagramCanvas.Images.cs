@@ -6,16 +6,10 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// A picture reaches an image by the object menu, the property panel, a file dropped on the canvas
-// or a bitmap pasted onto it. Filling an image keeps its box; an image made from a file takes the
-// picture's own size, bounded to half the visible viewport. The bytes go onto the board through
-// Board.AddAsset and nowhere else.
 public partial class DiagramCanvas
 {
     private bool CanChangePicture => SelectedImages().Count > 0;
 
-    // Every selected entity is an image, so a picture chosen once goes into all of them that are
-    // not locked.
     private IReadOnlyList<ComponentInstance> SelectedImages()
     {
         if (Board is null || _selectedEdgeIds.Count > 0 || _selectedInstanceIds.Count == 0)
@@ -29,8 +23,6 @@ public partial class DiagramCanvas
             : [];
     }
 
-    // The file's bytes stored on the board. Null for a type that is not a plain image or an empty
-    // file.
     private async Task<string?> StoreImage(HeldImage image)
     {
         if (_jsModule is null)
@@ -58,8 +50,6 @@ public partial class DiagramCanvas
         return stored;
     }
 
-    // New image instances, each at its picture's own bounded size, the first centred on the
-    // given point and each further one a cascade step down and right of the one before.
     private Board ImageFragment(
         IReadOnlyList<(HeldImage Image, string Url)> pictures,
         (double X, double Y) firstCentre
@@ -104,9 +94,6 @@ public partial class DiagramCanvas
         return fragment;
     }
 
-    // A drop on an empty image fills it with the first picture and makes new images of
-    // the rest; a drop anywhere else, a filled image included, makes new images of them all. One
-    // history entry either way, and what was made becomes the selection.
     [JSInvokable]
     public async Task OnImageFilesDropped(
         HeldImage[] images,
@@ -169,8 +156,6 @@ public partial class DiagramCanvas
         StateHasChanged();
     }
 
-    // A pasted bitmap always makes a new image, even with an empty image selected: a paste has an
-    // anchor to land at but nothing it lands on.
     [JSInvokable]
     public async Task OnImagesPasted(HeldImage[] images, double? pointerX, double? pointerY)
     {
@@ -195,7 +180,6 @@ public partial class DiagramCanvas
         }
     }
 
-    // Cancelling the picker, or picking a file the browser cannot decode, changes nothing.
     private async Task ChoosePictureFromMenu()
     {
         if (_jsModule is null || PressOwnsBoard || SelectedImages().Count == 0)

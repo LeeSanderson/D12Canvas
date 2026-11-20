@@ -7,8 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The image's Url row is a Choose file button and a Remove image button, with no text field to
-// type an address into.
 public class PropertyPanelImageTests : ComponentTestBase
 {
     private static readonly byte[] PictureBytes = [137, 80, 78, 71, 1, 2, 3];

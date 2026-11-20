@@ -8,9 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// An image gets its picture from the object menu, a dropped file or a pasted bitmap. Filling
-// keeps the box; an image made from a file takes the picture's own size, bounded to half the
-// viewport; the bytes are stored once on the board.
 public class DiagramCanvasImageTests : ComponentTestBase
 {
     private static readonly byte[] PictureBytes = [137, 80, 78, 71, 1, 2, 3];

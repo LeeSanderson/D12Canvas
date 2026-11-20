@@ -8,17 +8,11 @@ public partial class DiagramCanvas
 {
     private readonly record struct PendingEdit(Guid Id, bool IsEdgeLabel);
 
-    // Lasts one render: whatever that render has not mounted as a full component is never
-    // edited, so an edit cannot open later when the user happens to scroll it into view.
     private PendingEdit? _pendingEdit;
 
-    // After an edit ends with Escape, focus goes to the edited instance's stop, or the stop of the
-    // edge whose label was edited, and to the canvas when there is no such stop on screen.
     private bool _returningFocusAfterEdit;
     private Guid? _editFocusStopId;
 
-    // Held from a creation until anything else changes history, so a retraction never leaves an
-    // undone entry for the retracted instance on redo.
     private RetractableCreation? _retractableCreation;
 
     private readonly record struct RetractableCreation(
@@ -44,7 +38,6 @@ public partial class DiagramCanvas
         RequestInlineEdit(focusedId);
     }
 
-    // The component calls this once at every edit end, whether or not anything changed.
     public void CommitInlineEdit(Guid instanceId, object before, object after, bool returnFocus)
     {
         if (PressOwnsBoard)
@@ -77,8 +70,6 @@ public partial class DiagramCanvas
         StateHasChanged();
     }
 
-    // The press that blurs an editor can reach the canvas before the blur does, and while it owns
-    // the board nothing else may write it, so an edit ending then is held until the press ends.
     private readonly List<Action> _editsEndedDuringPress = [];
 
     private void CommitEditsEndedDuringPress()
@@ -96,8 +87,6 @@ public partial class DiagramCanvas
             .Resolve(instance.ComponentTypeKey)
             .CountsAsEmpty(UnresolvedForCommit(instance, before, after).After);
 
-    // Retracts the instance's creation while it is still retractable, and otherwise removes the
-    // instance as its own entry. Returns the creation it retracted.
     private RetractableCreation? RetractOrRemoveEmptied(
         ComponentInstance instance,
         Edge? labelledEdge,
@@ -134,8 +123,6 @@ public partial class DiagramCanvas
         return null;
     }
 
-    // A removed instance has no stop left, so focus goes to the quick create's source it came
-    // from, the stop of the edge it labelled, or the canvas with nothing selected.
     private void ReturnFocusAfterEdit(
         Guid instanceId,
         Edge? labelledEdge,

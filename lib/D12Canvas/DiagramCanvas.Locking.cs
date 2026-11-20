@@ -4,15 +4,10 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// A lock is a flag on instances and edges, a group being locked when every member is. Locking the
-// selection writes the flag on every instance under it and every selected edge; whether the
-// command locks or unlocks is read from the top-level entities, all of them locked reading as
-// Unlock.
 public partial class DiagramCanvas
 {
     private bool IsLocked(Guid id) => Board?.IsLocked(id) ?? false;
 
-    // Ctrl+Shift+L, and the menu's Lock or Unlock row.
     [JSInvokable]
     public void OnToggleLockPressed() => SetSelectionLocked(!SelectionIsLocked);
 
@@ -70,7 +65,6 @@ public partial class DiagramCanvas
         StateHasChanged();
     }
 
-    // Every top-level selected entity, edges included, is locked. A partly locked group is not.
     private bool SelectionIsLocked
     {
         get
@@ -90,15 +84,12 @@ public partial class DiagramCanvas
             || Board.Edges.Any(edge => edge.Locked)
         );
 
-    // What a command that changes instances may act on: every instance under the selection that is
-    // not locked.
     private List<ComponentInstance> UnlockedSelection() =>
         ResolvedSelection().Where(instance => !instance.Locked).ToList();
 
     private List<Edge> UnlockedSelectedEdges() =>
         SelectedEdges.Where(edge => !edge.Locked).ToList();
 
-    // A clone drag's copies are in the hand, so the box drawn around them always takes the press.
     private bool SelectionTakesPresses =>
         PendingCopies is not null || UnlockedSelection().Count > 0;
 
@@ -108,7 +99,6 @@ public partial class DiagramCanvas
     private bool CanRemoveSelection =>
         UnlockedSelection().Count > 0 || UnlockedSelectedEdges().Count > 0;
 
-    // An edge label is locked with its edge.
     private bool IsPropsEntityLocked(Guid id) =>
         Board?.GetComponent(id) is { } instance
             ? instance.Locked

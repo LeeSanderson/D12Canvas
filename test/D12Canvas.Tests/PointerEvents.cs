@@ -2,8 +2,6 @@ using D12Canvas.Pointer;
 
 namespace D12Canvas.Tests;
 
-// Builds the three interop records the browser-side listener would send, with one pointer and a
-// mouse, so a test states only the role, button, point and modifier it is about.
 internal static class PointerEvents
 {
     public const int PointerId = 1;

@@ -7,8 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The bar floats over the board, so it declares the raised values and its colour scheme on its own
-// root in the same four blocks the other floating surfaces use.
 public class PropertyBarThemeTokensTests : ComponentTestBase
 {
     public PropertyBarThemeTokensTests()

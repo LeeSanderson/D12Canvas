@@ -8,13 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A Group has no z-position field of its own (Model/Group.cs carries none) - layering a
-// persisted Group bulk-writes every member's ZIndex, preserving their relative order.
-// ExpandedSelection() already flattens a selected Group (nested or not) down to its raw leaf
-// ComponentInstance ids before RestackSelection/ApplyZIndexChange ever see the selection, so
-// there is no separate group-layering code path to add - these tests pin that behaviour
-// specifically for a *persisted* Group entity (including nesting), which the ad-hoc shift-click
-// multi-selection tests never exercised.
 public class DiagramCanvasGroupZIndexTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -66,16 +59,13 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
         var board = new Board();
         var first = AddInstance(board, 0, zIndex: 2);
         var second = AddInstance(board, 100, zIndex: 3);
-        AddInstance(board, 200, zIndex: 9); // untouched, outside the group
+        AddInstance(board, 200, zIndex: 9);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         await canvas.InvokeAsync(() => canvas.Instance.OnBringToFrontPressed());
 
-        // Both land above the untouched third instance (9), and first (originally the lower of
-        // the two) stays below second - a persisted Group's bulk move never collapses its members
-        // onto the same tied value, which would erase their relative stacking order.
         Assert.Equal(10, first.ZIndex);
         Assert.Equal(11, second.ZIndex);
     }
@@ -84,7 +74,7 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
     public async Task SendToBackPressedAppliesToEveryMemberOfAPersistedGroupPreservingTheirRelativeOrder()
     {
         var board = new Board();
-        AddInstance(board, 0, zIndex: 0); // untouched, outside the group
+        AddInstance(board, 0, zIndex: 0);
         var first = AddInstance(board, 100, zIndex: 5);
         var second = AddInstance(board, 200, zIndex: 8);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
@@ -103,19 +93,15 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
     public async Task BringForwardPressedRewritesEveryMemberOfAPersistedGroupInOneGesturePreservingTheirRelativeOrder()
     {
         var board = new Board();
-        var first = AddInstance(board, 0, zIndex: 2); // group
-        var second = AddInstance(board, 100, zIndex: 4); // group
-        AddInstance(board, 200, zIndex: 6); // untouched, outside the group
+        var first = AddInstance(board, 0, zIndex: 2);
+        var second = AddInstance(board, 100, zIndex: 4);
+        AddInstance(board, 200, zIndex: 6);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
         await canvas.InvokeAsync(() => canvas.Instance.OnBringForwardPressed());
 
-        // Each member independently skips to its own next distinct rank, evaluated against the
-        // board's state before either of this gesture's own writes - first lands tied with
-        // second's prior rank, second lands tied with the untouched instance - and their relative
-        // order (first below second) survives the move.
         Assert.Equal(4, first.ZIndex);
         Assert.Equal(6, second.ZIndex);
     }
@@ -124,9 +110,9 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
     public async Task SendBackwardPressedRewritesEveryMemberOfAPersistedGroupInOneGesturePreservingTheirRelativeOrder()
     {
         var board = new Board();
-        AddInstance(board, 0, zIndex: 4); // untouched, outside the group
-        var first = AddInstance(board, 100, zIndex: 6); // group
-        var second = AddInstance(board, 200, zIndex: 8); // group
+        AddInstance(board, 0, zIndex: 4);
+        var first = AddInstance(board, 100, zIndex: 6);
+        var second = AddInstance(board, 200, zIndex: 8);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         var containers = canvas.FindAll(".component-container");
         canvas.ClickOn(containers[1]);
@@ -135,18 +121,10 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSendBackwardPressed());
 
-        // Each member independently skips to its own next distinct rank below, evaluated
-        // against the board's state before either of this gesture's own writes - second lands
-        // tied with first's prior rank, first lands tied with the untouched instance - and their
-        // relative order (first below second) survives the move.
         Assert.Equal(4, first.ZIndex);
         Assert.Equal(6, second.ZIndex);
     }
 
-    // A nested group ([A, B] grouped into an inner Group, then [inner, C] grouped into an outer
-    // one) exercises the ExpandedSelection recursion - layering the outer group's selection must
-    // bulk-write every leaf (A, B, and C), not just the outer group's immediate members, still
-    // preserving their relative order to each other.
     [Fact]
     public async Task LayeringANestedGroupRewritesEveryLeafMembersZIndexPreservingRelativeOrder()
     {
@@ -156,10 +134,10 @@ public class DiagramCanvasGroupZIndexTests : ComponentTestBase
         var c = AddInstance(board, 200, zIndex: 3);
         var untouched = AddInstance(board, 300, zIndex: 9);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        SelectBoth(canvas); // selects A and B
-        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}
+        SelectBoth(canvas);
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
-        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // outer group = {inner, C}
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         Assert.Equal(2, board.Groups.Count);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnBringToFrontPressed());

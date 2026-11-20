@@ -4,10 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A press on a shape's handle or on the selection box's handle resizes the selection's bounding
-// box from the board-space distance since the press, with the opposite edge anchored. Under snap
-// only the edges the handle moves land on grid lines, never closer than the minimum size allows,
-// and members scale exactly inside the box. An active release commits what was last published.
 public class ResizeSelectionGestureTests
 {
     private const string ComponentTypeKey = "test-props";

@@ -3,10 +3,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas;
 
-// The selection is read unexpanded, so a selected group is one box with one delta that every
-// member below it shares, and its own arrangement survives. Edges are not part of it. Each entity
-// is measured by the box of its unlocked instances, which are all a delta moves, so a fully locked
-// one is left out and counts toward no threshold.
 public partial class DiagramCanvas
 {
     public void OnAlignLeftPressed() => AlignSelection(AlignEdge.Left);

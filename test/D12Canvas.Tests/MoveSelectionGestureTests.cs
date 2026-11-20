@@ -4,10 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A press on board content resolves the selection at once when the pressed entity is not a
-// member, and leaves it for the release when it is. Every tick publishes the whole selection
-// translated by the board-space distance from the press, snapped as one rigid body by the top-left
-// of its bounding box, and an active release commits exactly what was last published.
 public class MoveSelectionGestureTests
 {
     private const string ComponentTypeKey = "test-props";

@@ -2,9 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Adds the Group entity; its members are referenced by id and never mutated. Grouping inside a
-// parent group also replaces the grouped ids in the parent's member list with the new group's id,
-// at the position of the first of them, in the same entry.
 public sealed class GroupCommand : ICommand
 {
     private readonly Board _board;

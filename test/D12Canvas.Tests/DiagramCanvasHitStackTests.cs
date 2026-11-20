@@ -7,12 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The listener hands a press on the selection box, or an Alt press, the hit stack at the press
-// point, topmost first. A click inside the selection box selects the top entity beneath it, and an
-// Alt click selects the next entity down from the one selected before the press, wrapping at the
-// bottom. The stack here is supplied as the listener would send it; the board holds three
-// instances stacked top, middle, bottom, a group of two members, an instance outside everything
-// and one edge.
 public class DiagramCanvasHitStackTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

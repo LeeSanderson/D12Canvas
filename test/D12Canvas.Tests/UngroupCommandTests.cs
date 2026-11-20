@@ -47,7 +47,7 @@ public class UngroupCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         Assert.Null(board.GetGroup(group.Id));
     }

@@ -185,10 +185,6 @@ public class D12CanvasOptionsTests
         Assert.Empty(options.Registry.Resolve("widget").EditableProperties!);
     }
 
-    // Editable properties default to whatever a TProps record's own [PanelEditable] attributes
-    // declare - PanelTestProps.Content carries none (it's this type's stand-in for a Text-type
-    // *content* field, excluded the same way StickyNoteProps.Text is), so only its five
-    // [PanelEditable]-carrying fields (one per EditorKind) should surface here.
     [Fact]
     public void RegisterComponentDiscoversEditablePropertiesFromPanelEditableAttributesByDefault()
     {
@@ -236,8 +232,6 @@ public class D12CanvasOptionsTests
         );
     }
 
-    // A Dropdown-kind property with no choices can't render a usable <select>, so this is caught
-    // at registration time rather than surfacing as an empty control in the panel.
     [Fact]
     public void RegisterComponentWithADropdownPropertyMissingOptionsThrowsNamingTheProperty()
     {
@@ -260,10 +254,6 @@ public class D12CanvasOptionsTests
         Assert.Equal(nameof(PropsWithMissingDropdownOptions.Mode), exception.PropertyName);
     }
 
-    // EditorKind.Custom needs a RenderFragment, which an attribute argument can never supply
-    // (attributes require compile-time constants) - so declaring it via [PanelEditable] alone is
-    // always a registration-time error; a Custom-kind property must come from the builder's
-    // EditableProperties override instead.
     [Fact]
     public void RegisterComponentWithACustomKindPropertyDeclaredViaAttributeThrowsNamingTheProperty()
     {
@@ -286,8 +276,6 @@ public class D12CanvasOptionsTests
         Assert.Equal(nameof(PropsWithCustomEditorAttribute.Value), exception.PropertyName);
     }
 
-    // "Attributes set the default schema, the builder is the escape hatch" - setting
-    // EditableProperties replaces whatever attribute discovery would otherwise have produced.
     [Fact]
     public void RegisterComponentBuilderOverridesTheAttributeDeclaredEditableSchema()
     {
@@ -314,8 +302,6 @@ public class D12CanvasOptionsTests
         Assert.Same(overrideSchema, options.Registry.Resolve("widget").EditableProperties);
     }
 
-    // The role flows from [PanelEditable] into the discovered EditableProperty schema exactly
-    // like Kind/Options - it's what PropertyRoleValidator checks and what the panel merges on.
     [Fact]
     public void RegisterComponentDiscoversTheRoleFromPanelEditableAttribute()
     {
@@ -338,8 +324,6 @@ public class D12CanvasOptionsTests
         Assert.Equal(PropertyRole.Fill, tint.Role);
     }
 
-    // Two properties on different types can declare the same role; each is checked against the
-    // role's own declaration, never against the other type, so registering both must not throw.
     [Fact]
     public void RegisterComponentWithTheSameRoleOnADifferentTypeDoesNotThrow()
     {
@@ -376,9 +360,6 @@ public class D12CanvasOptionsTests
         );
     }
 
-    // "A mismatch is a registration-time error, not a silent merge" - a property whose EditorKind
-    // disagrees with its role fails on its own registration, with no other type involved, naming
-    // the type and property.
     [Fact]
     public void RegisterComponentWithARoleKindMismatchThrowsNamingTheProperty()
     {
@@ -401,9 +382,6 @@ public class D12CanvasOptionsTests
         Assert.Throws<UnknownComponentKeyException>(() => options.Registry.Resolve("widget"));
     }
 
-    // Same as above, but the mismatch is in CLR type (int vs string) rather than EditorKind. What
-    // the exception carries is PropertyRolesTests' concern; here it is enough that registration
-    // refuses the type.
     [Fact]
     public void RegisterComponentWithARoleClrTypeMismatchThrowsNamingTheProperty()
     {
@@ -425,7 +403,6 @@ public class D12CanvasOptionsTests
         Assert.Equal(nameof(PropsWithRoleClrTypeMismatch.Tint), exception.PropertyName);
     }
 
-    // A builder-supplied schema bypasses attribute discovery but not role validation.
     [Fact]
     public void RegisterComponentValidatesRolesOnABuilderSuppliedSchemaToo()
     {

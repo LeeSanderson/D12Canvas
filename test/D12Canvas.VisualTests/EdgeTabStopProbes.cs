@@ -3,8 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A real Tab press, not an invoked focus handler, has to carry focus from a shape to the proxy
-// stop of the edge leaving it, and landing there has to select that edge alone.
 public sealed class EdgeTabStopProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

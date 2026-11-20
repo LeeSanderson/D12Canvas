@@ -3,11 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The border partition in a real browser, on a board of three rectangles: a small one at the
-// origin, one with six custom ports crowding its top side, and a large one. Ports show on a
-// selected shape and never on hover; a side splits between a port span around each port and
-// resize spans nearer the corners, told apart only by the cursor; spans measured in screen pixels
-// drop out when zoomed out too far and come back when zoomed in, while corner handles stay.
 public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -49,8 +44,6 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
         await Page.Mouse.ClickAsync(corner.X, corner.Y);
     }
 
-    // Each key steps the zoom by a tenth; the content eases into place, so this waits for a shape
-    // still on screen, the large one by default, to reach its new on-screen width.
     private async Task ZoomByKeysAsync(
         string key,
         int presses,
@@ -71,8 +64,6 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
         );
     }
 
-    // The board opens fitted just below 100%, so the zoom steps start from 100% to land where
-    // these probes measure.
     private async Task ToHundredPercentAsync()
     {
         await Page.Keyboard.PressAsync("Shift+Digit0");
@@ -110,8 +101,6 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
         await Expect(Page.Locator(".port-span")).ToHaveCountAsync(0);
     }
 
-    // The large rectangle runs from (520, 40) to (860, 340). Its top side holds the standard port
-    // around x 690 and resize spans either side of it; its left side likewise around y 190.
     public static TheoryData<string, double, double, string> PartitionCursors =>
         new()
         {
@@ -188,8 +177,6 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
     public async Task ACornerHandleIsGrabbableZoomedInFourTimes()
     {
         await FocusTheCanvasAsync();
-        // The zoom keys scale about the container's corner, so the small shape is panned up
-        // toward it first and stays on screen at four times.
         await Page.Keyboard.PressAsync("ArrowDown");
         await Page.Keyboard.PressAsync("ArrowDown");
         await ZoomByKeysAsync("PageUp", 30, SmallId, 100);
@@ -243,8 +230,6 @@ public sealed class BorderPartitionProbes(PlaywrightFixture playwright, DemoAppF
         await Expect(Instance(LargeId).Locator(".resize-span")).ToHaveCountAsync(8);
     }
 
-    // The custom port at 0.47 along the crowded top sits too close to the standard port to keep a
-    // span, so it is neither drawn nor hit: a drop over it lands on the standard port instead.
     [Fact]
     public async Task ADropWhereACustomPortWasSqueezedOutPinsToTheStandardPortBesideIt()
     {

@@ -11,8 +11,6 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public EdgeSelectionVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -37,9 +35,6 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
 
     private ILocator StickyNote => _page.Locator(".component-container[aria-label='Sticky Note']");
 
-    // The seeded board's Rectangle sits directly above its Sticky Note (a 40px board-space gap), so
-    // the Rectangle's bottom port to the note's top port is a short, deterministic drag. A straight
-    // line's box is centred on the line's own midpoint, which is where it is clicked.
     private async Task<(float X, float Y)> ConnectRectangleToStickyNoteAsync()
     {
         await PortGestures.ConnectAsync(
@@ -71,7 +66,6 @@ public sealed class EdgeSelectionVisualTests : IAsyncLifetime
     {
         var midpoint = await ConnectRectangleToStickyNoteAsync();
 
-        // The edge first: a selected note's property bar sits over the short gap the edge crosses.
         await _page.Mouse.ClickAsync(midpoint.X, midpoint.Y);
         await Expect(_page.Locator(".edge-line")).ToHaveAttributeAsync("aria-selected", "true");
 

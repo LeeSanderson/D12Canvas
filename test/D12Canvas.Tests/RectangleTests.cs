@@ -6,8 +6,6 @@ namespace D12Canvas.Tests;
 
 public class RectangleTests : ComponentTestBase
 {
-    // Authored colours travel as override custom properties that the component's own rule
-    // prefers over the board tokens; the stroke width is the one plain inline declaration.
     [Fact]
     public void RendersFillAndStrokeFromProps()
     {
@@ -21,8 +19,6 @@ public class RectangleTests : ComponentTestBase
         Assert.Contains("border-width: 4px", style);
     }
 
-    // The default props carry no colour, so the default rendering emits no override at all and
-    // the board tokens paint it (see ThemedDefaultTests).
     [Fact]
     public void RendersWithItsDefaultPropsWhenNoneSupplied()
     {

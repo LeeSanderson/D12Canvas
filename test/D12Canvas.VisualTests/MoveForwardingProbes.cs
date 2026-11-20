@@ -1,7 +1,5 @@
 namespace D12Canvas.VisualTests;
 
-// The press is a primary press on empty canvas, which the listener claims. The distances are
-// chosen to sit well clear of the drag threshold on either side rather than to locate it.
 public sealed class MoveForwardingProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -87,9 +85,6 @@ public sealed class MoveForwardingProbes(PlaywrightFixture playwright, DemoAppFi
         await Page.Mouse.UpAsync();
     }
 
-    // The cut-off object snapping stands down above is 3 screen pixels per millisecond: a 300 pixel
-    // jump is far above it however slowly the host dispatches, and a 1 pixel step after a pause far
-    // below.
     [Fact]
     public async Task ALongJumpReportsAFastPointerAndASmallStepAfterAPauseASlowOne()
     {

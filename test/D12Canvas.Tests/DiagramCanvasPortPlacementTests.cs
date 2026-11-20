@@ -10,9 +10,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The two routes to a custom port: the pointer's Add port here row, which adds one where the
-// menu's press landed on the border, and the keyboard's Add port… row, which starts placement.
-// The real key path through Shift+F10 is in PortPlacementProbes.
 public class DiagramCanvasPortPlacementTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -467,8 +464,6 @@ public class DiagramCanvasPortPlacementTests : ComponentTestBase
         Assert.Null(ProvisionalDot(canvas));
     }
 
-    // Below the LOD cutoff the shape is a placeholder with no stop, so focus could never reach it
-    // and nothing would ever end placement. Add port… is not offered there.
     [Fact]
     public async Task AddPortStartsNoPlacementWhenTheShapeHasNoStopToHoldFocus()
     {

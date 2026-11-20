@@ -2,10 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Grouping and ungrouping inside another group rewrite that parent's member list, so a nested
-// group takes its members' place and an ungrouped one gives its members back in the same spot.
-// The parent is read by id when the edit is applied, so several edits to one parent in a single
-// composite each see the one before. Undo puts back the exact parent the edit replaced.
 internal sealed class ParentMembership
 {
     private readonly Board _board;

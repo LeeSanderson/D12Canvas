@@ -1,9 +1,5 @@
 namespace D12Canvas;
 
-// The rules every D12Icon needs. A library root that draws icons (the palette, the canvas)
-// carries them once in its own style block and cascades InScope, so the icons inside it leave out
-// their own copy; an icon with nothing in scope, such as one a host places on its own page, still
-// brings the rules itself.
 internal sealed class D12IconStyles
 {
     public static readonly D12IconStyles InScope = new();

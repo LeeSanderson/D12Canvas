@@ -5,9 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The real Shift+1, Shift+2 and Shift+0 key paths on the framing demo, whose board is authored
-// around (50000, 50000) and opens framed at 100%. Reduced motion is on, so every flight lands at
-// once. The rows above the content are empty canvas at any pan these probes reach.
 public sealed class FramingProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -166,9 +163,6 @@ public sealed class FramingProbes(PlaywrightFixture playwright, DemoAppFixture d
     }
 }
 
-// The one place the suite runs a framing flight animated. Every transition on the content element
-// is paused as it starts, so a probe can act mid-flight without racing its 250ms, and finished
-// when the probe is done with it.
 public sealed class FramingFlightProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

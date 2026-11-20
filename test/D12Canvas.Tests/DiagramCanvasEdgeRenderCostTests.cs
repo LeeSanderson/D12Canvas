@@ -6,8 +6,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A frame's edge work is proportional to the edges touching what moved, not to the board: a pan
-// routes nothing and redraws no edge, and a drag redraws only the dragged shape's edges.
 public class DiagramCanvasEdgeRenderCostTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

@@ -7,9 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Assets ride inside the one document the host stores, as an optional envelope field: present
-// only when some entity refers to an asset, absent otherwise, and tolerated when a reference
-// points at bytes the file does not carry.
 public class BoardJsonSerializerAssetTests
 {
     private const string AssetComponentKey = AssetTestComponent.Key;

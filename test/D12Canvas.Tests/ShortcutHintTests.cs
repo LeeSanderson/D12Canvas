@@ -41,8 +41,6 @@ public class ShortcutHintTests
         Assert.DoesNotContain("+", ShortcutHint.Render(new Chord("A", Primary: true), true));
     }
 
-    // The keydown table matches the physical key, so the hint names whatever the user's layout
-    // prints on that key: on AZERTY the key Ctrl+A answers to is labelled Q.
     [Theory]
     [InlineData(false, "Ctrl+Q")]
     [InlineData(true, "⌘Q")]

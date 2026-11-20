@@ -59,7 +59,7 @@ public class RemoveEntityCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         Assert.Null(board.GetComponent(instance.Id));
     }

@@ -18,7 +18,7 @@ Single-context layout — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs
 
 ### Code comments
 
-Self-documenting code over comments; never cite tickets/ADRs in source; zero comments in CSS/style blocks. See `docs/agents/code-comments.md`.
+No comments in source; decisions go in ADRs, hacks in issues. `CommentBudgetTests` enforces it against `comment-budget.json`. See `docs/agents/code-comments.md`.
 
 ### Testing
 

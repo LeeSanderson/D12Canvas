@@ -8,9 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Click select, escape, and aria-selected. Selection is transient view state - these tests
-// exercise it entirely through DiagramCanvas/ComponentContainer, never through Board, since it
-// has no selection concept of its own.
 public class DiagramCanvasSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -115,8 +112,6 @@ public class DiagramCanvasSelectionTests : ComponentTestBase
         Assert.Null(canvas.Find(".component-container").GetAttribute("aria-selected"));
     }
 
-    // A pan is a drag with the middle or secondary button; only a release below the drag
-    // threshold on the primary button is the click that clears the selection.
     [Fact]
     public async Task PanningTheCanvasDoesNotClearAnExistingSelection()
     {

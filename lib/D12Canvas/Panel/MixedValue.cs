@@ -1,9 +1,5 @@
 namespace D12Canvas.Panel;
 
-// Decides whether a property row's targets disagree, and whether a target already holds a
-// committed value and can be skipped. Null is a value of its own, since a
-// null colour follows the theme and a literal does not; colours compare without regard to case,
-// since the native colour input reports lowercase and the built-in defaults are uppercase.
 internal static class MixedValue
 {
     public const string Label = "Mixed";

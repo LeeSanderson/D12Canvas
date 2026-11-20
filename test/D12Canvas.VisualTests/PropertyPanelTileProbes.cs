@@ -5,18 +5,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The property panel's glyph tiles driven by real keys on the property panel demo, with a sticky
-// note selected. The panel is narrowed until the text align tiles wrap, so the arrow keys have to
-// carry real focus onto the second row and back round to the first tile without committing a
-// value; Enter and Space then commit the focused tile.
 public sealed class PropertyPanelTileProbes : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PropertyPanelTileProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

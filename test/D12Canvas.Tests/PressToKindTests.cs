@@ -3,9 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The middle button pans whatever it lands on, and so does the secondary button unless the Menu
-// verdict gave the press to the browser; the primary button reads the role, and every role
-// resolves to exactly one gesture.
 public class PressToKindTests
 {
     public static IEnumerable<object[]> EveryRole() =>

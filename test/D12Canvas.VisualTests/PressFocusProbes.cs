@@ -1,10 +1,5 @@
 namespace D12Canvas.VisualTests;
 
-// The browser moves focus to a focusable element on mousedown unless the pointerdown before it
-// was default-prevented. The same focusable element is pressed in two places: outside the canvas,
-// where nothing claims the press and the browser focuses it, and inside the canvas's content,
-// where the walk finds no role marker and the listener claims the press as bare canvas. Nothing
-// else on either path prevents a default, so the difference is the listener's pointerdown alone.
 public sealed class PressFocusProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

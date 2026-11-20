@@ -4,8 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The port placement demo's left rectangle with a keyboard port placement under way: Add port…
-// chosen from the Shift+F10 menu and the provisional port slid one step left along the top side.
 public sealed class PortPlacementVisualTests : IAsyncLifetime
 {
     private const string ShapeId = "9d000000-0000-0000-0000-000000000001";
@@ -14,8 +12,6 @@ public sealed class PortPlacementVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PortPlacementVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

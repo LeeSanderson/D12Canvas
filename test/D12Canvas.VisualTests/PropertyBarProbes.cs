@@ -5,12 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The property bar driven by real input on the light pane of the property bar demo: absent through
-// a drag and while a menu is open, chrome hidden only while the pointer is on it, Ctrl+Enter in,
-// arrows across and Escape back to the shape, a recolour that shows on the edge at once, a choice
-// chip's flyout taking focus and handing it back, the colour flyout's grid, swatch tooltip and
-// "Custom…", a flyout opening above its chip when the selection is low on the board, and the bar
-// kept inside a narrow container.
 public sealed class PropertyBarProbes : IAsyncLifetime
 {
     private const string Theme = "light";
@@ -19,8 +13,6 @@ public sealed class PropertyBarProbes : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PropertyBarProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -244,8 +236,6 @@ public sealed class PropertyBarProbes : IAsyncLifetime
             .ToHaveAttributeAsync("style", new System.Text.RegularExpressions.Regex("#e5246b"));
     }
 
-    // A wheel moves the viewport under a visible bar. The bar hides while it is being moved and
-    // shows again where the selection now is once the wheel has stopped.
     [Fact]
     public async Task AWheelHidesTheBarWhileTheViewMovesAndShowsItAgainWhenItStops()
     {
@@ -444,8 +434,6 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         await Expect(ColourChip).ToHaveAttributeAsync("aria-label", "Colour: #E5246B");
     }
 
-    // The edge runs along the bottom of the pane and is left unframed, so a flyout opened below its
-    // chip would run past the container's bottom edge.
     [Fact]
     public async Task AFlyoutOnASelectionNearTheBottomOpensAboveItsChipInsideTheContainer()
     {
@@ -468,8 +456,6 @@ public sealed class PropertyBarProbes : IAsyncLifetime
         );
     }
 
-    // Chips make the bar wider than the old glyph cells, so a narrow pane checks that the existing
-    // clamp still keeps the whole bar inside the container for the widest bar the demo shows.
     [Fact]
     public async Task ANarrowContainerStillHoldsTheWholeBar()
     {

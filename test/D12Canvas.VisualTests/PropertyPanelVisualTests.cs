@@ -5,20 +5,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Screenshot-diff baselines for the property panel: its empty state with nothing selected, its
-// populated state for each property-editor kind (Number, Color, Dropdown, Custom), a Dropdown
-// with a glyph for every option drawn as tiles, and those states again under the dark colour
-// scheme, where the panel's raised values and color-scheme must carry its native inputs along
-// with it. Checkbox has no baseline here since no built-in declares a Checkbox-kind property yet -
-// see PropertyPanelTests for its control-level coverage.
 public sealed class PropertyPanelVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PropertyPanelVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

@@ -5,10 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A persisted Group's tab stop: one invisible, keyboard-only focusable
-// element (never visible on its own) that selects the whole group when it receives DOM focus -
-// the same .selection-bounding-box overlay every other multi-selection path already draws, but
-// reached here purely via focus, with no click/marquee/keyboard-shortcut involved at all.
 public sealed class GroupTabStopVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
@@ -37,10 +33,6 @@ public sealed class GroupTabStopVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Click-to-add's cascading offset (20px) leaves two placed instances heavily overlapping, so
-    // a direct click on one can land on the other's (later, higher-ZIndex) container instead - a
-    // marquee drag selects both unambiguously by bounding rect, the same technique
-    // MultiSelectionMoveResizeVisualTests.SelectBothInstances already uses for this exact reason.
     private async Task SelectBothInstancesViaMarquee()
     {
         await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
@@ -78,9 +70,6 @@ public sealed class GroupTabStopVisualTests : IAsyncLifetime
         await _page.Keyboard.PressAsync("Control+g");
         await Expect(_page.Locator(".selection-bounding-box")).ToBeVisibleAsync();
 
-        // Ctrl+G itself already moves DOM focus to the new group's own tab stop - clicking empty
-        // canvas both clears the selection (the bounding box must disappear) and blurs that stop,
-        // so the FocusAsync below is a genuine focus transition rather than a same-element no-op.
         await _page
             .Locator(".diagram-canvas")
             .ClickAsync(

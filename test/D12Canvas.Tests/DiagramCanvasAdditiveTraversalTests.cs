@@ -7,9 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Focus is established with .Focus(), a real AngleSharp focus event routed through the stop's own
-// @onfocus, which is where a native Tab lands. Space, Enter and Escape are the entry points the
-// keydown table calls. None of this proves the keys arrive; AdditiveTraversalProbes does that.
 public class DiagramCanvasAdditiveTraversalTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

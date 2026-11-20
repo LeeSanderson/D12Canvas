@@ -3,9 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Connector drags as a user makes them now that ports show only on a selected shape and on the
-// shape a drag is over: select the source, press its port, arrive over the target's body so its
-// ports appear, then release on one of them.
 internal static class PortGestures
 {
     public static ILocator PortSpan(ILocator container, string part) =>
@@ -21,8 +18,6 @@ internal static class PortGestures
         return ((float)(box!.X + box.Width / 2), (float)(box.Y + box.Height / 2));
     }
 
-    // Clicks the shape to select it and gives back the centre of one standard port's dot, which
-    // lies inside that port's span.
     public static async Task<(float X, float Y)> SelectAndAimAtPortAsync(
         ILocator container,
         string side
@@ -33,8 +28,6 @@ internal static class PortGestures
         return await CentreOfAsync(Dot(container, side));
     }
 
-    // With a connector press held, arrives over the target's body, waits for its ports to show and
-    // moves onto one. The release is the caller's.
     public static async Task<(float X, float Y)> ArriveAtPortAsync(
         IPage page,
         ILocator target,
@@ -49,8 +42,6 @@ internal static class PortGestures
         return port;
     }
 
-    // A whole drag from one shape's standard port to another's, ending with Escape so nothing is
-    // left selected and the edge is all the drag added to the board.
     public static async Task ConnectAsync(
         IPage page,
         ILocator source,

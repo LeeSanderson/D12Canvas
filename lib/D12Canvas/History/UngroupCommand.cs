@@ -2,9 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// The mirror image of GroupCommand. Undo re-adds the same Group reference, restoring its MemberIds
-// intact. Ungrouping a group nested in a parent splices its members back into the parent's member
-// list where the group was, in the same entry.
 public sealed class UngroupCommand : ICommand
 {
     private readonly Board _board;

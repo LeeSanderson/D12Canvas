@@ -4,9 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A press on an edge or its label has no active phase. A release below the threshold selects the
-// edge, a double-press adds a label to a bare edge or opens the label's editor, and a press that
-// crossed the threshold is abandoned, as a native button is.
 public class SelectEdgeGestureTests
 {
     private static readonly Guid EdgeId = Guid.NewGuid();

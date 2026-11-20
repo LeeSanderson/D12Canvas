@@ -2,10 +2,6 @@ using Bunit;
 
 namespace D12Canvas.Tests;
 
-// Moves a rendered DiagramCanvas's viewport the ways a user does without a pointer button: the
-// wheel entry point the browser-side listener calls, with container-relative pointer coordinates,
-// deltas in pixels and the granularity the listener classified the wheel gesture with, and the
-// keyboard zoom entry points, which step the scale by a fixed amount about the board origin.
 internal static class CanvasViewport
 {
     public const double Notch = 100;
@@ -37,9 +33,6 @@ internal static class CanvasViewport
     public static void ZoomOut(this IRenderedComponent<DiagramCanvas> canvas) =>
         canvas.InvokeAsync(canvas.Instance.OnZoomOut).GetAwaiter().GetResult();
 
-    // Puts the viewport back at scale 1.0 and pan origin, undoing the initial fit for a test whose
-    // container coordinates are laid out against board coordinates, the way a host would through
-    // the public tracker.
     public static IRenderedComponent<DiagramCanvas> ReturnToOrigin(
         this IRenderedComponent<DiagramCanvas> canvas
     )

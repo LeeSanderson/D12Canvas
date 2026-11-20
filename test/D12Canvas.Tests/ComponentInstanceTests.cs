@@ -64,8 +64,6 @@ public class ComponentInstanceTests
         Assert.Equal(new Bounds(50, 60, 200, 150), instance.Bounds);
     }
 
-    // Custom ports are nothing a component type's developer declares at registration - a fresh
-    // instance starts with none, regardless of its type.
     [Fact]
     public void DefaultsToNoCustomPortsWhenNoneAreProvided()
     {
@@ -93,8 +91,6 @@ public class ComponentInstanceTests
         Assert.Equal(new[] { port }, instance.CustomPorts);
     }
 
-    // Mirrors the persistence round-trip precedent: FromComponentEnvelope reconstructs an
-    // instance with its custom ports already populated at construction, not added afterwards.
     [Fact]
     public void CustomPortsProvidedAtConstructionAreCopiedNotSharedByReference()
     {

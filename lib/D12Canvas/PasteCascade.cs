@@ -1,7 +1,5 @@
 namespace D12Canvas;
 
-// Repeated pastes landing on one spot would stack exactly on top of each other, so each repeat
-// steps one cascade step further down and right; any other spot starts again from no offset.
 internal sealed class PasteCascade
 {
     public const double Step = 20;

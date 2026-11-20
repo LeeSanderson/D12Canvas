@@ -89,10 +89,6 @@ public class PaletteThemeTokensTests : ComponentTestBase
         Assert.DoesNotContain("rgba(", hover);
     }
 
-    // .d12-palette-button sets color: inherit (overriding the button element's own UA default) -
-    // without the root itself setting a token-driven color, the glyphs would fall through to
-    // whatever ambient text color the host page happens to have, which stays low-contrast dark
-    // even once the palette's own background goes dark.
     [Fact]
     public void RootDeclaresATokenDrivenTextColorTheGlyphsInherit()
     {

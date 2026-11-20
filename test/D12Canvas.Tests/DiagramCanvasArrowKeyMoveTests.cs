@@ -7,11 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Arrow-key move: a zoom-relative nudge of the focused/selected content, uniform for a
-// single instance, an ad-hoc multi-selection, and a persisted Group. With nothing selected, arrow
-// keys fall back to the pre-existing pan behaviour instead (matches DiagramCanvasUndoRedoTests's
-// convention of invoking the JSInvokable handlers directly rather than through the real JS
-// keydown/keyup listener, which SetupDiagramCanvasJsModule stubs out).
 public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -95,13 +90,11 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
-        canvas.ZoomIn(); // zooms to scale 1.1
+        canvas.ZoomIn();
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
 
-        // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the
-        // decimal literal 1.1, so this can't disagree with production code over double rounding.
         var scale = 1.0 + 0.1;
         Assert.Equal(100 + 1 / scale, instance.Bounds.X, precision: 10);
     }
@@ -114,7 +107,7 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
-        canvas.ZoomOut(); // zooms to scale 0.9
+        canvas.ZoomOut();
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnArrowKeyPressed("ArrowRight", false));
@@ -141,9 +134,6 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         Assert.Equal(new Bounds(101, 100, 50, 50), instance.Bounds);
     }
 
-    // Holding an arrow key fires many rapid repeat keydown events before the matching keyup - the
-    // whole span must read as one undoable gesture, the same "record once on commit" discipline a
-    // mouse drag's own press-to-release span already follows.
     [Fact]
     public async Task AHeldKeyBurstOfNudgesCoalescesIntoOneUndoableEntry()
     {
@@ -166,8 +156,6 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         Assert.Equal(new Bounds(103, 100, 50, 50), instance.Bounds);
     }
 
-    // The matching keyup (OnArrowKeyReleased) ends the current burst, so a later press starts a
-    // fresh history entry instead of resuming the one that already ended.
     [Fact]
     public async Task ReleasingTheKeyEndsTheBurstSoTheNextPressIsASeparateHistoryEntry()
     {
@@ -463,14 +451,12 @@ public class DiagramCanvasArrowKeyMoveTests : ComponentTestBase
         Assert.Equal(new FloatingEndpoint(226, 290), edge.Target);
     }
 
-    // An edge-only selection takes the nudge even when it has nothing to move, so one key never
-    // means "nudge" for one edge and "pan" for another.
     [Fact]
     public async Task WithOnlyAnAttachedEdgeSelectedArrowKeysNeitherPanNorWrite()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        var target = AddInstance(board, 250, 100); // left port at (250, 125)
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );

@@ -3,8 +3,6 @@ using Xunit.Sdk;
 
 namespace D12Canvas.VisualTests;
 
-// The browser applies a released capture at the next pointer event, so the probe moves the
-// pointer once after releasing it.
 public sealed class LostCaptureProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

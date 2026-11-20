@@ -11,8 +11,6 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public MultiSelectionMoveResizeVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -35,9 +33,6 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Click-to-adds both palette entries and marquee-selects across both (the same technique
-    // MarqueeVisualTests uses), leaving both instances selected with the group bounding box
-    // visible.
     private async Task SelectBothInstances()
     {
         await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();
@@ -79,11 +74,6 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    // A persisted Group's bounding box (computed on demand from its members, never stored)
-    // renders identically to an ad-hoc multi-selection's, since Ctrl+G only promotes the existing
-    // selection into a Group entity without changing how it's drawn. Pinned as its own baseline
-    // since it's driven by a real Ctrl+G keypress rather than the marquee/shift-click
-    // SelectBothInstances itself already covers.
     [Fact]
     public async Task PersistedGroupBoundingBoxVisible_MatchesBaseline()
     {
@@ -125,10 +115,6 @@ public sealed class MultiSelectionMoveResizeVisualTests : IAsyncLifetime
         await _page.Mouse.UpAsync();
     }
 
-    // Regression coverage for a real bug once found here: a handle's own mousedown/mouseup with
-    // no movement in between fires a native click, which used to bubble to a canvas click handler
-    // that cleared the selection. The canvas no longer listens for clicks, and a press on the
-    // handle is a resize whose click changes nothing; a real browser proves the selection survives.
     [Fact]
     public async Task StationaryClickOnGroupResizeHandle_DoesNotClearSelection()
     {

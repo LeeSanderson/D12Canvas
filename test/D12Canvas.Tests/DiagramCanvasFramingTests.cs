@@ -8,9 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The canvas opens a new Board framed on its content, unanimated, and Zoom to Fit, Zoom to
-// Selection and Zoom to 100% each move the viewport in one change that the content element
-// animates as a framing flight. The container is 800 by 600.
 public class DiagramCanvasFramingTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -316,7 +313,6 @@ public class DiagramCanvasFramingTests : ComponentTestBase
         AssertNotInFlight(canvas);
     }
 
-    // The container reporting the size it already had moves nothing, so the flight carries on.
     [Fact]
     public async Task AContainerResizeThatLeavesTheViewWhereItIsKeepsTheFlight()
     {

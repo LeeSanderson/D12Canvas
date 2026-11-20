@@ -4,9 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The mixed-values demo board: two rectangles with different fills and stroke widths, and two
-// texts with different weights, beside the property panel. Selecting a pair shows each
-// disagreeing row as mixed: the weight tiles press none and tag their label.
 public sealed class MixedValuesVisualTests : IAsyncLifetime
 {
     private const string BlueRectangleId = "10800000-0000-0000-0000-000000000001";
@@ -18,8 +15,6 @@ public sealed class MixedValuesVisualTests : IAsyncLifetime
     private IBrowserContext? _context;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public MixedValuesVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

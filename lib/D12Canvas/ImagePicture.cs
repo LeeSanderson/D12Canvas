@@ -5,8 +5,6 @@ using D12Canvas.Registration;
 
 namespace D12Canvas;
 
-// The rules for giving an "image" instance its picture: which instance a dropped file fills, what
-// size an instance made from a file takes, and which file types are let in at all.
 internal static partial class ImagePicture
 {
     public const string ComponentKey = "image";
@@ -17,9 +15,6 @@ internal static partial class ImagePicture
     public static bool IsEmptyImage(ComponentInstance? instance) =>
         IsImage(instance) && string.IsNullOrWhiteSpace(((ImageProps)instance!.Props).Url);
 
-    // The topmost entity under the drop, if it is an unlocked empty image. A drop whose topmost
-    // entity is anything else, a filled or locked image or an edge drawn over the image included,
-    // fills nothing.
     public static ComponentInstance? FillTarget(Board board, IEnumerable<Guid> hitsTopmostFirst)
     {
         foreach (var id in hitsTopmostFirst)
@@ -38,9 +33,6 @@ internal static partial class ImagePicture
         return null;
     }
 
-    // The picture's own pixel size in board units, scaled down to fit within half the visible
-    // viewport and never up, keeping its aspect ratio. A picture that reports no size, as an SVG
-    // without one can, takes the fallback.
     public static ComponentSize SizeFor(
         double pixelWidth,
         double pixelHeight,

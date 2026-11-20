@@ -7,12 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Full keyboard-accessibility interaction: reading-order tab stops (a persisted Group
-// collapses to one), and focus-follows-selection in both directions. Native Tab/Shift+Tab
-// traversal itself needs no test here - it falls out for free from correct tabindex + DOM order,
-// neither of which bUnit's AngleSharp-backed DOM has any special-cased browser tab logic to
-// bypass; these tests instead verify the two things that make that native behaviour correct
-// (tabindex placement, DOM order) and the C# side of the onfocus wiring.
 public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -57,7 +51,6 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
     public void InstancesAreOrderedByCurrentOnScreenPositionNotCreationOrder()
     {
         var board = new Board();
-        // Added in an order that's neither reading order nor sorted by any single axis.
         AddInstance(board, "BottomLeft", x: 100, y: 100);
         AddInstance(board, "TopLeft", x: 0, y: 0);
         AddInstance(board, "TopRight", x: 200, y: 0);
@@ -145,7 +138,7 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         canvas.ClickOn(canvas.FindAll(".component-container")[0]);
         canvas.ClickOn(canvas.FindAll(".component-container")[1], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
-        await canvas.ClickCanvas(400, 400); // clear the selection first
+        await canvas.ClickCanvas(400, 400);
 
         canvas.Find(".group-tab-stop").Focus();
 
@@ -155,9 +148,6 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         Assert.Equal("true", canvas.Find(".group-tab-stop").GetAttribute("aria-selected"));
     }
 
-    // Focus drives selection and never the reverse: the browser-side listener's one focus write
-    // per press goes to the canvas, and no click outcome, plain or Shift, on a grouped member or
-    // not, asks for any further focus move.
     [Fact]
     public async Task NoClickOnAnInstanceMovesDomFocus()
     {
@@ -213,11 +203,6 @@ public class DiagramCanvasFocusFollowsSelectionTests : ComponentTestBase
         canvas.ClickOn(containers[2], shift: true);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        // Filtered to actually-tabbable elements: the now-grouped members' own containers still
-        // render alongside the group's stop (just with no tabindex), and one of them can tie the
-        // group stop's own sort key (its bounds start at the same top-left corner as its
-        // leftmost member) - harmless for real Tab traversal, which skips non-tabbable elements
-        // regardless of DOM position, but not a meaningful position to assert on here.
         var stops = canvas
             .FindAll(".component-container, .group-tab-stop")
             .Where(e => e.GetAttribute("tabindex") == "0")

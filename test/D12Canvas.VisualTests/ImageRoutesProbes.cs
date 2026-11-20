@@ -5,16 +5,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The picker opens only from a click that still counts as user activation once it has crossed
-// into .NET and back, and a file arrives only through a real drop or paste event, none of which
-// bUnit can see. Playwright reports a file chooser only when the browser really opened one.
 public sealed class ImageRoutesProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
     private const string EmptyImageId = "f0000000-0000-0000-0000-000000000001";
     private const string FilledImageId = "f0000000-0000-0000-0000-000000000002";
 
-    // A 160x80 PNG.
     private static readonly byte[] Picture = Convert.FromBase64String(
         "iVBORw0KGgoAAAANSUhEUgAAAKAAAABQCAIAAAARP+ljAAAAlUlEQVR42u3RQQ0AAAjEsBODO3TjAxO8SJMpWDPVelwsACzAAizAAizAAgxYgAVYgAVYgAUYsAALsAALsAALsAADFmABFmABFmABBizAAizAAizAAgxYgAVYgAVYgAVYgAELsAALsAALsAADFmABFmABFmABBuwCYAEWYAEWYAEWYMACLMACLMACLMCABViABViAddUCswasOfQDXTgAAAAASUVORK5CYII="
     );
@@ -41,7 +37,6 @@ public sealed class ImageRoutesProbes(PlaywrightFixture playwright, DemoAppFixtu
     private async Task<string> SourceOfAsync(ILocator picture) =>
         await picture.GetAttributeAsync("src") ?? "";
 
-    // Dispatches a real drop carrying files built in the page, at a board point.
     private async Task DropFilesAsync(
         double x,
         double y,
@@ -81,8 +76,6 @@ public sealed class ImageRoutesProbes(PlaywrightFixture playwright, DemoAppFixtu
         await SettleAsync();
     }
 
-    // The instance's own bounds, which the inline style carries; a small shape renders larger
-    // than its bounds, so its bounding box would not show them.
     private static double StyleLength(string? style, string property) =>
         double.Parse(
             Regex.Match(style ?? "", $@"(?<![-\w]){property}: ([\d.]+)px").Groups[1].Value,

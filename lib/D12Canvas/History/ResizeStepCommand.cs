@@ -2,13 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Backs Alt+Arrow keyboard resize - single-instance only, growing/shrinking one
-// dimension per press with a stable anchor (the edge ResizeMath.Apply's direction leaves fixed).
-// Like NudgeCommand, Extend grows this same command's accumulated delta in place so a held key's
-// repeat keydowns coalesce into one undoable entry - but unlike a nudge's plain vector add, every
-// Extend recomputes the resize from the ORIGINAL bounds via ResizeMath.Apply, which is what keeps
-// the anchor edge exactly fixed across the whole burst instead of drifting through repeated
-// incremental recomputation.
 public sealed class ResizeStepCommand : ICommand
 {
     private readonly ComponentInstance _target;

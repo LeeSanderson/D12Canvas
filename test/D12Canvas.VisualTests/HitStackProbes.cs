@@ -4,9 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The hit stack is read from the browser's own hit test at the press point, so these check that it
-// crosses to C# topmost first in paint order, that an Alt click steps down it and wraps, and that
-// a click inside the selection box reaches the shape beneath it.
 public sealed class HitStackProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

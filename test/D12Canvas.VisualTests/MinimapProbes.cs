@@ -3,9 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The real pointer and keyboard paths over the minimap demo, whose minimap floats over the
-// canvas's bottom-right corner. The minimap's own listener reports to the same four entry points
-// as the canvas's, so the recorded calls cover both.
 public sealed class MinimapProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

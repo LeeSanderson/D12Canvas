@@ -8,12 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A persisted Group moves/resizes as one unit exactly like an ad-hoc multi-selection does -
-// ExpandedSelection() already flattens a selected Group (nested or not) down to its raw leaf
-// component instance ids before the existing move/resize machinery ever sees it, so there is no
-// separate group-move/resize code path to add. These tests exist to pin that behaviour
-// specifically for a *persisted* Group entity (including nesting), which the ad-hoc
-// multi-selection tests never exercised together.
 public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -119,17 +113,11 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        // Combined bbox starts at (0,0,200,50). Growing it to (0,0,300,100) scales x1.5/x2.
         canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (300, 200), (400, 250));
 
         Assert.Equal(new Bounds(0, 0, 75, 100), first.Bounds);
         Assert.Equal(new Bounds(150, 0, 150, 100), second.Bounds);
     }
-
-    // Undo/redo-specific coverage (the "one history entry... undo restores all members
-    // atomically" checklist item) lives in DiagramCanvasUndoRedoTests.cs instead, alongside
-    // UndoAfterAGroupMove/ResizeRevertsEveryMemberInOneStep - same convention, now proven for a
-    // persisted Group too.
 
     [Fact]
     public async Task ResizingAPersistedGroupViaTheTopLeftHandleKeepsTheOppositeCornerAnchored()
@@ -143,9 +131,6 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         SelectBoth(canvas);
         await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        // Combined bbox starts at (0,0,200,50), bottom-right corner (200,50). Dragging the
-        // top-left handle outward (up-and-left) grows the bbox to (-20,-10,220,60) - the
-        // opposite (bottom-right) corner must stay at exactly (200,50).
         canvas.DragHandle(canvas.Find(".group-resize-handle.top-left"), (300, 200), (280, 190));
 
         Assert.Equal(-20, first.Bounds.X, precision: 10);
@@ -154,10 +139,6 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         Assert.Equal(50, second.Bounds.Bottom, precision: 10);
     }
 
-    // A nested group ([A, B] grouped into an inner Group, then [inner, C] grouped into an outer
-    // one) exercises the ExpandedSelection recursion - moving/resizing the outer group's
-    // selection must move/scale every leaf (A, B, and C), not just the outer group's immediate
-    // members.
     [Fact]
     public async Task MovingANestedGroupMovesEveryLeafMemberByTheSameDelta()
     {
@@ -168,12 +149,11 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
-        SelectBoth(canvas); // selects A and B
-        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}
+        SelectBoth(canvas);
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        // Inner group is now the whole selection; shift-click C to add it, then group again to nest.
         canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
-        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // outer group = {inner, C}
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         Assert.Equal(2, board.Groups.Count);
 
         canvas.PressOn(
@@ -199,12 +179,11 @@ public class DiagramCanvasGroupMoveResizeTests : ComponentTestBase
         var canvas = Render<DiagramCanvas>(parameters =>
             parameters.Add(p => p.Board, board).Add(p => p.SnapToGrid, false)
         );
-        SelectBoth(canvas); // selects A and B
-        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // inner group = {A, B}
+        SelectBoth(canvas);
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
         canvas.ClickOn(canvas.FindAll(".component-container")[2], shift: true);
-        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed()); // outer group = {inner, C}
+        await canvas.InvokeAsync(() => canvas.Instance.OnGroupPressed());
 
-        // Combined bbox is (0,0)-(400,50) = 400x50. Growing width to 800 doubles every x-extent.
         canvas.DragHandle(canvas.Find(".group-resize-handle.bottom-right"), (400, 200), (800, 200));
 
         Assert.Equal(new Bounds(0, 0, 100, 50), a.Bounds);

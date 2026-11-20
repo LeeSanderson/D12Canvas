@@ -5,8 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Ctrl+D is a keydown row in the canvas's keyboard listener, which bUnit never runs, and it must
-// keep the browser's own Ctrl+D and the system clipboard out of it.
 public sealed class DuplicateProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

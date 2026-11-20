@@ -3,8 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Every role in the closed set declares what it expects, and the validator checks a property
-// against its own role's declaration rather than against another registered type.
 public class PropertyRolesTests
 {
     public static IEnumerable<object[]> EveryRole() =>

@@ -3,10 +3,6 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// One menu for both content sets. It is handed the context DiagramCanvas resolved when it opened,
-// composes its rows from that, places itself inside the container and reports which command was
-// chosen; DiagramCanvas runs the same method the command's chord runs, so a row is always the
-// identical undoable command.
 public partial class ContextMenu : IAsyncDisposable
 {
     [Inject]
@@ -27,16 +23,12 @@ public partial class ContextMenu : IAsyncDisposable
     [Parameter]
     public double ContainerHeight { get; set; }
 
-    // A keyboard-opened menu focuses its first row, and on closing hands focus back to whatever held
-    // it when the menu opened. A pointer-opened menu focuses itself and hands nothing back.
     [Parameter]
     public bool OpenedFromKeyboard { get; set; }
 
     [Parameter]
     public EventCallback<ContextMenuCommand> OnInvoke { get; set; }
 
-    // Fired on Escape inside the menu or a press anywhere outside it; DiagramCanvas owns whether a
-    // menu is open at all.
     [Parameter]
     public EventCallback OnRequestClose { get; set; }
 

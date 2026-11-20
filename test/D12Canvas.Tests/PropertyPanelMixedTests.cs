@@ -53,8 +53,6 @@ public partial class PropertyPanelTests
         Assert.Equal("#00ff00", PropsOf(second).Tint);
     }
 
-    // The swatch opens on the colour it holds, and the browser fires no change when the pick ends
-    // on that same colour, so the last colour the picker reported lands when the swatch is left.
     [Fact]
     public void PickingTheColourAMixedSwatchHoldsStillWritesEveryTarget()
     {

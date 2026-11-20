@@ -3,10 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The panel floats over the board, so it declares the raised values on its own root, in the same
-// four blocks Palette and the context menu use, and sets color-scheme in each so the parts of its
-// native inputs that CSS cannot reach (the select's popup, the checkbox tick, the colour swatch
-// frame) are drawn in the right scheme too.
 public class PropertyPanelThemeTokensTests : ComponentTestBase
 {
     [Fact]

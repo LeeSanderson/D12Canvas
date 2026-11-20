@@ -10,12 +10,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// An edge label is a full ComponentInstance (defaulting to Text) embedded directly on its owning
-// Edge, not a separate Board entity - added by double-clicking the edge's own line, positioned
-// live at the edge's current midpoint, edited in place via the exact same inline WYSIWYG
-// mechanism Text already has, and removed automatically when its edge is deleted. Exercised
-// through the real DiagramCanvas/ComponentContainer/Text stack, same as
-// DiagramCanvasInlineTextEditingTests.
 public class DiagramCanvasEdgeLabelTests : ComponentTestBase
 {
     private const string TestComponentTypeKey = "test-props";
@@ -140,10 +134,6 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         canvas.DoubleClickElement(canvas.Find(".edge-hit"));
         var styleBefore = canvas.Find(".edge-label").GetAttribute("style");
 
-        // Move the target instance far away - the label's live-derived midpoint must follow.
-        // OnContainerResized is a harmless existing StateHasChanged trigger (same dimensions the
-        // JS module setup already reports) - forces the re-render this direct model mutation
-        // doesn't itself raise any Blazor-visible event for.
         target.Bounds = new Bounds(1000, 1000, target.Bounds.Width, target.Bounds.Height);
         canvas.InvokeAsync(() => canvas.Instance.OnContainerResized(800, 600));
 
@@ -151,16 +141,12 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         Assert.NotEqual(styleBefore, styleAfter);
     }
 
-    // While an existing edge's endpoint is mid-drag (reposition, not a brand-new connection), the
-    // edge's own normal line is suppressed in favour of the pending line - the label must follow
-    // that same line, not the edge's last-committed (pre-drag) endpoints, or it would visually
-    // freeze and detach for the drag's duration.
     [Fact]
     public void TheLabelFollowsTheLiveDragPreviewWhileAnEndpointIsBeingRepositioned()
     {
         var board = new Board();
-        var source = AddInstance(board, 100, 100); // right port at (150, 125)
-        var target = AddInstance(board, 250, 100); // left port at (250, 125)
+        var source = AddInstance(board, 100, 100);
+        var target = AddInstance(board, 250, 100);
         AddEdgeBetween(board, source, target);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         canvas.ReturnToOrigin();
@@ -168,12 +154,9 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
         var styleBeforeDrag = canvas.Find(".edge-label").GetAttribute("style");
         Assert.Equal("left: 160px; top: 113px; width: 80px; height: 24px;", styleBeforeDrag);
 
-        // Re-grab the source port (it already anchors an edge, so this carries that edge's end)
-        // and move away from it without releasing yet.
         canvas.PressPort(source.Id, "Right", (150, 125));
         canvas.MoveTo((150, 400));
 
-        // Midpoint of the fixed target port (250, 125) and the live drag point (150, 400).
         var styleDuringDrag = canvas.Find(".edge-label").GetAttribute("style");
         Assert.Equal("left: 160px; top: 250.5px; width: 80px; height: 24px;", styleDuringDrag);
     }
@@ -195,7 +178,6 @@ public class DiagramCanvasEdgeLabelTests : ComponentTestBase
 
         canvas.DoubleClickElement(canvas.Find(".edge-hit"));
 
-        // Up from (25, 100) to (25, 25), then right to (300, 25): 350 long, so halfway is (125, 25).
         Assert.Equal("M 25 100 L 25 25 L 300 25", canvas.Find(".edge-line").GetAttribute("d"));
         Assert.Equal(
             "left: 85px; top: 13px; width: 80px; height: 24px;",

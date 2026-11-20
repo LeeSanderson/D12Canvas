@@ -9,9 +9,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Four undoable layering commands (bring to front / send to back / bring forward / send
-// backward), each an arithmetic-only write to ComponentInstance.ZIndex - no renumbering pass over
-// other entities - with tie handling among neighbours sharing a ZIndex.
 public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -108,7 +105,7 @@ public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
     {
         var board = new Board();
         var target = AddInstance(board, 0, zIndex: 5);
-        AddInstance(board, 100, zIndex: 5); // tied with target at the same rank
+        AddInstance(board, 100, zIndex: 5);
         AddInstance(board, 200, zIndex: 8);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
         Select(canvas, 0);
@@ -131,7 +128,7 @@ public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
 
         Assert.Equal(5, target.ZIndex);
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
-        Assert.Equal(5, target.ZIndex); // nothing was pushed onto history to undo
+        Assert.Equal(5, target.ZIndex);
     }
 
     [Fact]
@@ -199,9 +196,6 @@ public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
 
         await canvas.InvokeAsync(() => canvas.Instance.OnBringToFrontPressed());
 
-        // Both land above the untouched third instance (9), and first (originally the lower of
-        // the two) stays below second - a bulk move never collapses the pair onto the same tied
-        // value, which would erase their own relative stacking order.
         Assert.Equal(10, first.ZIndex);
         Assert.Equal(11, second.ZIndex);
     }
@@ -220,8 +214,6 @@ public class DiagramCanvasZIndexCommandsTests : ComponentTestBase
 
         await canvas.InvokeAsync(() => canvas.Instance.OnSendToBackPressed());
 
-        // Both land below the untouched first instance (0), and first-selected (originally the
-        // lower of the two) stays below second-selected.
         Assert.Equal(-2, first.ZIndex);
         Assert.Equal(-1, second.ZIndex);
     }

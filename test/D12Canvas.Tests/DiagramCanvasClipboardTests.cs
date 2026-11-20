@@ -9,9 +9,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Copy hands the browser a board envelope of the selection, cut removes exactly what it carried in
-// one history entry, and a paste lands centred on the Paste anchor: the pointer over the canvas,
-// the press that opened the menu, or the viewport centre, cascading while the anchor stays put.
 public class DiagramCanvasClipboardTests : ComponentTestBase
 {
     private const double ContainerCentreX = 400;

@@ -4,9 +4,6 @@ namespace D12Canvas;
 
 public class ZoomPanTracker
 {
-    // A pure numerical-stability floor, not a product-facing zoom limit - keeps Scale strictly
-    // positive so Viewport (which divides by Scale) can never blow up even under an unbounded
-    // zoom-out with no host-configured MinZoom. Far below any zoom level a host would ever want.
     private const double MinPositiveScale = 0.0001;
 
     private double _scale = 1.0;
@@ -19,10 +16,6 @@ public class ZoomPanTracker
 
     public event EventHandler<ZoomPanChangedEventArgs>? Changed;
 
-    // Optional host-configured zoom bounds - both default to unbounded. Set together so a host
-    // changing both at once (e.g. via DiagramCanvas's own parameters) can never trip a transient
-    // min > max state depending on assignment order. Re-clamps whatever Scale already is, so it
-    // never sits outside newly-tightened bounds until the next ZoomIn/ZoomOut.
     public double? MinZoom => _minZoom;
 
     public double? MaxZoom => _maxZoom;
@@ -52,12 +45,8 @@ public class ZoomPanTracker
     public double ContainerWidth => _containerWidth;
     public double ContainerHeight => _containerHeight;
 
-    // False during the brief window between first render and OnAfterRenderAsync's async
-    // container-size JS round trip resolving - both dimensions default to 0 until then.
     public bool HasKnownContainerSize => _containerWidth > 0 && _containerHeight > 0;
 
-    // Canvas-space rect currently visible in the container - the inverse of the
-    // pan/scale transform CSS applies to .canvas-content.
     public Bounds Viewport =>
         new(-_panX / _scale, -_panY / _scale, _containerWidth / _scale, _containerHeight / _scale);
 
@@ -72,8 +61,6 @@ public class ZoomPanTracker
         OnChanged();
     }
 
-    // No fixed board extent - pan is never clamped, so content can be placed and panned to
-    // arbitrarily far coordinates.
     public bool Pan(double deltaX, double deltaY) => SetPanPosition(_panX + deltaX, _panY + deltaY);
 
     public bool SetPanPosition(double panX, double panY)
@@ -95,13 +82,9 @@ public class ZoomPanTracker
 
     public bool ZoomOut() => SetScale(_scale - 0.1);
 
-    // Multiplies the scale by factor, clamped to the zoom limits, and moves the pan so the board
-    // point under the container point (x, y) stays under it. One change is raised for both.
     public bool ZoomAbout(double x, double y, double factor) =>
         SetScaleAbout(x, y, _scale * factor);
 
-    // Sets the scale, clamped to the zoom limits, keeping the board point under the container
-    // point (x, y) where it is. One change is raised for both.
     internal bool SetScaleAbout(double x, double y, double scale)
     {
         var newScale = Clamped(scale);
@@ -119,12 +102,9 @@ public class ZoomPanTracker
         return true;
     }
 
-    // The fraction of the container a framed rect may fill, and the scale framing never passes.
     internal const double FramingFill = 0.9;
     internal const double FramingScaleCap = 1.0;
 
-    // The inverse of Viewport. The cap applies before the zoom limits, so a host's limits always
-    // win, and the pan is computed against the scale the clamp left, in one change.
     public bool Frame(Bounds target)
     {
         if (!HasKnownContainerSize)

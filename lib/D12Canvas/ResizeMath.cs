@@ -2,13 +2,8 @@ using D12Canvas.Model;
 
 namespace D12Canvas;
 
-// The anchor/clamp math behind a resize: the pointer's ResizeSelection gesture applies it to the
-// selection's bounding box, snapping the edges it moves, and the keyboard's Alt+Arrow resize
-// applies the unsnapped clamp to a single instance.
 internal static class ResizeMath
 {
-    // The floor every instance keeps under any resize. A multi-selection's box derives its own,
-    // larger floor from it.
     public const double DefaultMinWidth = 50;
     public const double DefaultMinHeight = 50;
 
@@ -80,9 +75,6 @@ internal static class ResizeMath
         }
     }
 
-    // The edges the direction moves, rounded to the nearest grid line that keeps the size at or
-    // above the minimum, so the result always ends on a line. The edges it anchors are left
-    // exactly where start had them.
     public static Bounds SnapMovingEdges(
         Bounds resized,
         Bounds start,
@@ -144,8 +136,6 @@ internal static class ResizeMath
         return new Bounds(left, top, right - left, bottom - top);
     }
 
-    // Each driven axis grows by twice the delta, and the floor holds both edges the same distance
-    // from the centre.
     public static Bounds ApplyAboutCentre(
         Bounds start,
         ResizeDirection direction,
@@ -177,9 +167,6 @@ internal static class ResizeMath
         return new Bounds(left, top, right - left, bottom - top);
     }
 
-    // Each driven axis of a centre resize takes whichever of its two edges is nearer a grid line
-    // and moves the other edge the same amount the opposite way, the handle's edge winning a tie.
-    // The floor is applied after the snap, so at the limit the box may sit off the grid.
     public static Bounds SnapAboutCentre(
         Bounds resized,
         ResizeDirection direction,
@@ -271,9 +258,6 @@ internal static class ResizeMath
     private static double LineAtOrAbove(double coordinate, double spacing) =>
         Math.Ceiling(coordinate / spacing - GridLineTolerance) * spacing;
 
-    // The smallest a box can shrink to while every member, scaled proportionally inside it, stays
-    // at or above the per-instance floor. Width and height scale independently, so each takes the
-    // most restrictive member on its own axis.
     public static (double MinWidth, double MinHeight) MinimumBoxSizeFor(
         Bounds box,
         IEnumerable<Bounds> members
@@ -298,9 +282,6 @@ internal static class ResizeMath
         return (minWidth, minHeight);
     }
 
-    // A member's bounds at the start, re-expressed at the same relative position and size inside
-    // the box's current extent. Each edge is placed by its fraction of the box, so a member edge
-    // that touched the box still touches it exactly.
     public static Bounds ScaleWithinBox(Bounds memberStart, Bounds boxStart, Bounds boxCurrent)
     {
         var (left, right) = ScaleAxis(

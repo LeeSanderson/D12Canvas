@@ -4,11 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Pan holds the board point under the press under the pointer, so what the viewport shows depends
-// on the whole distance from the press, never an accumulation of per-tick deltas, and a viewport
-// change under the press re-anchors to the point then under the pointer. A secondary release that
-// never crossed the threshold is the context menu, resolving the selection at that moment; a
-// middle click is nothing.
 public class PanGestureTests
 {
     private const string ComponentTypeKey = "test-props";
@@ -131,8 +126,6 @@ public class PanGestureTests
         Assert.Equal([groupId], context.SelectedInstanceIds);
     }
 
-    // The listener resolves an affordance's entity from the nearest marked ancestor, so a press on
-    // a resize handle or a port arrives naming the instance it belongs to and selects that.
     [Fact]
     public void ASecondaryClickOnAnAffordanceSelectsTheInstanceItBelongsTo()
     {

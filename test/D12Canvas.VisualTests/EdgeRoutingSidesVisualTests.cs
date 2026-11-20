@@ -4,17 +4,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// One edge leaving from each side of a shape into the top of a shape below and to its right, in
-// each routed style: an orthogonal edge leaves straight out along its side and goes around both
-// shapes, and a curved edge bends out along its side.
 public sealed class EdgeRoutingSidesVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public EdgeRoutingSidesVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

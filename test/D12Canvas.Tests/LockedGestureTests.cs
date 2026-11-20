@@ -4,8 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A gesture over a selection that holds locked entities acts on the unlocked ones and leaves the
-// locked ones exactly as they are; nothing a gesture sweeps, carries or drops onto is locked.
 public class LockedGestureTests
 {
     private static ComponentInstance AddInstance(Board board, Bounds bounds, bool locked = false)

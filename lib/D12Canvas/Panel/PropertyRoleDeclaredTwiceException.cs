@@ -1,8 +1,5 @@
 namespace D12Canvas.Panel;
 
-// Two properties on one TProps type declare the same role. The role is the key a cross-type row
-// merges and commits on, so the second property would be silently unreachable - thrown at
-// registration time instead, naming both properties.
 public sealed class PropertyRoleDeclaredTwiceException : Exception
 {
     public Type PropsType { get; }

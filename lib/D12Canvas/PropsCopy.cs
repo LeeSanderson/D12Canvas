@@ -2,10 +2,6 @@ using System.Reflection;
 
 namespace D12Canvas;
 
-// A TProps record is immutable and only ever seen here as an opaque object, so there is no
-// compile-time type to write a `with` expression against. MemberwiseClone plus reflected
-// overwrites is the generic equivalent: every other field is copied byte-for-byte and the
-// original object is left untouched, which is what lets it stand as a command's "before".
 internal static class PropsCopy
 {
     private static readonly MethodInfo MemberwiseCloneMethod = typeof(object).GetMethod(

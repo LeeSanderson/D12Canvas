@@ -8,9 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The board is an outer group holding one instance and a nested group of two, and one instance
-// outside them. A double-press steps one level inside a group, Escape steps back out one level,
-// and a press outside the entered group steps out as far as it needs to.
 public class DiagramCanvasEnteredGroupTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

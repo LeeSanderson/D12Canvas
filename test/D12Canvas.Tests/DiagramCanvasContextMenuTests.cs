@@ -8,10 +8,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A secondary release from pointing opens the menu, each row wired to the exact same OnXPressed
-// method its chord runs. The release first resolves the selection: a press inside it preserves it,
-// a press on something else selects that, and a press on empty canvas clears it and opens the
-// canvas menu instead of the object menu.
 public class DiagramCanvasContextMenuTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -309,9 +305,6 @@ public class DiagramCanvasContextMenuTests : ComponentTestBase
     public async Task EachLayeringMenuItemChangesZIndexAndClosesTheMenu(string label)
     {
         var board = new Board();
-        // target sits between a lower and a higher neighbour, so every one of the four directions
-        // has somewhere to move it to (unlike a value already at one extreme, where the matching
-        // "further that way" command is legitimately a no-op).
         var target = AddInstance(board, 0, zIndex: 5);
         AddInstance(board, 100, zIndex: 1);
         AddInstance(board, 200, zIndex: 9);

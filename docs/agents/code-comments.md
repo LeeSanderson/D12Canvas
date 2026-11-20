@@ -1,17 +1,16 @@
-# Code Comments
+# Code comments
 
-Prefer self-documenting code — clear names, small focused methods — over comments. A comment earns its place only by capturing something the code itself can't: a hidden constraint, a subtle invariant, a workaround for a specific bug or browser/runtime quirk, an ordering or timing dependency, or behavior that would genuinely surprise a future reader. If deleting a comment would lose no information a careful reader couldn't get from the code, delete it.
+No comments in source. That covers `.cs`, `.razor`, `.js`, `.css`, `.ps1`, `.sh`, `.yml`, `.csproj` and `.props` files under `lib/`, `app/`, `test/` and `.github/`, plus `Directory.Build.props`. Vendored files under `wwwroot/lib/` are exempt.
 
-## Never cite tickets or ADRs in comments
+Where the content goes instead:
 
-Don't write "Ticket 47: ...", "ADR 0008: ...", or similar attributions in source comments. That belongs in the commit message and PR description, not the code — it rots the moment the ticket closes, and ages badly as the code around it changes.
+- What the code does: a better name or a smaller method.
+- Why it does it, a constraint, a browser quirk, an ordering dependency: an ADR in `docs/adr/`, or `CONTEXT.md` for a domain term.
+- A hack you know is a hack: an issue under `.scratch/`.
+- The story of a change and the ticket it came from: the commit message.
 
-This matters more than usual in this repo: several components embed their `<style>` block directly in `.razor` markup rather than using `.razor.css` isolation, so anything written inside `<style>` — comments included — renders verbatim into every page that hosts the component. The Playwright visual tests now scrub `<style>` elements from their HTML snapshots, so a CSS comment no longer moves baselines, but it still ships to every consumer's DOM.
+## Enforcement
 
-## Style blocks and CSS
+`CommentBudgetTests` in `test/D12Canvas.Tests/CommentBudget` scans those files. `comment-budget.json` at the repo root lists any file still allowed comments, with a count. A file with no entry is allowed none. The test fails when a file has more comments than its entry, and also when it has fewer, so the budget only goes down. To lower the budget after deleting comments, run the test class with `D12_TIGHTEN_COMMENT_BUDGET=1`. Never raise an entry or add one.
 
-Zero comments in `<style>` blocks (inline in `.razor` markup or in `.razor.css`) and standalone `.css` files, full stop — not just ticket citations. Rely on clear class names and rule grouping; if a stacking/ordering dependency is genuinely load-bearing, put the explanation in the commit message, not inline.
-
-## Everywhere else
-
-Same "why, not what" bar. Before adding a comment, check whether a better name or a small extracted method would make it unnecessary instead. When trimming an existing comment that cites a ticket but also carries real WHY content, keep the substance and drop only the citation — don't delete a comment just because it happens to mention a ticket in passing.
+`/delete-comment` clears comments that remain and tightens the budget.

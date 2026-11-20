@@ -11,9 +11,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A locked entity takes no primary press, no marquee and no command, a secondary press reaches it
-// and offers Unlock, the keyboard still lands on it, and a copy of it is locked. An operation on a
-// partly locked group acts on its unlocked members.
 public class DiagramCanvasLockingTests : ComponentTestBase
 {
     public DiagramCanvasLockingTests()

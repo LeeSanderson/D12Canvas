@@ -2,8 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas;
 
-// Along runs from a side's top or left end at 0 to its bottom or right end at 1, so the two
-// opposite sides share it and crossing between them keeps the position.
 internal readonly record struct ProvisionalPort(PortId Side, double Along)
 {
     public (double X, double Y) Fractions =>
@@ -17,9 +15,6 @@ internal readonly record struct ProvisionalPort(PortId Side, double Along)
         };
 }
 
-// Step takes a board coordinate along the side and a direction of -1 or 1 and gives the
-// coordinate one step on, before the side clamps it, so a step that overshoots stops at the
-// corner.
 internal static class PortPlacement
 {
     public const double StartAlong = 0.25;

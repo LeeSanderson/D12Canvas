@@ -7,8 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// An edge paints its own colour when it has one and the theme's edge token otherwise; selection
-// adds a translucent accent halo beneath the line and never repaints it.
 public class DiagramCanvasEdgeColourTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

@@ -69,8 +69,6 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // BeginEdit can arrive while this component's after-render from an earlier render in the
-        // same batch is still to run, before the editor itself has rendered.
         if (_focusPending && _editorRef.Id is not null)
         {
             _focusPending = false;
@@ -88,8 +86,6 @@ else
 
     private void HandleEditorBlur() => EndEdit(returnFocus: false);
 
-    // Escape removes the editor from the DOM, and the browser may then fire a blur for it, which
-    // must not end the same edit a second time.
     private void EndEdit(bool returnFocus)
     {
         if (!_isEditing)

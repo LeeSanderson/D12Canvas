@@ -3,10 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Who owns a menu request on an instance's content, the browser or the canvas, is decided once: at the
-// secondary press, or at the menu key's keydown, and the browser's own contextmenu that follows
-// uses that verdict without looking at its target. A native menu cannot be seen in the DOM, so
-// each probe reads whether the contextmenu was prevented, and whether the object menu opened.
 public sealed class MenuVerdictProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -177,7 +173,6 @@ public sealed class MenuVerdictProbes(PlaywrightFixture playwright, DemoAppFixtu
     [Fact]
     public async Task ShiftF10OpensTheMenuAtTheShapesBoxAndClosingReturnsFocusToItsStop()
     {
-        // The board is panned up first so the whole menu fits below the shape.
         var empty = await EmptyCanvasPointAsync();
         await Page.Mouse.ClickAsync(empty.X, empty.Y);
         await Page.Keyboard.PressAsync("ArrowDown");
@@ -201,8 +196,6 @@ public sealed class MenuVerdictProbes(PlaywrightFixture playwright, DemoAppFixtu
         await Expect(Instance(SourceId)).ToHaveAttributeAsync("aria-selected", "true");
     }
 
-    // Focus can move between the keydown and the menu's first render. What the menu hands focus back
-    // to is what held it at the keydown, not what holds it once the menu is drawn.
     [Fact]
     public async Task ClosingAKeyboardMenuReturnsFocusToWhatHeldItAtTheKeydown()
     {
@@ -336,8 +329,6 @@ public sealed class MenuVerdictProbes(PlaywrightFixture playwright, DemoAppFixtu
         await Page.EvaluateAsync<bool[]>("() => window.__d12ContextMenuPrevented");
 }
 
-// A member of a group that is not entered cannot be addressed, so a secondary press on a link
-// inside it is the canvas's and opens the group's menu, ahead of every other rule.
 public sealed class UnaddressableMenuVerdictProbes(
     PlaywrightFixture playwright,
     DemoAppFixture demoApp

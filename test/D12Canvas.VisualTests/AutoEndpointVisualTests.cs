@@ -4,9 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The auto endpoint demo board: two rectangles, the second below and to the right of the first.
-// A connector pulled from the first's right port and dropped on the second's body attaches at the
-// side of the second that faces the first, and keeps choosing as the second moves.
 public sealed class AutoEndpointVisualTests : IAsyncLifetime
 {
     private const string SourceId = "d0000000-0000-0000-0000-000000000001";
@@ -16,8 +13,6 @@ public sealed class AutoEndpointVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public AutoEndpointVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

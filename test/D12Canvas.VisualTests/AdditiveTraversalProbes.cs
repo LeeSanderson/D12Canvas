@@ -3,9 +3,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// Real Tab, Space and Escape presses, never an invoked handler, since only a real key shows the
-// browser lets it through. The probe board's ring reads Source, the edge leaving it, Target,
-// Note, LooseEnd, the edge leaving LooseEnd.
 public sealed class AdditiveTraversalProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

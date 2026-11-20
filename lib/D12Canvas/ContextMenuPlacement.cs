@@ -1,8 +1,5 @@
 namespace D12Canvas;
 
-// The menu's size is fixed by its stylesheet rather than measured, so it can be placed on the
-// render that opens it: a fixed width, a fixed row height, a fixed separator, and the root's
-// padding plus border. These numbers and the menu's style block describe the same box.
 internal static class ContextMenuPlacement
 {
     public const double Width = 224;
@@ -17,12 +14,6 @@ internal static class ContextMenuPlacement
         ) * RowHeight
         + Math.Max(0, sections.Count - 1) * SeparatorHeight;
 
-    // Opens right and down from the anchor by default, and on each axis flips to the other side
-    // of the anchor when that is the side it fits on, so the anchor is never covered. Only when it
-    // fits on neither side is it clamped inside the container. An unmeasured container places it
-    // at the anchor. A container narrower or shorter than the menu would clip whatever spills over
-    // its edge, so the menu shrinks to the container on that axis, scrolling its rows when it is
-    // cut short, and is placed at the size it takes. A size it keeps is reported as null.
     public static MenuBox Fit(
         double anchorX,
         double anchorY,

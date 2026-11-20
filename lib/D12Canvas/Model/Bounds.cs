@@ -13,14 +13,9 @@ public readonly record struct Bounds(double X, double Y, double Width, double He
 
     public bool Contains(double x, double y) => x >= X && x <= Right && y >= Y && y <= Bottom;
 
-    // A port's live position is a fraction of Bounds, not a stored offset - this is what lets an
-    // attached edge track move/resize for free.
     public (double X, double Y) PointAtFraction(double fractionX, double fractionY) =>
         (X + Width * fractionX, Y + Height * fractionY);
 
-    // The smallest Bounds enclosing every given Bounds, or null for an empty sequence - shared by
-    // Board.GetBounds(Group) and DiagramCanvas's own selection bounding box, so both "union a set
-    // of Bounds into one" computations share a single implementation.
     public static Bounds? Union(IEnumerable<Bounds> bounds)
     {
         double minX = 0,

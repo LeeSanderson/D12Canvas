@@ -2,12 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Pointer;
 
-// Where things are on screen now: each derivation consults the gesture preview before committed
-// state. Board keeps the committed entry points for the same derivations, so a call site names
-// which one it means; read Bounds off an instance for committed state and come here for what is
-// on screen. A clone drag's copies live in the preview's pending fragment rather than Board, and an
-// edge's ends always name instances on the same side of that line, so each end is resolved against
-// whichever of the two holds its instance.
 internal sealed class LiveGeometry(Board board, GesturePreview preview)
 {
     private Board BoardHolding(Guid? componentId) =>

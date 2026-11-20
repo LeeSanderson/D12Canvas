@@ -3,8 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// [AssetReference] is discovered in the same registration-time pass as [PanelEditable], and a
-// declaration on anything but a string fails there rather than when the reference is resolved.
 public class AssetReferenceSchemaTests
 {
     [Fact]

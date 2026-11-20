@@ -11,8 +11,6 @@ public sealed class PortsVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PortsVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -35,8 +33,6 @@ public sealed class PortsVisualTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _context.DisposeAsync();
 
-    // Click-to-add selects what it places, and a selected shape shows its four ports and its
-    // corner handles; its sides draw no handle, since only the cursor tells resize from connect.
     [Fact]
     public async Task SelectedShapeShowsItsPorts_MatchesBaseline()
     {
@@ -50,16 +46,9 @@ public sealed class PortsVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    // Not a screenshot baseline (no Verify call) - this is a geometric assertion, checked with
-    // real browser-measured positions. Click-to-add selects each shape it places, which shows its
-    // ports, so each one is measured straight after it is placed.
     [Fact]
     public async Task PortsSitAtEachInstancesOwnBorderCenters()
     {
-        // Rectangle (160x100) and Image (240x180) have different DefaultSizes - checking each
-        // one's ports against its *own* measured box proves the positioning is a genuine fraction
-        // of that instance's Bounds, not a fixed offset that only happens to look right for one
-        // particular size.
         foreach (var entry in new[] { "Rectangle", "Image" })
         {
             await _page.Locator($"button[aria-label='{entry}']").ClickAsync();

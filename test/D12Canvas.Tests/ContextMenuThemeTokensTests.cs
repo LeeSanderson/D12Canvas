@@ -98,10 +98,6 @@ public class ContextMenuThemeTokensTests : ComponentTestBase
         Assert.DoesNotContain("rgba(", separator);
     }
 
-    // .d12-context-menu-item sets color: inherit (overriding the button element's own UA
-    // default) - without the root itself setting a token-driven color, menu item labels would
-    // fall through to whatever ambient text color the host page happens to have, which stays
-    // low-contrast dark text even once the menu's own background goes dark.
     [Fact]
     public void RootDeclaresATokenDrivenTextColorMenuItemsInherit()
     {

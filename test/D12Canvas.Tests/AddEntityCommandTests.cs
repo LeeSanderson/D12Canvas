@@ -52,7 +52,7 @@ public class AddEntityCommandTests
         command.Apply();
         command.Undo();
 
-        command.Apply(); // redo
+        command.Apply();
 
         var restored = board.GetComponent(instance.Id);
         Assert.Same(instance, restored);

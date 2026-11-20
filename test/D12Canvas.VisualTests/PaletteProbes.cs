@@ -4,18 +4,12 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The Palette rail driven by real input on the placement demo: each button is reachable by its
-// accessible name inside the "Component palette" toolbar, and its library tooltip shows the
-// type's name on hover and on keyboard focus. Hover states flake in screenshots, so the tooltip
-// has no baseline.
 public sealed class PaletteProbes : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public PaletteProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

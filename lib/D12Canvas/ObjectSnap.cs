@@ -19,24 +19,15 @@ internal readonly record struct AxisSnap(SnapAnchor Anchor, double Target);
 
 internal abstract record SnapGuide;
 
-// A line along the matched coordinate: vertical for the X axis, horizontal for the Y axis.
 internal sealed record AlignmentGuide(SnapAxis Axis, double Coordinate) : SnapGuide;
 
-// One gap of an equal-spacing match, measured along the axis from one box to the next and drawn
-// at the middle of their perpendicular overlap.
 internal sealed record SpacingGuide(SnapAxis Axis, double From, double To, double Cross)
     : SnapGuide;
 
-// The search behind object snapping, run per axis. A move offers the mover's start, centre and end
-// against the same three lines of every candidate, plus the equal-spacing positions; a resize
-// offers only the edges it moves, which is both edges of a driven axis under a centre resize. A
-// snap already held survives until its anchor drifts past the sticky distance, so a match takes
-// less effort to keep than to acquire.
 internal static class ObjectSnap
 {
     public const double StickyFactor = 1.75;
 
-    // Screen pixels per millisecond.
     public const double FastPointerSpeed = 3;
 
     private const double Coincident = 1e-6;
@@ -78,8 +69,6 @@ internal static class ObjectSnap
     public static double Offset(Bounds box, SnapAxis axis, AxisSnap snap) =>
         snap.Target - ValueOf(box, axis, snap.Anchor);
 
-    // The second pass, run from the snapped position, so the guides show where the mover now is
-    // rather than where the pointer put it.
     public static IEnumerable<SnapGuide> GuidesForMove(
         Bounds snapped,
         IReadOnlyList<Bounds> candidates,
@@ -103,10 +92,6 @@ internal static class ObjectSnap
             _ => End(box, axis),
         };
 
-    // Where the mover would stand to repeat a gap already present in its row: after or before any
-    // row member at that gap, or centred between two members with room for it. The row is filtered
-    // by perpendicular overlap before any pair is formed, so the pair enumeration only ever runs
-    // over the few entities sharing the mover's row.
     public static IEnumerable<AxisSnap> EqualSpacingTargets(
         Bounds mover,
         IReadOnlyList<Bounds> candidates,
@@ -140,8 +125,6 @@ internal static class ObjectSnap
         SnapAxis axis
     ) => candidates.Where(candidate => OverlapsAcross(candidate, mover, axis)).ToList();
 
-    // Each pair of row members facing each other across empty space they share a perpendicular
-    // extent over, with no other member reaching into that space.
     public static IReadOnlyList<Gap> Gaps(IReadOnlyList<Bounds> row, SnapAxis axis)
     {
         var gaps = new List<Gap>();
@@ -229,8 +212,6 @@ internal static class ObjectSnap
             .Select(value => new AlignmentGuide(axis, value));
     }
 
-    // Every gap beside the mover that repeats another, drawn together with the gaps it repeats.
-    // A gap the mover now stands inside is no longer a gap of the row.
     private static IEnumerable<SnapGuide> SpacingGuides(
         Bounds snapped,
         IReadOnlyList<Bounds> candidates,

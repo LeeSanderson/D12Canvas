@@ -4,9 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A group of two rectangles with different stroke widths, one of them locked. An edit writes only
-// the unlocked member, so the row stays mixed, and the field must go back to showing that rather
-// than keep the typed text as though every member now held it.
 public sealed class MixedValuesProbes : IAsyncLifetime
 {
     private const string BlueRectangleId = "10800000-0000-0000-0000-000000000001";

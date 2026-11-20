@@ -1,7 +1,5 @@
 namespace D12Canvas.Panel;
 
-// Run once per registration over the type's final editable-property schema, whether that schema
-// came from [PanelEditable] discovery or from a builder override.
 public static class PropertyRoleValidator
 {
     public static void Validate(IEnumerable<EditableProperty> properties)

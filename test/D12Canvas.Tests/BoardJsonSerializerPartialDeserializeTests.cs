@@ -5,8 +5,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Partial deserialize never throws on unknown component-type keys or malformed entities — it
-// skips them, warns, and loads everything else normally.
 public class BoardJsonSerializerPartialDeserializeTests
 {
     private const string TestComponentKey = "test-props";
@@ -218,10 +216,6 @@ public class BoardJsonSerializerPartialDeserializeTests
         );
     }
 
-    // The partial path never fails the whole load over a group's problems either - a
-    // structurally malformed group is skipped-and-warned like a malformed component, and a group
-    // whose membership needs repairing (a member id that resolves to nothing, no members left,
-    // one member left) is repaired with one warning per repair instead of the load failing.
     [Fact]
     public void RoundTripsGroupsWithNoWarningsWhenEveryMemberResolves()
     {
@@ -457,10 +451,6 @@ public class BoardJsonSerializerPartialDeserializeTests
         Assert.Equal("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", warning.Entity, ignoreCase: true);
     }
 
-    // The partial path never fails the whole load over an edge's problems either - a
-    // structurally malformed edge is skipped-and-warned like a malformed component/group, and an
-    // edge referencing a missing instance is still loaded (its other, valid endpoint still
-    // resolves) with a warning recorded instead of the load failing.
     [Fact]
     public void RoundTripsEdgesWithNoWarningsWhenBothEndpointsResolve()
     {
@@ -527,9 +517,6 @@ public class BoardJsonSerializerPartialDeserializeTests
         );
     }
 
-    // A dangling custom-port reference is tolerated exactly like a dangling standard port
-    // reference (RecordsAWarningForAnEdgeReferencingAMissingInstanceButStillLoadsTheEdge above) -
-    // a warning is recorded but the edge still loads.
     [Fact]
     public void RecordsAWarningForAnEdgeReferencingAMissingInstanceViaACustomPortButStillLoadsTheEdge()
     {

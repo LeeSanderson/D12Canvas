@@ -3,8 +3,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Framing scales a board rect to fit within 0.9 of the container, never past 1.0, clamps to the
-// host's zoom limits and centres the rect at the scale it got, raising one change for all three.
 public class ZoomPanTrackerFramingTests
 {
     private static ZoomPanTracker TrackerOf(int width, int height)

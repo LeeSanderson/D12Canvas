@@ -7,10 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Alt+Arrow resize: a zoom-relative grow/shrink of the single selected instance -
-// single-instance only (an ad-hoc multi-selection or a persisted Group has no keyboard
-// resize). Matches DiagramCanvasArrowKeyMoveTests's convention of invoking the JSInvokable handlers
-// directly rather than through the real JS keydown/keyup listener.
 public class DiagramCanvasAltArrowResizeTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -55,8 +51,8 @@ public class DiagramCanvasAltArrowResizeTests : ComponentTestBase
     }
 
     [Theory]
-    [InlineData("ArrowRight", 201, 150, 100)] // right edge grows outward, left edge anchored
-    [InlineData("ArrowDown", 200, 151, 100)] // bottom edge grows outward, top edge anchored
+    [InlineData("ArrowRight", 201, 150, 100)]
+    [InlineData("ArrowDown", 200, 151, 100)]
     public async Task PlainAltArrowGrowsTheEdgeMatchingItsDirection(
         string code,
         double expectedWidth,
@@ -171,7 +167,7 @@ public class DiagramCanvasAltArrowResizeTests : ComponentTestBase
         var board = new Board();
         var instance = AddInstance(board, 100, 100, 200, 150);
         var canvas = Render<DiagramCanvas>(parameters => parameters.Add(p => p.Board, board));
-        canvas.ZoomIn(); // zooms to scale 1.1
+        canvas.ZoomIn();
         canvas.ClickOn(canvas.Find(".component-container"));
 
         await canvas.InvokeAsync(() => canvas.Instance.OnAltArrowKeyPressed("ArrowRight", false));
@@ -196,8 +192,6 @@ public class DiagramCanvasAltArrowResizeTests : ComponentTestBase
         Assert.Equal(new Bounds(100, 100, 201, 150), instance.Bounds);
     }
 
-    // Holding Alt+Arrow fires many rapid repeat keydowns before the matching keyup - the whole span
-    // must read as one undoable gesture, same discipline as the plain arrow-key nudge.
     [Fact]
     public async Task AHeldKeyBurstOfResizeStepsCoalescesIntoOneUndoableEntry()
     {
@@ -238,8 +232,6 @@ public class DiagramCanvasAltArrowResizeTests : ComponentTestBase
         Assert.Equal(200, instance.Bounds.Width);
     }
 
-    // A direction change mid-burst (Shift toggling, which flips the anchor) must not silently
-    // extend the previous command - that would resize relative to the wrong anchor edge.
     [Fact]
     public async Task ToggingShiftMidBurstStartsANewHistoryEntryInsteadOfExtendingTheOldAnchor()
     {
@@ -251,8 +243,6 @@ public class DiagramCanvasAltArrowResizeTests : ComponentTestBase
         await canvas.InvokeAsync(() => canvas.Instance.OnAltArrowKeyPressed("ArrowRight", false));
         await canvas.InvokeAsync(() => canvas.Instance.OnAltArrowKeyPressed("ArrowRight", true));
 
-        // Grow-by-1 (left-anchored) then shrink-by-1 (right-anchored, from the same starting
-        // bounds each has its own anchor for) nets back to the original width.
         Assert.Equal(200, instance.Bounds.Width);
 
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());

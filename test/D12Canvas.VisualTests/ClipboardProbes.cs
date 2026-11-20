@@ -5,10 +5,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The clipboard keys ride the browser's copy, cut and paste events, whose clipboardData is written
-// and read inside the event, and the menu rows ride the async clipboard after a hop through .NET.
-// Both depend on what the browser does with real key presses and real clicks, which bUnit never
-// sees.
 public sealed class ClipboardProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {
@@ -138,8 +134,6 @@ public sealed class ClipboardProbes(PlaywrightFixture playwright, DemoAppFixture
         await Expect(Instance(SourceId)).ToHaveCountAsync(0);
     }
 
-    // A Blazor Server host cannot answer the copy event's synchronous call, so the listener falls
-    // back to the async clipboard. The probe makes every synchronous call throw, as such a host does.
     private Task RefuseSynchronousInteropAsync() =>
         Page.EvaluateAsync(
             """
@@ -223,9 +217,6 @@ public sealed class ClipboardProbes(PlaywrightFixture playwright, DemoAppFixture
         Assert.Equal("host words", await ClipboardTextAsync(Page));
     }
 
-    // Chromium grants a focused page the right to write without asking, so whether the write
-    // succeeded says nothing about activation; the page's own record of it at the moment of the
-    // write does.
     [Fact]
     public async Task TheMenusCopyRow_WritesWhileTheClicksUserActivationIsStillLive()
     {

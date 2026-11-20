@@ -25,8 +25,6 @@ public abstract class ComponentTestBase : BunitContext
 
     protected BunitJSModuleInterop FlyoutModule { get; }
 
-    // Renders the component as DiagramCanvas mounts its chrome: inside the cascade that tells its
-    // icons the canvas already carries their rules.
     protected IRenderedComponent<TComponent> RenderInIconScope<TComponent>(
         Action<ComponentParameterCollectionBuilder<TComponent>>? parameters = null
     )
@@ -38,8 +36,6 @@ public abstract class ComponentTestBase : BunitContext
             )
             .FindComponent<TComponent>();
 
-    // The shared theme-token layer every independently-mounted chrome root declares its own
-    // copy of.
     protected static readonly string[] ThemeTokens =
     [
         "--d12-surface",
@@ -53,9 +49,6 @@ public abstract class ComponentTestBase : BunitContext
         where TComponent : Microsoft.AspNetCore.Components.IComponent =>
         component.Find("style").InnerHtml;
 
-    // Extracts the (possibly nested) `{ ... }` block immediately following the first occurrence
-    // of `marker` - used both for a plain rule's own declaration block and for an @media block's
-    // whole body (braces included), by counting nesting depth rather than matching the first `}`.
     protected static string ExtractBlock(string css, string marker)
     {
         var markerIndex = css.IndexOf(marker, StringComparison.Ordinal);
@@ -84,9 +77,6 @@ public abstract class ComponentTestBase : BunitContext
         throw new Xunit.Sdk.XunitException($"Unbalanced braces after `{marker}`.");
     }
 
-    // Every block following each occurrence of `marker`, joined - for a selector whose
-    // declarations are split across rules, such as a raised surface's root, whose shared token
-    // rules come before its own layout rule.
     protected static string ExtractEveryBlock(string css, string marker)
     {
         var blocks = new List<string>();
@@ -144,7 +134,6 @@ public abstract class ComponentTestBase : BunitContext
 
     protected BunitJSModuleInterop PropertyPanelModule { get; }
 
-    // The latest setup wins.
     protected void ReportPropertyBarWidth(double width) =>
         PropertyBarModule.Setup<double>("measurePropertyBar", _ => true).SetResult(width);
 
@@ -156,8 +145,6 @@ public abstract class ComponentTestBase : BunitContext
         return module;
     }
 
-    // What the browser reports at init. The latest setup wins, so a test calls this again before
-    // rendering to stand on an Apple platform.
     protected void ReportPlatform(bool applePlatform, bool asyncClipboard = false) =>
         CanvasModule
             .Setup<InitialFacts>("initialFacts", _ => true)
@@ -165,8 +152,6 @@ public abstract class ComponentTestBase : BunitContext
 
     protected BunitJSModuleInterop CanvasModule { get; private set; } = null!;
 
-    // A decoded image file the browser is holding for the module, whose bytes the module hands
-    // over by token.
     protected static HeldImage HoldImage(
         BunitJSModuleInterop module,
         int token,
@@ -197,12 +182,8 @@ public abstract class ComponentTestBase : BunitContext
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
-    // The handle the pointer listener returns, for asserting what the canvas tells the listener.
     protected BunitJSModuleInterop PointerListener { get; private set; } = null!;
 
-    // Mocks a call that returns a disposable IJSObjectReference handle (a "dispose"-shaped object,
-    // not a bare function - see DiagramCanvas.razor.js) - shared by both cleanup-registering calls
-    // DiagramCanvas.OnAfterRenderAsync makes.
     private static BunitJSModuleInterop SetupDisposableCleanupHandle(
         BunitJSModuleInterop module,
         string identifier

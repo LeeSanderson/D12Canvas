@@ -8,12 +8,6 @@ internal enum TooltipSide
     Above,
 }
 
-// The library's own tooltip: Around wraps one control and shows the text on the given side of it
-// while the pointer is over it or it has keyboard focus, never through the native title. The text
-// is hidden from assistive technology, since the control carries its own accessible name. The
-// root that hosts it carries Rules once in its style block and may set --d12-tooltip-offset, the
-// gap between the control's edge and the tooltip. It is a fragment rather than a component
-// because a .razor component is always public.
 internal static class Tooltip
 {
     public const string Rules = """

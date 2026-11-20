@@ -4,8 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// A modifier changed while a drag holds the pointer still reaches C# as one move from where the
-// pointer last was, carrying the new modifier state.
 public sealed class LiveModifierProbes(PlaywrightFixture playwright, DemoAppFixture demoApp)
     : InteractionProbe(playwright, demoApp)
 {

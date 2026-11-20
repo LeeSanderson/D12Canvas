@@ -2,11 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.Pointer;
 
-// One owner per press. Identity never changes once chosen; only the phase does: pointing until the
-// first move the listener forwards (which means the drag threshold was crossed) or the first
-// viewport change under the press, active after, cancelled once Escape or an interruption ended its
-// effects. Cancel itself is canvas-level and has no per-gesture step, so there is no method for it
-// here.
 internal abstract class PointerGesture
 {
     protected PointerGesture(PointerPress press, IGestureContext context)
@@ -19,12 +14,8 @@ internal abstract class PointerGesture
     public GesturePhase Phase { get; private set; } = GesturePhase.Pointing;
     protected IGestureContext Context { get; }
 
-    // The press-time half of the gesture, run once by the canvas after it has taken the selection
-    // snapshot, so anything the press changes can be put back by a cancel.
     public void Begin() => OnPress();
 
-    // False for the one gesture that takes no capture and tracks nothing, whose press ends as soon
-    // as it begins.
     public virtual bool HoldsPress => true;
 
     public bool Owns(int pointerId, int button) =>
@@ -41,13 +32,8 @@ internal abstract class PointerGesture
         OnMove(move);
     }
 
-    // False for a gesture whose press ends in a click or not at all, which a viewport change
-    // neither promotes nor re-runs.
     protected virtual bool HasActivePhase => true;
 
-    // The viewport moved under the press, with the pointer still where it last was. A press still
-    // pointing is promoted, since what it holds would otherwise slide away from the pointer, and
-    // the gesture runs again from the pointer's last position. Returns whether this promoted it.
     public bool ViewportMoved(PointerMove pointer)
     {
         if (Phase == GesturePhase.Cancelled || !HasActivePhase)
@@ -63,8 +49,6 @@ internal abstract class PointerGesture
 
     protected virtual void OnViewportMoved(PointerMove pointer) => OnMove(pointer);
 
-    // Release from pointing is the click outcome; release from active commits. A cancelled
-    // gesture's release does nothing.
     public void Release(PointerRelease release)
     {
         switch (Phase)
@@ -80,8 +64,6 @@ internal abstract class PointerGesture
 
     public void MarkCancelled() => Phase = GesturePhase.Cancelled;
 
-    // An Alt click selects the next entity down the hit stack from the one selected before the
-    // press. Ctrl with Alt is left alone, since that is how AltGr arrives on Windows.
     protected bool TrySelectNextInHitStack()
     {
         if (
@@ -102,8 +84,6 @@ internal abstract class PointerGesture
         return true;
     }
 
-    // Object snapping offers nothing to a gesture carrying no instances, with the toggle off, or
-    // while the pointer moves fast, since snapping is help for a careful hand.
     protected IReadOnlyList<Bounds> ObjectSnapCandidates(
         PointerMove move,
         IReadOnlyCollection<Guid> carried

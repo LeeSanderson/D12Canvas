@@ -4,9 +4,6 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The same board on a light and a dark pane. An uncoloured edge paints in each pane's edge token,
-// an authored colour paints the same on both, and selecting an edge draws a halo under it while
-// its stroke and arrowheads keep their colour.
 public sealed class EdgeColourVisualTests : IAsyncLifetime
 {
     private const string LightEdge = "rgb(74, 74, 74)";
@@ -17,8 +14,6 @@ public sealed class EdgeColourVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public EdgeColourVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

@@ -6,8 +6,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A board envelope is recognised by its shape, not by a marker, so a saved board file pastes as a
-// merge; it loads as tolerantly as a saved file does. Any other text becomes a text shape.
 public class ClipboardPayloadTests
 {
     private static readonly IComponentRegistry Registry = BuildRegistry();

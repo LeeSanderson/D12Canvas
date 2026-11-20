@@ -2,8 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Moves one end of an edge, attached or floating, to another endpoint. The edge counterpart to
-// ChangeBoundsCommand for geometry, where ChangeEdgeStyleCommand covers its looks.
 public sealed class ChangeEdgeEndpointCommand : ICommand
 {
     private readonly Edge _edge;

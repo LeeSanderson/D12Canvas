@@ -4,12 +4,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// A press on a port or a floating endpoint carries one end of an edge: a new edge pulled from a
-// port, or the end of an existing edge pinned to it. Each tick publishes one pending line from the
-// end that stays put to the pointer, naming the shape under the pointer as the drop target, and
-// the release resolves what is under the pointer:
-// a port pins the end to it, a shape's body attaches it as an auto endpoint, and nothing at all
-// leaves it floating at the release point.
 public class DragEdgeEndGestureTests
 {
     private const string ComponentTypeKey = "test-props";
@@ -203,8 +197,6 @@ public class DragEdgeEndGestureTests
         Assert.Equal(new AutoPortEndpoint(target.Id), Assert.Single(context.AddedEdges).Target);
     }
 
-    // A port beneath the body that is on top is not what the user sees, and a resize handle or the
-    // selection box over a port is chrome the drop looks straight through.
     [Fact]
     public void TheTopmostPortOrBodyDecidesAndChromeAboveItIsIgnored()
     {
@@ -494,8 +486,6 @@ public class DragEdgeEndGestureTests
         Assert.Empty(context.AddedEdges);
     }
 
-    // An auto end has no port of its own, and the side it sits on moves with the other end, so a
-    // press on that port pulls a new edge rather than carrying an end the user cannot see is there.
     [Fact]
     public void ADragFromThePortAnAutoEndResolvesToPullsANewEdge()
     {

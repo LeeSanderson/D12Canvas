@@ -7,9 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Floating endpoints. Releasing a connector drag on empty canvas creates an edge with a floating
-// endpoint; an existing edge's endpoint - attached or floating - can be re-dragged to reattach or
-// detach it, and every such reposition is one history entry.
 public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -47,7 +44,6 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         return instance;
     }
 
-    // Two instances whose right port at (200, 150) and left port at (300, 150) an edge joins.
     private static Edge AddConnectedPair(
         Board board,
         out ComponentInstance source,
@@ -79,10 +75,6 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         Assert.Equal("400", marker.GetAttribute("cy"));
     }
 
-    // Verifies the marker stays at its board point through pan/zoom: it lives in board-space
-    // cx/cy inside the same .canvas-content ancestor whose CSS transform carries pan/zoom (the
-    // same mechanism .edge-line already relies on) - so zooming must move only that ancestor's
-    // transform, never the marker's own coordinates.
     [Fact]
     public void AFloatingEndpointsBoardPointIsUnaffectedByZoom()
     {
@@ -98,15 +90,13 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         canvas.ZoomIn();
 
         var transformAfter = canvas.Find(".canvas-content").GetAttribute("style");
-        Assert.NotEqual(transformBefore, transformAfter); // the zoom actually happened
+        Assert.NotEqual(transformBefore, transformAfter);
 
         var marker = canvas.Find(".floating-endpoint");
         Assert.Equal("190", marker.GetAttribute("cx"));
         Assert.Equal("400", marker.GetAttribute("cy"));
     }
 
-    // Each floating marker is independent - carrying one end of an edge hides that edge's line
-    // but not the OTHER end's own floating marker.
     [Fact]
     public void CarryingOneEndpointDoesNotHideTheOtherEndsFloatingMarker()
     {
@@ -126,8 +116,6 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         Assert.Equal("400", marker.GetAttribute("cy"));
     }
 
-    // While an end is carried, the pending line is the only thing drawing its edge: from the end
-    // that stays put to the pointer, with the carried end's own marker gone.
     [Fact]
     public void ThePendingLineIsTheOnlyThingDrawingAnEdgeWhoseEndIsCarried()
     {
@@ -193,7 +181,7 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
 
         canvas.DragConnector(canvas.SelectedPortSpan(target.Id, "Left"), (300, 150), (400, 400));
 
-        var edge = Assert.Single(board.Edges); // detaching moves the endpoint, never creates a new edge
+        var edge = Assert.Single(board.Edges);
         Assert.Equal(new PortEndpoint(source.Id, PortId.Right), edge.Source);
         Assert.Equal(new FloatingEndpoint(400, 400), edge.Target);
         var marker = canvas.Find(".floating-endpoint");
@@ -242,8 +230,6 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         Assert.Empty(canvas.FindAll(".floating-endpoint"));
     }
 
-    // Guard: carrying one endpoint onto the shape the edge's other endpoint sits on would join the
-    // shape to itself - that shape is never a drop target, and the edge is left unchanged.
     [Fact]
     public async Task DraggingAnEndpointOntoTheEdgesOtherEndpointsPortLeavesTheEdgeUnchanged()
     {
@@ -263,7 +249,6 @@ public class DiagramCanvasFloatingEndpointTests : ComponentTestBase
         Assert.Equal(new PortEndpoint(source.Id, PortId.Right), edge.Source);
         Assert.Equal(new PortEndpoint(target.Id, PortId.Left), edge.Target);
 
-        // Nothing entered history, so undo has nothing of this gesture's to take back.
         await canvas.InvokeAsync(() => canvas.Instance.OnUndoPressed());
         Assert.Single(board.Edges);
     }

@@ -1,7 +1,5 @@
 namespace D12Canvas;
 
-// The text and button values the canvas chrome pins on itself, so a host stylesheet such as
-// Bootstrap's Reboot, which restyles body text and buttons, leaves the chrome as the library drew it.
 internal static class PinnedChrome
 {
     public static string Text(string root, int fontSizePx) =>

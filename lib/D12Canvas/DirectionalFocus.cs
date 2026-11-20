@@ -12,9 +12,6 @@ internal enum FocusDirection
 
 internal readonly record struct FocusCandidate(Guid Id, Bounds Bounds);
 
-// Which stop Ctrl+Shift+Arrow lands on. A candidate lies entirely past the origin's leading edge;
-// one in the origin's row or column wins by gap alone, otherwise gap plus perpendicular offset
-// decides, and reading order breaks a tie. Nothing in that direction means nowhere to go.
 internal static class DirectionalFocus
 {
     public static FocusDirection? DirectionFor(string code) =>

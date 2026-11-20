@@ -2,10 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas.History;
 
-// Removing a custom port turns every edge end pinned to it into an auto endpoint on the same
-// instance, in the same history entry, so no edge is left pinned to a port that no longer exists.
-// Null when removal is unavailable: the port is not on the instance, or the instance or any edge
-// pinned to the port is locked.
 public static class CustomPortRemoval
 {
     public static ICommand? Compose(Board board, ComponentInstance instance, Guid portId)

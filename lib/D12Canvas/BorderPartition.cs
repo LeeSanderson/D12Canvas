@@ -2,10 +2,6 @@ using D12Canvas.Model;
 
 namespace D12Canvas;
 
-// A point along one side of an instance, measured from the side's start (its left end for Top and
-// Bottom, its top end for Left and Right): a fraction of the side's length plus a distance in port
-// targets. The fraction scales with the board and the port targets stay constant on screen, so the
-// markup can place a span with the same two numbers at any zoom.
 internal readonly record struct SpanEdge(double Fraction, double PortTargets)
 {
     public double ScreenAt(double screenLength) =>
@@ -18,7 +14,6 @@ internal enum BorderSpanKind
     Resize,
 }
 
-// One stretch of one side. A port span with no custom port id belongs to the side's standard port.
 internal sealed record BorderSpan(
     PortId Side,
     SpanEdge Start,
@@ -27,17 +22,10 @@ internal sealed record BorderSpan(
     Guid? CustomPortId = null
 );
 
-// How each side of an instance divides between connecting and resizing, in screen pixels. The run
-// is the side less a corner reserve at each end. Every port on the side takes the stretch of the run
-// nearest to it, capped at the port target, and two ports closer than that split at their midpoint.
-// Resize takes what is left. Anything narrower than the floor is left out. When the split would
-// squeeze the standard port below the floor, it keeps its full stretch and the custom ports beside
-// it are clipped instead, since auto endpoints and the keyboard pick land on it.
 internal static class BorderPartition
 {
     private const double StandardFraction = 0.5;
 
-    // A port's stretch reaches half a port target either side of it before anything clips it.
     private const double HalfStretch = 0.5;
 
     public static IReadOnlyList<BorderSpan> Of(
@@ -149,13 +137,8 @@ internal static class BorderPartition
         return spans;
     }
 
-    // The side a custom port lies on. Adding a port pins its cross fraction to the side's own 0 or
-    // 1, so every port the product creates is on exactly one side, a corner port counting as on
-    // its top or bottom side. A port inside the bounds is on none.
     public static PortId? SideOf(PortDef port) => SideOf(port.FractionX, port.FractionY);
 
-    // The one rule for which side a border point lies on: a corner belongs to the top or bottom
-    // side, and a point off the border has none.
     public static PortId? SideOf(double fractionX, double fractionY) =>
         fractionY <= 0 ? PortId.Top
         : fractionY >= 1 ? PortId.Bottom

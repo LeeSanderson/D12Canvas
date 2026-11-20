@@ -318,8 +318,6 @@ public class EdgeRouterTests
         Assert.Equal((110 - EdgeRouter.Stub, 50.0), route.Points[2]);
     }
 
-    // The control points crowd the far end, so the curve's parametric middle sits well past
-    // halfway along it.
     [Fact]
     public void ACurvedEdgesLabelSitsHalfwayAlongTheDrawnCurve()
     {

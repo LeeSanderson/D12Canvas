@@ -11,8 +11,6 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
     private IBrowserContext _context = null!;
     private IPage _page = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public ContextMenuVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;
@@ -68,12 +66,6 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    // Places two cascaded, overlapping instances (the +20,+20 click-to-add offset doesn't fully
-    // clear a default-sized instance) and selects both. ClickToAdd selects whichever instance it
-    // just placed, so after both exist only the second (now-on-top) one is still selected - the
-    // first is shift-clicked back in at a point 5,5 inside its own top-left corner, a spot the
-    // second instance's own +20,+20-offset box can never reach regardless of either instance's
-    // actual size, rather than trying to reach it anywhere the second, topmost instance covers it.
     [Fact]
     public async Task RightClickOnATwoInstanceSelectionOffersGroup_MatchesBaseline()
     {
@@ -98,8 +90,6 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
         await Expect(_page.Locator(".component-container[aria-selected='true']"))
             .ToHaveCountAsync(2);
 
-        // With two instances selected the selection box covers both, and it is the box a real
-        // press inside the selection lands on, so that is what the right-click goes to.
         var selectionBox = _page.Locator(".selection-bounding-box");
         await selectionBox.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
 
@@ -143,8 +133,6 @@ public sealed class ContextMenuVisualTests : IAsyncLifetime
         await ContentSnapshot.Verify(_page);
     }
 
-    // One instance is placed so the board has something to select, then the press lands on bare
-    // canvas well away from it, so the canvas set opens with Select All and both snap toggles.
     private async Task OpenContextMenuOnEmptyCanvas()
     {
         await PaletteEntry.Named(_page, PaletteEntry.DemoNote).ClickAsync();

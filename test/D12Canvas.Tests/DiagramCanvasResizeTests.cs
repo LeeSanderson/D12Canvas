@@ -7,9 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// Resize a selected instance via its handles, driven through the pointer entry points. A resize
-// is one press-to-release gesture: the shape follows the pointer through the gesture preview,
-// Board only sees the final bounds on release, and one resize is one undo step.
 public class DiagramCanvasResizeTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";
@@ -78,7 +75,6 @@ public class DiagramCanvasResizeTests : ComponentTestBase
         string part
     ) => Container(canvas, id).QuerySelector($".resize-handle.{part}")!;
 
-    // A side has no drawn handle: the first of its resize spans, between its corner and its port.
     private static IElement SideSpan(
         IRenderedComponent<DiagramCanvas> canvas,
         Guid id,
@@ -107,8 +103,6 @@ public class DiagramCanvasResizeTests : ComponentTestBase
 
         canvas.DragHandle(Handle(canvas, instance.Id, "bottom-right"), (300, 200), (344, 222));
 
-        // Computed with the same arithmetic ZoomPanTracker uses (1.0 + 0.1), rather than the
-        // decimal literal 1.1, so this can't disagree with production code over double rounding.
         var scale = 1.0 + 0.1;
         Assert.Equal(50 + 44 / scale, instance.Bounds.Width, precision: 10);
         Assert.Equal(50 + 22 / scale, instance.Bounds.Height, precision: 10);

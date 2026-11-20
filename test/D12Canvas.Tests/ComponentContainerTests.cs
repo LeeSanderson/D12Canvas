@@ -85,8 +85,6 @@ public class ComponentContainerTests : ComponentTestBase
         Assert.Empty(container.FindAll(".port-span"));
     }
 
-    // bUnit has no layout engine, so where a dot or span lands is PortsVisualTests' to prove; the
-    // class names and the role marker on the span are what the stylesheet and the listener key off.
     [Fact]
     public void ASelectedInstanceDrawsADotAndASpanForEachStandardPort()
     {
@@ -124,8 +122,6 @@ public class ComponentContainerTests : ComponentTestBase
         Assert.Empty(container.FindAll(".resize-handle"));
     }
 
-    // Each span is a percentage of its side plus a number of port targets over scale, so it stays
-    // the same size on screen whatever the zoom.
     [Fact]
     public void ASpanIsPlacedAlongItsSideInPortTargetsOverScale()
     {
@@ -226,10 +222,6 @@ public class ComponentContainerTests : ComponentTestBase
     [Fact]
     public void AZIndexOnlyChangeReRendersTheContainersStyle()
     {
-        // A layering command changes only ZIndex, with Bounds/selection/Props/custom ports all
-        // unchanged - ComponentContainer's own ShouldRender override must still treat that as a
-        // real change, or a stacking change would silently fail to render immediately until some
-        // unrelated parameter happened to change too.
         var container = Render<ComponentContainer>(parameters => parameters.Add(p => p.ZIndex, 2));
 
         container.Render(parameters => parameters.Add(p => p.ZIndex, 9));
@@ -237,8 +229,6 @@ public class ComponentContainerTests : ComponentTestBase
         Assert.Contains("z-index: 9", container.Find(".component-container").GetAttribute("style"));
     }
 
-    // Side resize has no drawn handle: the four corners keep one each, and each side's resize
-    // spans are invisible regions the cursor alone reveals.
     [Fact]
     public void SelectedInstanceRendersFourCornerHandles()
     {

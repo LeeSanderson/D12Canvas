@@ -11,10 +11,6 @@ public partial class DiagramCanvas
         LockTally Locks
     );
 
-    // Absent for the whole of a pointer gesture and while a context menu is open, and whenever the
-    // selection has no role in common. A fully locked selection keeps the bar, which then offers
-    // only Unlock. Anchored on committed bounds, which a gesture's release has already written by
-    // the time the bar comes back.
     private PropertyBarState? CurrentPropertyBar()
     {
         if (!BoardShown || _activeGesture is not null || _contextMenu is not null)
@@ -65,8 +61,6 @@ public partial class DiagramCanvas
         );
     }
 
-    // The several-edge counterpart to CommitEdgeStyleChange: one history entry for every edge the
-    // change reaches, skipping locked ones.
     public void CommitEdgeStyleChangeBatch(IReadOnlyList<EdgeStyleChange> changes)
     {
         var commands = new List<ICommand>();

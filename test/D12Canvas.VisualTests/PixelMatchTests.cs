@@ -3,10 +3,6 @@ using Xunit;
 
 namespace D12Canvas.VisualTests;
 
-// Correctness coverage for the PixelMatch/Png port - not a Playwright visual test itself, just
-// unit-level checks on the ported algorithm's own decisions, since a subtly wrong OKLab/HyAB port
-// would silently make the fuzzy comparer either too strict (defeating the point) or too lenient
-// (masking real regressions).
 public class PixelMatchTests
 {
     private static byte[] SolidImage(int width, int height, byte r, byte g, byte b, byte a = 255)
@@ -34,8 +30,6 @@ public class PixelMatchTests
     [Fact]
     public void TinyUniformColorShift_IsWithinDefaultThreshold()
     {
-        // A ±1 sRGB nudge across a whole flat image is imperceptible rendering noise, exactly the
-        // class of difference the fuzzy comparer exists to absorb.
         var image1 = SolidImage(20, 20, 128, 128, 128);
         var image2 = SolidImage(20, 20, 129, 127, 129);
 
@@ -45,9 +39,6 @@ public class PixelMatchTests
     [Fact]
     public void LargeUniformColorChange_CountsEveryPixel()
     {
-        // Flat black vs. flat white: no internal contrast in either image, so the anti-aliasing
-        // detector (which needs both a darker AND a brighter neighbor to suspect a ramp) can't
-        // exclude any of it - every pixel should count as a real difference.
         var black = SolidImage(10, 10, 0, 0, 0);
         var white = SolidImage(10, 10, 255, 255, 255);
 
@@ -57,11 +48,6 @@ public class PixelMatchTests
     [Fact]
     public void LocalizedHardEdgeChange_CountsExactlyTheChangedRegion()
     {
-        // A 4x4 white block dropped into an all-black image, away from the border. Both images
-        // individually have only a hard 2-tone edge (no gradient ramp), which the AA detector
-        // requires evidence of a ramp on *both* sides of the center pixel to exclude - a flat
-        // block edge only ever darkens (or only ever lightens) in one direction, so none of these
-        // pixels should be excluded.
         const int width = 10;
         const int height = 10;
         var black = SolidImage(width, height, 0, 0, 0);
@@ -142,10 +128,6 @@ public class PixelMatchTests
     [Fact]
     public void Evaluate_SmallButRealChangeOnActualScreenshot_IsNotEqual()
     {
-        // A 40x40 solid-magenta patch dropped onto a real committed baseline - visually small (a
-        // few percent of the frame at most) but a real, deliberate content change, not rendering
-        // noise. Guards against the fuzzy comparer's tolerance being calibrated so loose that it
-        // also swallows genuine regressions, not just the sub-pixel noise it was built for.
         var path = SiblingPath("PaletteVisualTests.RenderedPalette_MatchesBaseline.verified.png");
         var original = Png.Decode(File.ReadAllBytes(path));
         var modified = WithSolidPatch(original, x: 20, y: 20, size: 40, r: 255, g: 0, b: 255);

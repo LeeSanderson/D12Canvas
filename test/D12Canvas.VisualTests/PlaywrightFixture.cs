@@ -5,8 +5,6 @@ using Xunit;
 
 namespace D12Canvas.VisualTests;
 
-// Launches one headless Chromium instance for the whole assembly; individual tests get their own
-// IBrowserContext/IPage so they stay isolated from each other.
 public sealed class PlaywrightFixture : IAsyncLifetime
 {
     private IPlaywright _playwright = null!;

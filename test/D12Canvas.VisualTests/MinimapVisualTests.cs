@@ -3,17 +3,11 @@ using static Microsoft.Playwright.Assertions;
 
 namespace D12Canvas.VisualTests;
 
-// The minimap demo floats a minimap over the canvas's bottom-right corner, the way the App places
-// it. It opens with the initial fit, so the viewport rect sits over all four shapes; dragging the
-// minimap to its top-right corner pans the canvas off the content and settles the map on the
-// union of both. A dark theme set on an ancestor reaches the minimap as it reaches the canvas.
 public sealed class MinimapVisualTests : IAsyncLifetime
 {
     private readonly IBrowser _browser;
     private IBrowserContext _context = null!;
 
-    // demoApp is otherwise unused: taking it as a constructor parameter documents that this test
-    // class depends on the Demo app assembly fixture having finished starting up.
     public MinimapVisualTests(PlaywrightFixture playwright, DemoAppFixture demoApp)
     {
         _browser = playwright.Browser;

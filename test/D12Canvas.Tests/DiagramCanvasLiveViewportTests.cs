@@ -7,9 +7,6 @@ using Xunit;
 
 namespace D12Canvas.Tests;
 
-// The viewport stays live while a pointer gesture owns the press, and whatever the pointer holds
-// stays under it: every viewport change re-runs the live gesture at the last pointer position,
-// promotes a press still pointing to active, and re-anchors a held pan so the two movements add.
 public class DiagramCanvasLiveViewportTests : ComponentTestBase
 {
     private const string ComponentTypeKey = "test-props";

@@ -9,10 +9,6 @@ using Microsoft.JSInterop;
 
 namespace D12Canvas;
 
-// A standalone chrome component, wired to its DiagramCanvas the same explicit way
-// Palette is (chrome isn't nested inside the canvas, so no cascading parameter reaches
-// it). Unlike Palette, the panel's content depends on transient selection state living inside
-// DiagramCanvas, so it also subscribes to DiagramCanvas.SelectionChanged to know when to re-render.
 public partial class PropertyPanel : IAsyncDisposable
 {
     [Inject]
@@ -72,26 +68,12 @@ public partial class PropertyPanel : IAsyncDisposable
     private IReadOnlyList<ComponentInstance> SelectedInstances =>
         Canvas?.SelectedComponents ?? Array.Empty<ComponentInstance>();
 
-    // A locked selection is shown with every field disabled and one live control that unlocks it,
-    // which is what keeps a lock reachable without a pointer. A selection with anything unlocked
-    // stays editable, an edit writes only to the unlocked instances, and a partly locked one says
-    // how many it skips.
     private LockTally Locks => LockTally.Of(SelectedInstances.Select(instance => instance.Locked));
 
     private bool AllLocked => Locks.IsFull;
 
     private void Unlock() => Canvas?.OnUnlockPressed();
 
-    // One rendered row. A same-type selection (1 or 2+ instances) maps every
-    // target to the SAME reflected PropertyInfo, since they all share one TProps type. A cross-type
-    // multi-selection instead maps each instance to whichever of ITS OWN type's properties declares
-    // the matching PropertyRole - the names can differ across types, but PropertyRoleValidator
-    // guarantees every property declaring a role matches that role's Kind/CLR type at registration
-    // time, so the row can render (and bulk-commit) as if it were a single property.
-    // CanHoldNull is true when every target's property can hold null, which for a colour means
-    // "no author opinion, follow the theme": the panel then offers the way back to that state,
-    // because <input type="color"> cannot express absence and would otherwise show #000000.
-    // OptionGlyphs is set only when every option has a glyph, and the field is then drawn as tiles.
     private sealed record PanelField(
         string FieldId,
         string Label,
@@ -115,7 +97,6 @@ public partial class PropertyPanel : IAsyncDisposable
                 Targets.Select(target => target.Property.GetValue(target.Instance.Props)).ToList()
             );
 
-        // Null on a mixed row, so no one target's value is shown as though it were the selection's.
         public object? Value =>
             IsMixed || Targets.Count == 0
                 ? null
@@ -133,9 +114,6 @@ public partial class PropertyPanel : IAsyncDisposable
             : ""
         );
 
-    // The native picker opens on the input's value, and confirming that same value fires no
-    // change. A mixed swatch hides its value under the hatch, so it holds a colour nobody is likely
-    // to pick rather than #000000, which would make black impossible to apply to a mixed row.
     private const string MixedSwatchValue = "#010203";
 
     private static string ColorValue(PanelField field) =>
@@ -144,9 +122,6 @@ public partial class PropertyPanel : IAsyncDisposable
     private static string? MixedPlaceholder(PanelField field) =>
         field.IsMixed ? MixedValue.Label : null;
 
-    // A row that is still mixed after an edit renders the same empty value as before, so Blazor
-    // would leave whatever was typed in the field. Keying a mixed row on the edit count rebuilds
-    // its element after every edit.
     private int _edits;
 
     private object RowKey(PanelField field) =>
@@ -173,9 +148,6 @@ public partial class PropertyPanel : IAsyncDisposable
         }
     }
 
-    // A single type's own full declared schema - the shape for one selected
-    // instance, extended so a same-type 2+ multi-selection edits every member through the identical
-    // PropertyInfo.
     private IReadOnlyList<PanelField> SameTypeFields(
         string typeKey,
         IReadOnlyList<ComponentInstance> instances
@@ -193,12 +165,6 @@ public partial class PropertyPanel : IAsyncDisposable
             ))
             .ToList();
 
-    // Only a role every selected type's own schema declares surfaces at all -
-    // never inferred from a shared property name, only from an explicit, matching PropertyRole.
-    // Each selected instance still reads/writes through its own type's PropertyInfo for that role;
-    // the field is keyed and labelled by the role itself rather than any one type's property name,
-    // since the two types are free to name it differently. Rows follow the first type's schema
-    // order.
     private IReadOnlyList<PanelField> CrossTypeFields(
         IReadOnlyList<string> typeKeys,
         IReadOnlyList<ComponentInstance> instances
@@ -248,12 +214,8 @@ public partial class PropertyPanel : IAsyncDisposable
 
     private static string CurrentValue(PanelField field) => FormatValue(field.Value);
 
-    // Checkbox binds via the "checked" DOM property, not "value" - a separate accessor rather than
-    // routing bool through FormatValue/CurrentValue's string-shaped path.
     private static bool CurrentBoolValue(PanelField field) => field.Value is true;
 
-    // Commit directly, not via CommitEdit, since a Custom editor's value is already CLR-typed and
-    // needs no ChangeEventArgs/ConvertValue parsing.
     private CustomEditorContext CustomContext(PanelField field) =>
         new(
             field.Value,
@@ -269,9 +231,6 @@ public partial class PropertyPanel : IAsyncDisposable
     private HashSet<string> _indeterminateCheckboxes = new();
     private IJSObjectReference? _module;
 
-    // Indeterminate is a DOM property with no attribute, so markup cannot set it. A mixed checkbox
-    // is set on every render, and one that was mixed is cleared once, since Blazor reuses the
-    // element and the property would otherwise outlive the mixed row.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -308,9 +267,6 @@ public partial class PropertyPanel : IAsyncDisposable
 
     private ElementReference _panelElement;
 
-    // The tiles are one tab stop with a roving tabindex: the focused tile while focus is inside the
-    // group, otherwise the checked tile, or the first one when the value is mixed. Arrow keys only
-    // move focus; Space, Enter or a click commits, so browsing the options adds no history.
     private readonly Dictionary<string, int> _focusedTiles = new();
     private readonly Dictionary<(string FieldId, int Index), ElementReference> _tileElements =
         new();
@@ -366,11 +322,6 @@ public partial class PropertyPanel : IAsyncDisposable
             _ => value.ToString() ?? "",
         };
 
-    // An edit that fails to parse commits nothing - Commit's own no-op-if-unchanged guard covers
-    // the "same value again" case once parsing succeeds.
-    // The picker opens on the swatch's own value and the browser fires no change when a pick ends
-    // on that value, so the last colour the picker reported is held and lands when the swatch is
-    // left. A change commits it at once and drops the hold.
     private (string FieldId, object? Value)? _heldPick;
 
     private void HoldPick(PanelField field, ChangeEventArgs args) =>
@@ -413,11 +364,6 @@ public partial class PropertyPanel : IAsyncDisposable
         Commit(field, newValue);
     }
 
-    // Every target that would actually change becomes one MutateEntityCommand - a
-    // target already at newValue contributes nothing, the same no-op guard used for a
-    // single instance, just checked per target instead. The whole edit still commits as one atomic
-    // history entry via CommitPropsChangeBatch, whether it touches one instance or many, and
-    // whether or not every target ends up changing.
     private void Commit(PanelField field, object? newValue)
     {
         _edits++;
@@ -432,8 +378,6 @@ public partial class PropertyPanel : IAsyncDisposable
         }
     }
 
-    // A checkbox's ChangeEventArgs.Value arrives as a bool (Blazor reads the DOM element's
-    // .checked property directly); every other control's arrives as a string.
     private static object? ConvertValue(object? raw, Type targetType)
     {
         if (targetType == typeof(string))
