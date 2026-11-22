@@ -18,3 +18,7 @@ Decide:
 - whether shape text shrinks to fit like a sticky note's or uses a fixed size
 - the text area inside non-rectangular kinds (an ellipse or diamond inset), and whether text clips to it
 - whether an empty shape behaves as today (no placeholder, no `IsEmpty` deletion)
+
+## Comments
+
+- From [Markdown subset](03-markdown-subset.md): shape text uses the Basic level: bold, italic, underline and line breaks.

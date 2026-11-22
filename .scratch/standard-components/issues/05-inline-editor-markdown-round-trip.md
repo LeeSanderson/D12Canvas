@@ -17,3 +17,7 @@ Decide:
 - how the editor stops browsers' own `contenteditable` markup (`<div>`, `<b>` vs `<strong>`, `&nbsp;`) leaking into storage
 - undo inside the editor versus the board's undo stack once the edit commits
 - what the static (not editing) render is: C# markdown to Blazor markup, so bUnit can test it
+
+## Comments
+
+- From [Markdown subset](03-markdown-subset.md): typed characters are always literal and the serialiser escapes them with CommonMark backslashes (the rule list is in that ticket's answer). Only pasted markdown is read as markup. A paste parses with Full, then flattens anything outside the component's level to plain text before storing. Stored markup outside the level renders as raw text; nothing rewrites it on load. Link targets outside http, https and mailto must never reach an `href`.

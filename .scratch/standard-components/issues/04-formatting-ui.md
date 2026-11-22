@@ -16,3 +16,7 @@ Decide, with a throwaway Demo prototype to react to:
 - what the controls show for a sticky note or rectangle (bold, italic, underline only) versus Text
 - whether markdown shortcuts typed inline (`**`, `- `, `# `) convert as you type, or only paste converts
 - how the box-level props (Text's `FontWeight`, `TextAlign`, `FontSize`) relate to span formatting
+
+## Comments
+
+- From [Markdown subset](03-markdown-subset.md): Full adds tables, so the UI needs a way to add and remove rows and columns. Text's `FontWeight` prop is gone; consider a bold chip in the Property bar that bolds the whole text when nothing is selected. Basic shows bold, italic and underline only. Links follow on Ctrl/Cmd+click, so the editor needs a way to add and edit a link's URL.
