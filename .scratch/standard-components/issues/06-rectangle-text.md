@@ -22,3 +22,4 @@ Decide:
 ## Comments
 
 - From [Markdown subset](03-markdown-subset.md): shape text uses the Basic level: bold, italic, underline and line breaks.
+- From [Inline editor markdown round trip](05-inline-editor-markdown-round-trip.md): shape text uses the same shared editor as every formatted text: a `contenteditable` container seeded with C#-rendered HTML and committed as markdown. The static render is a `MarkupString` from the C# HTML writer. Whatever inset and clipping a shape kind needs applies to that container in both states.

@@ -22,6 +22,7 @@ A spec at `.scratch/standard-components/spec.md`, ready for `/implement`. It cov
 - [Markdown subset](issues/03-markdown-subset.md): two formatting levels. Full (Text and labels) adds strikethrough, code, links (Ctrl/Cmd+click, http/https/mailto, autolinked), `#`–`###`, lists 3 deep, quotes, code blocks, rules and GFM tables. Basic (notes, shapes) is bold, italic, `<u>` underline and line breaks. Markup outside the level shows raw. No span colour or size, no migration, and Text's `FontWeight` goes.
 
 - [Formatting UI](issues/04-formatting-ui.md): while editing, the Property bar swaps to the formatting controls for the component's level, then the box props. There's no bubble and no markdown conversion as you type. Ctrl+K opens a link field at the caret that edits both the link's text and its address. A double-click starts editing with the caret at the click point, and Enter still selects all. A table bar appears under a table, and a selected box gets a whole-text B chip in place of `FontWeight`.
+- [Inline editor markdown round trip](issues/05-inline-editor-markdown-round-trip.md): the editor edits `contenteditable` with `execCommand` and native undo, and C# owns the one parser, serialiser, level narrowing and escaped HTML writer. JS only walks DOM into a JSON tree, on commit and on HTML paste. Paste prefers HTML that carries formatting we recognise, otherwise `text/plain` as markdown, and Ctrl+Shift+V pastes literally.
 
 ## Not yet specified
 
