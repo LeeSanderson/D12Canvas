@@ -46,7 +46,12 @@ In Basic, the Full-only shortcuts do nothing and Enter inserts a line break.
 
 **No markdown conversion as you type.** Typing `**`, `# ` or `- ` leaves the characters in place. Only paste reads markdown, as Markdown subset already decided.
 
-**Links.** Ctrl+K or the link chip opens a URL field anchored just below the caret, or under the link when the caret is inside one. The field has Apply and Remove buttons, and it rejects any scheme other than http, https and mailto. With nothing selected, the URL is inserted as its own text.
+**Links.** Ctrl+K or the link chip opens a link field anchored just below the caret, or under the link when the caret is inside one. The field has two inputs, Text and Address, plus Apply and Remove buttons.
+
+- Text starts as the selected text, or the link's text when the caret is inside a link. Focus goes to Address when Text is already filled, otherwise to Text, and Tab moves between the two.
+- Changing Text replaces the link's text. Leaving it unchanged keeps any formatting inside the link.
+- An empty Text uses the address as the text.
+- Address rejects any scheme other than http, https and mailto. Clearing it, or pressing Remove, unlinks the text and keeps it.
 
 **Tables.** While the caret is in a table, a table bar sits under the table with these controls:
 
