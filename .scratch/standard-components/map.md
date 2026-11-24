@@ -21,7 +21,7 @@ A spec at `.scratch/standard-components/spec.md`, ready for `/implement`. It cov
 - [Sticky note shrink-to-fit text](issues/02-sticky-note-shrink-to-fit.md): the sticky note's `FontSize` becomes `double?` (null means Auto), edited through a new `AutoFontSize` role. `fitText.js` fits the size live in the browser from 6px up with no cap, and text past that clips. Padding is `min(10px, 10cqmin)`, and an empty note starts at half its height.
 - [Markdown subset](issues/03-markdown-subset.md): two formatting levels. Full (Text and labels) adds strikethrough, code, links (Ctrl/Cmd+click, http/https/mailto, autolinked), `#`–`###`, lists 3 deep, quotes, code blocks, rules and GFM tables. Basic (notes, shapes) is bold, italic, `<u>` underline and line breaks. Markup outside the level shows raw. No span colour or size, no migration, and Text's `FontWeight` goes.
 
-- [Formatting UI](issues/04-formatting-ui.md): while editing, the Property bar swaps to the formatting controls for the component's level, then the box props. There's no bubble and no markdown conversion as you type. Ctrl+K opens a URL field at the caret. A table bar appears under a table, and a selected box gets a whole-text B chip in place of `FontWeight`.
+- [Formatting UI](issues/04-formatting-ui.md): while editing, the Property bar swaps to the formatting controls for the component's level, then the box props. There's no bubble and no markdown conversion as you type. Ctrl+K opens a URL field at the caret. A double-click starts editing with the caret at the click point, and Enter still selects all. A table bar appears under a table, and a selected box gets a whole-text B chip in place of `FontWeight`.
 
 ## Not yet specified
 

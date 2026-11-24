@@ -23,6 +23,8 @@ The Property bar becomes the formatting bar while editing. This was variant B of
 
 **Selected, not editing.** The bar shows a whole-text **B** chip ahead of the box props. The chip replaces Text's removed `FontWeight`: it wraps or unwraps the whole text in `**…**`. Ctrl/Cmd+B on a selected box does the same.
 
+**Entering edit.** A double-click starts editing with a collapsed caret at the click point. Today `InlineEditorEntry.FocusAndSelectAllAsync` selects all on every entry, so a double-click then needs another click before the user can type where they meant. Enter on a selected box still selects all, since there's no point to place a caret.
+
 **Editing.** The bar above the box swaps its chips, in this order:
 
 - Inline controls for the component's level. Full has bold, italic, underline, strikethrough, inline code and link. Basic has bold, italic and underline only.
