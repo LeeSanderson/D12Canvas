@@ -11,7 +11,7 @@ A spec at `.scratch/standard-components/spec.md`, ready for `/implement`. It cov
 - Domain: the D12Canvas library (`lib/D12Canvas`), its built-ins in `lib/D12Canvas/BuiltIns`, and `Edge` in `lib/D12Canvas/Model/Edge.cs`. New features show up in D12Canvas.App's editor.
 - The library takes no new dependencies. Markdown parsing, rendering and the editor's markdown round trip are hand-written, in C# and in `wwwroot/*.js`. Supporting a smaller markdown subset is fine. Images are out.
 - Formatted text is stored as markdown. Users don't see the format, except that pasting markdown formats correctly.
-- Formatting levels: Text, and therefore connector labels (a label is a `text` instance), get the full chosen subset. Sticky notes and rectangles get bold, italic and underline only.
+- Formatting levels: Text, and therefore connector labels (a label is a `text` instance), get the full chosen subset. Sticky notes and shapes get bold, italic and underline only.
 - Colours go through the `--d12-*` token layer. A guard test rejects colour literals in style blocks, and style blocks carry no comments.
 - Skills: `/grilling` and `/domain-modeling` for grilling tickets, `/prototype` for prototype tickets (throwaway Demo routes are exempt from the visual suite), `/research` for research tickets.
 
@@ -23,11 +23,13 @@ A spec at `.scratch/standard-components/spec.md`, ready for `/implement`. It cov
 
 - [Formatting UI](issues/04-formatting-ui.md): while editing, the Property bar swaps to the formatting controls for the component's level, then the box props. There's no bubble and no markdown conversion as you type. Ctrl+K opens a link field at the caret that edits both the link's text and its address. A double-click starts editing with the caret at the click point, and Enter still selects all. A table bar appears under a table, and a selected box gets a whole-text B chip in place of `FontWeight`.
 - [Inline editor markdown round trip](issues/05-inline-editor-markdown-round-trip.md): the editor edits `contenteditable` with `execCommand` and native undo, and C# owns the one parser, serialiser, level narrowing and escaped HTML writer. JS only walks DOM into a JSON tree, on commit and on HTML paste. Paste prefers HTML that carries formatting we recognise, otherwise `text/plain` as markdown, and Ctrl+Shift+V pastes literally.
+- [Shape kinds](issues/07-shape-kinds.md): Rectangle becomes `Shape` (key `shape`) with a `Kind` prop over eight kinds: rectangle, rounded rectangle, ellipse, diamond, hexagon, cylinder, parallelogram, trapezoid. The Palette places a rectangle, and a `ShapeKind` chip leads the Property bar. Geometry is fixed with no per-kind props. Each kind is an inline SVG drawn from props, and its body hits only inside the outline. A new registration hook puts the standard ports on each outline.
 
 ## Not yet specified
 
 - Property bar and PropertyPanel controls for every new prop (line width, dash, arrowhead size, shape kind, auto font size). Each ticket decides its own props, but the bar's chip order and grouping across all of them may need a pass once they're known.
-- `CONTEXT.md` terms: what to call a shape kind, a sticky note's Auto font size, and a label's position on its connector.
+- `CONTEXT.md` terms: what to call a sticky note's Auto font size, and a label's position on its connector.
+- A Palette kind flyout, to place a diamond or ellipse in one go rather than placing a rectangle and switching. Revisit if switching after placement proves slow in use.
 - Keyboard and accessibility for endpoint reconnecting, and how a keyboard user moves focus between the editor and the formatting bar while editing. Formatting shortcuts are settled in Formatting UI.
 
 ## Out of scope

@@ -9,7 +9,7 @@ The full set of a canvas's persisted content — its component instances, groups
 
 **Component type**:
 A registered kind of canvas content (e.g. "sticky note"), identified by a stable key and defined by a rendered component plus a props type.
-_Avoid_: shape, node — not used anywhere in this codebase; "component" is the established term.
+_Avoid_: shape, node — "component" is the established term, and `Shape` names one built-in component type, not component types in general.
 
 **Component instance**:
 A placed occurrence of a component type on a board, with its own bounds and props value.
@@ -27,8 +27,16 @@ A component's text content, stored as markdown in the library's own subset and s
 _Avoid_: rich text, markdown text.
 
 **Formatting level**:
-What a component type allows in its `Formatted text`, fixed at registration and never a prop. **Full** allows every inline and block construct the library supports and is used by `Text`, and so by every edge label. **Basic** allows bold, italic, underline and line breaks and is used by sticky notes and rectangles.
+What a component type allows in its `Formatted text`, fixed at registration and never a prop. **Full** allows every inline and block construct the library supports and is used by `Text`, and so by every edge label. **Basic** allows bold, italic, underline and line breaks and is used by sticky notes and shapes.
 _Avoid_: subset, profile.
+
+**Shape**:
+The built-in component type for a filled, stroked outline, registered under the key `shape`. One type covers every outline: which outline it draws is its `Shape kind`, a prop, so changing a placed shape's outline is a prop edit and one history entry, not a delete and redraw. Its body answers a press only inside its outline, so a press in an ellipse's or diamond's empty corner reaches whatever lies below; its selection chrome and the marquee still work on its bounding box.
+_Avoid_: rectangle — the old name of the type, now one of its kinds.
+
+**Shape kind**:
+The outline a `Shape` draws: rectangle, rounded rectangle, ellipse, diamond, hexagon, cylinder, parallelogram or trapezoid, rectangle by default. Each outline's proportions follow from the shape's bounds alone, so a kind carries no settings of its own and switching kind leaves nothing behind. A kind also decides where the shape's four standard `Port`s sit, so that each one lies on the outline.
+_Avoid_: shape type — confusable with `Component type`; rhombus — the diamond; circle — an ellipse in a square box.
 
 **Key**:
 The stable string a component type is registered under, chosen independently of its .NET type name so persisted boards survive renames/refactors of the underlying class.
