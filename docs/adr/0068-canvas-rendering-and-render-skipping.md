@@ -10,6 +10,8 @@ One `<marker id="edge-arrow">` serves every edge. ADR 0016 covers its `context-s
 
 The `<defs>` block renders only when `Board.Edges.Count > 0`. A board with no edges then renders no marker markup at all, and every visual-test baseline without edges depends on that.
 
+**Amended by ADR 0080:** the marker and the `<defs>` block go. Each edge draws its own arrowheads as paths, so no markup depends on the board having edges.
+
 A line that takes no presses draws each edge. A wider transparent stroke over it takes the hits. ADR 0017 sets its width at 20 screen pixels at any zoom.
 
 While a connector drag draws its line, `CanvasCssClass` adds `connecting`, which shows every port and makes it hittable. The drop has to find the port under the pointer, and hover cannot do that while the canvas holds pointer capture.

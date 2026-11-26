@@ -282,8 +282,20 @@ _Avoid_: citing ADR 0008 as having declined a theming model for instance props. 
 The token values a library surface declares on its own root when it must not read the board's: `--d12-surface`, `--d12-border`, `--d12-accent`, `--d12-muted-text`, `--d12-text` and `--d12-shadow`, plus `color-scheme`, light by default, dark under the dark colour scheme, and either one forced by `data-d12-theme` on the root or an ancestor. Six components declare them, each through `RaisedSurface.TokenRules` with its own root selector, so the four blocks are written once and a retuned value reaches all six. Five float over the board: `Palette`, the context menu, `PropertyPanel`, the minimap and the property bar. The sixth, `BoardSketch`, sits on the host's own surface instead. The canvas declares **board values** instead, where `--d12-surface` is the board background and `--d12-border` is the grid-line colour. A floating surface reading board values disappears into the board, which is why the property bar redeclares raised values even though it renders inside `.diagram-container` (ADR 0064).
 _Avoid_: reading ADR 0012's "each component declares its own copy" as one value set copied everywhere. There are two copies, and which one a component declares depends on whether it floats over the board.
 
+**Line width**:
+An `Edge`'s stroke thickness in canvas units, 1–16, default 2. It sets the size of everything else painted along the edge: the dash spacing of its `Line pattern`, the length of its `Arrowhead`s (`3w + 2`), the halo (`w + 8`), and the hit stroke's floor. It never changes the route.
+_Avoid_: stroke width, which is `Shape`'s prop for its outline. An edge's is "line width".
+
+**Line pattern**:
+How an `Edge`'s line is broken up: `Solid`, `Dashed` or `Dotted`. The spacing is a multiple of the `Line width`, so a pattern looks the same at any width. Arrowheads are always solid.
+_Avoid_: dash style, stroke style.
+
+**Arrowhead**:
+The mark at one end of an `Edge`, chosen per end from `ArrowStyle`: none, arrow, open arrow, hollow triangle, diamond, hollow diamond or circle. Its size has no setting and follows the `Line width`. The drawn line stops at the back of the head, so a hollow head shows nothing inside it. A press on a head selects the edge (ADR 0080).
+_Avoid_: marker, which names the SVG element the library no longer uses for heads.
+
 **Edge colour**:
-An `Edge`'s optional own colour, held as board data alongside its routing style and arrowheads. Absent by default, and absence means *no author opinion* rather than a value — it resolves to a `Theme token` at paint time, so an edge nobody has coloured is correct on both themes. An author's colour overrides the token for that edge only, and an empty colour is stored as absent. Arrowheads always match the stroke they end, uncoloured, coloured or selected. `Selection` never repaints an edge: it adds a translucent accent halo under the edge's own stroke, one per selected edge, so a selected edge still shows its colour, width and arrowheads (ADR 0041). A board saved without edge colours loads and saves unchanged.
+An `Edge`'s optional own colour, held as board data alongside its routing style, arrowheads, line width and line pattern. Absent by default, and absence means *no author opinion* rather than a value — it resolves to a `Theme token` at paint time, so an edge nobody has coloured is correct on both themes. An author's colour overrides the token for that edge only, and an empty colour is stored as absent. Arrowheads always match the stroke they end, uncoloured, coloured or selected. `Selection` never repaints an edge: it adds a translucent accent halo under the edge's own stroke, one per selected edge, so a selected edge still shows its colour, width and arrowheads (ADR 0041). A board saved without edge colours loads and saves unchanged.
 _Avoid_: treating it as a theme setting — it is per-edge data that persists with the board, and the library makes no legibility guarantee about a value an author chose.
 
 **Themed default**:
