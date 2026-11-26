@@ -19,3 +19,4 @@ Decide:
 ## Comments
 
 - From [Inline editor markdown round trip](05-inline-editor-markdown-round-trip.md): there's no JS parser or renderer, so no C#/JS agreement tests are needed. C# unit tests cover markdown ↔ tree, tree → HTML with an XSS fixture set, and narrowing. Interaction probes cover the JS DOM → tree walk against the markup Chrome and Firefox really produce, and each table, inline code and link operation followed by Ctrl+Z. Real IME and Android typing go on a manual check list.
+- From [Text inside shapes](06-rectangle-text.md): screenshot cases for text in each kind's inset area at each alignment, in light and dark. A probe checks that a press on a rounded rectangle's corner passes through the static text area. Auto fit inside a diamond's and a cylinder's area can reuse the sticky note's fit probe. Empty shapes draw no placeholder, so existing Shape baselines shouldn't move from this ticket alone.

@@ -31,7 +31,7 @@ What a component type allows in its `Formatted text`, fixed at registration and 
 _Avoid_: subset, profile.
 
 **Shape**:
-The built-in component type for a filled, stroked outline, registered under the key `shape`. One type covers every outline: which outline it draws is its `Shape kind`, a prop, so changing a placed shape's outline is a prop edit and one history entry, not a delete and redraw. Its body answers a press only inside its outline, so a press in an ellipse's or diamond's empty corner reaches whatever lies below; its selection chrome and the marquee still work on its bounding box.
+The built-in component type for a filled, stroked outline, registered under the key `shape`. One type covers every outline: which outline it draws is its `Shape kind`, a prop, so changing a placed shape's outline is a prop edit and one history entry, not a delete and redraw. Its body answers a press only inside its outline, so a press in an ellipse's or diamond's empty corner reaches whatever lies below; its selection chrome and the marquee still work on its bounding box. Every shape can hold Basic `Formatted text`, laid out in a rectangle inset inside its outline, which the shape's kind fixes, and clipped to that rectangle. A shape with no text is still a shape: clearing its text never deletes it.
 _Avoid_: rectangle — the old name of the type, now one of its kinds.
 
 **Shape kind**:
