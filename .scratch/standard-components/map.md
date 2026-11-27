@@ -26,13 +26,14 @@ A spec at `.scratch/standard-components/spec.md`, ready for `/implement`. It cov
 - [Shape kinds](issues/07-shape-kinds.md): Rectangle becomes `Shape` (key `shape`) with a `Kind` prop over eight kinds: rectangle, rounded rectangle, ellipse, diamond, hexagon, cylinder, parallelogram, trapezoid. The Palette places a rectangle, and a `ShapeKind` chip leads the Property bar. Geometry is fixed with no per-kind props. Each kind is an inline SVG drawn from props, and its body hits only inside the outline. A new registration hook puts the standard ports on each outline.
 - [Text inside shapes](issues/06-rectangle-text.md): every kind gets Basic `Text`, edited inline the way a sticky note is, plus a themed `TextColor`, `FontSize` (`double?` pinned at 14, Auto optional), and centred `TextAlign` and `VerticalAlign`. Text sits in a fixed inset rectangle per kind, for example 25% on a diamond and below the cylinder's cap, and clips to it. The static text area ignores presses. An empty shape stays, with no placeholder.
 - [Connector style props](issues/08-connector-style-props.md): `Edge` gains `LineWidth` (free number, default 2, 1–16) and `LinePattern` (solid, dashed, dotted, spacing scaled by width). `ArrowStyle` adds open arrow, hollow triangle, diamond, hollow diamond and circle. Heads have no size prop (`3w + 2`) and become per-edge paths with the line shortened by each head's inset (ADR 0080). The hit stroke is at least the width, heads hit as the edge, and the halo is `w + 8`. The bar reads Colour, Width, Pattern, then Routing, then both arrows. The panel still has no edge fields.
+- [Connector label position](issues/09-connector-label-position.md): `Edge` gains `LabelPosition` (0 to 1, default 0.5) and `LabelOffset` (signed px, default 0), and both hold when the route changes. Dragging a label projects the pointer onto the nearest route point, snapping to the midpoint and onto the line, with Ctrl turning snaps off. The label always masks the line with the canvas background, and a double-click adds a label at the click point.
 
 ## Not yet specified
 
 - Property bar chip order and grouping for sticky notes and shapes once all their new props are known (shape kind, text colour, auto font size). The edge bar's order is settled in Connector style props.
-- `CONTEXT.md` terms: what to call a sticky note's Auto font size, and a label's position on its connector.
+- `CONTEXT.md` term: what to call a sticky note's Auto font size.
 - A Palette kind flyout, to place a diamond or ellipse in one go rather than placing a rectangle and switching. Revisit if switching after placement proves slow in use.
-- Keyboard and accessibility for endpoint reconnecting, and how a keyboard user moves focus between the editor and the formatting bar while editing. Formatting shortcuts are settled in Formatting UI.
+- Keyboard and accessibility for endpoint reconnecting and for moving a connector's label, and how a keyboard user moves focus between the editor and the formatting bar while editing. Formatting shortcuts are settled in Formatting UI.
 
 ## Out of scope
 
